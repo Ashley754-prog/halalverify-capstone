@@ -11,8 +11,8 @@ export const ForgotPassword = ({ onViewChange }) => {
                 {/* Left side brand panel */}
                 <div className="flex flex-col items-center justify-center bg-linear-to-br from-[#064e3b] via-[#047857] to-[#10b981] p-10 text-white">
                     <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-200">System Gateway</p>
-                    <div className="mt-6 flex h-40 w-40 items-center justify-center rounded-full bg-white/10 ring-4 ring-white/20 backdrop-blur-md">
-                        <img src="/halalverify-logo.png" alt="HALALVERIFY logo" className="h-36 w-36 rounded-full object-cover object-center" />
+                    <div className="mt-6 flex h-40 w-40 items-center justify-center rounded-full backdrop-blur-md">
+                        <img src="/halalverify-logo.png" alt="HALALVERIFY logo" className="h-40 w-40 rounded-full object-cover object-center" />
                     </div>
                     <h2 className="mt-6 text-center text-3xl font-black tracking-[0.25em] text-white">HALALVERIFY</h2>
                     <p className="mt-2 text-center text-xs text-emerald-100 font-medium">Zamboanga Local Compliance Pipeline</p>

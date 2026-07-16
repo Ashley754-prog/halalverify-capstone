@@ -19,8 +19,8 @@ export const CreateAccount = ({ onViewChange, layout = 'create' }) => {
         {/* Branding panel */}
         <div className={`flex flex-col items-center justify-center bg-linear-to-br from-[#064e3b] via-[#047857] to-[#10b981] p-10 text-white transition-all duration-500 ease-out ${layout === 'create' ? 'md:order-2' : 'md:order-1'} ${mounted ? 'opacity-100 translate-x-0' : layout === 'create' ? 'opacity-0 translate-x-8' : 'opacity-0 -translate-x-8'}`}>
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-200">System Gateway</p>
-          <div className="mt-6 flex h-40 w-40 items-center justify-center rounded-full bg-white/10 ring-4 ring-white/20 backdrop-blur-md">
-            <img src="/halalverify-logo.png" alt="HALALVERIFY logo" className="h-36 w-36 rounded-full object-cover object-center" />
+          <div className="mt-6 flex h-40 w-40 items-center justify-center rounded-full backdrop-blur-md">
+            <img src="/halalverify-logo.png" alt="HALALVERIFY logo" className="h-40 w-40 rounded-full object-cover object-center" />
           </div>
           <h2 className="mt-6 text-center text-3xl font-black tracking-[0.25em] text-white">HALALVERIFY</h2>
         </div>
