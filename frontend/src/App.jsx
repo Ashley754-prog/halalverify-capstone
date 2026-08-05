@@ -5,6 +5,7 @@ import CreateAccount from "./auth/CreateAccount.jsx";
 import ForgotPassword from "./auth/ForgotPassword.jsx";
 import ResetPassword from "./auth/ResetPassword.jsx";
 import Sidebar from './components/layouts/Sidebar.jsx';
+import { AppTopbar } from './components/layouts/Topbar.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Scanner from './pages/Scanner.jsx';
 import Registry from './pages/Registry.jsx';
@@ -17,6 +18,14 @@ export default function App() {
   const [currentView, setCurrentView] = useState('login');
   const [userRole, setUserRole] = useState(null); // 'admin' | 'user' | null
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // auto-close sidebar on smaller screens
+  useEffect(() => {
+    if (window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
+  }, []);
 
   // Monitor network connectivity in real-time
   useEffect(() => {
@@ -42,6 +51,10 @@ export default function App() {
   const handleSignOut = () => {
     setUserRole(null);
     setCurrentView('login');
+  };
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen((prev) => !prev);
   };
 
   const renderContent = () => {
@@ -83,7 +96,15 @@ export default function App() {
   }
 
   return (
-    <Sidebar currentView={currentView} onViewChange={setCurrentView} userRole={userRole} onSignOut={handleSignOut}>
+    <Sidebar
+      currentView={currentView}
+      onViewChange={setCurrentView}
+      userRole={userRole}
+      onSignOut={handleSignOut}
+      isSidebarOpen={isSidebarOpen}
+      toggleSidebar={toggleSidebar}
+    >
+      <AppTopbar isSidebarOpen={isSidebarOpen} onToggleSidebar={toggleSidebar} />
       {/* Offline Alert Bar */}
       {!isOnline && (
         <div className="bg-amber-600 text-white text-center py-2 text-xs font-bold tracking-wide shadow-inner animate-pulse flex items-center justify-center gap-2">

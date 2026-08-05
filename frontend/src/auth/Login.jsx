@@ -21,17 +21,17 @@ export const Login = ({ onLogin, layout = 'login' }) => {
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-[#0e1625] px-4">
-            <div className={`grid w-full max-w-5xl grid-cols-1 overflow-hidden rounded-3xl bg-white shadow-2xl transition-all duration-500 md:grid-cols-2`}>
-                <div className={`flex flex-col items-center justify-center bg-linear-to-br from-[#064e3b] via-[#047857] to-[#10b981] p-10 text-white transition-all duration-500 ease-out ${layout === 'create' ? 'md:order-2' : 'md:order-1'} ${mounted ? 'opacity-100 translate-x-0' : layout === 'create' ? 'opacity-0 translate-x-8' : 'opacity-0 -translate-x-8'}`}>
-                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-200">System Gateway</p>
-                    <div className="mt-6 flex h-40 w-40 items-center justify-center rounded-full backdrop-blur-md">
-                        <img src="/halalverify-logo.png" alt="HALALVERIFY logo" className="h-40 w-40 rounded-full object-cover object-center" />
-                    </div>
-                    <h2 className="mt-6 text-center text-3xl font-black tracking-[0.25em] text-white">HALALVERIFY</h2>
-                </div>
+            <div className={`my-6 grid w-full max-w-5xl grid-cols-1 overflow-hidden rounded-3xl bg-white shadow-2xl transition-all duration-500 md:grid-cols-2`}>
+            <div className={`flex flex-col items-center justify-center bg-linear-to-br from-[#064e3b] via-[#047857] to-[#10b981] p-6 md:p-10 text-white transition-all duration-500 ease-out ...`}>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-200">System Gateway</p>
+            <div className="mt-3 md:mt-6 flex h-20 w-20 md:h-40 md:w-40 items-center justify-center rounded-full backdrop-blur-md">
+                <img src="/halalverify-logo.png" alt="HALALVERIFY logo" className="h-20 w-20 md:h-40 md:w-40 rounded-full object-cover object-center" />
+            </div>
+            <h2 className="mt-3 md:mt-6 text-center text-xl md:text-3xl font-black tracking-[0.25em] text-white">HALALVERIFY</h2>
+            </div>
 
-                <div className={`flex items-center justify-center bg-white p-8 transition-all duration-500 md:p-12 ${layout === 'create' ? 'md:order-1' : 'md:order-2'}`}>
-                    <div className={`flex min-h-[420px] w-full max-w-sm flex-col justify-center transition-all duration-500 ease-out ${mounted ? 'opacity-100 translate-x-0' : layout === 'create' ? 'opacity-0 -translate-x-8' : 'opacity-0 translate-x-8'}`}>
+                <div className={`flex items-center justify-center bg-white p-6 md:p-12 transition-all duration-500 md:p-12 ${layout === 'create' ? 'md:order-1' : 'md:order-2'}`}>
+                    <div className={`flex min-h-0 md:min-h-[420px] w-full max-w-sm flex-col justify-center transition-all duration-500 ease-out ${mounted ? 'opacity-100 translate-x-0' : layout === 'create' ? 'opacity-0 -translate-x-8' : 'opacity-0 translate-x-8'}`}>
                         <div className="mb-8">
                             <h3 className="text-4xl font-extrabold tracking-tight text-slate-900 text-center">Login</h3>
                         </div>

@@ -1,26 +1,39 @@
 {
-    "short_name": "HalalVerify",
-    "name": "HalalVerify: AI Halal Scanner & Certificate Authenticator",
-    "description": "A computer vision PWA for verifying halal product labels and authenticating halal certificates in real time.",
-    "icons": [
-        {
-            "src": "halalverify-logo.png",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "any"
-        },
-        {
-            "src": "halalverify-logo.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "any"
-        }
-    ],
-    "start_url": "/",
-    "scope": "/",
-    "background_color": "#0e1625",
-    "theme_color": "#064e3b",
-    "display": "standalone",
-    "orientation": "portrait",
-    "categories": ["utilities", "food", "education"]
+  "id": "/",
+  "short_name": "HalalVerify",
+  "name": "HalalVerify: Halal Verification and Authentication System",
+  "description": "A computer vision PWA for verifying halal product labels and authenticating halal logos in real time.",
+  "icons": [
+    {
+      "src": "halalverify-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "halalverify-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "halalverify-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "halalverify-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "start_url": "/",
+  "scope": "/",
+  "background_color": "#0e1625",
+  "theme_color": "#064e3b",
+  "display": "standalone",
+  "orientation": "portrait",
+  "categories": ["utilities", "food", "education"]
 }
