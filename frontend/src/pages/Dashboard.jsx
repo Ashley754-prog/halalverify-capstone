@@ -87,7 +87,7 @@ export const Dashboard = () => {
     const haramCount = breakdowns.scan_verdicts.Haram || breakdowns.scan_verdicts.Red || 0;
 
     return (
-        <div className="p-8">
+        <div className="p-4 sm:p-6 md:p-8">
             <Topbar
                 title="Live System Dashboard"
                 subtitle="Current database totals from Supabase and recent scanner activity."

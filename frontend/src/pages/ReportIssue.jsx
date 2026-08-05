@@ -82,7 +82,7 @@ export const ReportIssue = () => {
 
     if (submitted) {
         return (
-            <div className="p-8">
+            <div className="p-4 sm:p-6 md:p-8">
                 <Topbar title="Report an Issue" subtitle="Help us improve HalalVerify's accuracy." />
                 <div className="max-w-lg mx-auto mt-12 bg-white rounded-2xl border border-slate-200 shadow-sm p-10 text-center flex flex-col items-center gap-4">
                     <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center">
@@ -111,7 +111,7 @@ export const ReportIssue = () => {
     }
 
     return (
-        <div className="p-8 space-y-6">
+        <div className="p-4 sm:p-6 md:p-8 space-y-6">
             <Topbar
                 title="Report an Issue"
                 subtitle="Flag incorrect scanner results, suspicious certificates, or database inaccuracies."

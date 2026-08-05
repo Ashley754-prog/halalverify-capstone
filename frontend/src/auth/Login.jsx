@@ -6,7 +6,9 @@ import { fetchUserRole } from '../lib/auth';
 export const Login = ({ onLogin, layout = 'login' }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
@@ -20,6 +22,12 @@ export const Login = ({ onLogin, layout = 'login' }) => {
         event.preventDefault();
         setIsLoading(true);
         setErrorMessage('');
+
+        if (password !== confirmPassword) {
+            setErrorMessage('Passwords do not match.');
+            setIsLoading(false);
+            return;
+        }
 
         const { data, error } = await supabase.auth.signInWithPassword({
             email: email.trim(),
@@ -46,22 +54,22 @@ export const Login = ({ onLogin, layout = 'login' }) => {
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-[#0e1625] px-4">
-            <div className="grid w-full max-w-5xl grid-cols-1 overflow-hidden rounded-3xl bg-white shadow-2xl transition-all duration-500 md:grid-cols-2">
-                <div className={`flex flex-col items-center justify-center bg-linear-to-br from-[#064e3b] via-[#047857] to-[#10b981] p-10 text-white transition-all duration-500 ease-out ${layout === 'create' ? 'md:order-2' : 'md:order-1'} ${mounted ? 'opacity-100 translate-x-0' : layout === 'create' ? 'opacity-0 translate-x-8' : 'opacity-0 -translate-x-8'}`}>
+            <div className={`my-6 grid w-full max-w-5xl grid-cols-1 overflow-hidden rounded-3xl bg-white shadow-2xl transition-all duration-500 md:grid-cols-2 ${layout === 'create' ? '' : ''}`}>
+                <div className={`flex flex-col items-center justify-center bg-linear-to-br from-[#064e3b] via-[#047857] to-[#10b981] p-6 md:p-10 text-white transition-all duration-500 ease-out ${layout === 'create' ? 'md:order-2' : 'md:order-1'} ${mounted ? 'opacity-100 translate-x-0' : layout === 'create' ? 'opacity-0 translate-x-8' : 'opacity-0 -translate-x-8'}`}>
                     <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-200">System Gateway</p>
-                    <div className="mt-6 flex h-40 w-40 items-center justify-center rounded-full backdrop-blur-md">
-                        <img src="/halalverify-logo.png" alt="HALALVERIFY logo" className="h-40 w-40 rounded-full object-cover object-center" />
+                    <div className="mt-3 md:mt-6 flex h-20 w-20 md:h-40 md:w-40 items-center justify-center rounded-full backdrop-blur-md">
+                        <img src="/halalverify-logo.png" alt="HALALVERIFY logo" className="h-20 w-20 md:h-40 md:w-40 rounded-full object-cover object-center" />
                     </div>
-                    <h2 className="mt-6 text-center text-3xl font-black tracking-[0.25em] text-white">HALALVERIFY</h2>
+                    <h2 className="mt-3 md:mt-6 text-center text-xl md:text-3xl font-black tracking-[0.25em] text-white">HALALVERIFY</h2>
                 </div>
 
-                <div className={`flex items-center justify-center bg-white p-8 transition-all duration-500 md:p-12 ${layout === 'create' ? 'md:order-1' : 'md:order-2'}`}>
-                    <form onSubmit={handleSignIn} className={`flex min-h-[420px] w-full max-w-sm flex-col justify-center transition-all duration-500 ease-out ${mounted ? 'opacity-100 translate-x-0' : layout === 'create' ? 'opacity-0 -translate-x-8' : 'opacity-0 translate-x-8'}`}>
-                        <div className="mb-8">
-                            <h3 className="text-4xl font-extrabold tracking-tight text-slate-900 text-center">Login</h3>
+                <div className={`flex items-center justify-center bg-white p-6 md:p-12 transition-all duration-500 ${layout === 'create' ? 'md:order-1' : 'md:order-2'}`}>
+                    <form onSubmit={handleSignIn} className={`flex min-h-0 md:min-h-[420px] w-full max-w-sm flex-col justify-center transition-all duration-500 ease-out ${mounted ? 'opacity-100 translate-x-0' : layout === 'create' ? 'opacity-0 -translate-x-8' : 'opacity-0 translate-x-8'}`}>
+                        <div className="mb-6 md:mb-8">
+                            <h3 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 text-center">Login</h3>
                         </div>
 
-                        <div className="space-y-5">
+                        <div className="space-y-4 md:space-y-5">
                             <div>
                                 <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-600">Email</label>
                                 <div className="relative">
@@ -70,7 +78,7 @@ export const Login = ({ onLogin, layout = 'login' }) => {
                                         required
                                         type="email"
                                         value={email}
-                                        onChange={e => setEmail(e.target.value)}
+                                        onChange={(e) => setEmail(e.target.value)}
                                         placeholder="you@example.com"
                                         className="w-full rounded-xl border border-slate-300 bg-slate-50 py-3.5 pl-10 pr-4 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100"
                                     />
@@ -85,16 +93,38 @@ export const Login = ({ onLogin, layout = 'login' }) => {
                                         required
                                         type={showPassword ? 'text' : 'password'}
                                         value={password}
-                                        onChange={e => setPassword(e.target.value)}
+                                        onChange={(e) => setPassword(e.target.value)}
                                         placeholder="••••••••"
                                         className="w-full rounded-xl border border-slate-300 bg-slate-50 py-3.5 pl-10 pr-11 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100"
                                     />
                                     <button
                                         type="button"
-                                        onClick={() => setShowPassword(prev => !prev)}
+                                        onClick={() => setShowPassword((prev) => !prev)}
                                         className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 focus:outline-none"
                                     >
                                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-600">Confirm Password</label>
+                                <div className="relative">
+                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                    <input
+                                        required
+                                        type={showConfirmPassword ? 'text' : 'password'}
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        placeholder="••••••••"
+                                        className="w-full rounded-xl border border-slate-300 bg-slate-50 py-3.5 pl-10 pr-11 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowConfirmPassword((prev) => !prev)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 focus:outline-none"
+                                    >
+                                        {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                     </button>
                                 </div>
                                 <div className="mt-2 flex justify-end">
@@ -123,7 +153,7 @@ export const Login = ({ onLogin, layout = 'login' }) => {
                             {isLoading ? 'Signing In...' : 'Sign In'}
                         </button>
 
-                        <div className="mt-8 text-center text-sm">
+                        <div className="mt-6 md:mt-8 text-center text-sm">
                             <span className="text-slate-500">Don&apos;t have an account? </span>
                             <button
                                 type="button"

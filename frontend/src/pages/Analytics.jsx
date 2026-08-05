@@ -150,7 +150,7 @@ export const Analytics = () => {
     const { totals, quality, breakdowns } = analytics;
 
     return (
-        <div className="p-8 space-y-8">
+        <div className="p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8">
             <Topbar
                 title="Analytics & Model Performance"
                 subtitle="Live Supabase usage analytics plus clearly labeled capstone evaluation metrics."

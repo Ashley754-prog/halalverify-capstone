@@ -12,11 +12,22 @@ export const KpiCard = ({ title, value, icon, color }) => {
     };
 
     return (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
-            <div className={`p-4 rounded-xl border ${colorMap[color] || 'bg-slate-50 text-slate-600'}`}>{icon}</div>
-            <div>
-                <p className="text-sm text-slate-500 font-medium">{title}</p>
-                <p className="text-2xl font-bold text-slate-800">{value}</p>
+        <div className="bg-white p-3 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-2.5 sm:gap-4 min-w-0">
+            {/* Compact Icon Badge */}
+            <div className={`p-2.5 sm:p-3.5 rounded-xl border shrink-0 ${colorMap[color] || 'bg-slate-50 text-slate-600'}`}>
+                {React.isValidElement(icon) 
+                    ? React.cloneElement(icon, { className: 'w-4 h-4 sm:w-6 sm:h-6' }) 
+                    : icon}
+            </div>
+
+            {/* Metric Value & Label */}
+            <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider truncate">
+                    {title}
+                </p>
+                <p className="text-base sm:text-2xl font-black text-slate-800 truncate mt-0.5 sm:mt-1">
+                    {value}
+                </p>
             </div>
         </div>
     );

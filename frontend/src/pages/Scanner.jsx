@@ -111,7 +111,7 @@ export const Scanner = () => {
     }, [cameraStream]);
 
     return (
-        <div className="p-8 flex-1 flex flex-col h-full">
+        <div className="p-4 sm:p-6 md:p-8 flex-1 flex flex-col h-full">
             <Topbar
                 title="Visual Inspection Scanner"
                 subtitle="Real-time execution of YOLOv8 logo filters and OCR parsers."

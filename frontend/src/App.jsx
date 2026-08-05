@@ -5,6 +5,7 @@ import CreateAccount from "./auth/CreateAccount.jsx";
 import ForgotPassword from "./auth/ForgotPassword.jsx";
 import ResetPassword from "./auth/ResetPassword.jsx";
 import Sidebar from './components/layouts/Sidebar.jsx';
+import { AppTopbar } from './components/layouts/Topbar.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Scanner from './pages/Scanner.jsx';
 import Registry from './pages/Registry.jsx';
@@ -20,6 +21,13 @@ export default function App() {
   const [userRole, setUserRole] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [authLoading, setAuthLoading] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  useEffect(() => {
+    if (window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
+  }, []);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -122,6 +130,10 @@ export default function App() {
     }
   };
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen((prev) => !prev);
+  };
+
   const renderContent = () => {
     switch (currentView) {
       case 'dashboard':
@@ -174,7 +186,15 @@ export default function App() {
   }
 
   return (
-    <Sidebar currentView={currentView} onViewChange={handleViewChange} userRole={userRole} onSignOut={handleSignOut}>
+    <Sidebar
+      currentView={currentView}
+      onViewChange={handleViewChange}
+      userRole={userRole}
+      onSignOut={handleSignOut}
+      isSidebarOpen={isSidebarOpen}
+      toggleSidebar={toggleSidebar}
+    >
+      <AppTopbar isSidebarOpen={isSidebarOpen} onToggleSidebar={toggleSidebar} />
       {!isOnline && (
         <div className="bg-amber-600 text-white text-center py-2 text-xs font-bold tracking-wide shadow-inner animate-pulse flex items-center justify-center gap-2">
           <AlertTriangle size={14} /> Operating in Local Offline Mode. Cloud AI scans are suspended; local models and cached Zamboanga databases remain operational.

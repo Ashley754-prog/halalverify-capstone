@@ -136,7 +136,7 @@ export const ScanHistory = ({ userRole }) => {
     });
 
     return (
-        <div className="p-8 space-y-6">
+        <div className="p-4 sm:p-6 md:p-8 space-y-6">
             <Topbar
                 title="Scan History"
                 subtitle={isAdmin ? 'Full audit log of all scan events across all users.' : 'Your personal scan log and past verification results.'}
