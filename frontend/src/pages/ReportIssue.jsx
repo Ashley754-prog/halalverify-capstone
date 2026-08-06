@@ -4,6 +4,8 @@ import Topbar from '../components/layouts/Topbar';
 import Modal from '../components/ui/Modal';
 import Toast from '../components/ui/Toast';
 
+const API_BASE_URL = 'http://127.0.0.1:8000';
+
 const ISSUE_TYPES = [
     'Wrong Verdict (Scanner Error)',
     'Suspicious / Counterfeit Certificate',
@@ -16,10 +18,11 @@ const ISSUE_TYPES = [
 export const ReportIssue = () => {
     const [submitted, setSubmitted] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
     const [form, setForm] = useState({
         issueType: '',
-        relatedTo: 'product', // 'product' | 'establishment' | 'certificate'
+        relatedTo: 'product',
         name: '',
         description: '',
     });
@@ -31,10 +34,44 @@ export const ReportIssue = () => {
         setShowConfirmModal(true);
     };
 
-    const confirmSubmission = () => {
-        setSubmitted(true);
-        setShowConfirmModal(false);
-        setToast({ visible: true, message: 'Report submitted successfully. Thank you for helping improve HalalVerify.', type: 'success' });
+    const confirmSubmission = async () => {
+        try {
+            setIsSubmitting(true);
+
+            const response = await fetch(`${API_BASE_URL}/issue-reports`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    issue_type: form.issueType,
+                    related_to: form.relatedTo,
+                    subject_name: form.name,
+                    description: form.description,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to submit report');
+            }
+
+            setSubmitted(true);
+            setShowConfirmModal(false);
+            setToast({
+                visible: true,
+                message: 'Report submitted successfully. Thank you for helping improve HalalVerify.',
+                type: 'success',
+            });
+        } catch (error) {
+            console.error(error);
+            setToast({
+                visible: true,
+                message: 'Could not submit report. Please check if the backend is running.',
+                type: 'error',
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const resetForm = () => {
@@ -53,7 +90,7 @@ export const ReportIssue = () => {
                     </div>
                     <h3 className="text-2xl font-bold text-slate-900">Report Submitted</h3>
                     <p className="text-sm text-slate-500 leading-relaxed max-w-sm">
-                        Thank you! Your report has been logged and will be reviewed by our team. This helps us improve the accuracy of the HalalVerify pipeline.
+                        Thank you! Your report has been saved and will be reviewed by our team. This helps us improve the accuracy of the HalalVerify pipeline.
                     </p>
                     <button
                         onClick={resetForm}
@@ -62,6 +99,13 @@ export const ReportIssue = () => {
                         Submit Another Report
                     </button>
                 </div>
+
+                <Toast
+                    visible={toast.visible}
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast({ visible: false, message: '', type: 'info' })}
+                />
             </div>
         );
     }
@@ -75,10 +119,10 @@ export const ReportIssue = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <form onSubmit={handleSubmit} className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm p-8 space-y-6">
-
-                    {/* Issue Type */}
                     <div>
-                        <label className="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">Issue Type <span className="text-red-500">*</span></label>
+                        <label className="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">
+                            Issue Type <span className="text-red-500">*</span>
+                        </label>
                         <select
                             required
                             value={form.issueType}
@@ -90,9 +134,10 @@ export const ReportIssue = () => {
                         </select>
                     </div>
 
-                    {/* Related To */}
                     <div>
-                        <label className="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-3">This issue is related to</label>
+                        <label className="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-3">
+                            This issue is related to
+                        </label>
                         <div className="flex gap-3">
                             {[
                                 { value: 'product', label: 'Product Label', icon: <ScanSearch size={16} /> },
@@ -116,7 +161,6 @@ export const ReportIssue = () => {
                         </div>
                     </div>
 
-                    {/* Name */}
                     <div>
                         <label className="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">
                             {form.relatedTo === 'establishment' ? 'Establishment Name' : 'Product / Certificate Name'} <span className="text-red-500">*</span>
@@ -126,14 +170,15 @@ export const ReportIssue = () => {
                             type="text"
                             value={form.name}
                             onChange={e => handleChange('name', e.target.value)}
-                            placeholder={form.relatedTo === 'establishment' ? 'e.g. Sulu Sunset Grill' : 'e.g. Nestlé KitKat, HAL-2026-0089'}
+                            placeholder={form.relatedTo === 'establishment' ? 'e.g. Sulu Sunset Grill' : 'e.g. Nestle KitKat, HAL-2026-0089'}
                             className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-sm text-slate-800 focus:outline-none focus:border-emerald-500 transition"
                         />
                     </div>
 
-                    {/* Description */}
                     <div>
-                        <label className="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">Description <span className="text-red-500">*</span></label>
+                        <label className="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-2">
+                            Description <span className="text-red-500">*</span>
+                        </label>
                         <textarea
                             required
                             value={form.description}
@@ -146,27 +191,27 @@ export const ReportIssue = () => {
 
                     <button
                         type="submit"
-                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 font-bold text-white tracking-wide transition hover:bg-emerald-700 active:scale-95 duration-150 shadow-md shadow-emerald-600/10"
+                        disabled={isSubmitting}
+                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 font-bold text-white tracking-wide transition hover:bg-emerald-700 active:scale-95 duration-150 shadow-md shadow-emerald-600/10 disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                        <Flag size={16} /> Submit Report
+                        <Flag size={16} /> {isSubmitting ? 'Submitting...' : 'Submit Report'}
                     </button>
                 </form>
 
-                {/* Right side info panel */}
                 <div className="flex flex-col gap-4">
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
                         <h4 className="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
                             <Flag size={16} className="text-emerald-600" /> Why Report?
                         </h4>
                         <p className="text-xs text-slate-500 leading-relaxed">
-                            Your reports directly improve HalalVerify's accuracy. Each flag is reviewed by our team and used to retrain the YOLOv8 and EasyOCR models for better detection performance.
+                            Your reports directly improve HalalVerify's accuracy. Each flag is reviewed by our team and can help improve future OCR and logo detection results.
                         </p>
                     </div>
                     <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6">
                         <h4 className="font-bold text-emerald-800 text-sm mb-3">Common Issues to Report</h4>
                         <ul className="text-xs text-emerald-700 space-y-2">
-                            <li className="flex items-start gap-2"><span className="mt-0.5 text-emerald-500 font-bold">•</span> Scanner says "Green" but product contains suspicious ingredients</li>
-                            <li className="flex items-start gap-2"><span className="mt-0.5 text-emerald-500 font-bold">•</span> Expired certificate was marked as "Valid"</li>
+                            <li className="flex items-start gap-2"><span className="mt-0.5 text-emerald-500 font-bold">•</span> Scanner says “Green” but product contains suspicious ingredients</li>
+                            <li className="flex items-start gap-2"><span className="mt-0.5 text-emerald-500 font-bold">•</span> Expired certificate was marked as “Valid”</li>
                             <li className="flex items-start gap-2"><span className="mt-0.5 text-emerald-500 font-bold">•</span> Legitimate Halal logo was not detected</li>
                             <li className="flex items-start gap-2"><span className="mt-0.5 text-emerald-500 font-bold">•</span> Establishment status is outdated in the registry</li>
                         </ul>
@@ -186,8 +231,24 @@ export const ReportIssue = () => {
                 description="This will submit your issue for review by the HalalVerify team."
                 onClose={() => setShowConfirmModal(false)}
                 footer={[
-                    <button key="cancel" type="button" onClick={() => setShowConfirmModal(false)} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancel</button>,
-                    <button key="submit" type="button" onClick={confirmSubmission} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Submit Report</button>
+                    <button
+                        key="cancel"
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={() => setShowConfirmModal(false)}
+                        className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+                    >
+                        Cancel
+                    </button>,
+                    <button
+                        key="submit"
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={confirmSubmission}
+                        className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                    >
+                        {isSubmitting ? 'Submitting...' : 'Submit Report'}
+                    </button>
                 ]}
             >
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
@@ -197,7 +258,12 @@ export const ReportIssue = () => {
                 </div>
             </Modal>
 
-            <Toast visible={toast.visible} message={toast.message} type={toast.type} onClose={() => setToast({ visible: false, message: '', type: 'info' })} />
+            <Toast
+                visible={toast.visible}
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast({ visible: false, message: '', type: 'info' })}
+            />
         </div>
     );
 };

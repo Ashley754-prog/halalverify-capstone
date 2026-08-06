@@ -1,6 +1,15 @@
+from typing import Optional
+
+from app.scan_service import (
+    analyze_label_image,
+    certificate_demo_result,
+    save_scan_history,
+)
+from app.supabase_client import supabase
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
 
 app = FastAPI(title="HalalVerify API", version="0.1.0")
 
@@ -18,68 +27,109 @@ class AnalyzeRequest(BaseModel):
     mode: str = "label"
 
 
-def label_result() -> dict:
-    return {
-        "logoDetected": True,
-        "logoConfidence": 0.94,
-        "logoBody": "Islamic Da'wah Council of the Philippines (IDCP)",
-        "ingredientsFound": ["Water", "Sugar", "Soybeans", "Wheat", "Gelatin (E441)", "Sodium Benzoate"],
-        "flaggedIngredients": [
-            {
-                "ingredient": "Gelatin (E441)",
-                "status": "Doubtful",
-                "reason": "Animal-derived binder. Source not verified on packaging.",
-            }
-        ],
-        "verdict": "Yellow",
-        "analysisSummary": "Accredited logo detected (IDCP), but ingredients contain E441 (Gelatin) with unverified origins. Advisory status: Yellow.",
-    }
-
-
-def certificate_result() -> dict:
-    return {
-        "certifyingBody": "Halal Development Institute of the Philippines (HDIP)",
-        "establishmentName": "Zamboanga Halal Food Haven",
-        "certificateNumber": "HDIP-2026-90412",
-        "expirationDate": "2027-04-12",
-        "isExpired": False,
-        "layoutConfidence": 0.89,
-        "structuralZones": ["Header Zone", "Entity Identity", "Validity Block", "Authority Signature Seal"],
-        "status": "Valid",
-        "authenticationNote": "Passed layout structural segmentation. Certificate matches authorized HDIP formatting structures.",
-    }
+class IssueReportCreate(BaseModel):
+    issue_type: str
+    related_to: Optional[str] = None
+    subject_name: Optional[str] = None
+    description: str
 
 
 @app.get("/health")
 def health_check() -> dict:
-    return {"status": "ok", "service": "HalalVerify API"}
+    return {
+        "status": "ok",
+        "service": "HalalVerify API",
+    }
+
+
+@app.get("/test-supabase")
+def test_supabase():
+    response = supabase.table("additives").select("*").limit(5).execute()
+
+    return {
+        "success": True,
+        "data": response.data,
+    }
 
 
 @app.post("/analyze/label")
 def analyze_label(request: AnalyzeRequest) -> dict:
-    return label_result()
+    result = analyze_label_image(request.imageBase64)
+    save_scan_history("label", result)
+    return result
 
 
 @app.post("/analyze/certificate")
 def analyze_certificate(request: AnalyzeRequest) -> dict:
-    return certificate_result()
+    result = certificate_demo_result()
+    save_scan_history("certificate", result)
+    return result
 
 
 @app.get("/registry/additives")
-def additives() -> dict:
+def get_additives():
+    response = (
+        supabase
+        .table("additives")
+        .select("*")
+        .order("code")
+        .execute()
+    )
+
     return {
-        "items": [
-            {"code": "E120", "name": "Carmine / Cochineal", "status": "Haram", "source": "Insects (derived from crushed female cochineal beetles)."},
-            {"code": "E441", "name": "Gelatin", "status": "Doubtful", "source": "Often pork/non-halal bovine bone collagen unless explicitly certified."},
-        ]
+        "success": True,
+        "data": response.data,
     }
 
 
 @app.get("/registry/establishments")
-def establishments() -> dict:
+def get_establishments():
+    response = (
+        supabase
+        .table("establishments")
+        .select("*, certifying_bodies(*)")
+        .order("name")
+        .execute()
+    )
+
     return {
-        "items": [
-            {"id": "ZC-489-001", "name": "Al-Barka Halal Kitchen", "type": "Eatery", "address": "Canelar, Zamboanga City", "status": "Verified", "certNo": "HAL-2026-0089", "expiry": "2027-02-15"},
-            {"id": "ZC-489-003", "name": "Sulu Sunset Grill", "type": "Restaurant", "address": "Paseo del Mar, Zamboanga City", "status": "Expired", "certNo": "HAL-2024-0011", "expiry": "2025-12-30"},
-        ]
+        "success": True,
+        "data": response.data,
+    }
+
+
+@app.post("/issue-reports")
+def create_issue_report(report: IssueReportCreate):
+    response = (
+        supabase
+        .table("issue_reports")
+        .insert({
+            "issue_type": report.issue_type,
+            "related_to": report.related_to,
+            "subject_name": report.subject_name,
+            "description": report.description,
+            "status": "open",
+        })
+        .execute()
+    )
+
+    return {
+        "success": True,
+        "data": response.data,
+    }
+
+
+@app.get("/scan-history")
+def get_scan_history():
+    response = (
+        supabase
+        .table("scan_history")
+        .select("*, scan_flagged_items(*)")
+        .order("created_at", desc=True)
+        .execute()
+    )
+
+    return {
+        "success": True,
+        "data": response.data,
     }

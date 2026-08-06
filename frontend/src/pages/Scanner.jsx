@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, CheckCircle, AlertTriangle, RefreshCw, Upload, Eye, ScanSearch, FileText, X, Image as ImageIcon } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Eye, ScanSearch, FileText, X, Image as ImageIcon } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import Toast from '../components/ui/Toast';
 import { analyzeWithGemini, simulateFallback } from '../utils/api';
@@ -222,27 +222,64 @@ export const Scanner = () => {
                             </div>
 
                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
-                                <span className="text-[10px] uppercase font-bold text-slate-400">Model Identifiers</span>
-                                <p className="text-xs text-slate-800 font-medium">Logo Body: {scanResult.logoBody || "None Identified"}</p>
-                                <p className="text-xs text-slate-600">Confidence Score: {(scanResult.logoConfidence * 100).toFixed(0)}%</p>
+                                <span className="text-[10px] uppercase font-bold text-slate-400">Analysis Summary</span>
+                                <p className="text-xs text-slate-700 leading-relaxed">
+                                    {scanResult.analysisSummary}
+                                </p>
+                                {scanResult.riskLevel && (
+                                    <p className="text-xs text-slate-600">
+                                        Risk Level: <span className="font-bold">{scanResult.riskLevel}</span>
+                                    </p>
+                                )}
                             </div>
 
                             <div className="space-y-2">
                                 <span className="text-[10px] uppercase font-bold text-slate-400 block">Flagged Additive Compounds</span>
-                                {scanResult.flaggedIngredients?.map((flag, i) => (
-                                    <div key={i} className="bg-red-50 border border-red-100 rounded-lg p-3 text-xs">
-                                        <p className="font-bold text-red-700">{flag.ingredient} - {flag.status}</p>
-                                        <p className="text-red-600/80 mt-0.5">{flag.reason}</p>
+                                {scanResult.flaggedIngredients?.length > 0 ? (
+                                    scanResult.flaggedIngredients.map((flag, i) => (
+                                        <div key={i} className="bg-red-50 border border-red-100 rounded-lg p-3 text-xs">
+                                            <p className="font-bold text-red-700">{flag.ingredient} - {flag.status}</p>
+                                            <p className="text-red-600/80 mt-0.5">{flag.reason}</p>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="bg-green-50 border border-green-100 rounded-lg p-3 text-xs text-green-700">
+                                        No flagged additives found in the current database.
                                     </div>
-                                ))}
+                                )}
                             </div>
+
+                            {scanResult.recommendations?.length > 0 && (
+                                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 space-y-2">
+                                    <span className="text-[10px] uppercase font-bold text-blue-500">Recommendations</span>
+                                    <ul className="list-disc pl-4 text-xs text-blue-700 space-y-1">
+                                        {scanResult.recommendations.map((item, i) => (
+                                            <li key={i}>{item}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {scanResult.ocrText && (
+                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                                    <span className="text-[10px] uppercase font-bold text-slate-400">Extracted OCR Text</span>
+                                    <p className="text-xs text-slate-600 leading-relaxed max-h-24 overflow-y-auto">
+                                        {scanResult.ocrText}
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     )}
 
                     {!isLoading && certResult && scannerMode === 'cert' && (
                         <div className="space-y-4">
-                            <div className={`p-4 rounded-xl border ${certResult.status === 'Valid' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'
-                                }`}>
+                            <div className={`p-4 rounded-xl border ${
+                                certResult.status === 'Valid'
+                                    ? 'bg-green-50 border-green-200 text-green-800'
+                                    : certResult.status === 'Suspicious'
+                                        ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
+                                        : 'bg-red-50 border-red-200 text-red-800'
+                            }`}>
                                 <span className="text-[10px] uppercase font-bold">Document Authentication State</span>
                                 <p className="text-lg font-black">{certResult.status}</p>
                             </div>
@@ -253,6 +290,39 @@ export const Scanner = () => {
                                 <p className="text-slate-600">Serial Key: <span className="font-bold text-slate-800 font-mono">{certResult.certificateNumber}</span></p>
                                 <p className="text-slate-600">Expires: <span className="font-bold text-slate-800">{certResult.expirationDate}</span></p>
                             </div>
+
+                            {certResult.authenticationNote && (
+                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2 text-xs">
+                                    <span className="text-[10px] uppercase font-bold text-slate-400">Authentication Note</span>
+                                    <p className="text-slate-700 leading-relaxed">{certResult.authenticationNote}</p>
+                                </div>
+                            )}
+
+                            {certResult.registryMatch && (
+                                <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100 space-y-2 text-xs">
+                                    <span className="text-[10px] uppercase font-bold text-emerald-600">Registry Match</span>
+                                    <p className="text-emerald-700">
+                                        Matched with: <span className="font-bold">{certResult.registryMatch.name}</span>
+                                    </p>
+                                    <p className="text-emerald-700">
+                                        Certificate No: <span className="font-bold font-mono">{certResult.registryMatch.certificate_number}</span>
+                                    </p>
+                                    <p className="text-emerald-700">
+                                        Registry expiry: <span className="font-bold">{certResult.registryMatch.expiry_date || 'N/A'}</span>
+                                    </p>
+                                </div>
+                            )}
+
+                            {certResult.recommendations?.length > 0 && (
+                                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 space-y-2 text-xs">
+                                    <span className="text-[10px] uppercase font-bold text-blue-500">Recommendations</span>
+                                    <ul className="list-disc pl-4 text-blue-700 space-y-1">
+                                        {certResult.recommendations.map((item, i) => (
+                                            <li key={i}>{item}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

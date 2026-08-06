@@ -1,33 +1,85 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, ShieldCheck, MapPin, Database, Pencil, AlertOctagon, Save } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import Modal from '../components/ui/Modal';
 import Toast from '../components/ui/Toast';
-import { E_NUMBERS_DATABASE, LOCAL_ESTABLISHMENTS } from '../data/constants';
+
+const API_BASE_URL = 'http://127.0.0.1:8000';
 
 export const Registry = ({ userRole }) => {
-    const [registryMode, setRegistryMode] = useState('additives'); // 'additives' or 'establishments'
+    const [registryMode, setRegistryMode] = useState('additives');
     const [dictSearch, setDictSearch] = useState('');
     const [localSearch, setLocalSearch] = useState('');
-    const [additives, setAdditives] = useState(E_NUMBERS_DATABASE);
-    const [establishments, setEstablishments] = useState(LOCAL_ESTABLISHMENTS);
+    const [additives, setAdditives] = useState([]);
+    const [establishments, setEstablishments] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
     const [activeModal, setActiveModal] = useState(null);
     const [selectedItem, setSelectedItem] = useState(null);
     const [modalForm, setModalForm] = useState({});
     const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
+
+    useEffect(() => {
+        const fetchRegistryData = async () => {
+            try {
+                setLoading(true);
+                setError('');
+
+                const [additivesResponse, establishmentsResponse] = await Promise.all([
+                    fetch(`${API_BASE_URL}/registry/additives`),
+                    fetch(`${API_BASE_URL}/registry/establishments`),
+                ]);
+
+                if (!additivesResponse.ok || !establishmentsResponse.ok) {
+                    throw new Error('Failed to load registry data');
+                }
+
+                const additivesJson = await additivesResponse.json();
+                const establishmentsJson = await establishmentsResponse.json();
+
+                setAdditives(additivesJson.data || []);
+                setEstablishments(establishmentsJson.data || []);
+            } catch (err) {
+                console.error(err);
+                setError('Could not load registry data. Please check if the backend is running.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchRegistryData();
+    }, []);
 
     const openModal = (modalType, item) => {
         setSelectedItem(item);
         setActiveModal(modalType);
 
         if (modalType === 'flag-additive') {
-            setModalForm({ reason: item.flagReason || '', status: item.status });
+            setModalForm({
+                reason: item.flagReason || item.reason || '',
+                status: item.status || 'Doubtful',
+            });
         } else if (modalType === 'edit-additive') {
-            setModalForm({ code: item.code, name: item.name, status: item.status, source: item.source });
+            setModalForm({
+                code: item.code || '',
+                name: item.name || '',
+                status: item.status || '',
+                source: item.source_description || item.source || '',
+                reason: item.reason || '',
+            });
         } else if (modalType === 'flag-establishment') {
-            setModalForm({ reason: item.flagReason || '', status: item.status });
+            setModalForm({
+                reason: item.flagReason || '',
+                status: item.halal_status || item.status || 'needs_review',
+            });
         } else {
-            setModalForm({ name: item.name, address: item.address, certNo: item.certNo, expiry: item.expiry, status: item.status });
+            setModalForm({
+                name: item.name || '',
+                address: item.address || '',
+                certNo: item.certificate_number || item.certNo || '',
+                expiry: item.expiry_date || item.expiry || '',
+                status: item.halal_status || item.status || '',
+            });
         }
     };
 
@@ -45,27 +97,75 @@ export const Registry = ({ userRole }) => {
         event.preventDefault();
 
         if (activeModal === 'flag-additive') {
-            setAdditives(prev => prev.map(item => item.code === selectedItem.code ? { ...item, status: modalForm.status, flagReason: modalForm.reason } : item));
-            updateToast('Additive flagged for review.', 'info');
+            setAdditives(prev =>
+                prev.map(item =>
+                    item.id === selectedItem.id
+                        ? { ...item, status: modalForm.status, flagReason: modalForm.reason }
+                        : item
+                )
+            );
+            updateToast('Additive flagged locally. Database update will be added next.', 'info');
         } else if (activeModal === 'edit-additive') {
-            setAdditives(prev => prev.map(item => item.code === selectedItem.code ? { ...item, ...modalForm } : item));
-            updateToast('Additive record updated.', 'success');
+            setAdditives(prev =>
+                prev.map(item =>
+                    item.id === selectedItem.id
+                        ? {
+                            ...item,
+                            code: modalForm.code,
+                            name: modalForm.name,
+                            status: modalForm.status,
+                            source_description: modalForm.source,
+                            reason: modalForm.reason,
+                        }
+                        : item
+                )
+            );
+            updateToast('Additive updated locally. Database update will be added next.', 'success');
         } else if (activeModal === 'flag-establishment') {
-            setEstablishments(prev => prev.map(item => item.id === selectedItem.id ? { ...item, status: modalForm.status, flagReason: modalForm.reason } : item));
-            updateToast('Establishment flagged for review.', 'info');
+            setEstablishments(prev =>
+                prev.map(item =>
+                    item.id === selectedItem.id
+                        ? { ...item, halal_status: modalForm.status, flagReason: modalForm.reason }
+                        : item
+                )
+            );
+            updateToast('Establishment flagged locally. Database update will be added next.', 'info');
         } else if (activeModal === 'edit-establishment') {
-            setEstablishments(prev => prev.map(item => item.id === selectedItem.id ? { ...item, ...modalForm } : item));
-            updateToast('Establishment record updated.', 'success');
+            setEstablishments(prev =>
+                prev.map(item =>
+                    item.id === selectedItem.id
+                        ? {
+                            ...item,
+                            name: modalForm.name,
+                            address: modalForm.address,
+                            certificate_number: modalForm.certNo,
+                            expiry_date: modalForm.expiry,
+                            halal_status: modalForm.status,
+                        }
+                        : item
+                )
+            );
+            updateToast('Establishment updated locally. Database update will be added next.', 'success');
         }
 
         closeModal();
     };
 
+    const filteredAdditives = additives.filter(item =>
+        (item.code || '').toLowerCase().includes(dictSearch.toLowerCase()) ||
+        (item.name || '').toLowerCase().includes(dictSearch.toLowerCase())
+    );
+
+    const filteredEstablishments = establishments.filter(shop =>
+        (shop.name || '').toLowerCase().includes(localSearch.toLowerCase()) ||
+        (shop.address || '').toLowerCase().includes(localSearch.toLowerCase())
+    );
+
     return (
         <div className="p-8 space-y-6 flex-1 flex flex-col h-full">
             <Topbar
                 title="Municipal Compliance Directories"
-                subtitle="Zamboanga Ordinance No. 489 active establishment register & raw chemical classifications[cite: 1]."
+                subtitle="Zamboanga Ordinance No. 489 active establishment register and chemical classifications."
             />
 
             <div className="flex gap-4 mb-2">
@@ -91,6 +191,18 @@ export const Registry = ({ userRole }) => {
                 </button>
             </div>
 
+            {loading && (
+                <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+                    Loading registry data...
+                </div>
+            )}
+
+            {error && (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-600">
+                    {error}
+                </div>
+            )}
+
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex-1 flex flex-col">
                 {registryMode === 'additives' ? (
                     <div className="flex flex-col h-full">
@@ -102,7 +214,7 @@ export const Registry = ({ userRole }) => {
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                 <input
                                     type="text"
-                                    placeholder="Search additives (e.g. E120, Carmine)..."
+                                    placeholder="Search additives, e.g. E120, Carmine..."
                                     value={dictSearch}
                                     onChange={(e) => setDictSearch(e.target.value)}
                                     className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-4 text-sm focus:outline-none focus:border-emerald-500 transition"
@@ -111,23 +223,35 @@ export const Registry = ({ userRole }) => {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto pr-2 pb-4">
-                            {additives.filter(item =>
-                                item.code.toLowerCase().includes(dictSearch.toLowerCase()) ||
-                                item.name.toLowerCase().includes(dictSearch.toLowerCase())
-                            ).map((item, i) => (
-                                <div key={i} className="bg-slate-50 border border-slate-100 rounded-xl p-5 flex flex-col justify-between h-full gap-4">
+                            {filteredAdditives.map((item) => (
+                                <div key={item.id || item.code} className="bg-slate-50 border border-slate-100 rounded-xl p-5 flex flex-col justify-between h-full gap-4">
                                     <div className="flex justify-between items-start">
-                                        <div>
-                                            <span className="text-xs font-mono font-bold bg-slate-200 text-slate-700 px-2.5 py-1 rounded border border-slate-300">{item.code}</span>
-                                        </div>
+                                        <span className="text-xs font-mono font-bold bg-slate-200 text-slate-700 px-2.5 py-1 rounded border border-slate-300">
+                                            {item.code}
+                                        </span>
                                         <span className={`text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider ${
-                                            item.status === 'Haram' ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-amber-50 text-amber-600 border border-amber-200'
-                                        }`}>{item.status}</span>
+                                            item.status === 'Haram'
+                                                ? 'bg-red-50 text-red-600 border border-red-200'
+                                                : item.status === 'Halal'
+                                                    ? 'bg-green-50 text-green-600 border border-green-200'
+                                                    : 'bg-amber-50 text-amber-600 border border-amber-200'
+                                        }`}>
+                                            {item.status}
+                                        </span>
                                     </div>
+
                                     <div>
                                         <h4 className="text-base font-bold text-slate-800 leading-tight">{item.name}</h4>
-                                        <p className="text-xs text-slate-500 mt-2 line-clamp-3">Source: <span className="italic">{item.source}</span></p>
+                                        <p className="text-xs text-slate-500 mt-2 line-clamp-3">
+                                            Source: <span className="italic">{item.source_description || 'No source description yet.'}</span>
+                                        </p>
+                                        {item.reason && (
+                                            <p className="text-xs text-slate-500 mt-2 line-clamp-3">
+                                                Reason: <span className="italic">{item.reason}</span>
+                                            </p>
+                                        )}
                                     </div>
+
                                     {userRole === 'admin' && (
                                         <div className="flex gap-2 pt-2 border-t border-slate-200">
                                             <button onClick={() => openModal('flag-additive', item)} className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-200 py-1.5 rounded-lg transition-colors">
@@ -161,31 +285,36 @@ export const Registry = ({ userRole }) => {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto pr-2 pb-4">
-                            {establishments.filter(shop =>
-                                shop.name.toLowerCase().includes(localSearch.toLowerCase()) ||
-                                shop.address.toLowerCase().includes(localSearch.toLowerCase())
-                            ).map((shop, i) => (
-                                <div key={i} className="bg-slate-50 border border-slate-100 rounded-xl p-5 flex flex-col justify-between gap-5 h-full">
+                            {filteredEstablishments.map((shop) => (
+                                <div key={shop.id} className="bg-slate-50 border border-slate-100 rounded-xl p-5 flex flex-col justify-between gap-5 h-full">
                                     <div className="flex justify-between items-start">
                                         <div className="pr-2">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-1">{shop.type}</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-1">
+                                                {shop.type}
+                                            </span>
                                             <h4 className="text-base font-bold text-slate-800 leading-tight">{shop.name}</h4>
                                             <p className="text-xs text-slate-500 mt-1">{shop.address}</p>
                                         </div>
                                         <span className={`text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider ${
-                                            shop.status === 'Verified' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-red-50 text-red-600 border border-red-200'
-                                        }`}>{shop.status}</span>
+                                            shop.halal_status === 'verified' || shop.halal_status === 'Verified'
+                                                ? 'bg-green-50 text-green-600 border border-green-200'
+                                                : 'bg-red-50 text-red-600 border border-red-200'
+                                        }`}>
+                                            {shop.halal_status}
+                                        </span>
                                     </div>
+
                                     <div className="grid grid-cols-2 text-xs bg-slate-100/70 p-3 rounded-lg border border-slate-200/60 font-mono text-slate-600">
                                         <div className="flex flex-col">
                                             <span className="text-[9px] uppercase tracking-wider text-slate-400 mb-0.5">Cert ID</span>
-                                            <span className="font-bold text-slate-800">{shop.certNo}</span>
+                                            <span className="font-bold text-slate-800">{shop.certificate_number || 'N/A'}</span>
                                         </div>
                                         <div className="flex flex-col text-right">
                                             <span className="text-[9px] uppercase tracking-wider text-slate-400 mb-0.5">Expiry Date</span>
-                                            <span className="font-bold text-slate-800">{shop.expiry}</span>
+                                            <span className="font-bold text-slate-800">{shop.expiry_date || 'N/A'}</span>
                                         </div>
                                     </div>
+
                                     {userRole === 'admin' && (
                                         <div className="flex gap-2 pt-1">
                                             <button onClick={() => openModal('flag-establishment', shop)} className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-200 py-1.5 rounded-lg transition-colors">
@@ -223,6 +352,9 @@ export const Registry = ({ userRole }) => {
                                     <option value="Haram">Haram</option>
                                     <option value="Needs Review">Needs Review</option>
                                     <option value="Verified">Verified</option>
+                                    <option value="verified">verified</option>
+                                    <option value="expired">expired</option>
+                                    <option value="needs_review">needs_review</option>
                                 </select>
                             </div>
                             <div>
@@ -242,6 +374,7 @@ export const Registry = ({ userRole }) => {
                                         <div>
                                             <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Status</label>
                                             <select value={modalForm.status || ''} onChange={(e) => setModalForm(prev => ({ ...prev, status: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none">
+                                                <option value="Halal">Halal</option>
                                                 <option value="Haram">Haram</option>
                                                 <option value="Doubtful">Doubtful</option>
                                                 <option value="Needs Review">Needs Review</option>
@@ -256,6 +389,10 @@ export const Registry = ({ userRole }) => {
                                         <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Source</label>
                                         <textarea value={modalForm.source || ''} onChange={(e) => setModalForm(prev => ({ ...prev, source: e.target.value }))} rows={3} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none" />
                                     </div>
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Reason</label>
+                                        <textarea value={modalForm.reason || ''} onChange={(e) => setModalForm(prev => ({ ...prev, reason: e.target.value }))} rows={3} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none" />
+                                    </div>
                                 </>
                             ) : (
                                 <>
@@ -267,6 +404,9 @@ export const Registry = ({ userRole }) => {
                                         <div>
                                             <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Status</label>
                                             <select value={modalForm.status || ''} onChange={(e) => setModalForm(prev => ({ ...prev, status: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none">
+                                                <option value="verified">verified</option>
+                                                <option value="expired">expired</option>
+                                                <option value="needs_review">needs_review</option>
                                                 <option value="Verified">Verified</option>
                                                 <option value="Expired">Expired</option>
                                                 <option value="Needs Review">Needs Review</option>
