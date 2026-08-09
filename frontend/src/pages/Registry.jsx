@@ -1,10 +1,31 @@
-import React, { useEffect, useState } from 'react';
-import { Search, ShieldCheck, MapPin, Database, Pencil, AlertOctagon, Save } from 'lucide-react';
+﻿import React, { useEffect, useState } from 'react';
+import { Search, ShieldCheck, MapPin, Database, Pencil, AlertOctagon, Save, Plus } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import Modal from '../components/ui/Modal';
 import Toast from '../components/ui/Toast';
 
 const API_BASE_URL = 'http://127.0.0.1:8000';
+
+const ADDITIVE_STATUSES = ['Halal', 'Haram', 'Doubtful', 'Needs Review'];
+const ESTABLISHMENT_STATUSES = ['verified', 'expired', 'needs_review'];
+
+const emptyAdditiveForm = {
+    code: '',
+    name: '',
+    status: 'Doubtful',
+    source: '',
+    reason: '',
+};
+
+const emptyEstablishmentForm = {
+    name: '',
+    type: '',
+    address: '',
+    city: 'Zamboanga City',
+    status: 'needs_review',
+    certNo: '',
+    expiry: '',
+};
 
 export const Registry = ({ userRole }) => {
     const [registryMode, setRegistryMode] = useState('additives');
@@ -18,6 +39,7 @@ export const Registry = ({ userRole }) => {
     const [selectedItem, setSelectedItem] = useState(null);
     const [modalForm, setModalForm] = useState({});
     const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
+    const isAdmin = userRole === 'admin';
 
     useEffect(() => {
         const fetchRegistryData = async () => {
@@ -50,9 +72,19 @@ export const Registry = ({ userRole }) => {
         fetchRegistryData();
     }, []);
 
-    const openModal = (modalType, item) => {
+    const openModal = (modalType, item = null) => {
         setSelectedItem(item);
         setActiveModal(modalType);
+
+        if (modalType === 'add-additive') {
+            setModalForm(emptyAdditiveForm);
+            return;
+        }
+
+        if (modalType === 'add-establishment') {
+            setModalForm(emptyEstablishmentForm);
+            return;
+        }
 
         if (modalType === 'flag-additive') {
             setModalForm({
@@ -63,7 +95,7 @@ export const Registry = ({ userRole }) => {
             setModalForm({
                 code: item.code || '',
                 name: item.name || '',
-                status: item.status || '',
+                status: item.status || 'Doubtful',
                 source: item.source_description || item.source || '',
                 reason: item.reason || '',
             });
@@ -75,10 +107,12 @@ export const Registry = ({ userRole }) => {
         } else {
             setModalForm({
                 name: item.name || '',
+                type: item.type || '',
                 address: item.address || '',
+                city: item.city || 'Zamboanga City',
                 certNo: item.certificate_number || item.certNo || '',
                 expiry: item.expiry_date || item.expiry || '',
-                status: item.halal_status || item.status || '',
+                status: item.halal_status || item.status || 'needs_review',
             });
         }
     };
@@ -93,64 +127,129 @@ export const Registry = ({ userRole }) => {
         setToast({ visible: true, message, type });
     };
 
-    const handleModalSubmit = (event) => {
-        event.preventDefault();
+    const saveRegistryRecord = async (endpoint, method, payload) => {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
 
-        if (activeModal === 'flag-additive') {
-            setAdditives(prev =>
-                prev.map(item =>
-                    item.id === selectedItem.id
-                        ? { ...item, status: modalForm.status, flagReason: modalForm.reason }
-                        : item
-                )
-            );
-            updateToast('Additive flagged locally. Database update will be added next.', 'info');
-        } else if (activeModal === 'edit-additive') {
-            setAdditives(prev =>
-                prev.map(item =>
-                    item.id === selectedItem.id
-                        ? {
-                            ...item,
-                            code: modalForm.code,
-                            name: modalForm.name,
-                            status: modalForm.status,
-                            source_description: modalForm.source,
-                            reason: modalForm.reason,
-                        }
-                        : item
-                )
-            );
-            updateToast('Additive updated locally. Database update will be added next.', 'success');
-        } else if (activeModal === 'flag-establishment') {
-            setEstablishments(prev =>
-                prev.map(item =>
-                    item.id === selectedItem.id
-                        ? { ...item, halal_status: modalForm.status, flagReason: modalForm.reason }
-                        : item
-                )
-            );
-            updateToast('Establishment flagged locally. Database update will be added next.', 'info');
-        } else if (activeModal === 'edit-establishment') {
-            setEstablishments(prev =>
-                prev.map(item =>
-                    item.id === selectedItem.id
-                        ? {
-                            ...item,
-                            name: modalForm.name,
-                            address: modalForm.address,
-                            certificate_number: modalForm.certNo,
-                            expiry_date: modalForm.expiry,
-                            halal_status: modalForm.status,
-                        }
-                        : item
-                )
-            );
-            updateToast('Establishment updated locally. Database update will be added next.', 'success');
+        if (!response.ok) {
+            const details = await response.text();
+            throw new Error(details || 'Failed to save registry record');
         }
 
-        closeModal();
+        const json = await response.json();
+        return json.data;
     };
 
+    const requireText = (value, label) => {
+        if (!value || !value.trim()) {
+            throw new Error(`${label} is required.`);
+        }
+
+        return value.trim();
+    };
+
+    const handleModalSubmit = async (event) => {
+        event.preventDefault();
+
+        try {
+            if (activeModal === 'add-additive') {
+                const created = await saveRegistryRecord('/registry/additives', 'POST', {
+                    code: requireText(modalForm.code, 'Code'),
+                    name: requireText(modalForm.name, 'Name'),
+                    status: modalForm.status || 'Doubtful',
+                    source_description: modalForm.source || null,
+                    reason: modalForm.reason || null,
+                });
+
+                setAdditives(prev => [created, ...prev]);
+                updateToast('New additive saved to database.', 'success');
+            } else if (activeModal === 'flag-additive') {
+                const updated = await saveRegistryRecord(
+                    `/registry/additives/${selectedItem.id}`,
+                    'PATCH',
+                    {
+                        status: modalForm.status,
+                        reason: modalForm.reason,
+                    }
+                );
+
+                setAdditives(prev =>
+                    prev.map(item => item.id === selectedItem.id ? updated : item)
+                );
+                updateToast('Additive review saved to database.', 'success');
+            } else if (activeModal === 'edit-additive') {
+                const updated = await saveRegistryRecord(
+                    `/registry/additives/${selectedItem.id}`,
+                    'PATCH',
+                    {
+                        code: requireText(modalForm.code, 'Code'),
+                        name: requireText(modalForm.name, 'Name'),
+                        status: modalForm.status,
+                        source_description: modalForm.source,
+                        reason: modalForm.reason,
+                    }
+                );
+
+                setAdditives(prev =>
+                    prev.map(item => item.id === selectedItem.id ? updated : item)
+                );
+                updateToast('Additive record saved to database.', 'success');
+            } else if (activeModal === 'flag-establishment') {
+                const updated = await saveRegistryRecord(
+                    `/registry/establishments/${selectedItem.id}`,
+                    'PATCH',
+                    {
+                        halal_status: modalForm.status,
+                    }
+                );
+
+                setEstablishments(prev =>
+                    prev.map(item => item.id === selectedItem.id ? updated : item)
+                );
+                updateToast('Establishment review saved to database.', 'success');
+            } else if (activeModal === 'add-establishment') {
+                const created = await saveRegistryRecord('/registry/establishments', 'POST', {
+                    name: requireText(modalForm.name, 'Establishment name'),
+                    type: modalForm.type || null,
+                    address: modalForm.address || null,
+                    city: modalForm.city || 'Zamboanga City',
+                    certificate_number: modalForm.certNo || null,
+                    expiry_date: modalForm.expiry || null,
+                    halal_status: modalForm.status || 'needs_review',
+                });
+
+                setEstablishments(prev => [created, ...prev]);
+                updateToast('New establishment saved to database.', 'success');
+            } else if (activeModal === 'edit-establishment') {
+                const updated = await saveRegistryRecord(
+                    `/registry/establishments/${selectedItem.id}`,
+                    'PATCH',
+                    {
+                        name: requireText(modalForm.name, 'Establishment name'),
+                        type: modalForm.type || null,
+                        address: modalForm.address || null,
+                        city: modalForm.city || 'Zamboanga City',
+                        certificate_number: modalForm.certNo,
+                        expiry_date: modalForm.expiry || null,
+                        halal_status: modalForm.status,
+                    }
+                );
+
+                setEstablishments(prev =>
+                    prev.map(item => item.id === selectedItem.id ? updated : item)
+                );
+                updateToast('Establishment record saved to database.', 'success');
+            }
+
+            closeModal();
+        } catch (err) {
+            console.error(err);
+            updateToast(err.message || 'Could not save registry changes. Please check the backend.', 'error');
+        }
+    };
     const filteredAdditives = additives.filter(item =>
         (item.code || '').toLowerCase().includes(dictSearch.toLowerCase()) ||
         (item.name || '').toLowerCase().includes(dictSearch.toLowerCase())
@@ -168,7 +267,8 @@ export const Registry = ({ userRole }) => {
                 subtitle="Zamboanga Ordinance No. 489 active establishment register and chemical classifications."
             />
 
-            <div className="flex gap-4 mb-2">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex gap-4 mb-2">
                 <button
                     onClick={() => setRegistryMode('additives')}
                     className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all border ${
@@ -189,6 +289,18 @@ export const Registry = ({ userRole }) => {
                 >
                     <span className="flex items-center gap-2"><MapPin size={18} /> Zamboanga Clearance Registers</span>
                 </button>
+                </div>
+
+                {isAdmin && (
+                    <button
+                        type="button"
+                        onClick={() => openModal(registryMode === 'additives' ? 'add-additive' : 'add-establishment')}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-emerald-500/10 hover:bg-emerald-700"
+                    >
+                        <Plus size={16} />
+                        {registryMode === 'additives' ? 'Add Additive' : 'Add Establishment'}
+                    </button>
+                )}
             </div>
 
             {loading && (
@@ -252,7 +364,7 @@ export const Registry = ({ userRole }) => {
                                         )}
                                     </div>
 
-                                    {userRole === 'admin' && (
+                                    {isAdmin && (
                                         <div className="flex gap-2 pt-2 border-t border-slate-200">
                                             <button onClick={() => openModal('flag-additive', item)} className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-200 py-1.5 rounded-lg transition-colors">
                                                 <AlertOctagon size={13} /> Flag
@@ -290,7 +402,7 @@ export const Registry = ({ userRole }) => {
                                     <div className="flex justify-between items-start">
                                         <div className="pr-2">
                                             <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-1">
-                                                {shop.type}
+                                                {shop.type || 'Establishment'}
                                             </span>
                                             <h4 className="text-base font-bold text-slate-800 leading-tight">{shop.name}</h4>
                                             <p className="text-xs text-slate-500 mt-1">{shop.address}</p>
@@ -315,7 +427,7 @@ export const Registry = ({ userRole }) => {
                                         </div>
                                     </div>
 
-                                    {userRole === 'admin' && (
+                                    {isAdmin && (
                                         <div className="flex gap-2 pt-1">
                                             <button onClick={() => openModal('flag-establishment', shop)} className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-200 py-1.5 rounded-lg transition-colors">
                                                 <AlertOctagon size={13} /> Flag Issue
@@ -334,8 +446,8 @@ export const Registry = ({ userRole }) => {
 
             <Modal
                 isOpen={!!activeModal}
-                title={activeModal?.includes('flag') ? 'Review registry item' : 'Edit registry item'}
-                description={activeModal?.includes('flag') ? 'Add a review note for this record.' : 'Update the selected registry entry.'}
+                title={activeModal?.startsWith('add') ? 'Add registry item' : activeModal?.includes('flag') ? 'Review registry item' : 'Edit registry item'}
+                description={activeModal?.includes('flag') ? 'Add a review note for this record.' : 'Enter the registry details to save in Supabase.'}
                 onClose={closeModal}
                 footer={[
                     <button key="cancel" type="button" onClick={closeModal} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancel</button>,
@@ -364,20 +476,17 @@ export const Registry = ({ userRole }) => {
                         </>
                     ) : (
                         <>
-                            {activeModal === 'edit-additive' ? (
+                            {activeModal === 'edit-additive' || activeModal === 'add-additive' ? (
                                 <>
                                     <div className="grid gap-4 md:grid-cols-2">
                                         <div>
                                             <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Code</label>
-                                            <input value={modalForm.code || ''} onChange={(e) => setModalForm(prev => ({ ...prev, code: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none" />
+                                            <input required value={modalForm.code || ''} onChange={(e) => setModalForm(prev => ({ ...prev, code: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none" />
                                         </div>
                                         <div>
                                             <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Status</label>
                                             <select value={modalForm.status || ''} onChange={(e) => setModalForm(prev => ({ ...prev, status: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none">
-                                                <option value="Halal">Halal</option>
-                                                <option value="Haram">Haram</option>
-                                                <option value="Doubtful">Doubtful</option>
-                                                <option value="Needs Review">Needs Review</option>
+                                                {ADDITIVE_STATUSES.map(status => <option key={status} value={status}>{status}</option>)}
                                             </select>
                                         </div>
                                     </div>
@@ -399,17 +508,12 @@ export const Registry = ({ userRole }) => {
                                     <div className="grid gap-4 md:grid-cols-2">
                                         <div>
                                             <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Establishment Name</label>
-                                            <input value={modalForm.name || ''} onChange={(e) => setModalForm(prev => ({ ...prev, name: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none" />
+                                            <input required value={modalForm.name || ''} onChange={(e) => setModalForm(prev => ({ ...prev, name: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none" />
                                         </div>
                                         <div>
                                             <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Status</label>
                                             <select value={modalForm.status || ''} onChange={(e) => setModalForm(prev => ({ ...prev, status: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none">
-                                                <option value="verified">verified</option>
-                                                <option value="expired">expired</option>
-                                                <option value="needs_review">needs_review</option>
-                                                <option value="Verified">Verified</option>
-                                                <option value="Expired">Expired</option>
-                                                <option value="Needs Review">Needs Review</option>
+                                                {ESTABLISHMENT_STATUSES.map(status => <option key={status} value={status}>{status}</option>)}
                                             </select>
                                         </div>
                                     </div>
@@ -424,7 +528,7 @@ export const Registry = ({ userRole }) => {
                                         </div>
                                         <div>
                                             <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Expiry Date</label>
-                                            <input value={modalForm.expiry || ''} onChange={(e) => setModalForm(prev => ({ ...prev, expiry: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none" />
+                                            <input type="date" value={modalForm.expiry || ''} onChange={(e) => setModalForm(prev => ({ ...prev, expiry: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none" />
                                         </div>
                                     </div>
                                 </>

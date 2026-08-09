@@ -323,6 +323,15 @@ export const Scanner = () => {
                                     </ul>
                                 </div>
                             )}
+
+                            {certResult.ocrText && (
+                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2 text-xs">
+                                    <span className="text-[10px] uppercase font-bold text-slate-400">Extracted OCR Text</span>
+                                    <p className="text-slate-600 leading-relaxed max-h-24 overflow-y-auto">
+                                        {certResult.ocrText}
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

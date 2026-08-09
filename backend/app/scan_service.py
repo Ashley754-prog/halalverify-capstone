@@ -1,4 +1,5 @@
-from datetime import date
+import re
+from datetime import date, datetime
 
 from app.ocr_service import extract_text_from_image, find_e_numbers, normalize_text
 from app.supabase_client import supabase
@@ -8,6 +9,13 @@ VERDICT_TO_STATUS = {
     "Green": "Halal",
     "Yellow": "Doubtful",
     "Red": "Haram",
+}
+
+ADDITIVE_ALIASES = {
+    "E120": ["carmine", "cochineal", "cochineal extract", "natural red 4"],
+    "E441": ["gelatin", "gelatine"],
+    "E542": ["bone phosphate", "edible bone phosphate"],
+    "E904": ["shellac"],
 }
 
 
@@ -30,8 +38,154 @@ def certificate_demo_result() -> dict:
     return validate_certificate_result(extracted_certificate)
 
 
+def analyze_certificate_image(image_base64: str) -> dict:
+    extracted_text = extract_text_from_image(image_base64)
+    extracted_certificate = extract_certificate_fields(extracted_text)
+    validated_result = validate_certificate_result(extracted_certificate)
+
+    return {
+        **validated_result,
+        "ocrText": extracted_text,
+    }
+
+
+def extract_certificate_fields(extracted_text: str) -> dict:
+    certificate_number = extract_certificate_number(extracted_text)
+    expiration_date = extract_expiration_date(extracted_text)
+    certifying_body = extract_certifying_body(extracted_text)
+    establishment_name = ""
+
+    if certificate_number:
+        establishment_name = find_establishment_name_by_certificate(certificate_number)
+
+    return {
+        "certifyingBody": certifying_body,
+        "establishmentName": establishment_name or "Not detected",
+        "certificateNumber": certificate_number or "Not detected",
+        "expirationDate": expiration_date,
+        "isExpired": _is_past_date(expiration_date),
+        "layoutConfidence": 0.65 if extracted_text.strip() else 0,
+        "structuralZones": [
+            "OCR Text Region",
+            "Certificate Number Candidate",
+            "Validity Date Candidate",
+        ],
+    }
+
+
+def extract_certificate_number(text: str):
+    compact_text = re.sub(r"\s+", " ", text).upper()
+    patterns = [
+        r"\b[A-Z]{2,8}[-\s]?\d{4}[-\s]?\d{3,8}\b",
+        r"\bHAL[-\s]?\d{4}[-\s]?\d{3,8}\b",
+        r"\bCERT(?:IFICATE)?\s*(?:NO|NUMBER|#)?\s*[:\-]?\s*([A-Z0-9\-]{6,})",
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, compact_text, flags=re.IGNORECASE)
+
+        if not match:
+            continue
+
+        value = match.group(1) if match.lastindex else match.group(0)
+        value = re.sub(r"\s+", "-", value)
+        return value.strip("-:").upper()
+
+    return None
+
+
+def extract_expiration_date(text: str):
+    date_patterns = [
+        r"\b\d{4}-\d{2}-\d{2}\b",
+        r"\b\d{1,2}/\d{1,2}/\d{4}\b",
+        r"\b\d{1,2}-\d{1,2}-\d{4}\b",
+        r"\b(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|SEPT|OCT|NOV|DEC)[A-Z]*\.?\s+\d{1,2},?\s+\d{4}\b",
+        r"\b\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|SEPT|OCT|NOV|DEC)[A-Z]*\.?\s+\d{4}\b",
+    ]
+
+    for pattern in date_patterns:
+        match = re.search(pattern, text, flags=re.IGNORECASE)
+
+        if not match:
+            continue
+
+        parsed_date = parse_date(match.group(0))
+
+        if parsed_date:
+            return parsed_date
+
+    return None
+
+
+def parse_date(value: str):
+    cleaned = value.replace(".", "").replace(",", "")
+    formats = [
+        "%Y-%m-%d",
+        "%m/%d/%Y",
+        "%d/%m/%Y",
+        "%m-%d-%Y",
+        "%d-%m-%Y",
+        "%B %d %Y",
+        "%b %d %Y",
+        "%d %B %Y",
+        "%d %b %Y",
+    ]
+
+    for date_format in formats:
+        try:
+            return datetime.strptime(cleaned, date_format).date().isoformat()
+        except ValueError:
+            continue
+
+    return None
+
+
+def extract_certifying_body(text: str):
+    upper_text = text.upper()
+    known_bodies = {
+        "HDIP": "Halal Development Institute of the Philippines (HDIP)",
+        "IDCP": "Islamic Da'wah Council of the Philippines (IDCP)",
+    }
+
+    for acronym, full_name in known_bodies.items():
+        if acronym in upper_text or full_name.upper() in upper_text:
+            return full_name
+
+    return "Not detected"
+
+
+def find_establishment_name_by_certificate(certificate_number: str):
+    response = (
+        supabase
+        .table("establishments")
+        .select("name")
+        .eq("certificate_number", certificate_number)
+        .limit(1)
+        .execute()
+    )
+
+    establishment = response.data[0] if response.data else None
+    return establishment.get("name") if establishment else ""
+
+
 def validate_certificate_result(extracted_certificate: dict) -> dict:
     certificate_number = extracted_certificate.get("certificateNumber")
+
+    if not certificate_number or certificate_number == "Not detected":
+        return {
+            **extracted_certificate,
+            "status": "Suspicious",
+            "authenticationNote": (
+                "OCR could not detect a usable certificate number. "
+                "The certificate cannot be matched against the registry."
+            ),
+            "registryMatch": None,
+            "recommendations": [
+                "Upload a clearer certificate image.",
+                "Make sure the certificate number and validity date are readable.",
+                "Verify the certificate manually with the issuing authority.",
+            ],
+        }
 
     response = (
         supabase
@@ -65,7 +219,11 @@ def validate_certificate_result(extracted_certificate: dict) -> dict:
 
     expected_name = establishment.get("name") or ""
     extracted_name = extracted_certificate.get("establishmentName") or ""
-    name_matches = expected_name.lower().strip() == extracted_name.lower().strip()
+    name_matches = (
+        not extracted_name
+        or extracted_name == "Not detected"
+        or expected_name.lower().strip() == extracted_name.lower().strip()
+    )
 
     if is_expired:
         status = "Expired"
@@ -132,7 +290,8 @@ def match_additives_from_text(extracted_text: str):
         name = additive.get("name") or ""
 
         code_match = bool(code and code in detected_codes)
-        name_match = bool(name and normalize_text(name) in normalized_text)
+        matched_alias = find_additive_alias_match(code, name, normalized_text)
+        name_match = bool(matched_alias)
 
         if not code_match and not name_match:
             continue
@@ -144,7 +303,7 @@ def match_additives_from_text(extracted_text: str):
         flagged_items.append({
             "additive_id": additive_id,
             "ingredient": f"{name} ({code})" if code else name,
-            "matched_text": code if code_match else name,
+            "matched_text": code if code_match else matched_alias,
             "status": additive.get("status"),
             "reason": (
                 additive.get("reason")
@@ -154,6 +313,47 @@ def match_additives_from_text(extracted_text: str):
         })
 
     return flagged_items
+
+
+def find_additive_alias_match(code, name: str, normalized_text: str):
+    candidates = build_additive_match_terms(code, name)
+
+    for candidate in candidates:
+        normalized_candidate = normalize_text(candidate)
+
+        if not normalized_candidate:
+            continue
+
+        pattern = rf"\b{re.escape(normalized_candidate)}\b"
+
+        if re.search(pattern, normalized_text):
+            return candidate
+
+    return ""
+
+
+def build_additive_match_terms(code, name: str):
+    terms = []
+
+    if name:
+        terms.append(name)
+        terms.extend(re.split(r"[/(),;]", name))
+
+    if code:
+        terms.extend(ADDITIVE_ALIASES.get(code.upper(), []))
+
+    cleaned_terms = []
+
+    for term in terms:
+        term = term.strip()
+
+        if len(term) < 3:
+            continue
+
+        if term not in cleaned_terms:
+            cleaned_terms.append(term)
+
+    return cleaned_terms
 
 
 def explain_label_verdict(flagged_items, extracted_text: str):

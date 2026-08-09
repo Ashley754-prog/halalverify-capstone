@@ -4,7 +4,7 @@ from io import BytesIO
 
 import easyocr
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageEnhance, ImageOps
 
 
 _reader = None
@@ -29,13 +29,66 @@ def decode_base64_image(image_base64: str):
     return np.array(image)
 
 
+def build_ocr_images(image_base64: str):
+    if "," in image_base64:
+        image_base64 = image_base64.split(",", 1)[1]
+
+    image_bytes = base64.b64decode(image_base64)
+    image = Image.open(BytesIO(image_bytes)).convert("RGB")
+    image = upscale_small_image(image)
+
+    grayscale = ImageOps.grayscale(image)
+    high_contrast = ImageEnhance.Contrast(grayscale).enhance(1.8)
+    sharpened = ImageEnhance.Sharpness(high_contrast).enhance(1.5)
+
+    return [
+        np.array(image),
+        np.array(sharpened),
+    ]
+
+
+def upscale_small_image(image: Image.Image) -> Image.Image:
+    width, height = image.size
+    longest_side = max(width, height)
+
+    if longest_side >= 1200:
+        return image
+
+    scale = 1200 / longest_side
+    new_size = (int(width * scale), int(height * scale))
+
+    return image.resize(new_size, Image.Resampling.LANCZOS)
+
+
 def extract_text_from_image(image_base64: str) -> str:
-    image = decode_base64_image(image_base64)
     reader = get_reader()
+    text_parts = []
 
-    results = reader.readtext(image, detail=0)
+    for image in build_ocr_images(image_base64):
+        results = reader.readtext(
+            image,
+            detail=0,
+            paragraph=True,
+        )
+        text_parts.extend(results)
 
-    return " ".join(results)
+    return dedupe_text_parts(text_parts)
+
+
+def dedupe_text_parts(text_parts):
+    seen = set()
+    unique_parts = []
+
+    for part in text_parts:
+        normalized = normalize_text(str(part))
+
+        if not normalized or normalized in seen:
+            continue
+
+        seen.add(normalized)
+        unique_parts.append(str(part).strip())
+
+    return " ".join(unique_parts)
 
 
 def find_e_numbers(text: str):
