@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import Login from "./auth/Login.jsx";
 import CreateAccount from "./auth/CreateAccount.jsx";
@@ -12,13 +12,15 @@ import ScanHistory from './pages/ScanHistory.jsx';
 import ReportIssue from './pages/ReportIssue.jsx';
 import Analytics from './pages/Analytics.jsx';
 import Settings from './pages/Settings.jsx';
+import { supabase } from './lib/supabaseClient';
+import { AUTH_VIEWS, fetchUserRole, signOut } from './lib/auth';
 
 export default function App() {
   const [currentView, setCurrentView] = useState('login');
-  const [userRole, setUserRole] = useState(null); // 'admin' | 'user' | null
+  const [userRole, setUserRole] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [authLoading, setAuthLoading] = useState(true);
 
-  // Monitor network connectivity in real-time
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -32,16 +34,92 @@ export default function App() {
     };
   }, []);
 
-  // Called by Login with (view, role). For non-login nav (forgot-password, create-account),
-  // role will be null — we just navigate without changing the role.
+  const restoreAuthenticatedUser = useCallback(async (userId) => {
+    const role = await fetchUserRole(userId);
+    if (!role) {
+      setUserRole(null);
+      return false;
+    }
+
+    setUserRole(role);
+    setCurrentView((prev) => (AUTH_VIEWS.has(prev) ? 'dashboard' : prev));
+    return true;
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const initializeAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (session?.user && isMounted) {
+        await restoreAuthenticatedUser(session.user.id);
+      }
+
+      if (isMounted) {
+        setAuthLoading(false);
+      }
+    };
+
+    initializeAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) {
+        return;
+      }
+
+      if (event === 'PASSWORD_RECOVERY') {
+        setCurrentView('reset-password');
+        return;
+      }
+
+      if (event === 'SIGNED_OUT') {
+        setUserRole(null);
+        setCurrentView('login');
+        return;
+      }
+
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
+        await restoreAuthenticatedUser(session.user.id);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [restoreAuthenticatedUser]);
+
   const handleLogin = (view, role) => {
-    if (role !== null) setUserRole(role);
+    if (role !== null) {
+      setUserRole(role);
+    }
     setCurrentView(view);
   };
 
-  const handleSignOut = () => {
-    setUserRole(null);
-    setCurrentView('login');
+  const handleViewChange = (view) => {
+    if (!AUTH_VIEWS.has(view) && !userRole) {
+      setCurrentView('login');
+      return;
+    }
+
+    if (view === 'analytics' && userRole !== 'admin') {
+      setCurrentView('dashboard');
+      return;
+    }
+
+    setCurrentView(view);
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch {
+      // Clear local state even if the remote sign-out request fails.
+    } finally {
+      setUserRole(null);
+      setCurrentView('login');
+    }
   };
 
   const renderContent = () => {
@@ -57,7 +135,6 @@ export default function App() {
       case 'report-issue':
         return <ReportIssue />;
       case 'analytics':
-        // Route guard: non-admins cannot access this page
         return userRole === 'admin' ? <Analytics /> : <Dashboard userRole={userRole} />;
       case 'settings':
         return <Settings />;
@@ -65,6 +142,16 @@ export default function App() {
         return <Dashboard userRole={userRole} />;
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0e1625] px-4">
+        <div className="rounded-2xl border border-slate-700 bg-slate-900 px-6 py-4 text-sm font-semibold text-slate-200">
+          Restoring your session...
+        </div>
+      </div>
+    );
+  }
 
   if (currentView === 'login') {
     return <Login onLogin={handleLogin} layout="login" />;
@@ -82,9 +169,12 @@ export default function App() {
     return <ResetPassword onViewChange={setCurrentView} />;
   }
 
+  if (!userRole) {
+    return <Login onLogin={handleLogin} layout="login" />;
+  }
+
   return (
-    <Sidebar currentView={currentView} onViewChange={setCurrentView} userRole={userRole} onSignOut={handleSignOut}>
-      {/* Offline Alert Bar */}
+    <Sidebar currentView={currentView} onViewChange={handleViewChange} userRole={userRole} onSignOut={handleSignOut}>
       {!isOnline && (
         <div className="bg-amber-600 text-white text-center py-2 text-xs font-bold tracking-wide shadow-inner animate-pulse flex items-center justify-center gap-2">
           <AlertTriangle size={14} /> Operating in Local Offline Mode. Cloud AI scans are suspended; local models and cached Zamboanga databases remain operational.

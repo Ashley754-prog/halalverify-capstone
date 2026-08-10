@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useState } from 'react';
 import { User, Lock, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { fetchUserRole } from '../lib/auth';
 
 export const Login = ({ onLogin, layout = 'login' }) => {
     const [email, setEmail] = useState('');
@@ -31,23 +32,15 @@ export const Login = ({ onLogin, layout = 'login' }) => {
             return;
         }
 
-        const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', data.user.id)
-            .single();
+        const role = await fetchUserRole(data.user.id);
 
-        if (profileError) {
-            setErrorMessage(
-                profileError.code === 'PGRST116'
-                    ? 'Login succeeded, but no profile record was found. Please contact support.'
-                    : `Login succeeded, but profile access failed: ${profileError.message}`
-            );
+        if (!role) {
+            setErrorMessage('Login succeeded, but no profile record was found. Please contact support.');
             setIsLoading(false);
             return;
         }
 
-        onLogin('dashboard', profile?.role || 'user');
+        onLogin('dashboard', role);
         setIsLoading(false);
     };
 
