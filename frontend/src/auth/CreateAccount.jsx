@@ -47,30 +47,20 @@ export const CreateAccount = ({ onViewChange, layout = 'create' }) => {
       return;
     }
 
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email: form.email.trim(),
       password: form.password,
+      options: {
+        data: {
+          full_name: getFullName(),
+        },
+      },
     });
 
     if (error) {
       setErrorMessage(error.message);
       setIsLoading(false);
       return;
-    }
-
-    if (data.user) {
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: data.user.id,
-        email: form.email.trim(),
-        role: 'user',
-        full_name: getFullName(),
-      });
-
-      if (profileError) {
-        setErrorMessage('Account was created, but profile setup failed.');
-        setIsLoading(false);
-        return;
-      }
     }
 
     setSuccessMessage('Account created successfully. You can now sign in.');

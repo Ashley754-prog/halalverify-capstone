@@ -41,3 +41,13 @@ To align the project with your proposal, the next strongest improvements would b
 - connect the UI to live backend responses instead of relying purely on fallback data
 - add a proper local database or Supabase integration for certified establishments and additives
 - prepare evaluation metrics and screenshots for the thesis manuscript
+
+
+frontend/.env.example
+VITE_SUPABASE_URL=https://your-project-id.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key-here
+VITE_API_BASE_URL=http://127.0.0.1:8000
+
+backend/.env.example
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here

@@ -38,7 +38,11 @@ export const Login = ({ onLogin, layout = 'login' }) => {
             .single();
 
         if (profileError) {
-            setErrorMessage('Login succeeded, but no profile record was found.');
+            setErrorMessage(
+                profileError.code === 'PGRST116'
+                    ? 'Login succeeded, but no profile record was found. Please contact support.'
+                    : `Login succeeded, but profile access failed: ${profileError.message}`
+            );
             setIsLoading(false);
             return;
         }
