@@ -1,10 +1,10 @@
 ﻿import React, { useEffect, useState } from 'react';
-import { Search, ShieldCheck, MapPin, Database, Pencil, AlertOctagon, Save, Plus } from 'lucide-react';
+import { Search, ShieldCheck, MapPin, Database, Pencil, AlertOctagon, Save, Plus, Trash2 } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import Modal from '../components/ui/Modal';
 import Toast from '../components/ui/Toast';
 
-const API_BASE_URL = 'http://127.0.0.1:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
 const ADDITIVE_STATUSES = ['Halal', 'Haram', 'Doubtful', 'Needs Review'];
 const ESTABLISHMENT_STATUSES = ['verified', 'expired', 'needs_review'];
@@ -131,7 +131,7 @@ export const Registry = ({ userRole }) => {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             method,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
+            body: payload ? JSON.stringify(payload) : undefined,
         });
 
         if (!response.ok) {
@@ -141,6 +141,53 @@ export const Registry = ({ userRole }) => {
 
         const json = await response.json();
         return json.data;
+    };
+
+    const deleteRegistryRecord = async (endpoint) => {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            method: 'DELETE',
+        });
+
+        if (!response.ok) {
+            const details = await response.text();
+            throw new Error(details || 'Failed to delete registry record');
+        }
+    };
+
+    const handleDeleteAdditive = async (item) => {
+        const label = item.code || item.name || 'this additive';
+        const confirmed = window.confirm(`Delete ${label}? This cannot be undone.`);
+
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            await deleteRegistryRecord(`/registry/additives/${item.id}`);
+            setAdditives(prev => prev.filter(entry => entry.id !== item.id));
+            updateToast('Additive deleted from database.', 'success');
+        } catch (err) {
+            console.error(err);
+            updateToast(err.message || 'Could not delete additive. Please check the backend.', 'error');
+        }
+    };
+
+    const handleDeleteEstablishment = async (item) => {
+        const label = item.name || 'this establishment';
+        const confirmed = window.confirm(`Delete ${label}? This cannot be undone.`);
+
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            await deleteRegistryRecord(`/registry/establishments/${item.id}`);
+            setEstablishments(prev => prev.filter(entry => entry.id !== item.id));
+            updateToast('Establishment deleted from database.', 'success');
+        } catch (err) {
+            console.error(err);
+            updateToast(err.message || 'Could not delete establishment. Please check the backend.', 'error');
+        }
     };
 
     const requireText = (value, label) => {
@@ -372,6 +419,9 @@ export const Registry = ({ userRole }) => {
                                             <button onClick={() => openModal('edit-additive', item)} className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 border border-slate-200 py-1.5 rounded-lg transition-colors">
                                                 <Pencil size={13} /> Edit
                                             </button>
+                                            <button onClick={() => handleDeleteAdditive(item)} className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 py-1.5 rounded-lg transition-colors">
+                                                <Trash2 size={13} /> Delete
+                                            </button>
                                         </div>
                                     )}
                                 </div>
@@ -434,6 +484,9 @@ export const Registry = ({ userRole }) => {
                                             </button>
                                             <button onClick={() => openModal('edit-establishment', shop)} className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 border border-slate-200 py-1.5 rounded-lg transition-colors">
                                                 <Pencil size={13} /> Edit Record
+                                            </button>
+                                            <button onClick={() => handleDeleteEstablishment(shop)} className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 py-1.5 rounded-lg transition-colors">
+                                                <Trash2 size={13} /> Delete
                                             </button>
                                         </div>
                                     )}
