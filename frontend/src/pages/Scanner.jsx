@@ -288,7 +288,22 @@ export const Scanner = () => {
                                 <p className="text-slate-600">Issuer: <span className="font-bold text-slate-800">{certResult.certifyingBody}</span></p>
                                 <p className="text-slate-600">Establishment: <span className="font-bold text-slate-800">{certResult.establishmentName}</span></p>
                                 <p className="text-slate-600">Serial Key: <span className="font-bold text-slate-800 font-mono">{certResult.certificateNumber}</span></p>
-                                <p className="text-slate-600">Expires: <span className="font-bold text-slate-800">{certResult.expirationDate}</span></p>
+                                <p className="text-slate-600">Expires: <span className="font-bold text-slate-800">{certResult.expirationDate || 'Not detected'}</span></p>
+                                {typeof certResult.layoutConfidence === 'number' && (
+                                    <p className="text-slate-600">
+                                        OCR Confidence: <span className="font-bold text-slate-800">{Math.round(certResult.layoutConfidence * 100)}%</span>
+                                    </p>
+                                )}
+                                {certResult.ocrQuality && (
+                                    <p className="text-slate-600">
+                                        OCR Quality: <span className="font-bold text-slate-800">{certResult.ocrQuality}</span>
+                                    </p>
+                                )}
+                                {typeof certResult.matchConfidence === 'number' && certResult.matchConfidence > 0 && (
+                                    <p className="text-slate-600">
+                                        Registry Match Confidence: <span className="font-bold text-slate-800">{Math.round(certResult.matchConfidence * 100)}%</span>
+                                    </p>
+                                )}
                             </div>
 
                             {certResult.authenticationNote && (
