@@ -13,6 +13,7 @@ import ScanHistory from './pages/ScanHistory.jsx';
 import ReportIssue from './pages/ReportIssue.jsx';
 import Analytics from './pages/Analytics.jsx';
 import Settings from './pages/Settings.jsx';
+import ProfilePage from './pages/ProfilePage.jsx';
 import { supabase } from './lib/supabaseClient';
 import { AUTH_VIEWS, fetchUserRole, signOut } from './lib/auth';
 
@@ -135,6 +136,8 @@ export default function App() {
 
   const renderContent = () => {
     switch (currentView) {
+      case 'profile':
+        return <ProfilePage />;
       case 'dashboard':
         return <Dashboard userRole={userRole} />;
       case 'scanner':
@@ -193,7 +196,7 @@ export default function App() {
       isSidebarOpen={isSidebarOpen}
       toggleSidebar={toggleSidebar}
     >
-      <AppTopbar isSidebarOpen={isSidebarOpen} onToggleSidebar={toggleSidebar} />
+      <AppTopbar isSidebarOpen={isSidebarOpen} onToggleSidebar={toggleSidebar} onProfileClick={() => handleViewChange('profile')} />
       {!isOnline && (
         <div className="bg-amber-600 text-white text-center py-2 text-xs font-bold tracking-wide shadow-inner animate-pulse flex items-center justify-center gap-2">
           <AlertTriangle size={14} /> Operating in Local Offline Mode. Cloud AI scans are suspended; local models and cached Zamboanga databases remain operational.
