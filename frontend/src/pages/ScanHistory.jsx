@@ -53,7 +53,6 @@ export const ScanHistory = ({ userRole }) => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState('');
-    const [lastLoadedAt, setLastLoadedAt] = useState(null);
 
     const isAdmin = userRole === 'admin';
 
@@ -77,7 +76,6 @@ export const ScanHistory = ({ userRole }) => {
 
             const json = await response.json();
             setScanHistory(json.data || []);
-            setLastLoadedAt(new Date());
         } catch (err) {
             console.error(err);
             setError('Could not load scan history. Please check if the backend is running.');
@@ -213,12 +211,6 @@ export const ScanHistory = ({ userRole }) => {
                                                 {item.scan_flagged_items.length} ingredient(s) flagged
                                             </span>
                                         )}
-
-                                        {item.detected_logo && (
-                                            <p className="mt-1 text-[10px] text-slate-400">
-                                                {item.detected_logo}
-                                            </p>
-                                        )}
                                     </td>
 
                                     <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
@@ -276,12 +268,6 @@ export const ScanHistory = ({ userRole }) => {
                     </table>
                 </div>
             </div>
-
-            <p className="text-xs text-slate-400">
-                Database records loaded: {scanHistory.length}
-                {lastLoadedAt ? ` • Last refreshed: ${lastLoadedAt.toLocaleTimeString()}` : ''}
-                {' '}• Scan history refreshes automatically every 10 seconds. You can also press Refresh after scanning.
-            </p>
         </div>
     );
 };
