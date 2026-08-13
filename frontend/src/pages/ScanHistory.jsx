@@ -1,13 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import {
-    Clock,
-    ScanSearch,
-    FileText,
-    CheckCircle,
-    AlertTriangle,
-    XCircle,
-    RefreshCw,
-} from 'lucide-react';
+import { Clock, ScanSearch, FileText, CheckCircle, AlertTriangle, XCircle, RefreshCw } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 
 const API_BASE_URL = 'http://127.0.0.1:8000';
@@ -38,20 +30,21 @@ const VerdictBadge = ({ verdict }) => {
     };
 
     return (
-        <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider ${styles[verdict] || 'bg-slate-100 text-slate-600'}`}>
+        <span className={`inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold px-2.5 sm:px-3 py-1 rounded-full uppercase tracking-wider whitespace-nowrap ${styles[verdict] || 'bg-slate-100 text-slate-600'}`}>
             {icons[verdict] || <AlertTriangle size={12} />} {verdict || 'Unknown'}
         </span>
     );
 };
 
-const getModeLabel = (mode) => {
-    if (mode === 'label') return 'Label';
-    return 'Certificate';
-};
-
 const isCertificateMode = (mode) => {
     return mode === 'cert' || mode === 'certificate';
 };
+
+const FILTERS = [
+    { id: 'all', label: 'All Scans' },
+    { id: 'label', label: 'Label Scans' },
+    { id: 'certificate', label: 'Logo Scans' },
+];
 
 export const ScanHistory = ({ userRole }) => {
     const [filter, setFilter] = useState('all');
@@ -83,7 +76,6 @@ export const ScanHistory = ({ userRole }) => {
             }
 
             const json = await response.json();
-            console.log('Loaded scan history from backend:', json.data);
             setScanHistory(json.data || []);
             setLastLoadedAt(new Date());
         } catch (err) {
@@ -136,38 +128,36 @@ export const ScanHistory = ({ userRole }) => {
     });
 
     return (
-        <div className="p-4 sm:p-6 md:p-8 space-y-6">
+        <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 flex-1">
             <Topbar
                 title="Scan History"
-                subtitle={isAdmin ? 'Full audit log of all scan events across all users.' : 'Your personal scan log and past verification results.'}
+                subtitle={isAdmin ? "Full audit log of all scan events across all users." : "Your personal scan log and past verification results."}
             />
 
-            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-                <div className="flex gap-2">
-                    {['all', 'label', 'certificate'].map(f => (
+            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+                <div className="flex flex-wrap gap-2">
+                    {FILTERS.map(f => (
                         <button
-                            key={f}
-                            onClick={() => setFilter(f)}
-                            className={`px-4 py-2 rounded-xl font-semibold text-xs transition-all border capitalize ${
-                                filter === f
-                                    ? 'bg-emerald-600 text-white border-emerald-500'
+                            key={f.id}
+                            onClick={() => setFilter(f.id)}
+                            className={`px-3.5 sm:px-4 py-2 rounded-xl font-semibold text-xs transition-all border ${
+                                filter === f.id
+                                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm shadow-emerald-600/10'
                                     : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                             }`}
                         >
-                            {f === 'all' ? 'All Scans' : f === 'label' ? 'Label Scans' : 'Certificate Scans'}
+                            {f.label}
                         </button>
                     ))}
                 </div>
-
                 <div className="flex w-full sm:w-auto gap-2">
                     <input
                         type="text"
-                        placeholder="Search scan history..."
+                        placeholder={isAdmin ? "Search product or user..." : "Search product..."}
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        className="w-full sm:w-64 bg-white border border-slate-200 rounded-xl py-2 px-4 text-sm focus:outline-none focus:border-emerald-500 transition"
+                        className="w-full sm:w-64 bg-white border border-slate-200 rounded-xl py-2 px-3.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500 transition"
                     />
-
                     <button
                         type="button"
                         onClick={() => fetchScanHistory(false)}
@@ -194,32 +184,32 @@ export const ScanHistory = ({ userRole }) => {
 
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                    <table className="w-full text-left text-xs sm:text-sm">
                         <thead>
-                            <tr className="bg-slate-50 border-b border-slate-200 text-left text-xs uppercase tracking-wider text-slate-500">
-                                <th className="px-6 py-4 font-bold">Scan ID</th>
-                                <th className="px-6 py-4 font-bold">Product / Certificate</th>
-                                <th className="px-6 py-4 font-bold">Mode</th>
-                                <th className="px-6 py-4 font-bold">Verdict</th>
-                                <th className="px-6 py-4 font-bold">Confidence</th>
-                                <th className="px-6 py-4 font-bold">Date & Time</th>
+                            <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
+                                <th className="px-4 sm:px-6 py-3 sm:py-4 font-bold whitespace-nowrap">Scan ID</th>
+                                <th className="px-4 sm:px-6 py-3 sm:py-4 font-bold whitespace-nowrap">Product / Certificate</th>
+                                <th className="px-4 sm:px-6 py-3 sm:py-4 font-bold whitespace-nowrap">Mode</th>
+                                <th className="px-4 sm:px-6 py-3 sm:py-4 font-bold whitespace-nowrap">Verdict</th>
+                                <th className="px-4 sm:px-6 py-3 sm:py-4 font-bold whitespace-nowrap">Confidence</th>
+                                <th className="px-4 sm:px-6 py-3 sm:py-4 font-bold whitespace-nowrap">Date & Time</th>
                             </tr>
                         </thead>
 
                         <tbody className="divide-y divide-slate-100">
                             {filtered.map((item) => (
                                 <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
-                                    <td className="px-6 py-4 font-mono text-xs text-slate-500">
+                                    <td className="px-4 sm:px-6 py-3 sm:py-4 font-mono text-xs text-slate-500 whitespace-nowrap">
                                         {String(item.id).slice(0, 8)}
                                     </td>
 
-                                    <td className="px-6 py-4">
-                                        <p className="font-semibold text-slate-800">
+                                    <td className="px-4 sm:px-6 py-3 sm:py-4">
+                                        <p className="font-semibold text-slate-800 text-xs sm:text-sm">
                                             {item.image_name || 'Unnamed Scan'}
                                         </p>
 
                                         {item.scan_flagged_items?.length > 0 && (
-                                            <span className="text-[10px] text-amber-600 font-bold">
+                                            <span className="text-[10px] text-amber-600 font-bold block mt-0.5">
                                                 {item.scan_flagged_items.length} ingredient(s) flagged
                                             </span>
                                         )}
@@ -231,24 +221,24 @@ export const ScanHistory = ({ userRole }) => {
                                         )}
                                     </td>
 
-                                    <td className="px-6 py-4">
+                                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                                         <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg ${
                                             item.mode === 'label'
                                                 ? 'bg-blue-50 text-blue-700'
                                                 : 'bg-purple-50 text-purple-700'
                                         }`}>
                                             {item.mode === 'label' ? <ScanSearch size={12} /> : <FileText size={12} />}
-                                            {getModeLabel(item.mode)}
+                                            {item.mode === 'label' ? 'Label' : 'Logo'}
                                         </span>
                                     </td>
 
-                                    <td className="px-6 py-4">
+                                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                                         <VerdictBadge verdict={item.verdict} />
                                     </td>
 
-                                    <td className="px-6 py-4">
+                                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                            <div className="w-16 sm:w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                                                 <div
                                                     className="h-full rounded-full bg-emerald-500"
                                                     style={{ width: `${Number(item.confidence || 0) * 100}%` }}
@@ -259,9 +249,8 @@ export const ScanHistory = ({ userRole }) => {
                                             </span>
                                         </div>
                                     </td>
-
-                                    <td className="px-6 py-4 text-xs text-slate-500">
-                                        <div className="flex items-center gap-1.5">
+                                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs text-slate-500 whitespace-nowrap">
+                                        <span className="inline-flex items-center gap-1.5">
                                             <Clock size={12} />
                                             {item.created_at
                                                 ? new Date(item.created_at).toLocaleString('en-PH', {
@@ -271,14 +260,14 @@ export const ScanHistory = ({ userRole }) => {
                                                     minute: '2-digit',
                                                 })
                                                 : 'No date'}
-                                        </div>
+                                        </span>
                                     </td>
                                 </tr>
                             ))}
 
                             {!loading && filtered.length === 0 && (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-16 text-center text-slate-400 text-sm">
+                                    <td colSpan={6} className="px-6 py-12 sm:py-16 text-center text-slate-400 text-xs sm:text-sm">
                                         No scan records found.
                                     </td>
                                 </tr>

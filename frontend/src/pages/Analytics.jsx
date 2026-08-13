@@ -38,50 +38,51 @@ const MetricCard = ({ label, value, unit, sublabel, color = 'emerald', icon }) =
     };
 
     return (
-        <div className={`bg-gradient-to-br ${colors[color]} rounded-2xl p-6 text-white shadow-lg`}>
-            <div className="flex justify-between items-start mb-4">
-                <p className="text-xs font-bold uppercase tracking-widest text-white/80">{label}</p>
-                <div className="p-2 bg-white/15 rounded-lg">{icon}</div>
+        <div className={`bg-gradient-to-br ${colors[color]} rounded-2xl p-4 sm:p-6 text-white shadow-lg`}>
+            <div className="flex justify-between items-start mb-3 sm:mb-4">
+                <p className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-white/80">{label}</p>
+                <div className="p-1.5 sm:p-2 bg-white/15 rounded-lg">{icon}</div>
             </div>
-            <p className="text-4xl font-black tracking-tight">
-                {value}<span className="text-lg font-semibold ml-1 text-white/80">{unit}</span>
+            <p className="text-3xl sm:text-4xl font-black tracking-tight">
+                {value}
+                <span className="text-base sm:text-lg font-semibold ml-1 text-white/80">{unit}</span>
             </p>
-            {sublabel && <p className="text-xs text-white/70 mt-1 font-medium">{sublabel}</p>}
+            {sublabel && <p className="text-[11px] sm:text-xs text-white/70 mt-1 font-medium">{sublabel}</p>}
         </div>
     );
 };
 
 const BatchTable = ({ batches }) => (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-5 border-b border-slate-100">
-            <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
-                <TrendingUp size={18} className="text-emerald-600" /> YOLOv8-Nano Training Batch Results
+        <div className="px-4 py-4 sm:px-6 sm:py-5 border-b border-slate-100">
+            <h3 className="font-bold text-slate-800 text-sm sm:text-base flex items-center gap-2">
+                <TrendingUp size={18} className="text-emerald-600 shrink-0" /> YOLOv8-Nano Training Batch Results
             </h3>
             <p className="text-xs text-slate-500 mt-1">
                 Demo/evaluation benchmark values from the capstone testing plan. These are not live scan results yet.
             </p>
         </div>
         <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-xs sm:text-sm">
                 <thead>
-                    <tr className="bg-slate-50 border-b border-slate-100 text-xs uppercase tracking-wider text-slate-500">
-                        <th className="px-6 py-3 text-left font-bold">Batch</th>
-                        <th className="px-6 py-3 text-left font-bold">Precision (%)</th>
-                        <th className="px-6 py-3 text-left font-bold">Recall (%)</th>
-                        <th className="px-6 py-3 text-left font-bold">mAP50 (%)</th>
-                        <th className="px-6 py-3 text-left font-bold">Progress</th>
+                    <tr className="bg-slate-50 border-b border-slate-100 text-[10px] sm:text-xs uppercase tracking-wider text-slate-500">
+                        <th className="px-4 py-3 sm:px-6 text-left font-bold">Batch</th>
+                        <th className="px-4 py-3 sm:px-6 text-left font-bold">Precision (%)</th>
+                        <th className="px-4 py-3 sm:px-6 text-left font-bold">Recall (%)</th>
+                        <th className="px-4 py-3 sm:px-6 text-left font-bold">mAP₅₀ (%)</th>
+                        <th className="px-4 py-3 sm:px-6 text-left font-bold">Progress</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                    {batches.map((batch) => (
-                        <tr key={batch.batch} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-6 py-4 font-semibold text-slate-800">{batch.batch}</td>
-                            <td className="px-6 py-4 text-slate-600">{batch.precision.toFixed(1)}</td>
-                            <td className="px-6 py-4 text-slate-600">{batch.recall.toFixed(1)}</td>
-                            <td className="px-6 py-4 font-bold text-emerald-700">{batch.mAP50.toFixed(1)}</td>
-                            <td className="px-6 py-4">
-                                <div className="w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                    <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${batch.mAP50}%` }} />
+                    {batches.map((b, i) => (
+                        <tr key={i} className="hover:bg-slate-50 transition-colors">
+                            <td className="px-4 py-3 sm:px-6 sm:py-4 font-semibold text-slate-800 whitespace-nowrap">{b.batch}</td>
+                            <td className="px-4 py-3 sm:px-6 sm:py-4 text-slate-600">{b.precision.toFixed(1)}</td>
+                            <td className="px-4 py-3 sm:px-6 sm:py-4 text-slate-600">{b.recall.toFixed(1)}</td>
+                            <td className="px-4 py-3 sm:px-6 sm:py-4 font-bold text-emerald-700">{b.mAP50.toFixed(1)}</td>
+                            <td className="px-4 py-3 sm:px-6 sm:py-4">
+                                <div className="w-20 sm:w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${b.mAP50}%` }} />
                                 </div>
                             </td>
                         </tr>

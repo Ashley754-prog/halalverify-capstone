@@ -22,7 +22,6 @@ export default function App() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [authLoading, setAuthLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
   useEffect(() => {
     if (window.innerWidth < 768) {
       setIsSidebarOpen(false);
