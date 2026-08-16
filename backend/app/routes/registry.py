@@ -1,3 +1,4 @@
+from app.auth import require_admin
 from app.schemas.registry import (
     AdditiveCreate,
     AdditiveUpdate,
@@ -6,7 +7,7 @@ from app.schemas.registry import (
 )
 from app.supabase_client import supabase
 from app.utils.db_helpers import ensure_deleted, ensure_updated, model_dump_without_none
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 router = APIRouter(tags=["registry"])
 
@@ -28,7 +29,7 @@ def get_additives():
 
 
 @router.post("/registry/additives")
-def create_additive(additive: AdditiveCreate):
+def create_additive(additive: AdditiveCreate, user: dict = Depends(require_admin)):
     response = (
         supabase
         .table("additives")
@@ -43,7 +44,7 @@ def create_additive(additive: AdditiveCreate):
 
 
 @router.patch("/registry/additives/{additive_id}")
-def update_additive(additive_id: str, additive: AdditiveUpdate):
+def update_additive(additive_id: str, additive: AdditiveUpdate, user: dict = Depends(require_admin)):
     payload = model_dump_without_none(additive)
 
     if not payload:
@@ -61,7 +62,7 @@ def update_additive(additive_id: str, additive: AdditiveUpdate):
 
 
 @router.delete("/registry/additives/{additive_id}")
-def delete_additive(additive_id: str):
+def delete_additive(additive_id: str, user: dict = Depends(require_admin)):
     response = (
         supabase
         .table("additives")
@@ -90,7 +91,7 @@ def get_establishments():
 
 
 @router.post("/registry/establishments")
-def create_establishment(establishment: EstablishmentCreate):
+def create_establishment(establishment: EstablishmentCreate, user: dict = Depends(require_admin)):
     response = (
         supabase
         .table("establishments")
@@ -105,7 +106,7 @@ def create_establishment(establishment: EstablishmentCreate):
 
 
 @router.patch("/registry/establishments/{establishment_id}")
-def update_establishment(establishment_id: str, establishment: EstablishmentUpdate):
+def update_establishment(establishment_id: str, establishment: EstablishmentUpdate, user: dict = Depends(require_admin)):
     payload = model_dump_without_none(establishment)
 
     if not payload:
@@ -123,7 +124,7 @@ def update_establishment(establishment_id: str, establishment: EstablishmentUpda
 
 
 @router.delete("/registry/establishments/{establishment_id}")
-def delete_establishment(establishment_id: str):
+def delete_establishment(establishment_id: str, user: dict = Depends(require_admin)):
     response = (
         supabase
         .table("establishments")

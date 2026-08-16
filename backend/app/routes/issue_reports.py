@@ -1,12 +1,16 @@
+from app.auth import get_current_user
 from app.schemas.issue_reports import IssueReportCreate
 from app.supabase_client import supabase
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 router = APIRouter(tags=["issue-reports"])
 
 
 @router.post("/issue-reports")
-def create_issue_report(report: IssueReportCreate):
+def create_issue_report(
+    report: IssueReportCreate,
+    user: dict = Depends(get_current_user),
+):
     response = (
         supabase
         .table("issue_reports")

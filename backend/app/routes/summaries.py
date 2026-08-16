@@ -1,11 +1,12 @@
+from app.auth import get_current_user, require_admin
 from app.utils.db_helpers import count_by_status, fetch_table_rows
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 router = APIRouter(tags=["summaries"])
 
 
 @router.get("/dashboard-summary")
-def get_dashboard_summary():
+def get_dashboard_summary(user: dict = Depends(get_current_user)):
     additives = fetch_table_rows("additives")
     establishments = fetch_table_rows("establishments")
     scan_history = fetch_table_rows("scan_history")
@@ -46,7 +47,7 @@ def get_dashboard_summary():
 
 
 @router.get("/analytics-summary")
-def get_analytics_summary():
+def get_analytics_summary(user: dict = Depends(require_admin)):
     additives = fetch_table_rows("additives")
     establishments = fetch_table_rows("establishments")
     scan_history = fetch_table_rows("scan_history")
