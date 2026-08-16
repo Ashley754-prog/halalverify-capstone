@@ -3,8 +3,7 @@ import { Search, ShieldCheck, MapPin, Database, Pencil, AlertOctagon, Save, Plus
 import Topbar from '../components/layouts/Topbar';
 import Modal from '../components/ui/Modal';
 import Toast from '../components/ui/Toast';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+import { API_BASE_URL, authFetch } from '../utils/api';
 
 const ADDITIVE_STATUSES = ['Halal', 'Haram', 'Doubtful', 'Needs Review'];
 const ESTABLISHMENT_STATUSES = ['verified', 'expired', 'needs_review'];
@@ -48,8 +47,8 @@ export const Registry = ({ userRole }) => {
                 setError('');
 
                 const [additivesResponse, establishmentsResponse] = await Promise.all([
-                    fetch(`${API_BASE_URL}/registry/additives`),
-                    fetch(`${API_BASE_URL}/registry/establishments`),
+                    authFetch(`${API_BASE_URL}/registry/additives`),
+                    authFetch(`${API_BASE_URL}/registry/establishments`),
                 ]);
 
                 if (!additivesResponse.ok || !establishmentsResponse.ok) {
@@ -128,7 +127,7 @@ export const Registry = ({ userRole }) => {
     };
 
     const saveRegistryRecord = async (endpoint, method, payload) => {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        const response = await authFetch(`${API_BASE_URL}${endpoint}`, {
             method,
             headers: { 'Content-Type': 'application/json' },
             body: payload ? JSON.stringify(payload) : undefined,
@@ -144,7 +143,7 @@ export const Registry = ({ userRole }) => {
     };
 
     const deleteRegistryRecord = async (endpoint) => {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        const response = await authFetch(`${API_BASE_URL}${endpoint}`, {
             method: 'DELETE',
         });
 

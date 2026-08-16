@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { AlertTriangle, RefreshCw, Eye, ScanSearch, FileText, X, Image as ImageIcon } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import Toast from '../components/ui/Toast';
-import { analyzeWithGemini, simulateFallback } from '../utils/api';
+import { analyzeImage, simulateFallback } from '../utils/api';
 
 export const Scanner = () => {
     const [scannerMode, setScannerMode] = useState('label'); // 'label' or 'cert'
@@ -80,13 +80,13 @@ export const Scanner = () => {
         setIsLoading(true);
         setErrorMsg(null);
         try {
-            const result = await analyzeWithGemini(base64Img, scannerMode);
+            const result = await analyzeImage(base64Img, scannerMode);
             if (scannerMode === 'label') setScanResult(result);
             else setCertResult(result);
             setToast({ visible: true, message: 'Analysis complete. Review the results below.', type: 'success' });
         } catch (err) {
-            setErrorMsg("Deploying local offline processing module (Fallback simulated)");
-            setToast({ visible: true, message: 'Backend unavailable. Using offline fallback response.', type: 'info' });
+            setErrorMsg("Backend server unreachable. The placeholder result below is NOT a verification.");
+            setToast({ visible: true, message: 'Backend unavailable. Showing offline placeholder result.', type: 'info' });
             setTimeout(() => {
                 const result = simulateFallback(scannerMode);
                 if (scannerMode === 'label') setScanResult(result);
@@ -114,7 +114,7 @@ export const Scanner = () => {
         <div className="p-4 sm:p-6 md:p-8 flex-1 flex flex-col h-full">
             <Topbar
                 title="Visual Inspection Scanner"
-                subtitle="Real-time execution of YOLOv8 logo filters and OCR parsers."
+                subtitle="Capture or upload a product label or halal certificate for OCR analysis."
             />
 
             {/* Mode Toggle Controls */}
@@ -128,7 +128,7 @@ export const Scanner = () => {
                     }`}
                 >
                     <span className="flex items-center justify-center gap-2">
-                        <ScanSearch size={18} /> Label Scanner & Parser (YOLOv8 + EasyOCR)
+                        <ScanSearch size={18} /> Label Scanner & Parser (EasyOCR)
                     </span>
                 </button>
                 <button
@@ -140,7 +140,7 @@ export const Scanner = () => {
                     }`}
                 >
                     <span className="flex items-center justify-center gap-2">
-                        <FileText size={18} /> Logo Layout Analyzer (PaddleOCR)
+                        <FileText size={18} /> Halal Certificate Analyzer (OCR + Registry)
                     </span>
                 </button>
             </div>
@@ -210,14 +210,14 @@ export const Scanner = () => {
                     {isLoading && (
                         <div className="flex-1 flex flex-col items-center justify-center py-10 sm:py-12 gap-3">
                             <RefreshCw className="h-7 w-7 sm:h-8 sm:w-8 text-emerald-500 animate-spin" />
-                            <p className="text-xs text-slate-500 font-medium">Running deep learning inferences...</p>
+                            <p className="text-xs text-slate-500 font-medium">Running OCR analysis...</p>
                         </div>
                     )}
 
                     {!isLoading && !scanResult && !certResult && (
                         <div className="flex-1 flex flex-col items-center justify-center py-10 sm:py-12 text-center text-slate-400">
                             <AlertTriangle className="h-8 w-8 mb-2" />
-                            <p className="text-xs">Provide an image input to trigger OCR models.</p>
+                            <p className="text-xs">Provide an image input to start OCR analysis.</p>
                         </div>
                     )}
 

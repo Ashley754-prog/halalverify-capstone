@@ -1,9 +1,7 @@
-﻿import React, { useEffect, useState } from 'react';
-import { BarChart2, Target, Eye, FileText, Users, TrendingUp, Database, RefreshCw } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Target, Eye, FileText, Users, BarChart2, Database, RefreshCw } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
-import { MODEL_METRICS } from '../data/constants';
-
-const API_BASE_URL = 'http://127.0.0.1:8000';
+import { API_BASE_URL, authFetch } from '../utils/api';
 
 const emptyAnalytics = {
     totals: {
@@ -52,47 +50,6 @@ const MetricCard = ({ label, value, unit, sublabel, color = 'emerald', icon }) =
     );
 };
 
-const BatchTable = ({ batches }) => (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-4 py-4 sm:px-6 sm:py-5 border-b border-slate-100">
-            <h3 className="font-bold text-slate-800 text-sm sm:text-base flex items-center gap-2">
-                <TrendingUp size={18} className="text-emerald-600 shrink-0" /> YOLOv8-Nano Training Batch Results
-            </h3>
-            <p className="text-xs text-slate-500 mt-1">
-                Demo/evaluation benchmark values from the capstone testing plan. These are not live scan results yet.
-            </p>
-        </div>
-        <div className="overflow-x-auto">
-            <table className="w-full text-xs sm:text-sm">
-                <thead>
-                    <tr className="bg-slate-50 border-b border-slate-100 text-[10px] sm:text-xs uppercase tracking-wider text-slate-500">
-                        <th className="px-4 py-3 sm:px-6 text-left font-bold">Batch</th>
-                        <th className="px-4 py-3 sm:px-6 text-left font-bold">Precision (%)</th>
-                        <th className="px-4 py-3 sm:px-6 text-left font-bold">Recall (%)</th>
-                        <th className="px-4 py-3 sm:px-6 text-left font-bold">mAP₅₀ (%)</th>
-                        <th className="px-4 py-3 sm:px-6 text-left font-bold">Progress</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                    {batches.map((b, i) => (
-                        <tr key={i} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-4 py-3 sm:px-6 sm:py-4 font-semibold text-slate-800 whitespace-nowrap">{b.batch}</td>
-                            <td className="px-4 py-3 sm:px-6 sm:py-4 text-slate-600">{b.precision.toFixed(1)}</td>
-                            <td className="px-4 py-3 sm:px-6 sm:py-4 text-slate-600">{b.recall.toFixed(1)}</td>
-                            <td className="px-4 py-3 sm:px-6 sm:py-4 font-bold text-emerald-700">{b.mAP50.toFixed(1)}</td>
-                            <td className="px-4 py-3 sm:px-6 sm:py-4">
-                                <div className="w-20 sm:w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                    <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${b.mAP50}%` }} />
-                                </div>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
-    </div>
-);
-
 const BreakdownPanel = ({ title, description, items }) => {
     const entries = Object.entries(items || {});
 
@@ -117,8 +74,15 @@ const BreakdownPanel = ({ title, description, items }) => {
     );
 };
 
+const PENDING_METRICS = [
+    { label: 'Precision', icon: <Target size={18} />, note: 'Logo detection benchmark — depends on Spike S2 outcome' },
+    { label: 'Recall', icon: <Eye size={18} />, note: 'Logo detection benchmark — depends on Spike S2 outcome' },
+    { label: 'mAP50', icon: <BarChart2 size={18} />, note: 'Logo detection benchmark — depends on Spike S2 outcome' },
+    { label: 'CER', icon: <FileText size={18} />, note: 'OCR accuracy — measured by Spike S3 (30-label baseline)' },
+    { label: 'SUS Score', icon: <Users size={18} />, note: 'Usability — measured during UAT (30–50 respondents)' },
+];
+
 export const Analytics = () => {
-    const { yolov8, easyocr, paddleocr, sus } = MODEL_METRICS;
     const [analytics, setAnalytics] = useState(emptyAnalytics);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -128,7 +92,7 @@ export const Analytics = () => {
             setLoading(true);
             setError('');
 
-            const response = await fetch(`${API_BASE_URL}/analytics-summary`);
+            const response = await authFetch(`${API_BASE_URL}/analytics-summary`);
 
             if (!response.ok) {
                 throw new Error('Analytics summary request failed');
@@ -154,7 +118,7 @@ export const Analytics = () => {
         <div className="p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8">
             <Topbar
                 title="Analytics & Model Performance"
-                subtitle="Live Supabase usage analytics plus clearly labeled capstone evaluation metrics."
+                subtitle="Live Supabase usage analytics. Evaluation metrics appear only after they are measured."
                 action={
                     <button
                         type="button"
@@ -198,31 +162,26 @@ export const Analytics = () => {
                 <div className="flex items-center gap-2 mb-4">
                     <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Capstone Evaluation Metrics</span>
                     <div className="h-px flex-1 bg-slate-200" />
-                    <span className="text-xs font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">Demo / Testing Values</span>
+                    <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">Pending Evaluation</span>
                 </div>
 
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <MetricCard label="Precision" value={yolov8.precision} unit="%" sublabel="Planned YOLO logo detection benchmark" color="emerald" icon={<Target size={18} />} />
-                    <MetricCard label="Recall" value={yolov8.recall} unit="%" sublabel="Planned true-positive benchmark" color="blue" icon={<Eye size={18} />} />
-                    <MetricCard label="mAP50" value={yolov8.mAP50} unit="%" sublabel="Mean average precision benchmark" color="purple" icon={<BarChart2 size={18} />} />
-                    <MetricCard label="CER" value={easyocr.cer} unit="%" sublabel="EasyOCR character error rate benchmark" color="amber" icon={<FileText size={18} />} />
-                </div>
-
-                <BatchTable batches={yolov8.batches} />
-            </section>
-
-            <section>
-                <div className="flex items-center gap-2 mb-4">
-                    <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Certificate + Usability Evaluation</span>
-                    <div className="h-px flex-1 bg-slate-200" />
-                    <span className="text-xs font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-full border border-purple-200">Demo / Testing Values</span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <MetricCard label="Layout Accuracy" value={paddleocr.layoutAccuracy} unit="%" sublabel="Certificate structure benchmark" color="purple" icon={<FileText size={18} />} />
-                    <MetricCard label="Field Extraction" value={paddleocr.fieldExtractionRate} unit="%" sublabel="Certificate field benchmark" color="blue" icon={<Target size={18} />} />
-                    <MetricCard label="SUS Score" value={sus.score} unit="/100" sublabel={`Rating: ${sus.rating}`} color="emerald" icon={<Users size={18} />} />
-                    <MetricCard label="Respondents" value={sus.respondents} unit="" sublabel="Planned usability sample" color="slate" icon={<Users size={18} />} />
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6">
+                    <p className="text-xs sm:text-sm text-slate-500 mb-4">
+                        No evaluation has been conducted yet. Values below will be filled in only after real
+                        measurements exist (spike reports and UAT), so the manuscript never cites unmeasured numbers.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                        {PENDING_METRICS.map((metric) => (
+                            <div key={metric.label} className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 flex flex-col gap-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{metric.label}</span>
+                                    <span className="text-slate-400">{metric.icon}</span>
+                                </div>
+                                <p className="text-lg font-black text-slate-400">—</p>
+                                <p className="text-[11px] text-slate-500 leading-snug">{metric.note}</p>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </section>
         </div>

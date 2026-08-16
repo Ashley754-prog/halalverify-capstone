@@ -1,97 +1,82 @@
-﻿import React, { useEffect, useState } from 'react';
-import { LayoutDashboard, CheckCircle2, ShieldAlert, Users } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ScanSearch, ShieldAlert, Store, Flag } from 'lucide-react';
 import KpiCard from '../components/ui/KpiCard';
 import Topbar from '../components/layouts/Topbar';
-
-const API_BASE_URL = 'http://127.0.0.1:8000';
+import { API_BASE_URL, authFetch } from '../utils/api';
 
 export const Dashboard = () => {
-    const [flaggedAdditives, setFlaggedAdditives] = useState(null);
+    const [summary, setSummary] = useState(null);
+    const [loadError, setLoadError] = useState(false);
 
     useEffect(() => {
-        const loadFlaggedAdditives = async () => {
+        const loadSummary = async () => {
             try {
-                const response = await fetch(`${API_BASE_URL}/dashboard-summary`);
+                const response = await authFetch(`${API_BASE_URL}/dashboard-summary`);
                 if (!response.ok) {
                     throw new Error('Dashboard summary request failed');
                 }
                 const json = await response.json();
-                setFlaggedAdditives(json.data?.totals?.flagged_additives ?? 0);
+                setSummary(json.data || null);
+                setLoadError(false);
             } catch (err) {
                 console.error(err);
-                setFlaggedAdditives(null);
+                setSummary(null);
+                setLoadError(true);
             }
         };
-        loadFlaggedAdditives();
+        loadSummary();
     }, []);
+
+    const totals = summary?.totals;
 
     return (
         <div className="p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8">
             <Topbar
                 title="Live System Telemetry"
-                subtitle="Computer Vision Pipeline Metrics and Regional Usability statistics."
-                action={
-                    <div className="flex items-center gap-2 bg-emerald-100 text-emerald-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs font-semibold border border-emerald-200">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                            </span>
-                            {/* Mobile: compact label */}
-                            <span className="sm:hidden font-semibold">15 FPS</span>
-                            {/* Desktop/tablet: full label */}
-                            <span className="hidden sm:inline truncate">YOLOv8-Nano Weight Active (15 FPS)</span>
-                        </div>
-                }
+                subtitle="Real-time registry and scan statistics from the HalalVerify database."
             />
 
+            {loadError && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs sm:text-sm font-semibold text-amber-700">
+                    Could not reach the backend server. Live statistics are unavailable right now.
+                </div>
+            )}
+
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-                <KpiCard title="YOLOv8 mAP₅₀" value="92.4%" icon={<LayoutDashboard />} color="emerald" />
-                <KpiCard title="EasyOCR Precision" value="93.1%" icon={<CheckCircle2 />} color="green" />
-                <KpiCard title="System Usability Score" value="83.5" icon={<Users />} color="yellow" />
-                <KpiCard title="Flagged Additives" value={flaggedAdditives ?? '...'} icon={<ShieldAlert />} color="red" />
+                <KpiCard title="Total Scans" value={totals ? totals.scans : '...'} icon={<ScanSearch />} color="emerald" />
+                <KpiCard title="Flagged Additives" value={totals ? totals.flagged_additives : '...'} icon={<ShieldAlert />} color="red" />
+                <KpiCard title="Establishments" value={totals ? totals.establishments : '...'} icon={<Store />} color="blue" />
+                <KpiCard title="Open Reports" value={totals ? totals.open_reports : '...'} icon={<Flag />} color="yellow" />
             </div>
 
             <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
-                <h3 className="text-base sm:text-lg font-bold text-slate-800 mb-1 sm:mb-2">Technical Implementation Overview</h3>
-                <p className="text-xs sm:text-sm text-slate-500 mb-4 sm:mb-6">Evaluation results collected from testing on standard Android/iOS smartphones.</p>
+                <h3 className="text-base sm:text-lg font-bold text-slate-800 mb-1 sm:mb-2">Pipeline Overview</h3>
+                <p className="text-xs sm:text-sm text-slate-500 mb-4 sm:mb-6">What the system actually runs today.</p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     <div className="border border-slate-100 rounded-xl p-4 sm:p-5 bg-slate-50/50">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Model Accuracy Benchmarks</h4>
-                        <div className="space-y-3">
-                            <div className="flex justify-between text-xs sm:text-sm">
-                                <span className="text-slate-600 font-medium">Logo Recognition Recall</span>
-                                <span className="font-bold text-slate-800">90.8%</span>
-                            </div>
-                            <div className="flex justify-between text-xs sm:text-sm">
-                                <span className="text-slate-600 font-medium">Character Error Rate (CER)</span>
-                                <span className="font-bold text-slate-800">4.2%</span>
-                            </div>
-                            <div className="flex justify-between text-xs sm:text-sm">
-                                <span className="text-slate-600 font-medium">Pipeline Average Processing Time</span>
-                                <span className="font-bold text-slate-800">1.2 seconds</span>
-                            </div>
-                        </div>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Label Scanner &amp; Parser</h4>
+                        <ul className="list-disc pl-4 text-xs sm:text-sm text-slate-600 space-y-1.5">
+                            <li>EasyOCR extracts ingredient text and E-numbers from the captured photo.</li>
+                            <li>Extracted codes are matched against the additive registry in Supabase.</li>
+                            <li>Result is classified Halal, Haram, or Doubtful — advisory only.</li>
+                        </ul>
                     </div>
 
                     <div className="border border-slate-100 rounded-xl p-4 sm:p-5 bg-slate-50/50">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Zamboanga Local Compliance Summary</h4>
-                        <div className="space-y-3">
-                            <div className="flex justify-between text-xs sm:text-sm">
-                                <span className="text-slate-600 font-medium">Registered Establishments</span>
-                                <span className="font-bold text-slate-800">4 Monitored</span>
-                            </div>
-                            <div className="flex justify-between text-xs sm:text-sm">
-                                <span className="text-slate-600 font-medium">Ordinance No. 489 Standards</span>
-                                <span className="font-bold text-emerald-600">Compliant</span>
-                            </div>
-                            <div className="flex justify-between text-xs sm:text-sm">
-                                <span className="text-slate-600 font-medium">Usability Rating (SUS)</span>
-                                <span className="font-bold text-slate-800">Excellent (Grade A)</span>
-                            </div>
-                        </div>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Halal Certificate Analyzer</h4>
+                        <ul className="list-disc pl-4 text-xs sm:text-sm text-slate-600 space-y-1.5">
+                            <li>OCR reads certificate number, establishment, certifying body, and expiry.</li>
+                            <li>Fields are fuzzy-matched against the local establishment registry.</li>
+                            <li>Result is Valid, Suspicious, or Expired — advisory only.</li>
+                        </ul>
                     </div>
                 </div>
+
+                <p className="text-[11px] sm:text-xs text-slate-400 mt-4">
+                    Model evaluation benchmarks (Precision, Recall, mAP50, CER, SUS) are pending
+                    capstone evaluation and will be published in Analytics once measured.
+                </p>
             </div>
         </div>
     );

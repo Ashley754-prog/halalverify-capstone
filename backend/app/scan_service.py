@@ -38,25 +38,6 @@ OCR_CERT_CHAR_FIXES = {
 }
 
 
-def certificate_demo_result() -> dict:
-    extracted_certificate = {
-        "certifyingBody": "Halal Development Institute of the Philippines (HDIP)",
-        "establishmentName": "Zamboanga Halal Food Haven",
-        "certificateNumber": "HDIP-2026-90412",
-        "expirationDate": "2027-04-12",
-        "isExpired": False,
-        "layoutConfidence": 0.89,
-        "structuralZones": [
-            "Header Zone",
-            "Entity Identity",
-            "Validity Block",
-            "Authority Signature Seal",
-        ],
-    }
-
-    return validate_certificate_result(extracted_certificate)
-
-
 def analyze_certificate_image(image_base64: str) -> dict:
     extracted_text = extract_text_from_image(image_base64)
     establishments = fetch_establishments()

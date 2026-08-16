@@ -199,7 +199,7 @@ export default function App() {
       <AppTopbar isSidebarOpen={isSidebarOpen} onToggleSidebar={toggleSidebar} onProfileClick={() => handleViewChange('profile')} />
       {!isOnline && (
         <div className="bg-amber-600 text-white text-center py-2 text-xs font-bold tracking-wide shadow-inner animate-pulse flex items-center justify-center gap-2">
-          <AlertTriangle size={14} /> Operating in Local Offline Mode. Cloud AI scans are suspended; local models and cached Zamboanga databases remain operational.
+          <AlertTriangle size={14} /> You are offline. Scanning and database lookups are unavailable until the connection returns.
         </div>
       )}
       {renderContent()}

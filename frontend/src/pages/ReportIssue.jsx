@@ -3,8 +3,7 @@ import { Flag, ScanSearch, FileText, Store, CheckCircle } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import Modal from '../components/ui/Modal';
 import Toast from '../components/ui/Toast';
-
-const API_BASE_URL = 'http://127.0.0.1:8000';
+import { API_BASE_URL, authFetch } from '../utils/api';
 
 const ISSUE_TYPES = [
     'Wrong Verdict (Scanner Error)',
@@ -38,7 +37,7 @@ export const ReportIssue = () => {
         try {
             setIsSubmitting(true);
 
-            const response = await fetch(`${API_BASE_URL}/issue-reports`, {
+            const response = await authFetch(`${API_BASE_URL}/issue-reports`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

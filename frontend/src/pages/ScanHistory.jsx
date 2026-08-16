@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Clock, ScanSearch, FileText, CheckCircle, AlertTriangle, XCircle, RefreshCw } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
-
-const API_BASE_URL = 'http://127.0.0.1:8000';
+import { API_BASE_URL, authFetch } from '../utils/api';
 
 const VerdictBadge = ({ verdict }) => {
     const styles = {
@@ -66,7 +65,7 @@ export const ScanHistory = ({ userRole }) => {
 
             setError('');
 
-            const response = await fetch(`${API_BASE_URL}/scan-history?t=${Date.now()}`, {
+            const response = await authFetch(`${API_BASE_URL}/scan-history?t=${Date.now()}`, {
                 cache: 'no-store',
             });
 
@@ -207,9 +206,17 @@ export const ScanHistory = ({ userRole }) => {
                                         </p>
 
                                         {item.scan_flagged_items?.length > 0 && (
-                                            <span className="text-[10px] text-amber-600 font-bold block mt-0.5">
-                                                {item.scan_flagged_items.length} ingredient(s) flagged
-                                            </span>
+                                            <div className="mt-1 space-y-1">
+                                                {item.scan_flagged_items.map((flagged, i) => (
+                                                    <span key={i} className={`inline-flex items-center gap-1 text-[10px] font-bold mr-1.5 px-2 py-0.5 rounded border ${
+                                                        flagged.status?.toLowerCase() === 'haram'
+                                                            ? 'bg-red-50 text-red-700 border-red-200'
+                                                            : 'bg-amber-50 text-amber-700 border-amber-200'
+                                                    }`}>
+                                                        {flagged.matched_text}
+                                                    </span>
+                                                ))}
+                                            </div>
                                         )}
                                     </td>
 

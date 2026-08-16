@@ -1,59 +1,27 @@
-import React, { useState } from 'react';
-import { DownloadCloud, CheckCircle, Database } from 'lucide-react';
+import React from 'react';
+import { BookOpen } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import { PROPONENTS, JURISDICTION } from '../data/constants';
 
 export const Settings = () => {
-    const [isSyncing, setIsSyncing] = useState(false);
-    const [lastSync, setLastSync] = useState('Today, 08:30 AM');
-
-    const handleSync = () => {
-        setIsSyncing(true);
-        setTimeout(() => {
-            setIsSyncing(false);
-            const now = new Date();
-            setLastSync(`Today, ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
-        }, 2000);
-    };
-
     return (
         <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 flex-1">
             <Topbar
                 title="System Settings"
-                subtitle="Manage application preferences and offline database."
+                subtitle="Application information and capstone details."
             />
 
-            {/* Offline Sync Card */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-sm flex flex-col gap-4">
-                <div className="flex items-start sm:items-center gap-3">
-                    <div className="p-2.5 sm:p-3 bg-emerald-100 text-emerald-600 rounded-xl shrink-0">
-                        <Database size={22} className="sm:w-6 sm:h-6" />
-                    </div>
-                    <div>
-                        <h3 className="text-sm sm:text-base font-bold text-slate-800">Local Database Sync</h3>
-                        <p className="text-xs text-slate-500 mt-0.5 sm:mt-1">Download the latest Halal Establishments and E-Numbers dictionary for offline scanning.</p>
-                    </div>
+            {/* Offline dictionary status — honest placeholder until offline caching is actually built */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-sm flex items-start gap-3">
+                <div className="p-2.5 sm:p-3 bg-slate-100 text-slate-500 rounded-xl shrink-0">
+                    <BookOpen size={22} className="sm:w-6 sm:h-6" />
                 </div>
-
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 sm:p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                    <div>
-                        <p className="text-[10px] sm:text-xs font-bold text-slate-600 uppercase tracking-wide">Last Synced</p>
-                        <p className="text-xs sm:text-sm font-semibold text-slate-900 mt-0.5 sm:mt-1 flex items-center gap-1.5 sm:gap-2">
-                            <CheckCircle size={14} className="text-emerald-500 shrink-0" /> {lastSync}
-                        </p>
-                    </div>
-                    <button
-                        onClick={handleSync}
-                        disabled={isSyncing}
-                        className={`w-full sm:w-auto px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all ${
-                            isSyncing
-                                ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                                : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-600/10'
-                        }`}
-                    >
-                        <DownloadCloud size={16} className="sm:w-4 sm:h-4" />
-                        {isSyncing ? 'Downloading...' : 'Update Database'}
-                    </button>
+                <div>
+                    <h3 className="text-sm sm:text-base font-bold text-slate-800">Offline Dictionary</h3>
+                    <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                        Not yet available. Offline caching of the additive and establishment registry is
+                        a planned feature — scanning currently requires an active connection to the backend.
+                    </p>
                 </div>
             </div>
 
