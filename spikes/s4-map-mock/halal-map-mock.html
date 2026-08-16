@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HalalVerify — Spike S4: Halal Establishment Map + Heatmap (Mock)</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; font-family: system-ui, sans-serif; }
+  #map { height: 100%; }
+  .banner {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    background: #b45309; color: #fff; text-align: center;
+    padding: 8px 12px; font-size: 13px; font-weight: 600;
+  }
+  .banner small { font-weight: 400; opacity: 0.9; }
+  .controls {
+    position: fixed; top: 46px; right: 10px; z-index: 1000;
+    background: #fff; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.25);
+    padding: 10px 12px; font-size: 13px;
+  }
+  .controls label { display: block; margin: 4px 0; cursor: pointer; }
+  .legend { margin-top: 8px; border-top: 1px solid #e2e8f0; padding-top: 8px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+  .popup b { font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="banner">
+  SPIKE S4 PROTOTYPE — SAMPLE DATA ONLY (32 mock establishments for adviser validation of R3).
+  <small>Real coordinates + registry data replace this in Phase 2.</small>
+</div>
+<div id="map"></div>
+<div class="controls">
+  <label><input type="checkbox" id="toggleHeat" checked /> Heatmap layer</label>
+  <label><input type="checkbox" id="toggleMarkers" checked /> Establishment markers</label>
+  <div class="legend">
+    <div><span class="dot" style="background:#16a34a"></span>Verified (weight 1.0)</div>
+    <div><span class="dot" style="background:#d97706"></span>Needs review (weight 0.4)</div>
+    <div><span class="dot" style="background:#dc2626"></span>Expired (weight 0)</div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<script>
+// Approximate barangay coordinates around Zamboanga City. SAMPLE DATA.
+const establishments = [
+  { name: "Al-Barka Halal Kitchen",  type: "Eatery",     barangay: "Canelar",      lat: 6.9130, lng: 122.0750, status: "verified" },
+  { name: "Yakan Heritage Cafe",     type: "Restaurant", barangay: "Upper Calarian", lat: 6.9550, lng: 122.0500, status: "verified" },
+  { name: "Sulu Sunset Grill",       type: "Restaurant", barangay: "Paseo del Mar", lat: 6.9105, lng: 122.0705, status: "expired" },
+  { name: "Zambo Halal Mart",        type: "Retailer",   barangay: "Gov. Lim",     lat: 6.9160, lng: 122.0740, status: "verified" },
+  { name: "Tumaga Tapsi House",      type: "Eatery",     barangay: "Tumaga",       lat: 6.9700, lng: 122.0700, status: "verified" },
+  { name: "Pasonanca Pantry",        type: "Retailer",   barangay: "Pasonanca",    lat: 6.9800, lng: 122.0800, status: "needs_review" },
+  { name: "Baliwasan Bakeshop",      type: "Bakery",     barangay: "Baliwasan",    lat: 6.9150, lng: 122.0600, status: "verified" },
+  { name: "Sta. Maria Satti House",  type: "Eatery",     barangay: "Sta. Maria",   lat: 6.9100, lng: 122.0500, status: "verified" },
+  { name: "Guiwan Grille & More",    type: "Restaurant", barangay: "Guiwan",       lat: 6.9200, lng: 122.1050, status: "needs_review" },
+  { name: "Boalan Beef Rendang",     type: "Restaurant", barangay: "Boalan",       lat: 6.9350, lng: 122.1100, status: "verified" },
+  { name: "San Jose Sari-Sari Plus", type: "Retailer",   barangay: "San Jose Gusu", lat: 6.9250, lng: 122.0350, status: "verified" },
+  { name: "Ayala Agri Market",       type: "Market",     barangay: "Ayala",        lat: 6.9500, lng: 121.9800, status: "verified" },
+  { name: "Labuan Fresh Catch",      type: "Market",     barangay: "Labuan",       lat: 6.9500, lng: 121.9200, status: "needs_review" },
+  { name: "Vitali Victuals",         type: "Eatery",     barangay: "Vitali",       lat: 6.8500, lng: 122.1500, status: "verified" },
+  { name: "Mercedes Meals",          type: "Eatery",     barangay: "Mercedes",     lat: 6.9300, lng: 122.1500, status: "verified" },
+  { name: "Talon-Talon Tahu",        type: "Eatery",     barangay: "Talon-Talon",  lat: 6.9150, lng: 122.1200, status: "verified" },
+  { name: "Mampang Muslim Meals",    type: "Eatery",     barangay: "Mampang",      lat: 6.9250, lng: 122.1300, status: "needs_review" },
+  { name: "Recodo Refreshments",     type: "Cafe",       barangay: "Recodo",       lat: 6.9400, lng: 121.9700, status: "verified" },
+  { name: "Sinunuc Sweets",          type: "Bakery",     barangay: "Sinunuc",      lat: 6.9300, lng: 122.0150, status: "expired" },
+  { name: "Zone IV Zesto Corner",    type: "Eatery",     barangay: "Zone IV",      lat: 6.9170, lng: 122.0760, status: "verified" },
+  { name: "Bernardez Biryani",       type: "Restaurant", barangay: "San Bernardino", lat: 6.9050, lng: 122.0790, status: "verified" },
+  { name: "Tetuan Tea House",        type: "Cafe",       barangay: "Tetuan",       lat: 6.9400, lng: 122.0900, status: "verified" },
+  { name: "Calarian Kwek-Kwek Stand", type: "Eatery",    barangay: "Calarian",     lat: 6.9480, lng: 122.0580, status: "needs_review" },
+  { name: "Tetuan Tiyula Itum",      type: "Restaurant", barangay: "Tetuan",       lat: 6.9430, lng: 122.0950, status: "verified" },
+  { name: "Guiwan Gulaman House",    type: "Eatery",     barangay: "Guiwan",       lat: 6.9230, lng: 122.1030, status: "verified" },
+  { name: "Canelar Curacha Grill",   type: "Restaurant", barangay: "Canelar",      lat: 6.9120, lng: 122.0730, status: "verified" },
+  { name: "Pasonanca Putlih Bakes",  type: "Bakery",     barangay: "Pasonanca",    lat: 6.9780, lng: 122.0830, status: "verified" },
+  { name: "Baliwasan Beef Nilaga",   type: "Eatery",     barangay: "Baliwasan",    lat: 6.9180, lng: 122.0630, status: "verified" },
+  { name: "Sta. Barbara Snacks",     type: "Eatery",     barangay: "Sta. Barbara", lat: 6.9135, lng: 122.0770, status: "needs_review" },
+  { name: "Camino Nuevo Catering",   type: "Catering",   barangay: "Camino Nuevo", lat: 6.9190, lng: 122.0690, status: "verified" },
+  { name: "Maasin Morebs Grill",     type: "Restaurant", barangay: "Maasin",       lat: 6.9240, lng: 122.0600, status: "verified" },
+  { name: "Talisayes Tausug Treats", type: "Bakery",     barangay: "Talisayes",    lat: 6.9360, lng: 122.1180, status: "verified" },
+];
+
+const STATUS_STYLE = {
+  verified:     { color: "#16a34a", weight: 1.0 },
+  needs_review: { color: "#d97706", weight: 0.4 },
+  expired:      { color: "#dc2626", weight: 0.0 },
+};
+
+const map = L.map("map").setView([6.9214, 122.0790], 12);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors — HalalVerify Spike S4',
+}).addTo(map);
+
+const heatPoints = establishments
+  .map(e => [e.lat, e.lng, STATUS_STYLE[e.status].weight]);
+const heat = L.heatLayer(heatPoints, {
+  radius: 35, blur: 20, maxZoom: 14,
+  gradient: { 0.2: "#fde047", 0.5: "#f97316", 0.8: "#dc2626" },
+}).addTo(map);
+
+const markers = L.layerGroup(
+  establishments.map(e =>
+    L.circleMarker([e.lat, e.lng], {
+      radius: 7, color: STATUS_STYLE[e.status].color, fillOpacity: 0.75, weight: 1,
+    }).bindPopup(
+      `<b>${e.name}</b><br>${e.type} — Brgy. ${e.barangay}` +
+      `<br>Status: <b style="color:${STATUS_STYLE[e.status].color}">${e.status.replace("_", " ")}</b>` +
+      `<br><small>Sample record — no real certification data</small>`
+    )
+  )
+).addTo(map);
+
+document.getElementById("toggleHeat").addEventListener("change", (event) => {
+  event.target.checked ? map.addLayer(heat) : map.removeLayer(heat);
+});
+document.getElementById("toggleMarkers").addEventListener("change", (event) => {
+  event.target.checked ? map.addLayer(markers) : map.removeLayer(markers);
+});
+</script>
+</body>
+</html>

@@ -17,6 +17,11 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 
+# Spike tooling artifacts (model weights, training runs, local venvs)
+*.pt
+runs/
+spikes/s2-yolo/.venv/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
