@@ -137,7 +137,7 @@ export default function App() {
   const renderContent = () => {
     switch (currentView) {
       case 'profile':
-        return <ProfilePage />;
+        return <ProfilePage onViewChange={handleViewChange} />;
       case 'dashboard':
         return <Dashboard userRole={userRole} />;
       case 'scanner':
