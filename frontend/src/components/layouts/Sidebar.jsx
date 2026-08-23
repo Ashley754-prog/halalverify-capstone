@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Camera, BookOpen, Clock, Flag, BarChart2, Settings, LogOut, Menu} from 'lucide-react';
+import { LayoutDashboard, Camera, Package, MapPin, BookOpen, Clock, Flag, BarChart2, Settings, LogOut, Menu} from 'lucide-react';
 import NavItem from '../ui/NavItem';
 
 export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignOut, isSidebarOpen, toggleSidebar }) => {
@@ -66,6 +66,20 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                             icon={<Camera size={18} />} 
                             label="Halal Scanner" 
                             onClick={() => handleNavClick('scanner')} 
+                        />
+                        <NavItem 
+                            collapsed={!isOpen} 
+                            active={currentView === 'products'} 
+                            icon={<Package size={18} />} 
+                            label="Product Catalog" 
+                            onClick={() => handleNavClick('products')} 
+                        />
+                        <NavItem 
+                            collapsed={!isOpen} 
+                            active={currentView === 'map'} 
+                            icon={<MapPin size={18} />} 
+                            label="Establishments Map" 
+                            onClick={() => handleNavClick('map')} 
                         />
                         <NavItem 
                             collapsed={!isOpen} 

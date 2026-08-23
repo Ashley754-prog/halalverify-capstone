@@ -9,6 +9,8 @@ router = APIRouter(tags=["summaries"])
 def get_dashboard_summary(user: dict = Depends(get_current_user)):
     additives = fetch_table_rows("additives")
     establishments = fetch_table_rows("establishments")
+    products = fetch_table_rows("products")
+    manufacturers = fetch_table_rows("manufacturers")
     scan_history = fetch_table_rows("scan_history")
     issue_reports = fetch_table_rows("issue_reports")
 
@@ -33,12 +35,15 @@ def get_dashboard_summary(user: dict = Depends(get_current_user)):
                 "additives": len(additives),
                 "flagged_additives": len(flagged_additives),
                 "establishments": len(establishments),
+                "products": len(products),
+                "manufacturers": len(manufacturers),
                 "open_reports": len(open_reports),
             },
             "breakdowns": {
                 "scan_verdicts": count_by_status(scan_history, "verdict"),
                 "additive_statuses": count_by_status(additives, "status"),
                 "establishment_statuses": count_by_status(establishments, "halal_status"),
+                "product_statuses": count_by_status(products, "status"),
                 "report_statuses": count_by_status(issue_reports, "status"),
             },
             "latest_scans": scan_history[:5],
@@ -50,6 +55,8 @@ def get_dashboard_summary(user: dict = Depends(get_current_user)):
 def get_analytics_summary(user: dict = Depends(require_admin)):
     additives = fetch_table_rows("additives")
     establishments = fetch_table_rows("establishments")
+    products = fetch_table_rows("products")
+    manufacturers = fetch_table_rows("manufacturers")
     scan_history = fetch_table_rows("scan_history")
     issue_reports = fetch_table_rows("issue_reports")
 
@@ -74,6 +81,8 @@ def get_analytics_summary(user: dict = Depends(require_admin)):
                 "certificate_scans": len([scan for scan in scan_history if scan.get("mode") == "certificate"]),
                 "additives": len(additives),
                 "establishments": len(establishments),
+                "products": len(products),
+                "manufacturers": len(manufacturers),
                 "issue_reports": len(issue_reports),
             },
             "quality": {
@@ -85,6 +94,7 @@ def get_analytics_summary(user: dict = Depends(require_admin)):
                 "scan_modes": count_by_status(scan_history, "mode"),
                 "additive_statuses": count_by_status(additives, "status"),
                 "establishment_statuses": count_by_status(establishments, "halal_status"),
+                "product_statuses": count_by_status(products, "status"),
                 "report_statuses": count_by_status(issue_reports, "status"),
             },
         },

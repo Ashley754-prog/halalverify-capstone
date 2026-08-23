@@ -1,6 +1,6 @@
 import os
 
-from app.routes import analyze, health, issue_reports, registry, scan_history, summaries
+from app.routes import analyze, health, issue_reports, products, registry, scan_history, summaries
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -23,6 +23,7 @@ app.add_middleware(
 
 app.include_router(health.router)
 app.include_router(analyze.router)
+app.include_router(products.router)
 app.include_router(registry.router)
 app.include_router(summaries.router)
 app.include_router(issue_reports.router)

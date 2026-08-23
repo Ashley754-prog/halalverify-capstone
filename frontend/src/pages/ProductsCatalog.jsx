@@ -1,0 +1,674 @@
+import React, { useEffect, useState } from 'react';
+import {
+    Search,
+    Package,
+    Building2,
+    ShieldCheck,
+    AlertCircle,
+    Calendar,
+    ExternalLink,
+    Filter,
+    Plus,
+    Pencil,
+    Trash2,
+    CheckCircle2,
+    Clock,
+    Tag,
+    Barcode,
+    FileText
+} from 'lucide-react';
+import Topbar from '../components/layouts/Topbar';
+import Modal from '../components/ui/Modal';
+import Toast from '../components/ui/Toast';
+import { API_BASE_URL, authFetch } from '../utils/api';
+
+const PRODUCT_CATEGORIES = [
+    'All Categories',
+    'Food & Beverage',
+    'Processed Meat',
+    'Poultry',
+    'Canned Seafood',
+    'Snacks',
+    'Beverages',
+    'Instant Noodles',
+    'Dairy & Bakery',
+    'Condiments & Sauces',
+];
+
+const PRODUCT_STATUSES = ['All Statuses', 'Halal', 'Doubtful', 'Expired', 'Revoked'];
+
+const emptyProductForm = {
+    name: '',
+    brand: '',
+    category: 'Food & Beverage',
+    barcode: '',
+    manufacturer_id: '',
+    certifying_body_id: '',
+    certificate_no: '',
+    expiry_date: '',
+    status: 'Halal',
+    halal_logo_present: true,
+    ingredients_summary: '',
+    source: 'IDCP Published Registry',
+    source_url: 'https://www.idcphalal.org/certified-product-page',
+};
+
+export default function ProductsCatalog({ userRole }) {
+    const [products, setProducts] = useState([]);
+    const [manufacturers, setManufacturers] = useState([]);
+    const [certifyingBodies, setCertifyingBodies] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('All Categories');
+    const [selectedStatus, setSelectedStatus] = useState('All Statuses');
+
+    const [activeModal, setActiveModal] = useState(null); // 'add-product', 'edit-product', 'delete-product', 'view-product'
+    const [selectedProduct, setSelectedProduct] = useState(null);
+    const [modalForm, setModalForm] = useState(emptyProductForm);
+    const [isSaving, setIsSaving] = useState(false);
+    const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
+
+    const isAdmin = userRole === 'admin';
+
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            setError('');
+
+            const [productsRes, mfgRes, certRes] = await Promise.all([
+                authFetch(`${API_BASE_URL}/products?limit=200`),
+                authFetch(`${API_BASE_URL}/manufacturers?limit=200`),
+                authFetch(`${API_BASE_URL}/registry/establishments`), // or certifying bodies
+            ]);
+
+            if (!productsRes.ok) {
+                throw new Error('Failed to load products list from API');
+            }
+
+            const productsJson = await productsRes.json();
+            setProducts(productsJson.data || []);
+
+            if (mfgRes.ok) {
+                const mfgJson = await mfgRes.json();
+                setManufacturers(mfgJson.data || []);
+            }
+        } catch (err) {
+            console.error('Error loading products catalog:', err);
+            setError(err.message || 'Could not load products. Please check if database migration 002 is applied.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const showToast = (message, type = 'success') => {
+        setToast({ visible: true, message, type });
+    };
+
+    const openModal = (type, product = null) => {
+        setSelectedProduct(product);
+        setActiveModal(type);
+
+        if (type === 'add-product') {
+            setModalForm(emptyProductForm);
+        } else if (type === 'edit-product' && product) {
+            setModalForm({
+                name: product.name || '',
+                brand: product.brand || '',
+                category: product.category || 'Food & Beverage',
+                barcode: product.barcode || '',
+                manufacturer_id: product.manufacturer_id || '',
+                certifying_body_id: product.certifying_body_id || '',
+                certificate_no: product.certificate_no || '',
+                expiry_date: product.expiry_date || '',
+                status: product.status || 'Halal',
+                halal_logo_present: product.halal_logo_present ?? true,
+                ingredients_summary: product.ingredients_summary || '',
+                source: product.source || 'IDCP Published Registry',
+                source_url: product.source_url || '',
+            });
+        }
+    };
+
+    const closeModal = () => {
+        setActiveModal(null);
+        setSelectedProduct(null);
+        setModalForm(emptyProductForm);
+    };
+
+    const handleFormSubmit = async (e) => {
+        e.preventDefault();
+        if (!modalForm.name.trim()) {
+            showToast('Product name is required', 'error');
+            return;
+        }
+
+        try {
+            setIsSaving(true);
+            const isEdit = activeModal === 'edit-product';
+            const endpoint = isEdit
+                ? `${API_BASE_URL}/products/${selectedProduct.id}`
+                : `${API_BASE_URL}/products`;
+            const method = isEdit ? 'PATCH' : 'POST';
+
+            const payload = {
+                name: modalForm.name.trim(),
+                brand: modalForm.brand.trim() || null,
+                category: modalForm.category || 'Food & Beverage',
+                barcode: modalForm.barcode.trim() || null,
+                manufacturer_id: modalForm.manufacturer_id || null,
+                certifying_body_id: modalForm.certifying_body_id || null,
+                certificate_no: modalForm.certificate_no.trim() || null,
+                expiry_date: modalForm.expiry_date || null,
+                status: modalForm.status,
+                halal_logo_present: modalForm.halal_logo_present,
+                ingredients_summary: modalForm.ingredients_summary.trim() || null,
+                source: modalForm.source.trim() || 'IDCP Published Registry',
+                source_url: modalForm.source_url.trim() || null,
+            };
+
+            const response = await authFetch(endpoint, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(errText || 'Failed to save product');
+            }
+
+            showToast(isEdit ? 'Product updated successfully' : 'Product added successfully', 'success');
+            closeModal();
+            loadData();
+        } catch (err) {
+            console.error(err);
+            showToast(err.message || 'Error saving product', 'error');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDeleteProduct = async () => {
+        if (!selectedProduct) return;
+
+        try {
+            setIsSaving(true);
+            const response = await authFetch(`${API_BASE_URL}/products/${selectedProduct.id}`, {
+                method: 'DELETE',
+            });
+
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(errText || 'Failed to delete product');
+            }
+
+            showToast('Product removed from catalog', 'success');
+            closeModal();
+            loadData();
+        } catch (err) {
+            console.error(err);
+            showToast(err.message || 'Error deleting product', 'error');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const filteredProducts = products.filter((item) => {
+        const matchesQuery =
+            !searchQuery ||
+            item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.barcode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.manufacturers?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+
+        const matchesCategory =
+            selectedCategory === 'All Categories' || item.category === selectedCategory;
+
+        const matchesStatus =
+            selectedStatus === 'All Statuses' || item.status === selectedStatus;
+
+        return matchesQuery && matchesCategory && matchesStatus;
+    });
+
+    return (
+        <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 flex-1 flex flex-col h-full bg-slate-50">
+            <Topbar
+                title="Verified Halal Product Catalog"
+                subtitle="Cross-referenced food products and brands verified against accredited certifying-body published registries."
+            />
+
+            {/* Actions & Filters Bar */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+                    {/* Search Box */}
+                    <div className="relative flex-1">
+                        <Search
+                            size={18}
+                            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                        />
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search by product name, brand, manufacturer, or barcode..."
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                        />
+                    </div>
+
+                    {/* Add Product Button (Admin only) */}
+                    {isAdmin && (
+                        <button
+                            type="button"
+                            onClick={() => openModal('add-product')}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-emerald-500/10 hover:bg-emerald-700 transition active:scale-[0.98]"
+                        >
+                            <Plus size={16} />
+                            Add Product
+                        </button>
+                    )}
+                </div>
+
+                {/* Filter Tags */}
+                <div className="flex flex-wrap gap-2.5 items-center pt-2 border-t border-slate-100 text-xs">
+                    <div className="flex items-center gap-1.5 text-slate-500 font-medium mr-1">
+                        <Filter size={14} /> Filter:
+                    </div>
+
+                    {/* Category Selector */}
+                    <select
+                        value={selectedCategory}
+                        onChange={(e) => setSelectedCategory(e.target.value)}
+                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-slate-700 font-medium focus:outline-none focus:border-emerald-500"
+                    >
+                        {PRODUCT_CATEGORIES.map((cat) => (
+                            <option key={cat} value={cat}>
+                                {cat}
+                            </option>
+                        ))}
+                    </select>
+
+                    {/* Status Selector */}
+                    <select
+                        value={selectedStatus}
+                        onChange={(e) => setSelectedStatus(e.target.value)}
+                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-slate-700 font-medium focus:outline-none focus:border-emerald-500"
+                    >
+                        {PRODUCT_STATUSES.map((st) => (
+                            <option key={st} value={st}>
+                                {st}
+                            </option>
+                        ))}
+                    </select>
+
+                    <span className="text-slate-400 ml-auto">
+                        Showing <strong className="text-slate-700">{filteredProducts.length}</strong> of{' '}
+                        {products.length} products
+                    </span>
+                </div>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs sm:text-sm text-amber-800 flex items-start gap-2.5 shadow-sm">
+                    <AlertCircle size={18} className="shrink-0 mt-0.5 text-amber-600" />
+                    <div>
+                        <p className="font-bold">Catalog Notice</p>
+                        <p>{error}</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Products List Grid */}
+            {loading ? (
+                <div className="flex-1 flex items-center justify-center p-12 bg-white rounded-2xl border border-slate-200 shadow-sm text-sm text-slate-500">
+                    Loading verified product directory...
+                </div>
+            ) : filteredProducts.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-slate-200 shadow-sm text-center space-y-3">
+                    <Package size={40} className="text-slate-300" />
+                    <h3 className="text-base font-bold text-slate-700">No Products Found</h3>
+                    <p className="text-xs text-slate-500 max-w-md">
+                        {searchQuery
+                            ? `No verified products matched your search term "${searchQuery}". Try searching with another brand or category.`
+                            : 'No verified products in the registry yet. Ensure database migration 002 is run in Supabase.'}
+                    </p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
+                    {filteredProducts.map((product) => {
+                        const isHalal = product.status === 'Halal';
+                        const isExpired = product.status === 'Expired';
+                        const isDoubtful = product.status === 'Doubtful';
+
+                        return (
+                            <div
+                                key={product.id}
+                                className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-4"
+                            >
+                                <div className="space-y-3">
+                                    {/* Header: Brand & Status Badge */}
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="space-y-0.5">
+                                            {product.brand && (
+                                                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+                                                    {product.brand}
+                                                </span>
+                                            )}
+                                            <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-tight pt-1">
+                                                {product.name}
+                                            </h3>
+                                        </div>
+
+                                        <span
+                                            className={`text-[11px] font-bold px-2.5 py-1 rounded-lg shrink-0 flex items-center gap-1 border ${
+                                                isHalal
+                                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                    : isDoubtful
+                                                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                                    : 'bg-red-50 text-red-700 border-red-200'
+                                            }`}
+                                        >
+                                            {isHalal && <CheckCircle2 size={12} />}
+                                            {isDoubtful && <AlertCircle size={12} />}
+                                            {isExpired && <Clock size={12} />}
+                                            {product.status}
+                                        </span>
+                                    </div>
+
+                                    {/* Category & Barcode */}
+                                    <div className="flex flex-wrap gap-2 text-xs text-slate-500 pt-1">
+                                        <span className="flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-md">
+                                            <Tag size={12} /> {product.category || 'Food'}
+                                        </span>
+                                        {product.barcode && (
+                                            <span className="flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-md font-mono text-[11px]">
+                                                <Barcode size={12} /> {product.barcode}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* Manufacturer & Certification Info */}
+                                    <div className="space-y-1.5 text-xs text-slate-600 bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                        <div className="flex items-center gap-1.5">
+                                            <Building2 size={13} className="text-slate-400 shrink-0" />
+                                            <span className="font-semibold text-slate-800">
+                                                {product.manufacturers?.name || 'Manufacturer Unspecified'}
+                                            </span>
+                                        </div>
+
+                                        {product.certificate_no && (
+                                            <div className="flex items-center gap-1.5 text-slate-500">
+                                                <ShieldCheck size={13} className="text-emerald-600 shrink-0" />
+                                                <span>
+                                                    Cert: <strong className="font-mono text-slate-700">{product.certificate_no}</strong>
+                                                    {product.certifying_bodies?.code && (
+                                                        <span className="ml-1 text-slate-400">({product.certifying_bodies.code})</span>
+                                                    )}
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {product.expiry_date && (
+                                            <div className="flex items-center gap-1.5 text-slate-500">
+                                                <Calendar size={13} className="text-slate-400 shrink-0" />
+                                                <span>Valid until: {product.expiry_date}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Ingredients Summary */}
+                                    {product.ingredients_summary && (
+                                        <div className="text-xs text-slate-600">
+                                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
+                                                Ingredients:
+                                            </p>
+                                            <p className="line-clamp-2 text-slate-600 text-[11px] leading-relaxed">
+                                                {product.ingredients_summary}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Footer: Provenance & Admin Actions */}
+                                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                                    <span className="text-[10px] text-slate-400 flex items-center gap-1" title={product.source_url || product.source}>
+                                        <FileText size={11} />
+                                        {product.source || 'IDCP Registry'}
+                                    </span>
+
+                                    {isAdmin ? (
+                                        <div className="flex items-center gap-1.5">
+                                            <button
+                                                type="button"
+                                                onClick={() => openModal('edit-product', product)}
+                                                className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-slate-100 rounded-lg transition"
+                                                title="Edit Product"
+                                            >
+                                                <Pencil size={14} />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => openModal('delete-product', product)}
+                                                className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                                                title="Delete Product"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        product.source_url && (
+                                            <a
+                                                href={product.source_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5"
+                                            >
+                                                Source <ExternalLink size={10} />
+                                            </a>
+                                        )
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+
+            {/* Add / Edit Modal */}
+            {(activeModal === 'add-product' || activeModal === 'edit-product') && (
+                <Modal
+                    isOpen={true}
+                    onClose={closeModal}
+                    title={activeModal === 'add-product' ? 'Register New Halal Product' : 'Edit Product Record'}
+                >
+                    <form onSubmit={handleFormSubmit} className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                            <div className="sm:col-span-2 space-y-1">
+                                <label className="text-xs font-bold text-slate-700">Product Name *</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={modalForm.name}
+                                    onChange={(e) => setModalForm({ ...modalForm, name: e.target.value })}
+                                    placeholder="e.g. Purefoods Corned Beef 150g"
+                                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500"
+                                />
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-slate-700">Brand</label>
+                                <input
+                                    type="text"
+                                    value={modalForm.brand}
+                                    onChange={(e) => setModalForm({ ...modalForm, brand: e.target.value })}
+                                    placeholder="e.g. Purefoods"
+                                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500"
+                                />
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-slate-700">Category</label>
+                                <select
+                                    value={modalForm.category}
+                                    onChange={(e) => setModalForm({ ...modalForm, category: e.target.value })}
+                                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500 bg-white"
+                                >
+                                    {PRODUCT_CATEGORIES.filter((c) => c !== 'All Categories').map((cat) => (
+                                        <option key={cat} value={cat}>
+                                            {cat}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-slate-700">Barcode (GTIN / EAN)</label>
+                                <input
+                                    type="text"
+                                    value={modalForm.barcode}
+                                    onChange={(e) => setModalForm({ ...modalForm, barcode: e.target.value })}
+                                    placeholder="e.g. 4800016012345"
+                                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm font-mono focus:outline-none focus:border-emerald-500"
+                                />
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-slate-700">Halal Status</label>
+                                <select
+                                    value={modalForm.status}
+                                    onChange={(e) => setModalForm({ ...modalForm, status: e.target.value })}
+                                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500 bg-white"
+                                >
+                                    {PRODUCT_STATUSES.filter((s) => s !== 'All Statuses').map((st) => (
+                                        <option key={st} value={st}>
+                                            {st}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-slate-700">Manufacturer</label>
+                                <select
+                                    value={modalForm.manufacturer_id}
+                                    onChange={(e) => setModalForm({ ...modalForm, manufacturer_id: e.target.value })}
+                                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500 bg-white"
+                                >
+                                    <option value="">-- Select Manufacturer --</option>
+                                    {manufacturers.map((m) => (
+                                        <option key={m.id} value={m.id}>
+                                            {m.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-slate-700">Certificate Number</label>
+                                <input
+                                    type="text"
+                                    value={modalForm.certificate_no}
+                                    onChange={(e) => setModalForm({ ...modalForm, certificate_no: e.target.value })}
+                                    placeholder="e.g. IDCP-2024-0891"
+                                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm font-mono focus:outline-none focus:border-emerald-500"
+                                />
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-slate-700">Certificate Expiry Date</label>
+                                <input
+                                    type="date"
+                                    value={modalForm.expiry_date}
+                                    onChange={(e) => setModalForm({ ...modalForm, expiry_date: e.target.value })}
+                                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500"
+                                />
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-slate-700">Data Source</label>
+                                <input
+                                    type="text"
+                                    value={modalForm.source}
+                                    onChange={(e) => setModalForm({ ...modalForm, source: e.target.value })}
+                                    placeholder="e.g. IDCP Published Registry"
+                                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500"
+                                />
+                            </div>
+
+                            <div className="sm:col-span-2 space-y-1">
+                                <label className="text-xs font-bold text-slate-700">Ingredients Summary</label>
+                                <textarea
+                                    rows={2}
+                                    value={modalForm.ingredients_summary}
+                                    onChange={(e) => setModalForm({ ...modalForm, ingredients_summary: e.target.value })}
+                                    placeholder="e.g. Cooked Beef, Beef Broth, Iodized Salt, Sugar, Spices..."
+                                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
+                            <button
+                                type="button"
+                                onClick={closeModal}
+                                className="px-4 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition font-medium"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={isSaving}
+                                className="px-5 py-2 text-xs sm:text-sm rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition disabled:opacity-50"
+                            >
+                                {isSaving ? 'Saving...' : 'Save Product'}
+                            </button>
+                        </div>
+                    </form>
+                </Modal>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {activeModal === 'delete-product' && selectedProduct && (
+                <Modal isOpen={true} onClose={closeModal} title="Confirm Product Deletion">
+                    <div className="space-y-4">
+                        <p className="text-xs sm:text-sm text-slate-600">
+                            Are you sure you want to remove{' '}
+                            <strong className="text-slate-900">{selectedProduct.name}</strong> from the verified
+                            product directory? This action cannot be undone.
+                        </p>
+                        <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
+                            <button
+                                type="button"
+                                onClick={closeModal}
+                                className="px-4 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition font-medium"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleDeleteProduct}
+                                disabled={isSaving}
+                                className="px-5 py-2 text-xs sm:text-sm rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold transition disabled:opacity-50"
+                            >
+                                {isSaving ? 'Deleting...' : 'Delete Product'}
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+
+            {/* Toast Notification */}
+            <Toast
+                visible={toast.visible}
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast({ ...toast, visible: false })}
+            />
+        </div>
+    );
+}

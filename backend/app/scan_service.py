@@ -587,12 +587,16 @@ def match_additives_from_text(extracted_text: str):
     flagged_items = []
     seen_ids = set()
 
+    seen_codes = set()
     for additive in additives:
         additive_id = additive.get("id")
         code = additive.get("code")
         name = additive.get("name") or ""
 
         code_match = bool(code and code in detected_codes)
+        if code_match:
+            seen_codes.add(code)
+
         matched_alias = find_additive_alias_match(code, name, normalized_text)
         name_match = bool(matched_alias)
 
@@ -614,6 +618,20 @@ def match_additives_from_text(extracted_text: str):
                 or "Matched from additive database."
             ),
         })
+
+    # Surface any detected E-codes not in our local database as Doubtful/Unverified
+    for code in detected_codes:
+        if code not in seen_codes:
+            flagged_items.append({
+                "additive_id": None,
+                "ingredient": f"Unknown Compound ({code})",
+                "matched_text": code,
+                "status": "Doubtful",
+                "reason": (
+                    f"E-number {code} was detected on the label but is not yet cataloged in the local halal database. "
+                    "Classified as Doubtful (Syubhah) pending verification."
+                ),
+            })
 
     return flagged_items
 

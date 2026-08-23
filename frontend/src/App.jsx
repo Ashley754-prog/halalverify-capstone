@@ -14,6 +14,8 @@ import ReportIssue from './pages/ReportIssue.jsx';
 import Analytics from './pages/Analytics.jsx';
 import Settings from './pages/Settings.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
+import ProductsCatalog from './pages/ProductsCatalog.jsx';
+import EstablishmentsMap from './pages/EstablishmentsMap.jsx';
 import { supabase } from './lib/supabaseClient';
 import { AUTH_VIEWS, fetchUserRole, signOut } from './lib/auth';
 
@@ -142,6 +144,10 @@ export default function App() {
         return <Dashboard userRole={userRole} />;
       case 'scanner':
         return <Scanner isOnline={isOnline} />;
+      case 'products':
+        return <ProductsCatalog userRole={userRole} />;
+      case 'map':
+        return <EstablishmentsMap />;
       case 'registry':
         return <Registry userRole={userRole} />;
       case 'scan-history':

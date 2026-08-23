@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ScanSearch, ShieldAlert, Store, Flag } from 'lucide-react';
+import { ScanSearch, ShieldAlert, Store, Flag, Package } from 'lucide-react';
 import KpiCard from '../components/ui/KpiCard';
 import Topbar from '../components/layouts/Topbar';
 import { API_BASE_URL, authFetch } from '../utils/api';
@@ -42,8 +42,9 @@ export const Dashboard = () => {
                 </div>
             )}
 
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
                 <KpiCard title="Total Scans" value={totals ? totals.scans : '...'} icon={<ScanSearch />} color="emerald" />
+                <KpiCard title="Verified Products" value={totals ? (totals.products ?? 0) : '...'} icon={<Package />} color="emerald" />
                 <KpiCard title="Flagged Additives" value={totals ? totals.flagged_additives : '...'} icon={<ShieldAlert />} color="red" />
                 <KpiCard title="Establishments" value={totals ? totals.establishments : '...'} icon={<Store />} color="blue" />
                 <KpiCard title="Open Reports" value={totals ? totals.open_reports : '...'} icon={<Flag />} color="yellow" />
