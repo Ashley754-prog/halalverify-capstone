@@ -106,6 +106,28 @@ def additive_name_recall(truth_norm: str, predicted_norm: str, term_patterns):
     return round(hits / len(present), 3), hits, len(present)
 
 
+def word_recall(truth_norm: str, predicted_norm: str):
+    """Ingredient Capture Rate: fraction of truth words (len>=2) that appear
+    anywhere in the prediction. Order-free and does NOT punish the OCR for
+    reading extra label text outside the transcribed region."""
+    truth_words = [w for w in re.findall(r"[a-z0-9]+", truth_norm) if len(w) >= 2]
+    if not truth_words:
+        return None, 0, 0
+
+    predicted_words = set(re.findall(r"[a-z0-9]+", predicted_norm))
+    hits = sum(1 for w in truth_words if w in predicted_words)
+    return round(hits / len(truth_words), 3), hits, len(truth_words)
+
+
+def letter_ratio(text: str) -> float:
+    """Fraction of non-space characters that are letters; low values flag
+    unusable captures (rotation/glare/noise) where OCR returns symbol soup."""
+    compact = text.replace(" ", "")
+    if not compact:
+        return 0.0
+    return round(sum(c.isalpha() for c in compact) / len(compact), 3)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--images", required=True, type=Path)
@@ -150,9 +172,22 @@ def main():
         )
         name_cell = "n/a" if name_recall is None else name_recall
 
+        capture_rate, word_hits, word_total = word_recall(
+            normalize_text(truth), normalize_text(predicted),
+        )
+        capture_cell = "n/a" if capture_rate is None else capture_rate
+        letters = letter_ratio(predicted)
+
         rows.append({
             "image": image_file.name,
             "cer": round(cer, 4),
+            "truth_chars": len(truth),
+            "predicted_chars": len(predicted),
+            "frame_coverage": (
+                round(len(truth) / len(predicted), 3) if predicted else 0
+            ),
+            "letter_ratio": letters,
+            "capture_rate": capture_rate,
             "truth_e_codes": len(truth_codes),
             "predicted_e_codes": len(find_e_numbers(predicted)),
             "e_code_recall": code_recall,
@@ -160,8 +195,10 @@ def main():
             "additive_name_recall": name_recall,
         })
         print(f"{image_file.name}: CER={cer:.4f}  "
+              f"capture={capture_cell} ({word_hits}/{word_total})  "
+              f"letters={letters}  "
               f"E-code recall={code_recall}  "
-              f"Additive recall={name_cell} ({name_hits}/{name_total})")
+              f"Additive recall={name_cell}")
 
     if not rows:
         sys.exit("No paired image/ground-truth files found.")
@@ -177,6 +214,20 @@ def main():
         if name_recalls else "not measurable (database unavailable or no matches)"
     )
 
+    usable = [row for row in rows if row["letter_ratio"] >= 0.4]
+    unusable_count = len(rows) - len(usable)
+    captures = [row["capture_rate"] for row in usable
+                if row["capture_rate"] is not None]
+    mean_capture = (
+        f"{sum(captures) / len(captures):.4f} over {len(captures)} usable labels"
+        if captures else "not measurable"
+    )
+    fair_cers = [row["cer"] for row in usable if row["frame_coverage"] >= 0.6]
+    mean_fair_cer = (
+        f"{sum(fair_cers) / len(fair_cers):.4f} over {len(fair_cers)} labels"
+        if fair_cers else "no fair-coverage labels"
+    )
+
     csv_path = Path(__file__).parent / "cer_results.csv"
     with csv_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()))
@@ -188,8 +239,12 @@ def main():
         "",
         f"- Labels evaluated: {len(rows)}"
         + (f" (skipped {skipped_empty} with empty ground truth)" if skipped_empty else ""),
-        f"- Mean CER: {mean_cer:.4f} ({mean_cer * 100:.1f}%)",
-        f"- Std CER: {variance ** 0.5:.4f}",
+        f"- Mean CER (all labels, sequence-based): {mean_cer:.4f}"
+        " — inflated by wide shots; see capture rate below",
+        f"- Usable captures (letter ratio >= 0.40): {len(usable)}"
+        f" | flagged unusable: {unusable_count}",
+        f"- Mean Ingredient Capture Rate: {mean_capture}",
+        f"- Mean CER on fair-coverage usable labels: {mean_fair_cer}",
         f"- E-code recall: measured only where labels print E-codes (see CSV)",
         f"- Mean additive-name recall: {mean_name_recall}",
         "",
