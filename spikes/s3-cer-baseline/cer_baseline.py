@@ -1,7 +1,17 @@
 """Spike S3: CER baseline for the HalalVerify OCR pipeline.
 
 Measures character error rate of the real backend pipeline (app.ocr_service)
-against manually typed ground-truth transcripts of 30 product label photos.
+against manually typed ground-truth transcripts of product label photos.
+
+Metrics per label:
+  - CER              : character error rate over all readable text
+  - E-code recall    : of the E-codes printed on the label, how many OCR found
+  - Additive-name recall: of the known additive NAMES (per the Supabase
+    additives table, matched with the same alias/word-boundary logic the
+    production scanner uses) printed on the label, how many OCR preserved
+
+Pairs whose ground-truth file is empty are skipped with a warning so an
+incomplete transcription pass cannot poison the aggregate numbers.
 
 Run from the backend/ directory so the app package imports resolve:
 
@@ -11,19 +21,20 @@ Run from the backend/ directory so the app package imports resolve:
 """
 
 import argparse
+import base64
 import csv
+import re
 import sys
+from io import BytesIO
 from pathlib import Path
 
 # Allow importing the backend app package when run from anywhere under backend/.
 BACKEND_ROOT = Path(__file__).resolve().parents[2] / "backend"
 sys.path.insert(0, str(BACKEND_ROOT))
 
-from app.ocr_service import find_e_numbers, extract_text_from_image  # noqa: E402
+from app.ocr_service import find_e_numbers, extract_text_from_image, normalize_text  # noqa: E402
 
 from PIL import Image  # noqa: E402
-import base64  # noqa: E402
-from io import BytesIO  # noqa: E402
 
 
 def levenshtein(a: str, b: str) -> int:
@@ -55,6 +66,46 @@ def image_to_base64(path: Path) -> str:
     return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
 
+def load_additive_term_patterns():
+    """Compile word-boundary patterns for every additive name/alias the
+    production scanner can match, sourced from the Supabase additives table.
+
+    Returns [] (and prints a warning) when the database is unreachable so the
+    CER and E-code metrics keep working offline.
+    """
+    try:
+        from app.scan_service import build_additive_match_terms  # noqa: E402
+        from app.supabase_client import supabase  # noqa: E402
+
+        rows = supabase.table("additives").select("code,name").execute().data or []
+    except Exception as exc:  # noqa: BLE001
+        print(f"WARN could not load additives from Supabase ({exc}); "
+              "additive-name recall will be 'not measured' for all files")
+        return []
+
+    patterns = {}
+    for row in rows:
+        for term in build_additive_match_terms(row.get("code") or "", row.get("name") or ""):
+            normalized = normalize_text(term)
+            if len(normalized) < 3 or normalized in patterns:
+                continue
+            patterns[normalized] = re.compile(rf"\b{re.escape(normalized)}\b")
+
+    print(f"Loaded {len(patterns)} additive name/alias terms from database")
+    return list(patterns.items())
+
+
+def additive_name_recall(truth_norm: str, predicted_norm: str, term_patterns):
+    """Recall of additive names present in truth that survive into prediction."""
+    present = [term for term, pattern in term_patterns if pattern.search(truth_norm)]
+    if not present:
+        return None, 0, 0
+
+    hits = sum(1 for term, pattern in term_patterns
+               if term in present and pattern.search(predicted_norm))
+    return round(hits / len(present), 3), hits, len(present)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--images", required=True, type=Path)
@@ -69,7 +120,10 @@ def main():
     if not image_files:
         sys.exit(f"No images found in {args.images}")
 
+    term_patterns = load_additive_term_patterns()
+
     rows = []
+    skipped_empty = 0
 
     for image_file in image_files:
         truth_file = args.ground_truth / (image_file.stem + ".txt")
@@ -78,6 +132,11 @@ def main():
             continue
 
         truth = truth_file.read_text(encoding="utf-8").strip()
+        if not truth:
+            print(f"SKIP {image_file.name}: ground truth is empty (not transcribed yet)")
+            skipped_empty += 1
+            continue
+
         predicted = extract_text_from_image(image_to_base64(image_file))
         cer = character_error_rate(predicted, truth)
 
@@ -86,14 +145,23 @@ def main():
         hits = len(truth_codes & predicted_codes)
         code_recall = round(hits / len(truth_codes), 3) if truth_codes else None
 
+        name_recall, name_hits, name_total = additive_name_recall(
+            normalize_text(truth), normalize_text(predicted), term_patterns,
+        )
+        name_cell = "n/a" if name_recall is None else name_recall
+
         rows.append({
             "image": image_file.name,
             "cer": round(cer, 4),
             "truth_e_codes": len(truth_codes),
-            "predicted_e_codes": len(predicted_codes),
+            "predicted_e_codes": len(find_e_numbers(predicted)),
             "e_code_recall": code_recall,
+            "additives_in_truth": name_total,
+            "additive_name_recall": name_recall,
         })
-        print(f"{image_file.name}: CER={cer:.4f}  E-code recall={code_recall}")
+        print(f"{image_file.name}: CER={cer:.4f}  "
+              f"E-code recall={code_recall}  "
+              f"Additive recall={name_cell} ({name_hits}/{name_total})")
 
     if not rows:
         sys.exit("No paired image/ground-truth files found.")
@@ -102,20 +170,28 @@ def main():
     mean_cer = sum(cers) / len(cers)
     variance = sum((c - mean_cer) ** 2 for c in cers) / len(cers)
 
+    name_recalls = [row["additive_name_recall"] for row in rows
+                    if row["additive_name_recall"] is not None]
+    mean_name_recall = (
+        f"{sum(name_recalls) / len(name_recalls):.4f} over {len(name_recalls)} labels"
+        if name_recalls else "not measurable (database unavailable or no matches)"
+    )
+
     csv_path = Path(__file__).parent / "cer_results.csv"
     with csv_path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=rows[0].keys())
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()))
         writer.writeheader()
         writer.writerows(rows)
 
     summary = [
         "### Spike S3 — OCR/CER baseline (REAL measurements)",
         "",
-        f"- Labels evaluated: {len(rows)}",
+        f"- Labels evaluated: {len(rows)}"
+        + (f" (skipped {skipped_empty} with empty ground truth)" if skipped_empty else ""),
         f"- Mean CER: {mean_cer:.4f} ({mean_cer * 100:.1f}%)",
         f"- Std CER: {variance ** 0.5:.4f}",
-        f"- E-code recall (aggregate): "
-        f"{sum(r['e_code_recall'] or 0 for r in rows)}/{len(rows)} files measured (see CSV)",
+        f"- E-code recall: measured only where labels print E-codes (see CSV)",
+        f"- Mean additive-name recall: {mean_name_recall}",
         "",
         "Per-file results: `spikes/s3-cer-baseline/cer_results.csv`",
     ]
