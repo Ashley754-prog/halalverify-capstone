@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, ShieldCheck, MapPin, Database, Pencil, AlertOctagon, Save, Plus, Trash2 } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import Modal from '../components/ui/Modal';
@@ -6,7 +6,7 @@ import Toast from '../components/ui/Toast';
 import { API_BASE_URL, authFetch } from '../utils/api';
 
 const ADDITIVE_STATUSES = ['Halal', 'Haram', 'Doubtful', 'Needs Review'];
-const ESTABLISHMENT_STATUSES = ['verified', 'expired', 'needs_review'];
+const ESTABLISHMENT_STATUSES = ['verified', 'needs_review'];
 
 const emptyAdditiveForm = {
     code: '',
@@ -521,7 +521,6 @@ export const Registry = ({ userRole }) => {
                                     <option value="Needs Review">Needs Review</option>
                                     <option value="Verified">Verified</option>
                                     <option value="verified">verified</option>
-                                    <option value="expired">expired</option>
                                     <option value="needs_review">needs_review</option>
                                 </select>
                             </div>

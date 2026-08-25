@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { AlertTriangle, RefreshCw, Eye, ScanSearch, FileText, X, Image as ImageIcon } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Eye, ScanSearch, FileText, X, Image as ImageIcon, ShieldCheck, ShieldAlert, Shield, CheckCircle2, Sparkles } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import Toast from '../components/ui/Toast';
 import { analyzeImage, simulateFallback } from '../utils/api';
@@ -232,6 +232,56 @@ export const Scanner = () => {
                                     <span className="text-[10px] uppercase font-bold tracking-wider">Classification Verdict</span>
                                     <p className="text-base sm:text-lg font-black tracking-wide">{scanResult.verdict} State</p>
                                 </div>
+                            </div>
+
+                            {/* Halal Logo Authentication (YOLOv8-Nano) */}
+                            <div className="space-y-2">
+                                <span className="text-[10px] uppercase font-bold text-slate-400 block flex items-center justify-between">
+                                    <span>Halal Logo Authentication</span>
+                                    <span className="font-normal text-[10px] text-slate-400">YOLOv8-Nano</span>
+                                </span>
+
+                                {scanResult.isInvalidLogo ? (
+                                    <div className="bg-red-50 border-2 border-red-300 rounded-xl p-3.5 space-y-1.5 shadow-sm">
+                                        <div className="flex items-center gap-2 text-red-700 font-bold text-xs">
+                                            <ShieldAlert size={16} className="shrink-0 text-red-600 animate-pulse" />
+                                            <span>High Risk: Suspected Counterfeit / Invalid Mark</span>
+                                        </div>
+                                        <p className="text-[11px] text-red-600 leading-relaxed">
+                                            An unrecognized, altered, or unauthorized halal logo was detected on the packaging.
+                                            Do not rely on this mark for compliance.
+                                        </p>
+                                    </div>
+                                ) : scanResult.logoDetected ? (
+                                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 space-y-1.5 shadow-sm">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2 text-emerald-800 font-bold text-xs">
+                                                <ShieldCheck size={16} className="shrink-0 text-emerald-600" />
+                                                <span>{scanResult.logoBody}</span>
+                                            </div>
+                                            <span className="text-[11px] font-bold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-md">
+                                                {scanResult.logoConfidence}% Match
+                                            </span>
+                                        </div>
+                                        <p className="text-[11px] text-emerald-700/90 leading-relaxed">
+                                            Accredited halal certification mark localized and verified against official certification authority standards.
+                                        </p>
+                                        {scanResult.detectedLogos?.length > 1 && (
+                                            <div className="pt-1 text-[10px] text-emerald-600 flex flex-wrap gap-1">
+                                                {scanResult.detectedLogos.map((l, idx) => (
+                                                    <span key={idx} className="bg-emerald-100/70 px-1.5 py-0.5 rounded">
+                                                        {l.label} ({l.confidence}%)
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-500 flex items-center gap-2">
+                                        <Shield size={16} className="shrink-0 text-slate-400" />
+                                        <span>No accredited halal certification seal was recognized in this frame. Analysis is based on ingredient declarations.</span>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">

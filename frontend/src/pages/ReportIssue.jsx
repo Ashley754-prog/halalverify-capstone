@@ -210,7 +210,7 @@ export const ReportIssue = () => {
                         <h4 className="font-bold text-emerald-800 text-xs sm:text-sm mb-2 sm:mb-3">Common Issues to Report</h4>
                         <ul className="text-xs text-emerald-700 space-y-2">
                             <li className="flex items-start gap-2"><span className="mt-0.5 text-emerald-500 font-bold">•</span> Scanner says "Green" but product contains suspicious ingredients</li>
-                            <li className="flex items-start gap-2"><span className="mt-0.5 text-emerald-500 font-bold">•</span> Expired certificate was marked as "Valid"</li>
+                            <li className="flex items-start gap-2"><span className="mt-0.5 text-emerald-500 font-bold">•</span> Invalid or unverified certificate was marked as "Valid"</li>
                             <li className="flex items-start gap-2"><span className="mt-0.5 text-emerald-500 font-bold">•</span> Legitimate Halal logo was not detected</li>
                             <li className="flex items-start gap-2"><span className="mt-0.5 text-emerald-500 font-bold">•</span> Establishment status is outdated in the registry</li>
                         </ul>

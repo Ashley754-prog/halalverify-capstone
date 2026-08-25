@@ -69,7 +69,7 @@ export const Dashboard = () => {
                         <ul className="list-disc pl-4 text-xs sm:text-sm text-slate-600 space-y-1.5">
                             <li>OCR reads certificate number, establishment, certifying body, and expiry.</li>
                             <li>Fields are fuzzy-matched against the local establishment registry.</li>
-                            <li>Result is Valid, Suspicious, or Expired — advisory only.</li>
+                            <li>Result is Valid or Suspicious — advisory only.</li>
                         </ul>
                     </div>
                 </div>

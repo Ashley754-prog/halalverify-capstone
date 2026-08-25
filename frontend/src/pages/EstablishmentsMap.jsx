@@ -22,7 +22,7 @@ import 'leaflet.heat';
 const SEED_ESTABLISHMENTS = [
     { id: 'seed-1', name: 'Al-Barka Halal Kitchen', type: 'Eatery', address: 'Canelar St, Zamboanga City', city: 'Zamboanga City', latitude: 6.9130, longitude: 122.0750, halal_status: 'verified', certificate_number: 'IDCP-ZAM-2024-01' },
     { id: 'seed-2', name: 'Yakan Heritage Cafe', type: 'Restaurant', address: 'Upper Calarian, Zamboanga City', city: 'Zamboanga City', latitude: 6.9550, longitude: 122.0500, halal_status: 'verified', certificate_number: 'IDCP-ZAM-2024-02' },
-    { id: 'seed-3', name: 'Sulu Sunset Grill', type: 'Restaurant', address: 'Paseo del Mar, Zamboanga City', city: 'Zamboanga City', latitude: 6.9105, longitude: 122.0705, halal_status: 'expired', certificate_number: 'HDIP-ZAM-2023-09' },
+    { id: 'seed-3', name: 'Sulu Sunset Grill', type: 'Restaurant', address: 'Paseo del Mar, Zamboanga City', city: 'Zamboanga City', latitude: 6.9105, longitude: 122.0705, halal_status: 'needs_review', certificate_number: 'HDIP-ZAM-2023-09' },
     { id: 'seed-4', name: 'Zambo Halal Mart', type: 'Retailer', address: 'Gov. Lim Ave, Zamboanga City', city: 'Zamboanga City', latitude: 6.9160, longitude: 122.0740, halal_status: 'verified', certificate_number: 'IDCP-ZAM-2024-04' },
     { id: 'seed-5', name: 'Tumaga Tapsi House', type: 'Eatery', address: 'Tumaga, Zamboanga City', city: 'Zamboanga City', latitude: 6.9700, longitude: 122.0700, halal_status: 'verified', certificate_number: 'IDCP-ZAM-2024-05' },
     { id: 'seed-6', name: 'Pasonanca Pantry', type: 'Retailer', address: 'Pasonanca, Zamboanga City', city: 'Zamboanga City', latitude: 6.9800, longitude: 122.0800, halal_status: 'needs_review', certificate_number: null },
@@ -40,7 +40,6 @@ const SEED_ESTABLISHMENTS = [
 const STATUS_CONFIG = {
     verified: { label: 'Verified Halal', color: '#10b981', weight: 1.0, badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
     needs_review: { label: 'Needs Review', color: '#f59e0b', weight: 0.4, badgeBg: 'bg-amber-50 text-amber-700 border-amber-200' },
-    expired: { label: 'Expired / Revoked', color: '#ef4444', weight: 0.0, badgeBg: 'bg-red-50 text-red-700 border-red-200' },
 };
 
 export default function EstablishmentsMap() {
@@ -263,10 +262,6 @@ export default function EstablishmentsMap() {
                             <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
                             <span className="text-slate-600">Needs Review</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
-                            <span className="text-slate-600">Expired / Revoked</span>
-                        </div>
                     </div>
 
                     {/* Leaflet DOM Node */}
@@ -304,7 +299,6 @@ export default function EstablishmentsMap() {
                                 <option value="all">All Verification Statuses</option>
                                 <option value="verified">Verified Halal</option>
                                 <option value="needs_review">Needs Review</option>
-                                <option value="expired">Expired / Revoked</option>
                             </select>
                         </div>
 

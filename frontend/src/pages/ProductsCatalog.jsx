@@ -35,7 +35,7 @@ const PRODUCT_CATEGORIES = [
     'Condiments & Sauces',
 ];
 
-const PRODUCT_STATUSES = ['All Statuses', 'Halal', 'Doubtful', 'Expired', 'Revoked'];
+const PRODUCT_STATUSES = ['All Statuses', 'Halal', 'Doubtful', 'Revoked'];
 
 const emptyProductForm = {
     name: '',
@@ -342,7 +342,6 @@ export default function ProductsCatalog({ userRole }) {
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
                     {filteredProducts.map((product) => {
                         const isHalal = product.status === 'Halal';
-                        const isExpired = product.status === 'Expired';
                         const isDoubtful = product.status === 'Doubtful';
 
                         return (
@@ -375,7 +374,6 @@ export default function ProductsCatalog({ userRole }) {
                                         >
                                             {isHalal && <CheckCircle2 size={12} />}
                                             {isDoubtful && <AlertCircle size={12} />}
-                                            {isExpired && <Clock size={12} />}
                                             {product.status}
                                         </span>
                                     </div>

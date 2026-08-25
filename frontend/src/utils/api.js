@@ -66,7 +66,6 @@ export function simulateFallback(mode) {
         establishmentName: 'Not detected',
         certificateNumber: 'Not detected',
         expirationDate: null,
-        isExpired: false,
         layoutConfidence: 0,
         structuralZones: [],
         status: 'Suspicious',
