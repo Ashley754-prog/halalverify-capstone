@@ -5,3 +5,4 @@ supabase==2.31.0
 easyocr
 numpy
 pillow
+ultralytics

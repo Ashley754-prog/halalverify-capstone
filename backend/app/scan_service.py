@@ -2,6 +2,7 @@ import re
 from datetime import date, datetime
 from difflib import SequenceMatcher
 
+from app.logo_service import detect_halal_logo
 from app.ocr_service import extract_text_from_image, find_e_numbers, normalize_text
 from app.supabase_client import supabase
 
@@ -99,7 +100,6 @@ def extract_certificate_fields(extracted_text: str, establishments=None) -> dict
         "establishmentName": establishment_name or "Not detected",
         "certificateNumber": certificate_number or "Not detected",
         "expirationDate": expiration_date,
-        "isExpired": _is_past_date(expiration_date),
         "layoutConfidence": layout_confidence,
         "ocrQuality": describe_ocr_quality(layout_confidence, extracted_text),
         "matchConfidence": round(match_confidence, 2) if match_confidence else 0,
@@ -503,7 +503,6 @@ def validate_certificate_result(extracted_certificate: dict, establishments=None
         }
 
     expiry_date = establishment.get("expiry_date") or result.get("expirationDate")
-    is_expired = _is_past_date(expiry_date)
 
     expected_name = establishment.get("name") or ""
     extracted_name = result.get("establishmentName") or ""
@@ -514,12 +513,7 @@ def validate_certificate_result(extracted_certificate: dict, establishments=None
         or names_are_similar(extracted_name, expected_name)
     )
 
-    if is_expired:
-        status = "Expired"
-        note = (
-            "Certificate was found in the registry, but its expiry date has already passed."
-        )
-    elif not name_matches:
+    if not name_matches:
         status = "Suspicious"
         note = (
             f"Certificate number matches the registry, but the establishment name "
@@ -551,7 +545,6 @@ def validate_certificate_result(extracted_certificate: dict, establishments=None
     return {
         **result,
         "status": status,
-        "isExpired": is_expired,
         "expirationDate": expiry_date or result.get("expirationDate"),
         "establishmentName": expected_name or extracted_name,
         "authenticationNote": note,
@@ -577,12 +570,36 @@ def _is_past_date(value):
         return False
 
 
+_cached_additives = []
+_cached_additives_ts = 0
+
+
+def get_all_additives():
+    global _cached_additives, _cached_additives_ts
+    import time
+    now = time.time()
+    # Cache for 60 seconds
+    if _cached_additives and (now - _cached_additives_ts < 60):
+        return _cached_additives
+
+    try:
+        response = supabase.table("additives").select("*").execute()
+        if response.data:
+            _cached_additives = response.data
+            _cached_additives_ts = now
+            return _cached_additives
+    except Exception as e:
+        if _cached_additives:
+            return _cached_additives
+
+    return _cached_additives or []
+
+
 def match_additives_from_text(extracted_text: str):
     detected_codes = find_e_numbers(extracted_text)
     normalized_text = normalize_text(extracted_text)
 
-    response = supabase.table("additives").select("*").execute()
-    additives = response.data or []
+    additives = get_all_additives()
 
     flagged_items = []
     seen_ids = set()
@@ -677,19 +694,42 @@ def build_additive_match_terms(code, name: str):
     return cleaned_terms
 
 
-def explain_label_verdict(flagged_items, extracted_text: str):
-    if not extracted_text or not extracted_text.strip():
+def explain_label_verdict(flagged_items, extracted_text: str, logo_result: dict):
+    has_text = bool(extracted_text and extracted_text.strip())
+    logo_detected = logo_result.get("logoDetected", False)
+    is_invalid_logo = logo_result.get("isInvalidLogo", False)
+    logo_body = logo_result.get("logoBody", "Unknown Logo")
+    logo_confidence = logo_result.get("logoConfidence", 0.0)
+
+    # 1. Critical Counterfeit / Invalid Mark Alert
+    if is_invalid_logo:
+        return {
+            "verdict": "Red",
+            "riskLevel": "High Risk (Suspected Invalid / Counterfeit Mark)",
+            "analysisSummary": (
+                "Warning: A suspected unauthorized, altered, or unverified halal certification logo "
+                "was detected on this packaging. Do not rely on this mark."
+            ),
+            "recommendations": [
+                "Do not purchase or consume without independent halal authority verification.",
+                "Report this suspected counterfeit mark to local Islamic authorities (e.g. IDCP / HDIP).",
+                "Cross-check manufacturer in the HalalVerify Product Catalog.",
+            ],
+        }
+
+    # 2. Case where OCR could not read text and no logo was found
+    if not has_text and not logo_detected:
         return {
             "verdict": "Yellow",
             "riskLevel": "Unverified",
             "analysisSummary": (
-                "OCR could not clearly read ingredient text from the image. "
-                "The product cannot be verified."
+                "Neither ingredient text nor an accredited halal certification logo could be "
+                "clearly identified from the image. The product cannot be verified."
             ),
             "recommendations": [
-                "Upload a clearer photo of the ingredient label.",
-                "Make sure the text is well-lit, flat, and not blurry.",
-                "Manually verify the product with a trusted halal authority.",
+                "Upload a clearer, well-lit photo focusing on the ingredient label and certification seal.",
+                "Ensure the packaging is flat and glare-free.",
+                "Manually verify the product in the HalalVerify Product Catalog.",
             ],
         }
 
@@ -705,58 +745,88 @@ def explain_label_verdict(flagged_items, extracted_text: str):
         + statuses.count("needs_review")
     )
 
+    # 3. Prohibited Additives Detected -> Always Red
     if haram_count:
+        summary_msg = f"OCR detected ingredient text and found {haram_count} prohibited (haram) additive(s)."
+        if logo_detected:
+            summary_msg += f" Note: Despite an apparent {logo_body} logo, prohibited ingredients were flagged."
+
         return {
             "verdict": "Red",
-            "riskLevel": "Haram",
-            "analysisSummary": (
-                f"OCR detected ingredient text and found {haram_count} "
-                "haram additive(s)."
-            ),
+            "riskLevel": "Haram / Prohibited",
+            "analysisSummary": summary_msg,
             "recommendations": [
-                "Avoid consuming this product unless verified by an accredited body.",
-                "Check the ingredient source and halal certification status.",
+                "Avoid consuming this product.",
+                "Verify with the manufacturer whether an animal derivative is halal-certified.",
+                "Report conflicting certification via the Report Issue page.",
             ],
         }
 
+    # 4. Doubtful / Unverified Additives Detected -> Yellow
     if doubtful_count:
+        summary_msg = f"OCR detected ingredient text and found {doubtful_count} doubtful (Syubhah) compound(s)."
+        if logo_detected:
+            summary_msg += f" Recognized certification: {logo_body} ({logo_confidence}% confidence)."
+
         return {
             "verdict": "Yellow",
-            "riskLevel": "Doubtful",
-            "analysisSummary": (
-                f"OCR detected ingredient text and found {doubtful_count} "
-                "doubtful or unverified additive(s)."
-            ),
+            "riskLevel": "Doubtful (Syubhah)",
+            "analysisSummary": summary_msg,
             "recommendations": [
-                "Verify the source of the flagged additive before consumption.",
-                "Look for a recognized halal certification mark.",
-                "If unsure, consult a qualified halal certifying authority.",
+                "Verify the specific source of the flagged additive with the manufacturer.",
+                "Check whether the product is covered by the certifying body's active manifest.",
+                "If unsure, abstain from consumption pending clarification.",
             ],
         }
 
+    # 5. Clean Ingredients (0 Haram, 0 Doubtful)
+    if logo_detected:
+        return {
+            "verdict": "Green",
+            "riskLevel": "Halal Verified",
+            "analysisSummary": (
+                f"Accredited {logo_body} logo verified ({logo_confidence}% confidence). "
+                "No prohibited or doubtful food additives matched."
+            ),
+            "recommendations": [
+                "Product exhibits accredited certification and clean ingredient declarations.",
+                "Always check product packaging expiration dates before purchase.",
+            ],
+        }
+
+    # Clean ingredients, but no logo detected on this photo
     return {
         "verdict": "Green",
-        "riskLevel": "No flagged additives found",
+        "riskLevel": "No Flagged Additives (No Logo Detected)",
         "analysisSummary": (
-            "OCR detected ingredient text and found no matching haram or "
-            "doubtful additives in the current database."
+            "OCR detected ingredient text and found no matching haram additives. "
+            "No accredited halal certification logo was recognized in this frame."
         ),
         "recommendations": [
-            "This result is advisory only.",
-            "Still check for trusted halal certification when available.",
+            "Ingredient list appears free of known prohibited E-codes.",
+            "Verify if a halal logo appears on other sides of the packaging.",
+            "Cross-reference brand name in the HalalVerify Product Catalog.",
         ],
     }
 
 
 def analyze_label_image(image_base64: str) -> dict:
+    # 1. Run YOLOv8-Nano Logo Detection
+    logo_result = detect_halal_logo(image_base64)
+
+    # 2. Run EasyOCR Ingredient Text Extraction
     extracted_text = extract_text_from_image(image_base64)
+
+    # 3. Match Additives & Explain Combined Verdict
     flagged_items = match_additives_from_text(extracted_text)
-    verdict_details = explain_label_verdict(flagged_items, extracted_text)
+    verdict_details = explain_label_verdict(flagged_items, extracted_text, logo_result)
 
     return {
-        "logoDetected": False,
-        "logoConfidence": 0,
-        "logoBody": "Not checked yet",
+        "logoDetected": logo_result.get("logoDetected", False),
+        "logoConfidence": logo_result.get("logoConfidence", 0.0),
+        "logoBody": logo_result.get("logoBody", "No Logo Detected"),
+        "isInvalidLogo": logo_result.get("isInvalidLogo", False),
+        "detectedLogos": logo_result.get("detectedLogos", []),
         "ingredientsFound": [extracted_text] if extracted_text else [],
         "flaggedIngredients": flagged_items,
         "verdict": verdict_details["verdict"],
