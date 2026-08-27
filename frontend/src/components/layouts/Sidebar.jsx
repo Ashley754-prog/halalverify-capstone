@@ -19,7 +19,7 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
             {/* Mobile Backdrop Overlay */}
             {isOpen && (
                 <div 
-                    className="fixed inset-0 bg-slate-950/70 z-40 md:hidden backdrop-blur-sm transition-opacity"
+                    className="fixed inset-0 bg-slate-950/70 z-[9998] md:hidden backdrop-blur-sm transition-opacity"
                     onClick={toggleSidebar}
                     aria-hidden="true"
                 />
@@ -27,7 +27,7 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
 
             {/* Sidebar Navigation */}
             <aside className={`
-                fixed md:static inset-y-0 left-0 z-50
+                fixed md:static inset-y-0 left-0 z-[9999]
                 ${isOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0 md:w-20'} 
                 bg-slate-900 text-slate-300 flex flex-col transition-all duration-300 ease-in-out border-r border-slate-800
             `}>

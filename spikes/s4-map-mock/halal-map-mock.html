@@ -36,24 +36,27 @@
   <label><input type="checkbox" id="toggleMarkers" checked /> Establishment markers</label>
   <div class="legend">
     <div><span class="dot" style="background:#16a34a"></span>Verified (weight 1.0)</div>
-    <div><span class="dot" style="background:#d97706"></span>Needs review (weight 0.4)</div>
-    <div><span class="dot" style="background:#dc2626"></span>Expired (weight 0)</div>
+    <div><span class="dot" style="background:#d97706"></span>Needs Review (weight 0.4)</div>
   </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 <script>
-// Approximate barangay coordinates around Zamboanga City. SAMPLE DATA.
+// Approximate barangay coordinates around Zamboanga City.
 const establishments = [
+  { name: "Global Pot Restaurant & Catering", type: "Restaurant", barangay: "KCC Mall, Gov. Camins", lat: 6.9214, lng: 122.0790, status: "verified" },
+  { name: "Chick 'n Cow Hotpot",     type: "Restaurant", barangay: "Putik",        lat: 6.9400, lng: 122.1000, status: "verified" },
+  { name: "Chillies Fried Chicken",  type: "Eatery",     barangay: "Canelar",      lat: 6.9150, lng: 122.0720, status: "verified" },
+  { name: "Black Plate Zamboanga",   type: "Restaurant", barangay: "Nuñez Ext",    lat: 6.9230, lng: 122.0760, status: "verified" },
+  { name: "TAAM Halal Pizza",        type: "Pizzeria",   barangay: "Cabatangan",   lat: 6.9350, lng: 122.0620, status: "verified" },
+  { name: "Bandits Burger",          type: "Burger",     barangay: "Tetuan",       lat: 6.9300, lng: 122.0880, status: "verified" },
+  { name: "Aly's Halal Catering",    type: "Catering",   barangay: "Cabatangan",   lat: 6.9310, lng: 122.0650, status: "verified" },
+  { name: "Assalam Foods",           type: "Producer",   barangay: "Putik",        lat: 6.9420, lng: 122.1050, status: "verified" },
   { name: "Al-Barka Halal Kitchen",  type: "Eatery",     barangay: "Canelar",      lat: 6.9130, lng: 122.0750, status: "verified" },
   { name: "Yakan Heritage Cafe",     type: "Restaurant", barangay: "Upper Calarian", lat: 6.9550, lng: 122.0500, status: "verified" },
-  { name: "Sulu Sunset Grill",       type: "Restaurant", barangay: "Paseo del Mar", lat: 6.9105, lng: 122.0705, status: "expired" },
-  { name: "Zambo Halal Mart",        type: "Retailer",   barangay: "Gov. Lim",     lat: 6.9160, lng: 122.0740, status: "verified" },
-  { name: "Tumaga Tapsi House",      type: "Eatery",     barangay: "Tumaga",       lat: 6.9700, lng: 122.0700, status: "verified" },
-  { name: "Pasonanca Pantry",        type: "Retailer",   barangay: "Pasonanca",    lat: 6.9800, lng: 122.0800, status: "needs_review" },
-  { name: "Baliwasan Bakeshop",      type: "Bakery",     barangay: "Baliwasan",    lat: 6.9150, lng: 122.0600, status: "verified" },
-  { name: "Sta. Maria Satti House",  type: "Eatery",     barangay: "Sta. Maria",   lat: 6.9100, lng: 122.0500, status: "verified" },
+  { name: "Dennis Coffee Garden",    type: "Cafe",       barangay: "Baliwasan",    lat: 6.9160, lng: 122.0580, status: "verified" },
+  { name: "Sta. Maria Satti House",  type: "Eatery",     barangay: "Sta. Maria",   lat: 6.9200, lng: 122.0600, status: "verified" },
   { name: "Guiwan Grille & More",    type: "Restaurant", barangay: "Guiwan",       lat: 6.9200, lng: 122.1050, status: "needs_review" },
   { name: "Boalan Beef Rendang",     type: "Restaurant", barangay: "Boalan",       lat: 6.9350, lng: 122.1100, status: "verified" },
   { name: "San Jose Sari-Sari Plus", type: "Retailer",   barangay: "San Jose Gusu", lat: 6.9250, lng: 122.0350, status: "verified" },
@@ -64,7 +67,7 @@ const establishments = [
   { name: "Talon-Talon Tahu",        type: "Eatery",     barangay: "Talon-Talon",  lat: 6.9150, lng: 122.1200, status: "verified" },
   { name: "Mampang Muslim Meals",    type: "Eatery",     barangay: "Mampang",      lat: 6.9250, lng: 122.1300, status: "needs_review" },
   { name: "Recodo Refreshments",     type: "Cafe",       barangay: "Recodo",       lat: 6.9400, lng: 121.9700, status: "verified" },
-  { name: "Sinunuc Sweets",          type: "Bakery",     barangay: "Sinunuc",      lat: 6.9300, lng: 122.0150, status: "expired" },
+  { name: "Sinunuc Sweets",          type: "Bakery",     barangay: "Sinunuc",      lat: 6.9300, lng: 122.0150, status: "needs_review" },
   { name: "Zone IV Zesto Corner",    type: "Eatery",     barangay: "Zone IV",      lat: 6.9170, lng: 122.0760, status: "verified" },
   { name: "Bernardez Biryani",       type: "Restaurant", barangay: "San Bernardino", lat: 6.9050, lng: 122.0790, status: "verified" },
   { name: "Tetuan Tea House",        type: "Cafe",       barangay: "Tetuan",       lat: 6.9400, lng: 122.0900, status: "verified" },
@@ -83,7 +86,6 @@ const establishments = [
 const STATUS_STYLE = {
   verified:     { color: "#16a34a", weight: 1.0 },
   needs_review: { color: "#d97706", weight: 0.4 },
-  expired:      { color: "#dc2626", weight: 0.0 },
 };
 
 const map = L.map("map").setView([6.9214, 122.0790], 12);
