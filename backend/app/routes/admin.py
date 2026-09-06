@@ -7,8 +7,14 @@ from app.schemas.admin import (
     ProductVerifyRequest,
     ReportResolveRequest,
 )
+from app.schemas.registry import (
+    AdditiveCreate,
+    AdditiveUpdate,
+    HcbRegistryCreate,
+    HcbRegistryUpdate,
+)
 from app.supabase_client import supabase
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
 
@@ -406,3 +412,162 @@ def get_reports_summary(user: dict = Depends(require_admin)):
     except Exception as e:
         print(f"Error in reports summary: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch reports summary: {str(e)}")
+
+
+# ==========================================================
+# Section 8: Master Additives & HCB Registry Management
+# ==========================================================
+
+@router.get("/additives")
+def list_admin_additives(
+    query: Optional[str] = Query(None, description="Search term for code or name"),
+    status: Optional[str] = Query(None, description="Filter by status (Halal, Haram, Doubtful)"),
+    origin: Optional[str] = Query(None, description="Filter by origin (Plant, Animal, etc.)"),
+    user: dict = Depends(require_admin),
+):
+    """
+    Fetches full chemical additives ledger for administrative master management.
+    """
+    try:
+        req = supabase.table("additives").select("*").order("code")
+        if status and status.lower() != "all":
+            req = req.eq("status", status)
+        if origin and origin.lower() != "all":
+            req = req.ilike("origin", f"%{origin}%")
+        res = req.execute()
+        data = res.data or []
+        if query:
+            q = query.lower().strip()
+            data = [
+                a for a in data
+                if q in (a.get("code") or "").lower()
+                or q in (a.get("name") or "").lower()
+                or q in (a.get("source_description") or "").lower()
+            ]
+        return {"success": True, "data": data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch additives: {str(e)}")
+
+
+@router.post("/additives")
+def create_admin_additive(additive: AdditiveCreate, user: dict = Depends(require_admin)):
+    """
+    Adds a new chemical additive record to the Supabase master database.
+    """
+    payload = {k: v for k, v in additive.model_dump().items() if v is not None}
+    if not payload.get("code") or not payload.get("name"):
+        raise HTTPException(status_code=400, detail="Additive code and name are required")
+    payload["code"] = payload["code"].strip().upper()
+    try:
+        res = supabase.table("additives").insert(payload).execute()
+        if not res.data:
+            raise HTTPException(status_code=400, detail="Failed to create additive")
+        return {"success": True, "data": res.data[0]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create additive: {str(e)}")
+
+
+@router.put("/additives/{additive_id}")
+@router.patch("/additives/{additive_id}")
+def update_admin_additive(additive_id: str, additive: AdditiveUpdate, user: dict = Depends(require_admin)):
+    """
+    Updates an existing additive record with scientific name, compliance status, or origin.
+    """
+    payload = {k: v for k, v in additive.model_dump().items() if v is not None}
+    if not payload:
+        raise HTTPException(status_code=400, detail="No additive fields to update")
+    if "code" in payload:
+        payload["code"] = payload["code"].strip().upper()
+    try:
+        res = supabase.table("additives").update(payload).eq("id", additive_id).execute()
+        if not res.data:
+            raise HTTPException(status_code=404, detail="Additive not found")
+        return {"success": True, "data": res.data[0]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update additive: {str(e)}")
+
+
+@router.delete("/additives/{additive_id}")
+def delete_admin_additive(additive_id: str, user: dict = Depends(require_admin)):
+    """
+    Deletes an additive entry from the master chemical database.
+    """
+    try:
+        res = supabase.table("additives").delete().eq("id", additive_id).execute()
+        return {"success": True, "data": {"id": additive_id, "deleted": True}}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete additive: {str(e)}")
+
+
+@router.get("/hcb-registry")
+def list_admin_hcb_registry(
+    category: Optional[str] = Query(None, description="Filter by category (Accredited HCB, Government Oversight)"),
+    user: dict = Depends(require_admin),
+):
+    """
+    Lists accredited HCBs and regulatory bodies with full accreditation metadata.
+    """
+    try:
+        req = supabase.table("certifying_bodies").select("*").order("category").order("code")
+        if category and category.lower() != "all":
+            req = req.eq("category", category)
+        res = req.execute()
+        return {"success": True, "data": res.data or []}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch HCB registry: {str(e)}")
+
+
+@router.post("/hcb-registry")
+def create_admin_hcb_entry(hcb: HcbRegistryCreate, user: dict = Depends(require_admin)):
+    """
+    Registers a new Halal Certification Body (HCB) or government oversight entity.
+    """
+    payload = {k: v for k, v in hcb.model_dump().items() if v is not None}
+    if not payload.get("name"):
+        raise HTTPException(status_code=400, detail="Organization name is required")
+    if payload.get("code"):
+        payload["code"] = payload["code"].strip().upper()
+    try:
+        res = supabase.table("certifying_bodies").insert(payload).execute()
+        if not res.data:
+            raise HTTPException(status_code=400, detail="Failed to create HCB registry entry")
+        return {"success": True, "data": res.data[0]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create HCB entry: {str(e)}")
+
+
+@router.put("/hcb-registry/{hcb_id}")
+@router.patch("/hcb-registry/{hcb_id}")
+def update_admin_hcb_entry(hcb_id: str, hcb: HcbRegistryUpdate, user: dict = Depends(require_admin)):
+    """
+    Updates an HCB entry (seal formats, validity periods, registry references).
+    """
+    payload = {k: v for k, v in hcb.model_dump().items() if v is not None}
+    if not payload:
+        raise HTTPException(status_code=400, detail="No HCB fields to update")
+    if payload.get("code"):
+        payload["code"] = payload["code"].strip().upper()
+    try:
+        res = supabase.table("certifying_bodies").update(payload).eq("id", hcb_id).execute()
+        if not res.data:
+            raise HTTPException(status_code=404, detail="HCB registry entry not found")
+        return {"success": True, "data": res.data[0]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update HCB entry: {str(e)}")
+
+
+@router.delete("/hcb-registry/{hcb_id}")
+def delete_admin_hcb_entry(hcb_id: str, user: dict = Depends(require_admin)):
+    """
+    Removes an HCB entry from the registry.
+    """
+    try:
+        res = supabase.table("certifying_bodies").delete().eq("id", hcb_id).execute()
+        return {"success": True, "data": {"id": hcb_id, "deleted": True}}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete HCB entry: {str(e)}")
+

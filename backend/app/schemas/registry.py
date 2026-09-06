@@ -7,6 +7,7 @@ class AdditiveCreate(BaseModel):
     code: str
     name: str
     status: str
+    origin: Optional[str] = None
     source_description: Optional[str] = None
     reason: Optional[str] = None
 
@@ -15,8 +16,38 @@ class AdditiveUpdate(BaseModel):
     code: Optional[str] = None
     name: Optional[str] = None
     status: Optional[str] = None
+    origin: Optional[str] = None
     source_description: Optional[str] = None
     reason: Optional[str] = None
+
+
+class HcbRegistryCreate(BaseModel):
+    name: str
+    code: Optional[str] = None
+    acronym: Optional[str] = None
+    country: Optional[str] = "Philippines"
+    status: Optional[str] = "Accredited"
+    category: Optional[str] = "Accredited HCB"
+    accreditation_details: Optional[str] = None
+    website: Optional[str] = None
+    seal_url: Optional[str] = None
+    validity_period: Optional[str] = None
+    registry_reference: Optional[str] = None
+
+
+class HcbRegistryUpdate(BaseModel):
+    name: Optional[str] = None
+    code: Optional[str] = None
+    acronym: Optional[str] = None
+    country: Optional[str] = None
+    status: Optional[str] = None
+    category: Optional[str] = None
+    accreditation_details: Optional[str] = None
+    website: Optional[str] = None
+    seal_url: Optional[str] = None
+    validity_period: Optional[str] = None
+    registry_reference: Optional[str] = None
+
 
 
 class EstablishmentCreate(BaseModel):

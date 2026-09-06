@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 router = APIRouter(tags=["registry"])
 
 
+@router.get("/api/v1/additives")
 @router.get("/registry/additives")
 def get_additives():
     response = (
@@ -74,6 +75,26 @@ def delete_additive(additive_id: str, user: dict = Depends(require_admin)):
     )
 
     return ensure_deleted(response, "Additive")
+
+
+@router.get("/api/v1/hcb-registry")
+@router.get("/registry/hcb")
+def get_public_hcb_registry(
+    category: Optional[str] = Query(None, description="Filter by category (Accredited HCB, Government Oversight)"),
+):
+    """
+    Public registry endpoint to inspect accredited Halal Certifying Bodies and oversight entities.
+    """
+    req = supabase.table("certifying_bodies").select("*").order("category").order("code")
+    if category and category.lower() != "all":
+        req = req.eq("category", category)
+    response = req.execute()
+
+    return {
+        "success": True,
+        "data": response.data or [],
+    }
+
 
 
 @router.get("/api/v1/establishments/map")
