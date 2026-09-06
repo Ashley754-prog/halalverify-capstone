@@ -3,6 +3,8 @@ import { Search, ShieldCheck, MapPin, Database, Pencil, AlertOctagon, Save, Plus
 import Topbar from '../components/layouts/Topbar';
 import Modal from '../components/ui/Modal';
 import Toast from '../components/ui/Toast';
+import ContributionModal from '../components/submissions/ContributionModal';
+import AuthPromptModal from '../components/submissions/AuthPromptModal';
 import { API_BASE_URL, authFetch } from '../utils/api';
 
 const ADDITIVE_STATUSES = ['Halal', 'Haram', 'Doubtful', 'Needs Review'];
@@ -26,7 +28,7 @@ const emptyEstablishmentForm = {
     expiry: '',
 };
 
-export const Registry = ({ userRole }) => {
+export const Registry = ({ userRole, onViewChange }) => {
     const [registryMode, setRegistryMode] = useState('additives');
     const [dictSearch, setDictSearch] = useState('');
     const [localSearch, setLocalSearch] = useState('');
@@ -38,7 +40,18 @@ export const Registry = ({ userRole }) => {
     const [selectedItem, setSelectedItem] = useState(null);
     const [modalForm, setModalForm] = useState({});
     const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
+    const [showContributionModal, setShowContributionModal] = useState(false);
+    const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+
     const isAdmin = userRole === 'admin';
+
+    const handleOpenContribution = () => {
+        if (!userRole) {
+            setShowAuthPrompt(true);
+        } else {
+            setShowContributionModal(true);
+        }
+    };
 
     useEffect(() => {
         const fetchRegistryData = async () => {
@@ -341,16 +354,30 @@ export const Registry = ({ userRole }) => {
                 </button>
                 </div>
 
-                {isAdmin && (
-                    <button
-                        type="button"
-                        onClick={() => openModal(registryMode === 'additives' ? 'add-additive' : 'add-establishment')}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-emerald-500/10 hover:bg-emerald-700"
-                    >
-                        <Plus size={16} />
-                        {registryMode === 'additives' ? 'Add Additive' : 'Add Establishment'}
-                    </button>
-                )}
+                <div className="flex flex-wrap items-center gap-2">
+                    {/* Community Submit Button (Accessible to all users; triggers auth prompt if guest) */}
+                    {registryMode === 'establishments' && (
+                        <button
+                            type="button"
+                            onClick={handleOpenContribution}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-500 transition active:scale-[0.98]"
+                        >
+                            <Plus size={16} />
+                            Submit Missing Establishment
+                        </button>
+                    )}
+
+                    {isAdmin && (
+                        <button
+                            type="button"
+                            onClick={() => openModal(registryMode === 'additives' ? 'add-additive' : 'add-establishment')}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-800 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white hover:bg-slate-700 transition shadow-sm"
+                        >
+                            <Plus size={16} />
+                            {registryMode === 'additives' ? 'Add Additive' : 'Admin Quick Add'}
+                        </button>
+                    )}
+                </div>
             </div>
 
             {loading && (
@@ -592,6 +619,24 @@ export const Registry = ({ userRole }) => {
                     )}
                 </form>
             </Modal>
+
+            {/* Community Contribution Modal */}
+            <ContributionModal
+                isOpen={showContributionModal}
+                onClose={() => setShowContributionModal(false)}
+                initialTab="establishment"
+                onSubmitted={() => {
+                    updateToast('Thank you! Establishment submitted for verification.', 'success');
+                }}
+            />
+
+            {/* Guest Authentication Prompt Modal */}
+            <AuthPromptModal
+                isOpen={showAuthPrompt}
+                onClose={() => setShowAuthPrompt(false)}
+                onNavigate={(v) => onViewChange?.(v)}
+                actionTitle="Submit Establishment"
+            />
 
             <Toast visible={toast.visible} message={toast.message} type={toast.type} onClose={() => setToast({ visible: false, message: '', type: 'info' })} />
         </div>

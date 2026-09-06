@@ -21,6 +21,8 @@ import {
 import Topbar from '../components/layouts/Topbar';
 import Modal from '../components/ui/Modal';
 import Toast from '../components/ui/Toast';
+import ContributionModal from '../components/submissions/ContributionModal';
+import AuthPromptModal from '../components/submissions/AuthPromptModal';
 import { supabase } from '../lib/supabaseClient';
 import { API_BASE_URL, authFetch } from '../utils/api';
 
@@ -70,8 +72,18 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
     const [modalForm, setModalForm] = useState(emptyProductForm);
     const [isSaving, setIsSaving] = useState(false);
     const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
+    const [showContributionModal, setShowContributionModal] = useState(false);
+    const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
     const isAdmin = userRole === 'admin';
+
+    const handleOpenContribution = () => {
+        if (!userRole) {
+            setShowAuthPrompt(true);
+        } else {
+            setShowContributionModal(true);
+        }
+    };
 
     // Synchronize initialSearchQuery if passed dynamically
     useEffect(() => {
@@ -295,17 +307,15 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                         />
                     </div>
 
-                    {/* Add Product Button (Admin only) */}
-                    {isAdmin && (
-                        <button
-                            type="button"
-                            onClick={() => openModal('add-product')}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-emerald-500/10 hover:bg-emerald-700 transition active:scale-[0.98]"
-                        >
-                            <Plus size={16} />
-                            Add Product
-                        </button>
-                    )}
+                    {/* Community Submit Button (Accessible to all users; triggers auth prompt if guest) */}
+                    <button
+                        type="button"
+                        onClick={handleOpenContribution}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-500 transition active:scale-[0.98] shrink-0"
+                    >
+                        <Plus size={16} />
+                        Submit Missing Product
+                    </button>
                 </div>
 
                 {/* Filter Tags */}
@@ -714,6 +724,25 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                     </div>
                 </Modal>
             )}
+
+            {/* Community Contribution Modal */}
+            <ContributionModal
+                isOpen={showContributionModal}
+                onClose={() => setShowContributionModal(false)}
+                initialTab="product"
+                onSubmitted={() => {
+                    showToast('Thank you! Product submitted for verification.', 'success');
+                    loadData();
+                }}
+            />
+
+            {/* Guest Authentication Prompt Modal */}
+            <AuthPromptModal
+                isOpen={showAuthPrompt}
+                onClose={() => setShowAuthPrompt(false)}
+                onNavigate={(v) => onViewChange?.(v)}
+                actionTitle="Submit Product"
+            />
 
             {/* Toast Notification */}
             <Toast

@@ -17,23 +17,36 @@ import {
   LayoutDashboard,
   ExternalLink,
   X,
-  Building2
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import ContributionModal from '../components/submissions/ContributionModal';
+import AuthPromptModal from '../components/submissions/AuthPromptModal';
 
 export default function LandingPage({ onViewChange, userRole }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState(null);
   const [allProducts, setAllProducts] = useState([]);
   const [allEstablishments, setAllEstablishments] = useState([]);
+  const [showContributionModal, setShowContributionModal] = useState(false);
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [initialContributionTab, setInitialContributionTab] = useState('establishment');
+
+  const handleOpenContribution = (tab = 'establishment') => {
+    setInitialContributionTab(tab);
+    if (!userRole) {
+      setShowAuthPrompt(true);
+    } else {
+      setShowContributionModal(true);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
     const loadRegistryData = async () => {
       try {
         const [prodRes, estRes] = await Promise.all([
-          supabase.from('products').select('id, name, brand, category, status').limit(200),
-          supabase.from('establishments').select('id, name, address, halal_status, certifying_bodies').limit(200),
+          supabase.from('products').select('id, name, brand, category, status').neq('status', 'PENDING_VERIFICATION').limit(200),
+          supabase.from('establishments').select('id, name, address, halal_status').neq('halal_status', 'PENDING_VERIFICATION').limit(200),
         ]);
 
         if (isMounted) {
@@ -114,6 +127,12 @@ export default function LandingPage({ onViewChange, userRole }) {
               className="hover:text-emerald-400 transition"
             >
               Map
+            </button>
+            <button 
+              onClick={() => handleOpenContribution('establishment')}
+              className="hover:text-emerald-400 transition flex items-center gap-1 text-emerald-400 font-semibold"
+            >
+              <span>+ Contribute</span>
             </button>
           </nav>
 
@@ -265,13 +284,20 @@ export default function LandingPage({ onViewChange, userRole }) {
                       <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto leading-relaxed">
                         &quot;{searchQuery}&quot; was not found in the verified database. Use the visual scanner to inspect the package label, detect certifying seals, and parse ingredients.
                       </p>
-                      <div className="pt-2">
+                      <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
                         <button
                           onClick={() => onViewChange('scanner')}
                           className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-900/40 transition transform hover:-translate-y-0.5 active:translate-y-0 duration-150"
                         >
                           <Camera size={18} />
                           <span>Scan Package with Camera</span>
+                        </button>
+                        <button
+                          onClick={() => handleOpenContribution('establishment')}
+                          className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs sm:text-sm border border-slate-700 transition"
+                        >
+                          <Building2 size={16} className="text-teal-400" />
+                          <span>Submit to Registry</span>
                         </button>
                       </div>
                     </div>
@@ -616,6 +642,22 @@ export default function LandingPage({ onViewChange, userRole }) {
           </div>
         </div>
       </footer>
+
+      {/* Community Contribution Modal */}
+      <ContributionModal
+        isOpen={showContributionModal}
+        onClose={() => setShowContributionModal(false)}
+        initialTab={initialContributionTab}
+        onSubmitted={() => {}}
+      />
+
+      {/* Guest Authentication Prompt Modal */}
+      <AuthPromptModal
+        isOpen={showAuthPrompt}
+        onClose={() => setShowAuthPrompt(false)}
+        onNavigate={(v) => onViewChange(v)}
+        actionTitle="Contribute to Registry"
+      />
     </div>
   );
 }

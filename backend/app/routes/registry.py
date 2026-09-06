@@ -1,9 +1,10 @@
-from app.auth import require_admin
+from app.auth import get_current_user, require_admin
 from app.schemas.registry import (
     AdditiveCreate,
     AdditiveUpdate,
     EstablishmentCreate,
     EstablishmentUpdate,
+    EstablishmentSubmissionRequest,
 )
 from app.supabase_client import supabase
 from app.utils.db_helpers import ensure_deleted, ensure_updated, model_dump_without_none
@@ -134,3 +135,71 @@ def delete_establishment(establishment_id: str, user: dict = Depends(require_adm
     )
 
     return ensure_deleted(response, "Establishment")
+
+
+@router.post("/establishments/submit")
+@router.post("/api/v1/establishments/submit")
+def submit_establishment(
+    submission: EstablishmentSubmissionRequest,
+    user: dict = Depends(get_current_user),
+):
+    """
+    Community user submission endpoint (requires authentication).
+    Submissions default to 'PENDING_VERIFICATION' and do not appear in public verified
+    queries until validated by administrators.
+    """
+    user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Valid user credentials required")
+
+    establishment_payload = {
+        "name": submission.name.strip(),
+        "type": submission.type or "Restaurant",
+        "address": submission.address.strip(),
+        "city": submission.city or "Zamboanga City",
+        "halal_status": "PENDING_VERIFICATION",
+        "certifying_body_id": submission.certifying_body_id,
+        "certificate_number": submission.certificate_number,
+        "expiry_date": submission.expiry_date,
+        "certificate_url": submission.certificate_url,
+        "logo_url": submission.logo_url,
+        "submitted_by": str(user_id),
+        "source": "Community User Submission",
+    }
+    clean_payload = {k: v for k, v in establishment_payload.items() if v is not None}
+
+    response = (
+        supabase
+        .table("establishments")
+        .insert(clean_payload)
+        .execute()
+    )
+
+    created_establishment = response.data[0] if response.data else None
+    if not created_establishment:
+        raise HTTPException(status_code=500, detail="Failed to record establishment submission")
+
+    # If associated product names were submitted, insert them as pending draft items
+    created_products = []
+    if submission.product_names and created_establishment.get("id"):
+        for p_name in submission.product_names:
+            if not p_name.strip():
+                continue
+            prod_payload = {
+                "name": p_name.strip(),
+                "establishment_id": created_establishment["id"],
+                "category": "Food & Beverage",
+                "status": "PENDING_VERIFICATION",
+                "submitted_by": str(user_id),
+                "source": "Community User Submission",
+            }
+            p_res = supabase.table("products").insert(prod_payload).execute()
+            if p_res.data:
+                created_products.append(p_res.data[0])
+
+    return {
+        "success": True,
+        "message": "Establishment submitted successfully and queued for admin verification.",
+        "data": created_establishment,
+        "associated_products": created_products,
+    }

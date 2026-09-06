@@ -56,3 +56,17 @@ class ProductUpdate(BaseModel):
     source: Optional[str] = None
     source_url: Optional[str] = None
     synced_at: Optional[str] = None
+
+
+class ProductSubmissionRequest(BaseModel):
+    name: str
+    brand: Optional[str] = None
+    category: Optional[str] = "Food & Beverage"
+    barcode: Optional[str] = None
+    establishment_id: Optional[str] = None
+    manufacturer_id: Optional[str] = None
+    certifying_body_id: Optional[str] = None
+    certificate_no: Optional[str] = None
+    expiry_date: Optional[str] = None
+    image_url: Optional[str] = None
+    ingredients_summary: Optional[str] = None

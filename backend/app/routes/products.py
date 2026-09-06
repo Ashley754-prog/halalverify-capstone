@@ -1,10 +1,11 @@
 from typing import Optional
 
-from app.auth import require_admin
+from app.auth import get_current_user, require_admin
 from app.schemas.products import (
     ManufacturerCreate,
     ManufacturerUpdate,
     ProductCreate,
+    ProductSubmissionRequest,
     ProductUpdate,
 )
 from app.supabase_client import supabase
@@ -44,8 +45,11 @@ def get_products(
     if category:
         builder = builder.eq("category", category)
 
-    if status:
+    if status and status != "all":
         builder = builder.eq("status", status)
+    elif status != "all":
+        # By default, exclude pending verification items from public listings
+        builder = builder.neq("status", "PENDING_VERIFICATION")
 
     if manufacturer_id:
         builder = builder.eq("manufacturer_id", manufacturer_id)
@@ -225,3 +229,58 @@ def delete_manufacturer(manufacturer_id: str, user: dict = Depends(require_admin
     )
 
     return ensure_deleted(response, "Manufacturer")
+
+
+# ---------------------------------------------------------------------------
+# Community User Submissions (Auth Required, Status = PENDING_VERIFICATION)
+# ---------------------------------------------------------------------------
+
+@router.post("/products/submit")
+@router.post("/api/v1/products/submit")
+def submit_product(
+    submission: ProductSubmissionRequest,
+    user: dict = Depends(get_current_user),
+):
+    """
+    Community user product submission endpoint (requires authentication).
+    Submissions default to 'PENDING_VERIFICATION' and do not appear in public verified
+    queries until validated by administrators.
+    """
+    user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Valid user credentials required")
+
+    product_payload = {
+        "name": submission.name.strip(),
+        "brand": submission.brand.strip() if submission.brand else None,
+        "category": submission.category or "Food & Beverage",
+        "barcode": submission.barcode.strip() if submission.barcode else None,
+        "establishment_id": submission.establishment_id,
+        "manufacturer_id": submission.manufacturer_id,
+        "certifying_body_id": submission.certifying_body_id,
+        "certificate_no": submission.certificate_no,
+        "expiry_date": submission.expiry_date,
+        "image_url": submission.image_url,
+        "ingredients_summary": submission.ingredients_summary,
+        "status": "PENDING_VERIFICATION",
+        "submitted_by": str(user_id),
+        "source": "Community User Submission",
+    }
+    clean_payload = {k: v for k, v in product_payload.items() if v is not None}
+
+    response = (
+        supabase
+        .table("products")
+        .insert(clean_payload)
+        .execute()
+    )
+
+    created_product = response.data[0] if response.data else None
+    if not created_product:
+        raise HTTPException(status_code=500, detail="Failed to record product submission")
+
+    return {
+        "success": True,
+        "message": "Product submitted successfully and queued for admin verification.",
+        "data": created_product,
+    }

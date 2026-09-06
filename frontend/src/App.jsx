@@ -161,7 +161,7 @@ export default function App() {
       case 'map':
         return <EstablishmentsMap />;
       case 'registry':
-        return <Registry userRole={userRole} />;
+        return <Registry userRole={userRole} onViewChange={handleViewChange} />;
       case 'scan-history':
         return <ScanHistory userRole={userRole} />;
       case 'report-issue':

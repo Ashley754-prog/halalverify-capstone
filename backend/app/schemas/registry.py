@@ -47,5 +47,17 @@ class EstablishmentUpdate(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     source: Optional[str] = None
-    source_url: Optional[str] = None
     synced_at: Optional[str] = None
+
+
+class EstablishmentSubmissionRequest(BaseModel):
+    name: str
+    type: Optional[str] = "Restaurant"
+    address: str
+    city: Optional[str] = "Zamboanga City"
+    certifying_body_id: Optional[str] = None
+    certificate_number: Optional[str] = None
+    expiry_date: Optional[str] = None
+    certificate_url: Optional[str] = None
+    logo_url: Optional[str] = None
+    product_names: Optional[list[str]] = None
