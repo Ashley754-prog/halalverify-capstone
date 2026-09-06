@@ -16,13 +16,15 @@ import {
     Tag,
     Barcode,
     FileText,
-    Camera
+    Camera,
+    Flag,
 } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import Modal from '../components/ui/Modal';
 import Toast from '../components/ui/Toast';
 import ContributionModal from '../components/submissions/ContributionModal';
 import AuthPromptModal from '../components/submissions/AuthPromptModal';
+import ReportIssueModal from '../components/reports/ReportIssueModal';
 import { supabase } from '../lib/supabaseClient';
 import { API_BASE_URL, authFetch } from '../utils/api';
 
@@ -74,6 +76,8 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
     const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
     const [showContributionModal, setShowContributionModal] = useState(false);
     const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [reportingTarget, setReportingTarget] = useState(null);
 
     const isAdmin = userRole === 'admin';
 
@@ -82,6 +86,19 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             setShowAuthPrompt(true);
         } else {
             setShowContributionModal(true);
+        }
+    };
+
+    const handleReportProduct = (product) => {
+        if (!userRole) {
+            setShowAuthPrompt(true);
+        } else {
+            setReportingTarget({
+                relatedTo: 'product',
+                subjectName: product.name,
+                productId: product.id,
+            });
+            setShowReportModal(true);
         }
     };
 
@@ -504,37 +521,49 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                                         {product.source || 'IDCP Registry'}
                                     </span>
 
-                                    {isAdmin ? (
-                                        <div className="flex items-center gap-1.5">
-                                            <button
-                                                type="button"
-                                                onClick={() => openModal('edit-product', product)}
-                                                className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-slate-100 rounded-lg transition"
-                                                title="Edit Product"
-                                            >
-                                                <Pencil size={14} />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => openModal('delete-product', product)}
-                                                className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                                                title="Delete Product"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        product.source_url && (
-                                            <a
-                                                href={product.source_url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5"
-                                            >
-                                                Source <ExternalLink size={10} />
-                                            </a>
-                                        )
-                                    )}
+                                    <div className="flex items-center gap-1.5">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleReportProduct(product)}
+                                            className="text-[11px] font-semibold text-slate-400 hover:text-amber-600 flex items-center gap-1 transition px-1.5 py-0.5 rounded hover:bg-amber-50"
+                                            title="Flag issue or report non-compliance"
+                                        >
+                                            <Flag size={11} />
+                                            <span>Flag</span>
+                                        </button>
+
+                                        {isAdmin ? (
+                                            <div className="flex items-center gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openModal('edit-product', product)}
+                                                    className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-slate-100 rounded-lg transition"
+                                                    title="Edit Product"
+                                                >
+                                                    <Pencil size={14} />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openModal('delete-product', product)}
+                                                    className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                                                    title="Delete Product"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            product.source_url && (
+                                                <a
+                                                    href={product.source_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5"
+                                                >
+                                                    Source <ExternalLink size={10} />
+                                                </a>
+                                            )
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         );
@@ -742,6 +771,16 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                 onClose={() => setShowAuthPrompt(false)}
                 onNavigate={(v) => onViewChange?.(v)}
                 actionTitle="Submit Product"
+            />
+
+            {/* Context-Aware Report / Flag Modal */}
+            <ReportIssueModal
+                isOpen={showReportModal}
+                onClose={() => setShowReportModal(false)}
+                initialData={reportingTarget || {}}
+                onSubmitted={() => {
+                    showToast('Report submitted for administrative review.', 'success');
+                }}
             />
 
             {/* Toast Notification */}

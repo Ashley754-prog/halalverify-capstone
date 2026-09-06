@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Flag, ScanSearch, FileText, Store, CheckCircle } from 'lucide-react';
+import { Flag, ScanSearch, FileText, Store, CheckCircle, Upload, X, FileImage, AlertTriangle } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import Modal from '../components/ui/Modal';
 import Toast from '../components/ui/Toast';
+import { supabase } from '../lib/supabaseClient';
 import { API_BASE_URL, authFetch } from '../utils/api';
 
 const ISSUE_TYPES = [
@@ -18,15 +19,49 @@ export const ReportIssue = ({ userRole, onViewChange }) => {
     const [submitted, setSubmitted] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false);
     const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
     const [form, setForm] = useState({
         issueType: '',
         relatedTo: 'product',
         name: '',
         description: '',
+        evidenceUrl: '',
     });
 
     const handleChange = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
+
+    const handleFileUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            setUploadingImage(true);
+            const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+            const filePath = `reports/${Date.now()}_${cleanName}`;
+
+            const { data, error } = await supabase.storage
+                .from('submissions')
+                .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+            if (error) throw error;
+
+            const { data: publicUrlData } = supabase.storage
+                .from('submissions')
+                .getPublicUrl(data.path);
+
+            handleChange('evidenceUrl', publicUrlData?.publicUrl || '');
+        } catch (err) {
+            console.error('Evidence upload error:', err);
+            setToast({
+                visible: true,
+                message: 'Failed to upload photo proof. Please try again.',
+                type: 'error',
+            });
+        } finally {
+            setUploadingImage(false);
+        }
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -37,35 +72,59 @@ export const ReportIssue = ({ userRole, onViewChange }) => {
         try {
             setIsSubmitting(true);
 
-            const response = await authFetch(`${API_BASE_URL}/issue-reports`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
+            let success = false;
+            try {
+                const response = await authFetch(`${API_BASE_URL}/reports/submit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        issue_type: form.issueType,
+                        related_to: form.relatedTo,
+                        subject_name: form.name,
+                        description: form.description,
+                        evidence_url: form.evidenceUrl || null,
+                    }),
+                });
+
+                if (response.ok) {
+                    success = true;
+                }
+            } catch (apiErr) {
+                console.warn('Backend reporting API unavailable, falling back to direct Supabase:', apiErr);
+            }
+
+            if (!success) {
+                const { data: { session } } = await supabase.auth.getSession();
+                const userId = session?.user?.id;
+                if (!userId) throw new Error('You must be logged in to submit a report.');
+
+                const { error: sbErr } = await supabase.from('issue_reports').insert({
+                    user_id: userId,
                     issue_type: form.issueType,
                     related_to: form.relatedTo,
                     subject_name: form.name,
                     description: form.description,
-                }),
-            });
+                    evidence_url: form.evidenceUrl || null,
+                    status: 'open',
+                });
 
-            if (!response.ok) {
-                throw new Error('Failed to submit report');
+                if (sbErr) throw sbErr;
             }
 
             setSubmitted(true);
             setShowConfirmModal(false);
             setToast({
                 visible: true,
-                message: 'Report submitted successfully. Thank you for helping improve HalalVerify.',
+                message: 'Report submitted successfully. Thank you for helping protect HalalVerify.',
                 type: 'success',
             });
         } catch (error) {
             console.error(error);
             setToast({
                 visible: true,
-                message: 'Could not submit report. Please check if the backend is running.',
+                message: error.message || 'Could not submit report. Please check your connection.',
                 type: 'error',
             });
         } finally {
@@ -75,7 +134,7 @@ export const ReportIssue = ({ userRole, onViewChange }) => {
 
     const resetForm = () => {
         setSubmitted(false);
-        setForm({ issueType: '', relatedTo: 'product', name: '', description: '' });
+        setForm({ issueType: '', relatedTo: 'product', name: '', description: '', evidenceUrl: '' });
         setToast({ visible: false, message: '', type: 'info' });
     };
 

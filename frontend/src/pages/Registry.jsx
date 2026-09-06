@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Search, ShieldCheck, MapPin, Database, Pencil, AlertOctagon, Save, Plus, Trash2 } from 'lucide-react';
+import { Search, ShieldCheck, MapPin, Database, Pencil, AlertOctagon, Save, Plus, Trash2, Flag } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import Modal from '../components/ui/Modal';
 import Toast from '../components/ui/Toast';
 import ContributionModal from '../components/submissions/ContributionModal';
 import AuthPromptModal from '../components/submissions/AuthPromptModal';
+import ReportIssueModal from '../components/reports/ReportIssueModal';
 import { API_BASE_URL, authFetch } from '../utils/api';
 
 const ADDITIVE_STATUSES = ['Halal', 'Haram', 'Doubtful', 'Needs Review'];
@@ -42,6 +43,8 @@ export const Registry = ({ userRole, onViewChange }) => {
     const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
     const [showContributionModal, setShowContributionModal] = useState(false);
     const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [reportingTarget, setReportingTarget] = useState(null);
 
     const isAdmin = userRole === 'admin';
 
@@ -50,6 +53,19 @@ export const Registry = ({ userRole, onViewChange }) => {
             setShowAuthPrompt(true);
         } else {
             setShowContributionModal(true);
+        }
+    };
+
+    const handleReportEstablishment = (shop) => {
+        if (!userRole) {
+            setShowAuthPrompt(true);
+        } else {
+            setReportingTarget({
+                relatedTo: 'establishment',
+                subjectName: shop.name,
+                establishmentId: shop.id,
+            });
+            setShowReportModal(true);
         }
     };
 
@@ -507,7 +523,7 @@ export const Registry = ({ userRole, onViewChange }) => {
                                         </div>
                                     </div>
 
-                                    {isAdmin && (
+                                    {isAdmin ? (
                                         <div className="flex gap-2 pt-1">
                                             <button onClick={() => openModal('flag-establishment', shop)} className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-200 py-1.5 rounded-lg transition-colors">
                                                 <AlertOctagon size={13} /> Flag Issue
@@ -517,6 +533,18 @@ export const Registry = ({ userRole, onViewChange }) => {
                                             </button>
                                             <button onClick={() => handleDeleteEstablishment(shop)} className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 py-1.5 rounded-lg transition-colors">
                                                 <Trash2 size={13} /> Delete
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="pt-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleReportEstablishment(shop)}
+                                                className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-amber-600 bg-white hover:bg-amber-50 border border-slate-200 py-1.5 rounded-lg transition"
+                                                title="Report issue or flag establishment"
+                                            >
+                                                <Flag size={13} className="text-amber-500" />
+                                                <span>Flag / Report Establishment</span>
                                             </button>
                                         </div>
                                     )}
@@ -636,6 +664,16 @@ export const Registry = ({ userRole, onViewChange }) => {
                 onClose={() => setShowAuthPrompt(false)}
                 onNavigate={(v) => onViewChange?.(v)}
                 actionTitle="Submit Establishment"
+            />
+
+            {/* Context-Aware Report / Flag Modal */}
+            <ReportIssueModal
+                isOpen={showReportModal}
+                onClose={() => setShowReportModal(false)}
+                initialData={reportingTarget || {}}
+                onSubmitted={() => {
+                    updateToast('Report submitted for administrative review.', 'success');
+                }}
             />
 
             <Toast visible={toast.visible} message={toast.message} type={toast.type} onClose={() => setToast({ visible: false, message: '', type: 'info' })} />
