@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Camera, 
   Package, 
@@ -15,10 +15,65 @@ import {
   AlertCircle,
   LogIn,
   LayoutDashboard,
-  ExternalLink
+  ExternalLink,
+  X,
+  Building2
 } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
 
 export default function LandingPage({ onViewChange, userRole }) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState(null);
+  const [allProducts, setAllProducts] = useState([]);
+  const [allEstablishments, setAllEstablishments] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadRegistryData = async () => {
+      try {
+        const [prodRes, estRes] = await Promise.all([
+          supabase.from('products').select('id, name, brand, category, status').limit(200),
+          supabase.from('establishments').select('id, name, address, halal_status, certifying_bodies').limit(200),
+        ]);
+
+        if (isMounted) {
+          if (prodRes.data) setAllProducts(prodRes.data);
+          if (estRes.data) setAllEstablishments(estRes.data);
+        }
+      } catch (err) {
+        console.warn('Failed to pre-fetch registry data for search:', err);
+      }
+    };
+
+    loadRegistryData();
+    return () => { isMounted = false; };
+  }, []);
+
+  const handleSearch = (term) => {
+    setSearchQuery(term);
+    const q = term.trim().toLowerCase();
+    if (!q) {
+      setSearchResults(null);
+      return;
+    }
+
+    const matchedProducts = allProducts.filter((p) =>
+      (p.name && p.name.toLowerCase().includes(q)) ||
+      (p.brand && p.brand.toLowerCase().includes(q)) ||
+      (p.category && p.category.toLowerCase().includes(q))
+    );
+
+    const matchedEstablishments = allEstablishments.filter((e) =>
+      (e.name && e.name.toLowerCase().includes(q)) ||
+      (e.address && e.address.toLowerCase().includes(q))
+    );
+
+    setSearchResults({
+      products: matchedProducts,
+      establishments: matchedEstablishments,
+      totalCount: matchedProducts.length + matchedEstablishments.length,
+    });
+  };
   return (
     <div className="min-h-screen bg-[#0e1625] text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white">
       {/* Top Navigation Bar */}
@@ -120,8 +175,113 @@ export default function LandingPage({ onViewChange, userRole }) {
               Empowering consumers and families to inspect food packaging labels, detect certifying logos, and discover certified dining establishments across Zamboanga City — instantly and freely.
             </p>
 
+            {/* Interactive Search Interface (Finalized Features Section 1) */}
+            <div className="mt-8 max-w-2xl mx-auto text-left">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  placeholder="Search product names, brands, or verified establishments in Zamboanga..."
+                  className="w-full rounded-2xl border border-slate-700 bg-slate-900/90 pl-12 pr-12 py-3.5 sm:py-4 text-xs sm:text-sm text-white placeholder-slate-400 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xl backdrop-blur-xl"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => { setSearchQuery(''); setSearchResults(null); }}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 rounded-lg transition"
+                    title="Clear search"
+                  >
+                    <X size={18} />
+                  </button>
+                )}
+              </div>
+
+              {/* Live Search Results & Visual Product Scan Fallback Engine */}
+              {searchQuery.trim() && searchResults && (
+                <div className="mt-3">
+                  {searchResults.totalCount > 0 ? (
+                    <div className="rounded-2xl border border-slate-700 bg-slate-900/95 p-4 shadow-2xl space-y-2.5 backdrop-blur-xl max-h-80 overflow-y-auto">
+                      <div className="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800 pb-2">
+                        <span>Found {searchResults.totalCount} matching record(s)</span>
+                        <button 
+                          onClick={() => onViewChange('products', { searchQuery })}
+                          className="text-emerald-400 hover:underline font-semibold"
+                        >
+                          View In Catalog &rarr;
+                        </button>
+                      </div>
+
+                      {/* Products matches */}
+                      {searchResults.products.map(p => (
+                        <div 
+                          key={p.id}
+                          onClick={() => onViewChange('products', { searchQuery: p.name })}
+                          className="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 cursor-pointer border border-slate-700/50 transition"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Package size={18} className="text-emerald-400 shrink-0" />
+                            <div>
+                              <p className="text-xs sm:text-sm font-bold text-white">{p.name}</p>
+                              <p className="text-[11px] text-slate-400">{p.brand} &bull; {p.category}</p>
+                            </div>
+                          </div>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-950 text-emerald-300 border border-emerald-800">
+                            {p.status || 'Halal'}
+                          </span>
+                        </div>
+                      ))}
+
+                      {/* Establishments matches */}
+                      {searchResults.establishments.map(e => (
+                        <div 
+                          key={e.id}
+                          onClick={() => onViewChange('map')}
+                          className="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 cursor-pointer border border-slate-700/50 transition"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Building2 size={18} className="text-teal-400 shrink-0" />
+                            <div>
+                              <p className="text-xs sm:text-sm font-bold text-white">{e.name}</p>
+                              <p className="text-[11px] text-slate-400">{e.address}</p>
+                            </div>
+                          </div>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-teal-950 text-teal-300 border border-teal-800">
+                            {e.halal_status || 'Verified'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    /* Visual Product Scan Fallback Engine (Section 2 of Finalized Features) */
+                    <div className="rounded-2xl border border-emerald-500/50 bg-slate-900/95 p-6 shadow-2xl text-center backdrop-blur-xl space-y-3">
+                      <div className="w-12 h-12 rounded-full bg-emerald-950 border border-emerald-800 flex items-center justify-center text-emerald-400 mx-auto">
+                        <Camera size={22} />
+                      </div>
+                      <h3 className="text-base sm:text-lg font-bold text-white">
+                        Product or Establishment not found. Scan package to verify.
+                      </h3>
+                      <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto leading-relaxed">
+                        &quot;{searchQuery}&quot; was not found in the verified database. Use the visual scanner to inspect the package label, detect certifying seals, and parse ingredients.
+                      </p>
+                      <div className="pt-2">
+                        <button
+                          onClick={() => onViewChange('scanner')}
+                          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-900/40 transition transform hover:-translate-y-0.5 active:translate-y-0 duration-150"
+                        >
+                          <Camera size={18} />
+                          <span>Scan Package with Camera</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Main CTAs */}
-            <div className="mt-8 sm:mt-10 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
               <button
                 onClick={() => onViewChange('scanner')}
                 className="flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 font-bold text-white text-sm sm:text-base shadow-xl shadow-emerald-900/50 transition transform hover:-translate-y-0.5 active:translate-y-0 duration-150"

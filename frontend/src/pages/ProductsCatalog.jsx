@@ -15,11 +15,13 @@ import {
     Clock,
     Tag,
     Barcode,
-    FileText
+    FileText,
+    Camera
 } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import Modal from '../components/ui/Modal';
 import Toast from '../components/ui/Toast';
+import { supabase } from '../lib/supabaseClient';
 import { API_BASE_URL, authFetch } from '../utils/api';
 
 const PRODUCT_CATEGORIES = [
@@ -53,13 +55,13 @@ const emptyProductForm = {
     source_url: 'https://www.idcphalal.org/certified-product-page',
 };
 
-export default function ProductsCatalog({ userRole }) {
+export default function ProductsCatalog({ userRole, onViewChange, initialSearchQuery = '' }) {
     const [products, setProducts] = useState([]);
     const [manufacturers, setManufacturers] = useState([]);
     const [certifyingBodies, setCertifyingBodies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery, setSearchQuery] = useState(initialSearchQuery || '');
     const [selectedCategory, setSelectedCategory] = useState('All Categories');
     const [selectedStatus, setSelectedStatus] = useState('All Statuses');
 
@@ -71,31 +73,64 @@ export default function ProductsCatalog({ userRole }) {
 
     const isAdmin = userRole === 'admin';
 
+    // Synchronize initialSearchQuery if passed dynamically
+    useEffect(() => {
+        if (initialSearchQuery) {
+            setSearchQuery(initialSearchQuery);
+        }
+    }, [initialSearchQuery]);
+
     const loadData = async () => {
         try {
             setLoading(true);
             setError('');
 
-            const [productsRes, mfgRes, certRes] = await Promise.all([
-                authFetch(`${API_BASE_URL}/products?limit=200`),
-                authFetch(`${API_BASE_URL}/manufacturers?limit=200`),
-                authFetch(`${API_BASE_URL}/registry/establishments`), // or certifying bodies
-            ]);
+            let loadedProducts = null;
+            let loadedMfg = null;
 
-            if (!productsRes.ok) {
-                throw new Error('Failed to load products list from API');
+            // 1. First attempt to load via Backend API
+            try {
+                const [productsRes, mfgRes] = await Promise.all([
+                    authFetch(`${API_BASE_URL}/products?limit=200`),
+                    authFetch(`${API_BASE_URL}/manufacturers?limit=200`),
+                ]);
+
+                if (productsRes.ok) {
+                    const productsJson = await productsRes.json();
+                    loadedProducts = productsJson.data || [];
+                }
+                if (mfgRes && mfgRes.ok) {
+                    const mfgJson = await mfgRes.json();
+                    loadedMfg = mfgJson.data || [];
+                }
+            } catch (apiErr) {
+                console.warn('Backend API request not available, loading directly via Supabase client:', apiErr);
             }
 
-            const productsJson = await productsRes.json();
-            setProducts(productsJson.data || []);
+            // 2. If backend API was unreachable or returned empty, query Supabase directly
+            if (!loadedProducts) {
+                const { data: sbProducts, error: sbErr } = await supabase
+                    .from('products')
+                    .select('*, manufacturers(*), certifying_bodies(*)')
+                    .order('name');
 
-            if (mfgRes.ok) {
-                const mfgJson = await mfgRes.json();
-                setManufacturers(mfgJson.data || []);
+                if (sbErr) {
+                    throw sbErr;
+                }
+                loadedProducts = sbProducts || [];
+
+                const { data: sbMfg } = await supabase
+                    .from('manufacturers')
+                    .select('*')
+                    .order('name');
+                if (sbMfg) loadedMfg = sbMfg;
             }
+
+            setProducts(loadedProducts || []);
+            if (loadedMfg) setManufacturers(loadedMfg);
         } catch (err) {
             console.error('Error loading products catalog:', err);
-            setError(err.message || 'Could not load products. Please check if database migration 002 is applied.');
+            setError(err.message || 'Could not load products. Please check your network connection.');
         } finally {
             setLoading(false);
         }
@@ -329,14 +364,34 @@ export default function ProductsCatalog({ userRole }) {
                     Loading verified product directory...
                 </div>
             ) : filteredProducts.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-slate-200 shadow-sm text-center space-y-3">
-                    <Package size={40} className="text-slate-300" />
-                    <h3 className="text-base font-bold text-slate-700">No Products Found</h3>
-                    <p className="text-xs text-slate-500 max-w-md">
-                        {searchQuery
-                            ? `No verified products matched your search term "${searchQuery}". Try searching with another brand or category.`
-                            : 'No verified products in the registry yet. Ensure database migration 002 is run in Supabase.'}
-                    </p>
+                <div className="flex-1 flex flex-col items-center justify-center p-8 sm:p-12 bg-white rounded-2xl border border-slate-200 shadow-sm text-center space-y-4">
+                    <div className="w-14 h-14 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
+                        <Camera size={26} />
+                    </div>
+                    {searchQuery ? (
+                        <>
+                            <h3 className="text-base sm:text-lg font-bold text-slate-800">
+                                Product or Establishment not found. Scan package to verify.
+                            </h3>
+                            <p className="text-xs sm:text-sm text-slate-500 max-w-md">
+                                &quot;{searchQuery}&quot; is not yet recorded in the local verified registry. Use the Halal Scanner to inspect the physical packaging, verify certifying logos, and check ingredient additives.
+                            </p>
+                            <button
+                                onClick={() => onViewChange?.('scanner')}
+                                className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-600/20 transition transform hover:-translate-y-0.5 active:translate-y-0 duration-150"
+                            >
+                                <Camera size={18} />
+                                <span>Scan Package with Camera</span>
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <h3 className="text-base font-bold text-slate-700">No Products in Registry</h3>
+                            <p className="text-xs text-slate-500 max-w-md">
+                                No verified products currently match the selected category.
+                            </p>
+                        </>
+                    )}
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">

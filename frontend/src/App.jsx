@@ -108,7 +108,9 @@ export default function App() {
     setCurrentView(view);
   };
 
-  const handleViewChange = (view) => {
+  const [viewParams, setViewParams] = useState({});
+
+  const handleViewChange = (view, params = {}) => {
     if (view === 'profile' && !userRole) {
       setCurrentView('login');
       return;
@@ -119,6 +121,7 @@ export default function App() {
       return;
     }
 
+    setViewParams(params || {});
     setCurrentView(view);
   };
 
@@ -148,7 +151,13 @@ export default function App() {
       case 'scanner':
         return <Scanner isOnline={isOnline} />;
       case 'products':
-        return <ProductsCatalog userRole={userRole} />;
+        return (
+          <ProductsCatalog
+            userRole={userRole}
+            onViewChange={handleViewChange}
+            initialSearchQuery={viewParams.searchQuery || ''}
+          />
+        );
       case 'map':
         return <EstablishmentsMap />;
       case 'registry':
