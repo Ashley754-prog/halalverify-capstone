@@ -7,8 +7,9 @@ from app.schemas.registry import (
     EstablishmentSubmissionRequest,
 )
 from app.supabase_client import supabase
+from typing import Optional
 from app.utils.db_helpers import ensure_deleted, ensure_updated, model_dump_without_none
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 router = APIRouter(tags=["registry"])
 
@@ -73,6 +74,152 @@ def delete_additive(additive_id: str, user: dict = Depends(require_admin)):
     )
 
     return ensure_deleted(response, "Additive")
+
+
+@router.get("/api/v1/establishments/map")
+@router.get("/establishments/map")
+def get_establishments_map(
+    lat: Optional[float] = Query(None, description="User latitude for PostGIS proximity search"),
+    lng: Optional[float] = Query(None, description="User longitude for PostGIS proximity search"),
+    radius: Optional[float] = Query(10.0, description="Search radius in kilometers"),
+    region: Optional[str] = Query(None, description="Region code or name"),
+    city: Optional[str] = Query(None, description="City name (e.g. Zamboanga City)"),
+    status: Optional[str] = Query(None, description="Status filter: verified, pending_review, flagged, etc."),
+    hcb: Optional[str] = Query(None, description="Certifying body code or name (e.g. UCZP, IDCP, HDIP)"),
+    category: Optional[str] = Query(None, description="Establishment type/category"),
+):
+    """
+    Spatial query endpoint returning nearby or region-filtered verified establishments
+    and geographic coordinates across the Philippines (Zamboanga City core).
+    Executes PostGIS ST_DWithin proximity search when coordinates are supplied.
+    """
+    try:
+        data = []
+        if lat is not None and lng is not None:
+            rpc_params = {
+                "lat": float(lat),
+                "lng": float(lng),
+                "radius_meters": float(radius * 1000.0) if radius else 10000.0,
+                "filter_status": status if status and status != "all" else None,
+                "filter_city": city if city and city != "all" else None,
+                "filter_hcb": hcb if hcb and hcb != "all" else None,
+            }
+            rpc_res = supabase.rpc("get_nearby_establishments", rpc_params).execute()
+            raw_data = rpc_res.data or []
+
+            for item in raw_data:
+                dist_m = item.get("distance_meters")
+                dist_km = round(dist_m / 1000.0, 2) if dist_m is not None else None
+                formatted_item = {
+                    "id": item.get("id"),
+                    "name": item.get("name"),
+                    "type": item.get("type"),
+                    "address": item.get("address"),
+                    "city": item.get("city"),
+                    "halal_status": item.get("halal_status"),
+                    "certificate_number": item.get("certificate_number"),
+                    "expiry_date": item.get("expiry_date"),
+                    "latitude": float(item["latitude"]) if item.get("latitude") is not None else None,
+                    "longitude": float(item["longitude"]) if item.get("longitude") is not None else None,
+                    "certificate_url": item.get("certificate_url"),
+                    "logo_url": item.get("logo_url"),
+                    "distance_meters": dist_m,
+                    "distance_km": dist_km,
+                    "certifying_bodies": {
+                        "code": item.get("hcb_code"),
+                        "name": item.get("hcb_name"),
+                    } if item.get("hcb_code") else None,
+                }
+                if category and category != "all":
+                    if category.lower() not in (item.get("type") or "").lower():
+                        continue
+                data.append(formatted_item)
+        else:
+            query = supabase.table("establishments").select("*, certifying_bodies(*)")
+            if status and status != "all":
+                query = query.ilike("halal_status", f"%{status}%")
+            if city and city != "all":
+                query = query.ilike("city", f"%{city}%")
+            if category and category != "all":
+                query = query.ilike("type", f"%{category}%")
+            res = query.order("name").execute()
+            data = res.data or []
+
+            if hcb and hcb != "all":
+                hcb_lower = hcb.lower()
+                data = [
+                    d for d in data
+                    if (d.get("certifying_bodies") and (
+                        hcb_lower in (d["certifying_bodies"].get("code") or "").lower() or
+                        hcb_lower in (d["certifying_bodies"].get("name") or "").lower()
+                    ))
+                ]
+
+        # Attach associated compliant products/menu items for rich details
+        if data:
+            est_ids = [d["id"] for d in data if d.get("id")]
+            if est_ids:
+                try:
+                    p_res = supabase.table("products").select("id, name, category, status, establishment_id").in_("establishment_id", est_ids[:50]).execute()
+                    products_by_est = {}
+                    for p in (p_res.data or []):
+                        eid = p.get("establishment_id")
+                        if eid:
+                            if eid not in products_by_est:
+                                products_by_est[eid] = []
+                            products_by_est[eid].append(p)
+                    for d in data:
+                        d["products"] = products_by_est.get(d.get("id"), [])
+                except Exception as p_err:
+                    print(f"Warning: Failed to fetch products for establishments: {p_err}")
+
+        return {
+            "success": True,
+            "count": len(data),
+            "data": data,
+        }
+    except Exception as e:
+        print(f"Error in map endpoint: {e}")
+        try:
+            fallback_res = supabase.table("establishments").select("*, certifying_bodies(*)").execute()
+            return {
+                "success": True,
+                "count": len(fallback_res.data or []),
+                "data": fallback_res.data or [],
+                "fallback": True,
+            }
+        except Exception:
+            raise HTTPException(status_code=500, detail="Failed to load establishments map data")
+
+
+@router.get("/api/v1/establishments/search")
+@router.get("/establishments/search")
+def search_establishments(q: Optional[str] = Query(None, description="Search query string")):
+    """
+    Public query endpoint to search registered establishment profiles.
+    Matches establishment name, city, address, or type.
+    """
+    query_str = (q or "").strip()
+    try:
+        base_query = supabase.table("establishments").select("*, certifying_bodies(*)")
+        if query_str:
+            base_query = base_query.or_(
+                f"name.ilike.%{query_str}%,city.ilike.%{query_str}%,address.ilike.%{query_str}%,type.ilike.%{query_str}%"
+            )
+        res = base_query.order("name").limit(30).execute()
+        return {
+            "success": True,
+            "count": len(res.data or []),
+            "data": res.data or [],
+        }
+    except Exception as e:
+        print(f"Error in establishments search: {e}")
+        return {
+            "success": False,
+            "count": 0,
+            "data": [],
+            "error": str(e),
+        }
 
 
 @router.get("/registry/establishments")
