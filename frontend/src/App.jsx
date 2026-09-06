@@ -16,11 +16,12 @@ import Settings from './pages/Settings.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import ProductsCatalog from './pages/ProductsCatalog.jsx';
 import EstablishmentsMap from './pages/EstablishmentsMap.jsx';
+import LandingPage from './pages/LandingPage.jsx';
 import { supabase } from './lib/supabaseClient';
 import { AUTH_VIEWS, fetchUserRole, signOut } from './lib/auth';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState('login');
+  const [currentView, setCurrentView] = useState('landing');
   const [userRole, setUserRole] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [authLoading, setAuthLoading] = useState(true);
@@ -85,7 +86,7 @@ export default function App() {
 
       if (event === 'SIGNED_OUT') {
         setUserRole(null);
-        setCurrentView('login');
+        setCurrentView('landing');
         return;
       }
 
@@ -108,7 +109,7 @@ export default function App() {
   };
 
   const handleViewChange = (view) => {
-    if (!AUTH_VIEWS.has(view) && !userRole) {
+    if (view === 'profile' && !userRole) {
       setCurrentView('login');
       return;
     }
@@ -128,7 +129,7 @@ export default function App() {
       // Clear local state even if the remote sign-out request fails.
     } finally {
       setUserRole(null);
-      setCurrentView('login');
+      setCurrentView('landing');
     }
   };
 
@@ -138,6 +139,8 @@ export default function App() {
 
   const renderContent = () => {
     switch (currentView) {
+      case 'landing':
+        return <LandingPage onViewChange={handleViewChange} userRole={userRole} />;
       case 'profile':
         return <ProfilePage onViewChange={handleViewChange} />;
       case 'dashboard':
@@ -153,7 +156,7 @@ export default function App() {
       case 'scan-history':
         return <ScanHistory userRole={userRole} />;
       case 'report-issue':
-        return <ReportIssue />;
+        return <ReportIssue userRole={userRole} onViewChange={handleViewChange} />;
       case 'analytics':
         return userRole === 'admin' ? <Analytics /> : <Dashboard userRole={userRole} />;
       case 'settings':
@@ -173,6 +176,10 @@ export default function App() {
     );
   }
 
+  if (currentView === 'landing') {
+    return <LandingPage onViewChange={handleViewChange} userRole={userRole} />;
+  }
+
   if (currentView === 'login') {
     return <Login onLogin={handleLogin} layout="login" />;
   }
@@ -189,10 +196,6 @@ export default function App() {
     return <ResetPassword onViewChange={setCurrentView} />;
   }
 
-  if (!userRole) {
-    return <Login onLogin={handleLogin} layout="login" />;
-  }
-
   return (
     <Sidebar
       currentView={currentView}
@@ -202,7 +205,14 @@ export default function App() {
       isSidebarOpen={isSidebarOpen}
       toggleSidebar={toggleSidebar}
     >
-      <AppTopbar isSidebarOpen={isSidebarOpen} onToggleSidebar={toggleSidebar} onProfileClick={() => handleViewChange('profile')} />
+      <AppTopbar
+        isSidebarOpen={isSidebarOpen}
+        onToggleSidebar={toggleSidebar}
+        onProfileClick={() => handleViewChange('profile')}
+        userRole={userRole}
+        onSignInClick={() => handleViewChange('login')}
+        onLogoClick={() => handleViewChange('landing')}
+      />
       {!isOnline && (
         <div className="bg-amber-600 text-white text-center py-2 text-xs font-bold tracking-wide shadow-inner animate-pulse flex items-center justify-center gap-2">
           <AlertTriangle size={14} /> You are offline. Scanning and database lookups are unavailable until the connection returns.

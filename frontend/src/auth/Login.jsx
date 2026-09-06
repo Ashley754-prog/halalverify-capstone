@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { User, Lock, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { fetchUserRole } from '../lib/auth';
@@ -161,6 +161,16 @@ export const Login = ({ onLogin, layout = 'login' }) => {
                                 className="font-bold text-emerald-600 transition hover:text-emerald-700 hover:underline"
                             >
                                 Create Account
+                            </button>
+                        </div>
+
+                        <div className="mt-4 text-center">
+                            <button
+                                type="button"
+                                onClick={() => onLogin('scanner', null)}
+                                className="text-xs font-semibold text-slate-500 transition hover:text-slate-700 hover:underline"
+                            >
+                                &larr; Continue as Guest (Scan & Search)
                             </button>
                         </div>
                     </form>

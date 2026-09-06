@@ -14,7 +14,7 @@ const ISSUE_TYPES = [
     'Other',
 ];
 
-export const ReportIssue = () => {
+export const ReportIssue = ({ userRole, onViewChange }) => {
     const [submitted, setSubmitted] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -78,6 +78,29 @@ export const ReportIssue = () => {
         setForm({ issueType: '', relatedTo: 'product', name: '', description: '' });
         setToast({ visible: false, message: '', type: 'info' });
     };
+
+    if (!userRole) {
+        return (
+            <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 flex-1">
+                <Topbar title="Report an Issue" subtitle="Help us improve HalalVerify's accuracy." />
+                <div className="max-w-lg mx-auto mt-6 sm:mt-12 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-10 text-center flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-amber-100 flex items-center justify-center">
+                        <Flag size={28} className="text-amber-600 sm:w-8 sm:h-8" />
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-bold text-slate-900">Account Required</h3>
+                    <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-sm">
+                        To maintain report integrity and prevent abuse, submitting verification discrepancies or data reports requires signing in to your HalalVerify account.
+                    </p>
+                    <button
+                        onClick={() => onViewChange?.('login')}
+                        className="mt-2 px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs sm:text-sm hover:bg-emerald-700 transition shadow-sm"
+                    >
+                        Sign In / Register
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     if (submitted) {
         return (

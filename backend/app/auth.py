@@ -23,6 +23,20 @@ def get_current_user(authorization: str = Header(default=None)) -> dict:
     return user
 
 
+def get_optional_current_user(authorization: str = Header(default=None)):
+    """Return the authenticated user if a valid bearer token is provided; otherwise return None for guests."""
+    if not authorization or not authorization.lower().startswith("bearer "):
+        return None
+
+    token = authorization.split(" ", 1)[1].strip()
+
+    try:
+        response = supabase.auth.get_user(token)
+        return getattr(response, "user", None)
+    except Exception:
+        return None
+
+
 def require_admin(user: dict = Depends(get_current_user)) -> dict:
     """Require an authenticated user whose profiles.role is 'admin'."""
     response = (

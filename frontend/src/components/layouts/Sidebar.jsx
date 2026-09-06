@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Camera, Package, MapPin, BookOpen, Clock, Flag, BarChart2, Settings, LogOut, Menu} from 'lucide-react';
+import { Home, LayoutDashboard, Camera, Package, MapPin, BookOpen, Clock, Flag, BarChart2, Settings, LogOut, LogIn, Menu} from 'lucide-react';
 import NavItem from '../ui/NavItem';
 
 export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignOut, isSidebarOpen, toggleSidebar }) => {
@@ -34,9 +34,13 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                 {/* Sidebar Header */}
                 <div className={`border-b border-slate-800 flex items-center ${isOpen ? 'p-4 justify-between' : 'p-4 justify-center'}`}>
                     {isOpen && (
-                        <div className="flex items-center gap-2">
-                            <img src="/halalverify-logo.png" alt="HalalVerify Logo" className="h-8 w-8 rounded-full" />
-                            <span className="font-extrabold tracking-wider text-white text-sm">HALALVERIFY</span>
+                        <div 
+                            className="flex items-center gap-2 cursor-pointer group"
+                            onClick={() => handleNavClick('landing')}
+                            title="Return to Home Landing Page"
+                        >
+                            <img src="/halalverify-logo.png" alt="HalalVerify Logo" className="h-8 w-8 rounded-full group-hover:scale-105 transition" />
+                            <span className="font-extrabold tracking-wider text-white text-sm group-hover:text-emerald-400 transition">HALALVERIFY</span>
                         </div>
                     )}
                     <button
@@ -53,6 +57,13 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                 {/* Sidebar Navigation Links */}
                 <div className="flex-1 flex flex-col justify-between py-4 overflow-y-auto">
                     <nav className="px-3 space-y-1">
+                        <NavItem 
+                            collapsed={!isOpen} 
+                            active={currentView === 'landing'} 
+                            icon={<Home size={18} />} 
+                            label="Home" 
+                            onClick={() => handleNavClick('landing')} 
+                        />
                         <NavItem 
                             collapsed={!isOpen} 
                             active={currentView === 'dashboard'} 
@@ -121,16 +132,29 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                             label="Settings" 
                             onClick={() => handleNavClick('settings')} 
                         />
-                        <button
-                            onClick={onSignOut}
-                            className={`w-full flex items-center rounded-xl transition-all ${
-                                isOpen ? 'gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-950/30' : 'justify-center p-3 text-red-400 hover:bg-slate-800'
-                            }`}
-                            title="Sign Out"
-                        >
-                            <LogOut size={18} className="shrink-0" />
-                            {isOpen && <span className="font-medium truncate">Sign Out</span>}
-                        </button>
+                        {userRole ? (
+                            <button
+                                onClick={onSignOut}
+                                className={`w-full flex items-center rounded-xl transition-all ${
+                                    isOpen ? 'gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-950/30' : 'justify-center p-3 text-red-400 hover:bg-slate-800'
+                                }`}
+                                title="Sign Out"
+                            >
+                                <LogOut size={18} className="shrink-0" />
+                                {isOpen && <span className="font-medium truncate">Sign Out</span>}
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => handleNavClick('login')}
+                                className={`w-full flex items-center rounded-xl transition-all ${
+                                    isOpen ? 'gap-3 px-4 py-3 text-sm text-emerald-400 hover:bg-emerald-950/30 font-semibold' : 'justify-center p-3 text-emerald-400 hover:bg-slate-800'
+                                }`}
+                                title="Sign In"
+                            >
+                                <LogIn size={18} className="shrink-0" />
+                                {isOpen && <span className="font-medium truncate">Sign In / Register</span>}
+                            </button>
+                        )}
                     </div>
                 </div>
             </aside>

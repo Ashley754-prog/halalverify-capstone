@@ -1,4 +1,4 @@
-from app.auth import get_current_user
+from app.auth import get_optional_current_user
 from app.scan_service import (
     analyze_certificate_image,
     analyze_label_image,
@@ -13,7 +13,7 @@ router = APIRouter(tags=["analyze"])
 @router.post("/analyze/label")
 def analyze_label(
     request: AnalyzeRequest,
-    user: dict = Depends(get_current_user),
+    user=Depends(get_optional_current_user),
 ) -> dict:
     result = analyze_label_image(request.imageBase64)
     save_scan_history("label", result)
@@ -23,7 +23,7 @@ def analyze_label(
 @router.post("/analyze/certificate")
 def analyze_certificate(
     request: AnalyzeRequest,
-    user: dict = Depends(get_current_user),
+    user=Depends(get_optional_current_user),
 ) -> dict:
     result = analyze_certificate_image(request.imageBase64)
     save_scan_history("certificate", result)
