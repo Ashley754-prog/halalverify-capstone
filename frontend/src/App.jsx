@@ -16,6 +16,7 @@ import Settings from './pages/Settings.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import ProductsCatalog from './pages/ProductsCatalog.jsx';
 import EstablishmentsMap from './pages/EstablishmentsMap.jsx';
+import VerificationQueue from './pages/VerificationQueue.jsx';
 import LandingPage from './pages/LandingPage.jsx';
 import { supabase } from './lib/supabaseClient';
 import { AUTH_VIEWS, fetchUserRole, signOut } from './lib/auth';
@@ -166,6 +167,12 @@ export default function App() {
         return <ScanHistory userRole={userRole} />;
       case 'report-issue':
         return <ReportIssue userRole={userRole} onViewChange={handleViewChange} />;
+      case 'verification-queue':
+        return userRole === 'admin' ? (
+          <VerificationQueue userRole={userRole} onViewChange={handleViewChange} />
+        ) : (
+          <Dashboard userRole={userRole} />
+        );
       case 'analytics':
         return userRole === 'admin' ? <Analytics /> : <Dashboard userRole={userRole} />;
       case 'settings':

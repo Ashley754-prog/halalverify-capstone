@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, LayoutDashboard, Camera, Package, MapPin, BookOpen, Clock, Flag, BarChart2, Settings, LogOut, LogIn, Menu} from 'lucide-react';
+import { Home, LayoutDashboard, Camera, Package, MapPin, BookOpen, Clock, Flag, BarChart2, Settings, LogOut, LogIn, Menu, ShieldCheck } from 'lucide-react';
 import NavItem from '../ui/NavItem';
 
 export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignOut, isSidebarOpen, toggleSidebar }) => {
@@ -114,13 +114,22 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                             onClick={() => handleNavClick('report-issue')} 
                         />
                         {userRole === 'admin' && (
-                            <NavItem 
-                                collapsed={!isOpen} 
-                                active={currentView === 'analytics'} 
-                                icon={<BarChart2 size={18} />} 
-                                label="Analytics" 
-                                onClick={() => handleNavClick('analytics')} 
-                            />
+                            <>
+                                <NavItem 
+                                    collapsed={!isOpen} 
+                                    active={currentView === 'verification-queue'} 
+                                    icon={<ShieldCheck size={18} />} 
+                                    label="Verification Queue" 
+                                    onClick={() => handleNavClick('verification-queue')} 
+                                />
+                                <NavItem 
+                                    collapsed={!isOpen} 
+                                    active={currentView === 'analytics'} 
+                                    icon={<BarChart2 size={18} />} 
+                                    label="Analytics" 
+                                    onClick={() => handleNavClick('analytics')} 
+                                />
+                            </>
                         )}
                     </nav>
 
