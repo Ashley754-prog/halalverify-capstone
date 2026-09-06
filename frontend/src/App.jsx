@@ -174,7 +174,11 @@ export default function App() {
           <Dashboard userRole={userRole} />
         );
       case 'analytics':
-        return userRole === 'admin' ? <Analytics /> : <Dashboard userRole={userRole} />;
+        return userRole === 'admin' ? (
+          <Analytics onViewChange={handleViewChange} />
+        ) : (
+          <Dashboard userRole={userRole} />
+        );
       case 'settings':
         return <Settings />;
       default:
