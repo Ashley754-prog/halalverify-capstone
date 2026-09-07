@@ -307,20 +307,20 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             />
 
             {/* Actions & Filters Bar */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm space-y-4">
-                <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+            <div className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-5 shadow-sm space-y-3 sm:space-y-4">
+                <div className="flex flex-row gap-2 sm:gap-3 items-center">
                     {/* Search Box */}
-                    <div className="relative flex-1">
+                    <div className="relative flex-1 min-w-0">
                         <Search
-                            size={18}
-                            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                            size={16}
+                            className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                         />
                         <input
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search by product name, brand, manufacturer, or barcode..."
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                            className="w-full pl-8 sm:pl-10 pr-2 sm:pr-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl border border-slate-200 bg-slate-50/50 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
                         />
                     </div>
 
@@ -328,24 +328,24 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                     <button
                         type="button"
                         onClick={handleOpenContribution}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-500 transition active:scale-[0.98] shrink-0"
+                        className="inline-flex items-center justify-center gap-1.5 sm:gap-2 rounded-lg sm:rounded-xl bg-emerald-600 px-2.5 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-sm font-semibold text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-500 transition active:scale-[0.98] shrink-0 whitespace-nowrap"
                     >
-                        <Plus size={16} />
+                        <Plus size={14} className="sm:w-4 sm:h-4" />
                         Submit Missing Product
                     </button>
                 </div>
 
                 {/* Filter Tags */}
-                <div className="flex flex-wrap gap-2.5 items-center pt-2 border-t border-slate-100 text-xs">
-                    <div className="flex items-center gap-1.5 text-slate-500 font-medium mr-1">
-                        <Filter size={14} /> Filter:
+                <div className="flex flex-nowrap gap-1.5 sm:gap-2.5 items-center pt-2 border-t border-slate-100 text-[10px] sm:text-xs">
+                    <div className="flex items-center gap-1 text-slate-500 font-medium shrink-0">
+                        <Filter size={13} className="sm:w-3.5 sm:h-3.5" /> Filter:
                     </div>
 
                     {/* Category Selector */}
                     <select
                         value={selectedCategory}
                         onChange={(e) => setSelectedCategory(e.target.value)}
-                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-slate-700 font-medium focus:outline-none focus:border-emerald-500"
+                        className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-1.5 sm:px-2.5 py-1 sm:py-1.5 text-[10px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500"
                     >
                         {PRODUCT_CATEGORIES.map((cat) => (
                             <option key={cat} value={cat}>
@@ -358,7 +358,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                     <select
                         value={selectedStatus}
                         onChange={(e) => setSelectedStatus(e.target.value)}
-                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-slate-700 font-medium focus:outline-none focus:border-emerald-500"
+                        className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-1.5 sm:px-2.5 py-1 sm:py-1.5 text-[10px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500"
                     >
                         {PRODUCT_STATUSES.map((st) => (
                             <option key={st} value={st}>
@@ -367,7 +367,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                         ))}
                     </select>
 
-                    <span className="text-slate-400 ml-auto">
+                    <span className="text-slate-400 ml-auto whitespace-nowrap text-[9px] sm:text-xs">
                         Showing <strong className="text-slate-700">{filteredProducts.length}</strong> of{' '}
                         {products.length} products
                     </span>
@@ -421,7 +421,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                     )}
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-3 gap-y-5 sm:gap-x-5 sm:gap-y-6">
                     {filteredProducts.map((product) => {
                         const isHalal = product.status === 'Halal';
                         const isDoubtful = product.status === 'Doubtful';
@@ -429,24 +429,24 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                         return (
                             <div
                                 key={product.id}
-                                className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-4"
+                                className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 p-3 sm:p-5 mb-4 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-3 sm:space-y-4 min-w-0"
                             >
-                                <div className="space-y-3">
+                                <div className="space-y-2 sm:space-y-3">
                                     {/* Header: Brand & Status Badge */}
                                     <div className="flex items-start justify-between gap-2">
-                                        <div className="space-y-0.5">
+                                        <div className="space-y-0.5 min-w-0">
                                             {product.brand && (
-                                                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+                                                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-1.5 sm:px-2 py-0.5 rounded-md border border-emerald-100">
                                                     {product.brand}
                                                 </span>
                                             )}
-                                            <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-tight pt-1">
+                                            <h3 className="text-xs sm:text-base font-bold text-slate-900 leading-tight pt-1 break-words">
                                                 {product.name}
                                             </h3>
                                         </div>
 
                                         <span
-                                            className={`text-[11px] font-bold px-2.5 py-1 rounded-lg shrink-0 flex items-center gap-1 border ${
+                                            className={`text-[10px] sm:text-[11px] font-bold px-1.5 sm:px-2.5 py-1 rounded-lg shrink-0 flex items-center gap-1 border ${
                                                 isHalal
                                                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                                     : isDoubtful
@@ -454,28 +454,28 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                                                     : 'bg-red-50 text-red-700 border-red-200'
                                             }`}
                                         >
-                                            {isHalal && <CheckCircle2 size={12} />}
-                                            {isDoubtful && <AlertCircle size={12} />}
+                                            {isHalal && <CheckCircle2 size={10} className="sm:w-3 sm:h-3" />}
+                                            {isDoubtful && <AlertCircle size={10} className="sm:w-3 sm:h-3" />}
                                             {product.status}
                                         </span>
                                     </div>
 
                                     {/* Category & Barcode */}
-                                    <div className="flex flex-wrap gap-2 text-xs text-slate-500 pt-1">
-                                        <span className="flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-md">
-                                            <Tag size={12} /> {product.category || 'Food'}
+                                    <div className="flex flex-wrap gap-1 sm:gap-2 text-[10px] sm:text-xs text-slate-500 pt-1">
+                                        <span className="flex items-center gap-1 bg-slate-100 px-1.5 sm:px-2 py-0.5 rounded-md">
+                                            <Tag size={10} className="sm:w-3 sm:h-3" /> {product.category || 'Food'}
                                         </span>
                                         {product.barcode && (
-                                            <span className="flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-md font-mono text-[11px]">
-                                                <Barcode size={12} /> {product.barcode}
+                                            <span className="flex items-center gap-1 bg-slate-100 px-1.5 sm:px-2 py-0.5 rounded-md font-mono text-[9px] sm:text-[11px]">
+                                                <Barcode size={10} className="sm:w-3 sm:h-3" /> {product.barcode}
                                             </span>
                                         )}
                                     </div>
 
                                     {/* Manufacturer & Certification Info */}
-                                    <div className="space-y-1.5 text-xs text-slate-600 bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                    <div className="space-y-1 text-[11px] sm:text-xs text-slate-600 bg-slate-50 rounded-lg sm:rounded-xl p-2 sm:p-3 border border-slate-100">
                                         <div className="flex items-center gap-1.5">
-                                            <Building2 size={13} className="text-slate-400 shrink-0" />
+                                            <Building2 size={11} className="text-slate-400 shrink-0 sm:w-[13px] sm:h-[13px]" />
                                             <span className="font-semibold text-slate-800">
                                                 {product.manufacturers?.name || 'Manufacturer Unspecified'}
                                             </span>
@@ -504,10 +504,10 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                                     {/* Ingredients Summary */}
                                     {product.ingredients_summary && (
                                         <div className="text-xs text-slate-600">
-                                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
+                                            <p className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
                                                 Ingredients:
                                             </p>
-                                            <p className="line-clamp-2 text-slate-600 text-[11px] leading-relaxed">
+                                            <p className="line-clamp-2 text-slate-600 text-[10px] sm:text-[11px] leading-relaxed">
                                                 {product.ingredients_summary}
                                             </p>
                                         </div>
@@ -515,9 +515,9 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                                 </div>
 
                                 {/* Footer: Provenance & Admin Actions */}
-                                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                                    <span className="text-[10px] text-slate-400 flex items-center gap-1" title={product.source_url || product.source}>
-                                        <FileText size={11} />
+                                <div className="pt-2 sm:pt-3 border-t border-slate-100 flex items-center justify-between text-[9px] sm:text-xs gap-1">
+                                    <span className="text-[10px] sm:text-[10px] text-slate-400 flex items-center gap-1 min-w-0" title={product.source_url || product.source}>
+                                        <FileText size={10} className="shrink-0 sm:w-[11px] sm:h-[11px]" />
                                         {product.source || 'IDCP Registry'}
                                     </span>
 
@@ -525,10 +525,10 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                                         <button
                                             type="button"
                                             onClick={() => handleReportProduct(product)}
-                                            className="text-[11px] font-semibold text-slate-400 hover:text-amber-600 flex items-center gap-1 transition px-1.5 py-0.5 rounded hover:bg-amber-50"
+                                            className="text-[10px] sm:text-[11px] font-semibold text-slate-400 hover:text-amber-600 flex items-center gap-1 transition px-1 sm:px-1.5 py-0.5 rounded hover:bg-amber-50"
                                             title="Flag issue or report non-compliance"
                                         >
-                                            <Flag size={11} />
+                                            <Flag size={10} className="sm:w-[11px] sm:h-[11px]" />
                                             <span>Flag</span>
                                         </button>
 

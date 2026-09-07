@@ -28,6 +28,19 @@ export async function signOut() {
     }
 }
 
+export async function signInWithProvider(provider) {
+    const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+            redirectTo: getAuthRedirectUrl(),
+        },
+    });
+
+    if (error) {
+        throw error;
+    }
+}
+
 export function getAuthRedirectUrl() {
     return window.location.origin;
 }

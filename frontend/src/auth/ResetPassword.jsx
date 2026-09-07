@@ -105,7 +105,7 @@ export const ResetPassword = ({ onViewChange }) => {
                                 <button
                                     type="button"
                                     onClick={() => onViewChange('forgot-password')}
-                                    className="w-full rounded-xl bg-emerald-600 py-3.5 font-bold tracking-wide text-white transition hover:bg-emerald-700"
+                                    className="w-full rounded-xl bg-emerald-600 py-2.5 text-xs font-bold tracking-wide text-white transition hover:bg-emerald-700 sm:py-3.5 sm:text-sm"
                                 >
                                     Request Reset Link
                                 </button>
@@ -128,42 +128,42 @@ export const ResetPassword = ({ onViewChange }) => {
                                     <div>
                                         <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-600">New Password</label>
                                         <div className="relative">
-                                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                             <input
                                                 required
                                                 type={showNewPassword ? 'text' : 'password'}
                                                 value={password}
                                                 onChange={(event) => setPassword(event.target.value)}
                                                 placeholder="••••••••"
-                                                className="w-full rounded-xl border border-slate-300 bg-slate-50 py-3.5 pl-10 pr-11 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100"
+                                                className="w-full rounded-xl border border-slate-300 bg-slate-50 py-2.5 pl-9 pr-10 text-[12px] text-slate-800 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100 sm:py-3.5 sm:pl-10 sm:pr-11 sm:text-sm"
                                             />
                                             <button
                                                 type="button"
                                                 onClick={() => setShowNewPassword((prev) => !prev)}
                                                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 focus:outline-none"
                                             >
-                                                {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                                {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                             </button>
                                         </div>
                                     </div>
                                     <div>
                                         <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-600">Confirm Password</label>
                                         <div className="relative">
-                                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                             <input
                                                 required
                                                 type={showConfirmPassword ? 'text' : 'password'}
                                                 value={confirmPassword}
                                                 onChange={(event) => setConfirmPassword(event.target.value)}
                                                 placeholder="••••••••"
-                                                className="w-full rounded-xl border border-slate-300 bg-slate-50 py-3.5 pl-10 pr-11 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100"
+                                                className="w-full rounded-xl border border-slate-300 bg-slate-50 py-2.5 pl-9 pr-10 text-[12px] text-slate-800 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100 sm:py-3.5 sm:pl-10 sm:pr-11 sm:text-sm"
                                             />
                                             <button
                                                 type="button"
                                                 onClick={() => setShowConfirmPassword((prev) => !prev)}
                                                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 focus:outline-none"
                                             >
-                                                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                             </button>
                                         </div>
                                     </div>
@@ -178,7 +178,7 @@ export const ResetPassword = ({ onViewChange }) => {
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="mt-6 w-full rounded-xl bg-emerald-600 py-3.5 font-bold tracking-wide text-white transition hover:bg-emerald-700 active:scale-95 duration-150 shadow-md shadow-emerald-600/10 disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="mt-6 w-full rounded-xl bg-emerald-600 py-2.5 text-xs font-bold tracking-wide text-white transition hover:bg-emerald-700 active:scale-95 duration-150 shadow-md shadow-emerald-600/10 disabled:cursor-not-allowed disabled:opacity-60 sm:py-3.5 sm:text-sm"
                                 >
                                     {isLoading ? 'Updating Password...' : 'Update Password'}
                                 </button>
@@ -203,7 +203,7 @@ export const ResetPassword = ({ onViewChange }) => {
                                 <button
                                     type="button"
                                     onClick={() => onViewChange('login')}
-                                    className="mt-8 w-full rounded-xl border border-slate-300 bg-slate-100 py-3.5 text-sm font-bold text-slate-800 transition hover:bg-slate-200"
+                                    className="mt-8 w-full rounded-xl border border-slate-300 bg-slate-100 py-2.5 text-xs font-bold text-slate-800 transition hover:bg-slate-200 sm:py-3.5 sm:text-sm"
                                 >
                                     Return to Login
                                 </button>

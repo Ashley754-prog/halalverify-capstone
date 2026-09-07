@@ -761,7 +761,7 @@ export default function EstablishmentsMap({ userRole, onViewChange }) {
                     </div>
                 </div>
 
-                <div className="relative min-w-[220px]">
+                <div className="relative w-full min-w-0 sm:min-w-[220px]">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                         type="text"

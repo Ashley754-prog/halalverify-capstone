@@ -483,10 +483,10 @@ export const Registry = ({ userRole, onViewChange }) => {
 
             {/* Navigation Tabs and Actions */}
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex flex-wrap gap-2 sm:gap-3">
+                <div className="flex min-w-0 flex-wrap gap-2 sm:gap-3">
                     <button
                         onClick={() => setRegistryMode('additives')}
-                        className={`px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all border ${
+                        className={`w-full sm:w-auto px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all border ${
                             registryMode === 'additives'
                                 ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm shadow-emerald-500/10'
                                 : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200'
@@ -499,7 +499,7 @@ export const Registry = ({ userRole, onViewChange }) => {
                     
                     <button
                         onClick={() => setRegistryMode('hcb')}
-                        className={`px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all border ${
+                        className={`w-full sm:w-auto px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all border ${
                             registryMode === 'hcb'
                                 ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm shadow-emerald-500/10'
                                 : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200'
@@ -512,7 +512,7 @@ export const Registry = ({ userRole, onViewChange }) => {
 
                     <button
                         onClick={() => setRegistryMode('establishments')}
-                        className={`px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all border ${
+                        className={`w-full sm:w-auto px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all border ${
                             registryMode === 'establishments'
                                 ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm shadow-emerald-500/10'
                                 : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200'

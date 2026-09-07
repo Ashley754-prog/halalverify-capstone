@@ -118,38 +118,38 @@ export const Scanner = () => {
             />
 
             {/* Mode Toggle Controls */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-4">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
                 <button
                     onClick={() => { setScannerMode('label'); resetState(); }}
-                    className={`px-4 sm:px-5 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all border ${
+                    className={`px-3 py-2.5 rounded-lg font-semibold text-[11px] sm:text-xs transition-all border ${
                         scannerMode === 'label'
                             ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm shadow-emerald-600/10'
                             : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200'
                     }`}
                 >
                     <span className="flex items-center justify-center gap-2">
-                        <ScanSearch size={18} /> Label Scanner & Parser (EasyOCR)
+                        <ScanSearch size={16} /> Halal Logo and Label Scanner
                     </span>
                 </button>
                 <button
                     onClick={() => { setScannerMode('cert'); resetState(); }}
-                    className={`px-4 sm:px-5 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all border ${
+                    className={`px-3 py-2.5 rounded-lg font-semibold text-[11px] sm:text-xs transition-all border ${
                         scannerMode === 'cert'
                             ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm shadow-emerald-600/10'
                             : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200'
                     }`}
                 >
                     <span className="flex items-center justify-center gap-2">
-                        <FileText size={18} /> Halal Certificate Analyzer (OCR + Registry)
+                        <FileText size={16} /> Halal Certificate Analyzer
                     </span>
                 </button>
             </div>
 
             {/* Main Interactive Area */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start flex-1">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start lg:items-stretch flex-1">
 
                 {/* Left Side: Capture View */}
-                <div className="lg:col-span-7 bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 shadow-sm flex flex-col gap-4 sm:gap-5 min-h-[320px] sm:min-h-[400px] justify-between">
+                <div className="lg:col-span-7 bg-white border border-slate-200 rounded-2xl p-4 pb-5 sm:p-6 shadow-sm flex flex-col gap-3 sm:gap-4 min-h-0 sm:min-h-[410px] justify-between">
                     <div className="relative aspect-video rounded-xl bg-slate-950 overflow-hidden border border-slate-200 flex flex-col justify-center items-center">
                         {isCapturing && (
                             <div className="absolute inset-0 z-10 flex flex-col justify-end p-3 sm:p-4">
@@ -175,11 +175,11 @@ export const Scanner = () => {
                                     <p className="font-semibold text-slate-200 text-xs sm:text-sm">Input Image Workspace</p>
                                     <p className="text-[11px] sm:text-xs text-slate-400 mt-1 max-w-xs sm:max-w-sm">Capture a live label, logo photo, or upload an image file.</p>
                                 </div>
-                                <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full max-w-md mt-1 sm:mt-2">
-                                    <button onClick={startCamera} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm">
+                                <div className="flex flex-row gap-2.5 sm:gap-3 w-full max-w-md mt-1 sm:mt-2 pb-4">
+                                    <button onClick={startCamera} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 sm:py-2.5 rounded-lg text-[11px] sm:text-xs flex items-center justify-center gap-2 shadow-sm">
                                         Open Camera
                                     </button>
-                                    <label className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold py-2.5 sm:py-3 rounded-xl cursor-pointer text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors">
+                                    <label className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold py-2 sm:py-2.5 rounded-lg cursor-pointer text-[11px] sm:text-xs flex items-center justify-center gap-2 transition-colors">
                                         Upload File
                                         <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
                                     </label>
@@ -202,7 +202,7 @@ export const Scanner = () => {
                 </div>
 
                 {/* Right Side: Analytical Panel */}
-                <div className="lg:col-span-5 bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 shadow-sm flex flex-col gap-4 min-h-[320px] sm:min-h-[400px]">
+                <div className="lg:col-span-5 mb-6 lg:mb-0 bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 shadow-sm flex flex-col gap-4 min-h-[260px] sm:min-h-[410px] lg:h-full max-h-[540px] overflow-y-auto">
                     <h3 className="text-xs sm:text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-2">
                         <Eye size={16} className="text-emerald-500 shrink-0" /> Pipeline Evaluation Output
                     </h3>

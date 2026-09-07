@@ -147,19 +147,19 @@ export const ScanHistory = ({ userRole }) => {
                         </button>
                     ))}
                 </div>
-                <div className="flex w-full sm:w-auto gap-2">
+                <div className="flex w-full min-w-0 sm:w-auto gap-2">
                     <input
                         type="text"
                         placeholder={isAdmin ? "Search product or user..." : "Search product..."}
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        className="w-full sm:w-64 bg-white border border-slate-200 rounded-xl py-2 px-3.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500 transition"
+                        className="min-w-0 flex-1 sm:w-64 bg-white border border-slate-200 rounded-xl py-2 px-3.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500 transition"
                     />
                     <button
                         type="button"
                         onClick={() => fetchScanHistory(false)}
                         disabled={refreshing}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+                        className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-60"
                     >
                         <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
                         Refresh

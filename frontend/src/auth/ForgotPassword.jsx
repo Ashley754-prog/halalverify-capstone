@@ -53,14 +53,14 @@ export const ForgotPassword = ({ onViewChange }) => {
                                     <div>
                                         <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-600">Account Email</label>
                                         <div className="relative">
-                                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                             <input
                                                 required
                                                 type="email"
                                                 value={email}
                                                 onChange={(event) => setEmail(event.target.value)}
                                                 placeholder="you@example.com"
-                                                className="w-full rounded-xl border border-slate-300 bg-slate-50 py-3.5 pl-10 pr-4 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100"
+                                                className="w-full rounded-xl border border-slate-300 bg-slate-50 py-2.5 pl-9 pr-3 text-[12px] text-slate-800 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100 sm:py-3.5 sm:pl-10 sm:pr-4 sm:text-sm"
                                             />
                                         </div>
                                     </div>
@@ -75,7 +75,7 @@ export const ForgotPassword = ({ onViewChange }) => {
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="mt-6 w-full rounded-xl bg-emerald-600 py-3.5 font-bold tracking-wide text-white transition hover:bg-emerald-700 active:scale-95 duration-150 shadow-md shadow-emerald-600/10 disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="mt-6 w-full rounded-xl bg-emerald-600 py-2.5 text-xs font-bold tracking-wide text-white transition hover:bg-emerald-700 active:scale-95 duration-150 shadow-md shadow-emerald-600/10 disabled:cursor-not-allowed disabled:opacity-60 sm:py-3.5 sm:text-sm"
                                 >
                                     {isLoading ? 'Sending Link...' : 'Send Reset Link'}
                                 </button>
@@ -103,7 +103,7 @@ export const ForgotPassword = ({ onViewChange }) => {
                                 <button
                                     type="button"
                                     onClick={() => onViewChange('login')}
-                                    className="mt-8 w-full rounded-xl border border-slate-300 bg-slate-100 py-3.5 text-sm font-bold text-slate-800 transition hover:bg-slate-200"
+                                    className="mt-8 w-full rounded-xl border border-slate-300 bg-slate-100 py-2.5 text-xs font-bold text-slate-800 transition hover:bg-slate-200 sm:py-3.5 sm:text-sm"
                                 >
                                     Return to Login
                                 </button>
