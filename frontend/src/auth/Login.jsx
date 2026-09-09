@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react';
-import { User, Lock, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, Compass, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { fetchUserRole, signInWithProvider } from '../lib/auth';
 
 export const Login = ({ onLogin, layout = 'login' }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [oauthLoading, setOauthLoading] = useState('');
@@ -23,12 +21,6 @@ export const Login = ({ onLogin, layout = 'login' }) => {
         event.preventDefault();
         setIsLoading(true);
         setErrorMessage('');
-
-        if (password !== confirmPassword) {
-            setErrorMessage('Passwords do not match.');
-            setIsLoading(false);
-            return;
-        }
 
         const { data, error } = await supabase.auth.signInWithPassword({
             email: email.trim(),
@@ -118,28 +110,6 @@ export const Login = ({ onLogin, layout = 'login' }) => {
                                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                     </button>
                                 </div>
-                            </div>
-
-                            <div>
-                                <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-600">Confirm Password</label>
-                                <div className="relative">
-                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                    <input
-                                        required
-                                        type={showConfirmPassword ? 'text' : 'password'}
-                                        value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                        placeholder="••••••••"
-                                        className="w-full rounded-xl border border-slate-300 bg-slate-50 py-2.5 pl-9 pr-10 text-[12px] text-slate-800 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100 sm:py-3.5 sm:pl-10 sm:pr-11 sm:text-sm"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowConfirmPassword((prev) => !prev)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 focus:outline-none"
-                                    >
-                                        {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                    </button>
-                                </div>
                                 <div className="mt-2 flex justify-end">
                                     <button
                                         type="button"
@@ -191,7 +161,7 @@ export const Login = ({ onLogin, layout = 'login' }) => {
                             </div>
                         </div>
 
-                        <div className="mt-6 md:mt-8 text-center text-sm">
+                        <div className="mt-6 text-center text-sm">
                             <span className="text-slate-500">Don&apos;t have an account? </span>
                             <button
                                 type="button"
@@ -202,13 +172,30 @@ export const Login = ({ onLogin, layout = 'login' }) => {
                             </button>
                         </div>
 
-                        <div className="mt-4 text-center">
+                        {/* Prominent Guest Access Option */}
+                        <div className="mt-4 pt-3 border-t border-slate-100">
                             <button
                                 type="button"
                                 onClick={() => onLogin('scanner', null)}
-                                className="text-xs font-semibold text-slate-500 transition hover:text-slate-700 hover:underline"
+                                className="w-full group flex items-center justify-between p-3 rounded-2xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 hover:border-emerald-300 transition text-left shadow-xs active:scale-[0.99]"
                             >
-                                Continue as Guest (Scan & Search)
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm shadow-emerald-600/20 group-hover:scale-105 transition">
+                                        <Compass size={16} />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-slate-900 group-hover:text-emerald-800 transition flex items-center gap-1.5">
+                                            Continue as Guest
+                                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-1.5 py-0.5 rounded-full">
+                                                Instant
+                                            </span>
+                                        </p>
+                                        <p className="text-[11px] text-slate-500">
+                                            Scan, search & find Halal spots without signing in
+                                        </p>
+                                    </div>
+                                </div>
+                                <ChevronRight size={16} className="text-emerald-600 group-hover:translate-x-1 transition shrink-0" />
                             </button>
                         </div>
                     </form>

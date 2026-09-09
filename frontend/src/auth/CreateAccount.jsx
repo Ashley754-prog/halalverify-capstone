@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { User, Lock, Mail, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, Mail, Eye, EyeOff, Compass, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { signInWithProvider } from '../lib/auth';
 
@@ -215,13 +215,30 @@ export const CreateAccount = ({ onViewChange, layout = 'create' }) => {
                 </button>
               </div>
 
-              <div className="mt-3 text-center">
+              {/* Prominent Guest Access Option */}
+              <div className="mt-4 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => onViewChange('scanner')}
-                  className="text-xs font-semibold text-slate-500 transition hover:text-slate-700 hover:underline"
+                  className="w-full group flex items-center justify-between p-3 rounded-2xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 hover:border-emerald-300 transition text-left shadow-xs active:scale-[0.99]"
                 >
-                  Continue as Guest (Scan & Search)
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm shadow-emerald-600/20 group-hover:scale-105 transition">
+                      <Compass size={16} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-900 group-hover:text-emerald-800 transition flex items-center gap-1.5">
+                        Continue as Guest
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-1.5 py-0.5 rounded-full">
+                          Instant
+                        </span>
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        Scan, search & find Halal spots without signing in
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight size={16} className="text-emerald-600 group-hover:translate-x-1 transition shrink-0" />
                 </button>
               </div>
             </div>
