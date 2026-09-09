@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { AlertTriangle, RefreshCw, Eye, ScanSearch, FileText, X, Image as ImageIcon, ShieldCheck, ShieldAlert, Shield, CheckCircle2, Sparkles } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Eye, ScanSearch, FileText, X, Image as ImageIcon, ShieldCheck, ShieldAlert, Shield, CheckCircle2, Sparkles, FlipHorizontal, SwitchCamera } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import Toast from '../components/ui/Toast';
 import { analyzeImage, simulateFallback } from '../utils/api';
@@ -18,20 +18,39 @@ export const Scanner = () => {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const [cameraStream, setCameraStream] = useState(null);
+    const [facingMode, setFacingMode] = useState('environment'); // 'environment' (back) or 'user' (front)
+    const [isMirrored, setIsMirrored] = useState(false);
 
-    const startCamera = async () => {
+    const startCamera = async (overrideFacing) => {
+        const targetFacing = overrideFacing || facingMode;
         setErrorMsg(null);
         setIsCapturing(true);
         setScanResult(null);
         setCertResult(null);
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+            }
+            let stream;
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: { ideal: targetFacing } } 
+                });
+            } catch (facingErr) {
+                // Fallback for laptops/webcams where exact facingMode constraint is unsupported
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            }
+
             setCameraStream(stream);
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
                 videoRef.current.play();
             }
-            setToast({ visible: true, message: 'Camera ready. Capture a photo to begin analysis.', type: 'success' });
+            setToast({ 
+                visible: true, 
+                message: `Camera active (${targetFacing === 'environment' ? 'Rear' : 'Front'}). Capture a photo to begin.`, 
+                type: 'success' 
+            });
         } catch (err) {
             setErrorMsg("Unable to access local camera. Fallback to file upload mode.");
             setToast({ visible: true, message: 'Camera unavailable. You can still upload an image file.', type: 'info' });
@@ -47,6 +66,16 @@ export const Scanner = () => {
         setIsCapturing(false);
     };
 
+    const toggleFacingMode = async () => {
+        const nextMode = facingMode === 'environment' ? 'user' : 'environment';
+        setFacingMode(nextMode);
+        // If switching to user/selfie camera on a phone, default to mirrored for natural motion, else unmirrored
+        setIsMirrored(nextMode === 'user');
+        if (isCapturing) {
+            await startCamera(nextMode);
+        }
+    };
+
     const captureFrame = () => {
         if (videoRef.current && canvasRef.current) {
             const video = videoRef.current;
@@ -54,7 +83,16 @@ export const Scanner = () => {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             const ctx = canvas.getContext('2d');
+
+            ctx.save();
+            if (isMirrored) {
+                // Apply horizontal flip to match what the user saw on screen
+                ctx.translate(canvas.width, 0);
+                ctx.scale(-1, 1);
+            }
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            ctx.restore();
+
             const dataUrl = canvas.toDataURL('image/png');
             setSelectedImage(dataUrl);
             stopCamera();
@@ -152,14 +190,49 @@ export const Scanner = () => {
                 <div className="lg:col-span-7 bg-white border border-slate-200 rounded-2xl p-4 pb-5 sm:p-6 shadow-sm flex flex-col gap-3 sm:gap-4 min-h-0 sm:min-h-[410px] justify-between">
                     <div className="relative aspect-video rounded-xl bg-slate-950 overflow-hidden border border-slate-200 flex flex-col justify-center items-center">
                         {isCapturing && (
-                            <div className="absolute inset-0 z-10 flex flex-col justify-end p-3 sm:p-4">
-                                <video ref={videoRef} className="w-full h-full object-cover absolute top-0 left-0" playsInline muted></video>
+                            <div className="absolute inset-0 z-10 flex flex-col justify-between p-3 sm:p-4">
+                                {/* Top Camera Toolbar */}
+                                <div className="relative z-20 flex items-center justify-between">
+                                    <span className="text-[10px] font-bold text-white bg-slate-900/80 px-2.5 py-1 rounded-full border border-slate-700/60 backdrop-blur-sm shadow-sm flex items-center gap-1.5">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                        {facingMode === 'environment' ? 'Rear' : 'Front'} Camera {isMirrored ? '• Mirrored' : ''}
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsMirrored((prev) => !prev)}
+                                            className={`p-2 rounded-full border backdrop-blur-md transition shadow-sm ${
+                                                isMirrored 
+                                                    ? 'bg-emerald-600 border-emerald-400 text-white' 
+                                                    : 'bg-slate-900/80 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800'
+                                            }`}
+                                            title={isMirrored ? "Click to unmirror preview" : "Click to mirror / flip horizontally"}
+                                        >
+                                            <FlipHorizontal size={16} />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={toggleFacingMode}
+                                            className="p-2 rounded-full bg-slate-900/80 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 backdrop-blur-md transition shadow-sm"
+                                            title={`Switch to ${facingMode === 'environment' ? 'Front' : 'Rear'} Camera`}
+                                        >
+                                            <SwitchCamera size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <video 
+                                    ref={videoRef} 
+                                    className={`w-full h-full object-cover absolute top-0 left-0 transition-transform duration-200 ${isMirrored ? '-scale-x-100' : ''}`} 
+                                    playsInline 
+                                    muted
+                                />
                                 <div className="absolute inset-3 sm:inset-4 border-2 border-dashed border-emerald-500/50 rounded-lg pointer-events-none"></div>
                                 <div className="relative z-20 flex gap-2 sm:gap-4 justify-center">
-                                    <button onClick={captureFrame} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 sm:px-6 py-2 sm:py-2.5 rounded-full shadow-lg text-xs sm:text-sm flex items-center gap-2">
+                                    <button onClick={captureFrame} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 sm:px-6 py-2 sm:py-2.5 rounded-full shadow-lg text-xs sm:text-sm flex items-center gap-2 active:scale-95 transition">
                                         Capture Picture
                                     </button>
-                                    <button onClick={stopCamera} className="bg-slate-800 hover:bg-slate-700 text-white font-semibold px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm border border-slate-600">
+                                    <button onClick={stopCamera} className="bg-slate-800 hover:bg-slate-700 text-white font-semibold px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm border border-slate-600 active:scale-95 transition">
                                         Cancel
                                     </button>
                                 </div>
