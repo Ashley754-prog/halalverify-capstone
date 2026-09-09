@@ -34,10 +34,10 @@ export default function Modal({ isOpen, title, description, onClose, children, f
                     </button>
                 </div>
 
-                <div className="mt-4 sm:mt-5 overflow-y-auto flex-1">{children}</div>
+                <div className="mt-4 sm:mt-5 overflow-y-auto flex-1 pr-2 sm:pr-4">{children}</div>
 
                 {footer && (
-                    <div className="mt-5 sm:mt-6 flex flex-row justify-between sm:flex-row sm:justify-end items-center gap-2 sm:gap-3 shrink-0">
+                    <div className="mt-4 sm:mt-5 pt-3 border-t border-slate-100 flex flex-row justify-between sm:flex-row sm:justify-end items-center gap-2 sm:gap-3 shrink-0">
                         {footer}
                     </div>
                 )}
