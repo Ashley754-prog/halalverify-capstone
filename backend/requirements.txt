@@ -6,3 +6,4 @@ easyocr
 numpy
 pillow
 ultralytics
+opencv-python-headless
