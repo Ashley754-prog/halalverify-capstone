@@ -20,7 +20,9 @@ import {
     ChevronRight,
     CheckCircle2,
     AlertTriangle,
-    Loader2
+    Loader2,
+    Phone,
+    Mail
 } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import Modal from '../components/ui/Modal';
@@ -33,260 +35,13 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.heat';
 
-// Real and curated seed establishments for Zamboanga City (with UCZP & IDCP credentials)
-const SEED_ESTABLISHMENTS = [
-    {
-        id: 'seed-1',
-        name: 'Global Pot Restaurant & Catering',
-        type: 'Restaurant & Catering',
-        address: 'KCC Mall de Zamboanga, Gov. Camins Ave',
-        city: 'Zamboanga City',
-        latitude: 6.9214,
-        longitude: 122.0790,
-        halal_status: 'verified',
-        certificate_number: 'UCZP-ZAM-2024-01',
-        certifying_bodies: { code: 'UCZP', name: 'United Cultural Communities of Zamboanga Peninsula' },
-        products: [
-            { id: 'p1', name: 'Special Beef Rendang', category: 'Main Course' },
-            { id: 'p2', name: 'Zamboanga Seafood Paella', category: 'Main Course' }
-        ]
-    },
-    {
-        id: 'seed-2',
-        name: "Chick 'n Cow Hotpot",
-        type: 'Hotpot Restaurant',
-        address: 'MCLL Highway, Putik, Zamboanga City',
-        city: 'Zamboanga City',
-        latitude: 6.9400,
-        longitude: 122.1000,
-        halal_status: 'verified',
-        certificate_number: 'UCZP-ZAM-2024-02',
-        certifying_bodies: { code: 'UCZP', name: 'United Cultural Communities of Zamboanga Peninsula' },
-        products: [
-            { id: 'p3', name: 'Halal Beef Shabu-Shabu Slices', category: 'Hotpot Dish' },
-            { id: 'p4', name: 'Herbal Collagen Broth', category: 'Soup' }
-        ]
-    },
-    {
-        id: 'seed-3',
-        name: 'Chillies Fried Chicken',
-        type: 'Fast Food / Eatery',
-        address: 'Mayor Jaldon St, Canelar, Zamboanga City',
-        city: 'Zamboanga City',
-        latitude: 6.9150,
-        longitude: 122.0720,
-        halal_status: 'verified',
-        certificate_number: 'UCZP-ZAM-2024-03',
-        certifying_bodies: { code: 'UCZP', name: 'United Cultural Communities of Zamboanga Peninsula' },
-        products: [
-            { id: 'p5', name: 'Halal Spiced Crispy Fried Chicken', category: 'Fast Food' },
-            { id: 'p6', name: 'Spicy Halal Chicken Burger', category: 'Fast Food' }
-        ]
-    },
-    {
-        id: 'seed-4',
-        name: 'Black Plate Zamboanga',
-        type: 'Restaurant',
-        address: 'Mayor Vitaliano Agan Ave, Nuñez Extension',
-        city: 'Zamboanga City',
-        latitude: 6.9230,
-        longitude: 122.0760,
-        halal_status: 'verified',
-        certificate_number: 'UCZP-ZAM-2024-04',
-        certifying_bodies: { code: 'UCZP', name: 'United Cultural Communities of Zamboanga Peninsula' },
-        products: [
-            { id: 'p7', name: 'Seafood Aglio Olio Pasta', category: 'Pasta' },
-            { id: 'p8', name: 'Grilled Lamb Ribs with Mint Jus', category: 'Main Course' }
-        ]
-    },
-    {
-        id: 'seed-5',
-        name: 'TAAM Halal Pizza',
-        type: 'Pizzeria',
-        address: 'Near Masjid Sadik, Cabatangan, Zamboanga City',
-        city: 'Zamboanga City',
-        latitude: 6.9350,
-        longitude: 122.0620,
-        halal_status: 'verified',
-        certificate_number: 'UCZP-ZAM-2024-05',
-        certifying_bodies: { code: 'UCZP', name: 'United Cultural Communities of Zamboanga Peninsula' },
-        products: [
-            { id: 'p9', name: 'Halal Beef Pepperoni Pizza', category: 'Pizza' }
-        ]
-    },
-    {
-        id: 'seed-6',
-        name: 'Bandits Burger',
-        type: 'Burger House',
-        address: 'Tetuan Highway, Zamboanga City',
-        city: 'Zamboanga City',
-        latitude: 6.9300,
-        longitude: 122.0880,
-        halal_status: 'verified',
-        certificate_number: 'UCZP-ZAM-2024-06',
-        certifying_bodies: { code: 'UCZP', name: 'United Cultural Communities of Zamboanga Peninsula' },
-        products: []
-    },
-    {
-        id: 'seed-7',
-        name: "Aly's Halal Catering and Events",
-        type: 'Catering Services',
-        address: 'Lower Cabatangan, Zamboanga City',
-        city: 'Zamboanga City',
-        latitude: 6.9310,
-        longitude: 122.0650,
-        halal_status: 'verified',
-        certificate_number: 'UCZP-ZAM-2024-07',
-        certifying_bodies: { code: 'UCZP', name: 'United Cultural Communities of Zamboanga Peninsula' },
-        products: []
-    },
-    {
-        id: 'seed-8',
-        name: 'Assalam Foods',
-        type: 'Food Manufacturer / Retailer',
-        address: 'A & W Subd, Phase 5, Putik, Zamboanga City',
-        city: 'Zamboanga City',
-        latitude: 6.9420,
-        longitude: 122.1050,
-        halal_status: 'verified',
-        certificate_number: 'ZAM-HALAL-2024-08',
-        certifying_bodies: { code: 'UCZP', name: 'United Cultural Communities of Zamboanga Peninsula' },
-        products: [
-            { id: 'p10', name: 'Assalam Special Kulma Paste', category: 'Condiment' }
-        ]
-    },
-    {
-        id: 'seed-9',
-        name: 'Al-Barka Halal Kitchen',
-        type: 'Eatery',
-        address: 'Canelar St, Zamboanga City',
-        city: 'Zamboanga City',
-        latitude: 6.9130,
-        longitude: 122.0750,
-        halal_status: 'verified',
-        certificate_number: 'IDCP-ZAM-2024-09',
-        certifying_bodies: { code: 'IDCP', name: "Islamic Da'wah Council of the Philippines" },
-        products: []
-    },
-    {
-        id: 'seed-10',
-        name: 'Yakan Heritage Cafe',
-        type: 'Cafe & Restaurant',
-        address: 'Upper Calarian, Zamboanga City',
-        city: 'Zamboanga City',
-        latitude: 6.9550,
-        longitude: 122.0500,
-        halal_status: 'verified',
-        certificate_number: 'IDCP-ZAM-2024-10',
-        certifying_bodies: { code: 'IDCP', name: "Islamic Da'wah Council of the Philippines" },
-        products: [
-            { id: 'p11', name: 'Authentic Sulu Kahawa Sug Coffee', category: 'Beverage' }
-        ]
-    },
-    {
-        id: 'seed-11',
-        name: 'Dennis Coffee Garden',
-        type: 'Cafe & Dining',
-        address: 'San Jose Road, Baliwasan, Zamboanga City',
-        city: 'Zamboanga City',
-        latitude: 6.9160,
-        longitude: 122.0580,
-        halal_status: 'verified',
-        certificate_number: 'IDCP-ZAM-2024-11',
-        certifying_bodies: { code: 'IDCP', name: "Islamic Da'wah Council of the Philippines" },
-        products: [
-            { id: 'p12', name: 'Dennis Signature Roasted Kape Itum', category: 'Beverage' },
-            { id: 'p13', name: 'Chicken Pastil Rice Bowl', category: 'Rice Dish' }
-        ]
-    },
-    {
-        id: 'seed-12',
-        name: 'Sta. Maria Satti House',
-        type: 'Eatery',
-        address: 'Sta. Maria, Zamboanga City',
-        city: 'Zamboanga City',
-        latitude: 6.9200,
-        longitude: 122.0600,
-        halal_status: 'verified',
-        certificate_number: 'IDCP-ZAM-2024-12',
-        certifying_bodies: { code: 'IDCP', name: "Islamic Da'wah Council of the Philippines" },
-        products: [
-            { id: 'p14', name: 'Special Beef Satti Skewers with Sweet-Spicy Sauce', category: 'Eatery Specialty' }
-        ]
-    },
-    {
-        id: 'seed-13',
-        name: 'Tetuan Tiyula Itum',
-        type: 'Restaurant',
-        address: 'Tetuan, Zamboanga City',
-        city: 'Zamboanga City',
-        latitude: 6.9430,
-        longitude: 122.0950,
-        halal_status: 'verified',
-        certificate_number: 'IDCP-ZAM-2024-13',
-        certifying_bodies: { code: 'IDCP', name: "Islamic Da'wah Council of the Philippines" },
-        products: [
-            { id: 'p15', name: 'Authentic Tausug Tiyula Itum (Black Soup)', category: 'Soup / Stew' }
-        ]
-    },
-    {
-        id: 'seed-14',
-        name: 'Canelar Curacha Grill',
-        type: 'Restaurant',
-        address: 'Canelar, Zamboanga City',
-        city: 'Zamboanga City',
-        latitude: 6.9120,
-        longitude: 122.0730,
-        halal_status: 'verified',
-        certificate_number: 'IDCP-ZAM-2024-14',
-        certifying_bodies: { code: 'IDCP', name: "Islamic Da'wah Council of the Philippines" },
-        products: []
-    },
-    {
-        id: 'seed-15',
-        name: 'Pasonanca Pantry',
-        type: 'Retailer',
-        address: 'Pasonanca, Zamboanga City',
-        city: 'Zamboanga City',
-        latitude: 6.9800,
-        longitude: 122.0800,
-        halal_status: 'pending_review',
-        certificate_number: null,
-        certifying_bodies: null,
-        products: []
-    },
-    {
-        id: 'seed-16',
-        name: 'Guiwan Grille & More',
-        type: 'Restaurant',
-        address: 'Guiwan Highway, Zamboanga City',
-        city: 'Zamboanga City',
-        latitude: 6.9200,
-        longitude: 122.1050,
-        halal_status: 'pending_review',
-        certificate_number: null,
-        certifying_bodies: null,
-        products: []
-    },
-    {
-        id: 'seed-17',
-        name: 'Zamboanga Halal Foodhub (Flagged)',
-        type: 'Eatery',
-        address: 'Gov. Lim Ave, Zamboanga City',
-        city: 'Zamboanga City',
-        latitude: 6.9050,
-        longitude: 122.0740,
-        halal_status: 'flagged',
-        certificate_number: 'EXPIRED-2023-01',
-        certifying_bodies: { code: 'IDCP', name: "Islamic Da'wah Council of the Philippines" },
-        products: []
-    },
-];
+import { SEED_ESTABLISHMENTS } from '../data/seedEstablishments';
+
 
 // Helper to normalize 3-tier regulatory classifications (Section 5)
 const getStatusConfig = (status) => {
     const s = (status || '').toLowerCase();
-    if (s.includes('verif') && !s.includes('pending')) {
+    if (s.includes('verif') && !s.includes('pending') && !s.includes('unverif') && !s.includes('need')) {
         return {
             key: 'verified',
             label: 'Verified Halal',
@@ -305,10 +60,10 @@ const getStatusConfig = (status) => {
         };
     }
     return {
-        key: 'pending_review',
-        label: 'Pending Review',
+        key: 'needs_review',
+        label: 'Self-Declared / Review',
         color: '#f59e0b',
-        badgeBg: 'bg-amber-50 text-amber-700 border-amber-200',
+        badgeBg: 'bg-amber-50 text-amber-800 border-amber-200',
         weight: 0.4,
     };
 };
@@ -344,9 +99,8 @@ export default function EstablishmentsMap({ userRole, onViewChange }) {
     const [showHeatmap, setShowHeatmap] = useState(false);
     const [showMarkers, setShowMarkers] = useState(true);
 
-    // Filters
+    // Filters (Certifier filter removed per instructions)
     const [selectedStatus, setSelectedStatus] = useState('all');
-    const [selectedHcb, setSelectedHcb] = useState('all');
     const [selectedRadius, setSelectedRadius] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -371,9 +125,6 @@ export default function EstablishmentsMap({ userRole, onViewChange }) {
                 if (selectedRadius !== 'all') {
                     params.append('radius', selectedRadius);
                 }
-            }
-            if (selectedHcb !== 'all') {
-                params.append('hcb', selectedHcb);
             }
             if (selectedStatus !== 'all') {
                 params.append('status', selectedStatus);
@@ -403,11 +154,14 @@ export default function EstablishmentsMap({ userRole, onViewChange }) {
 
     const applySeedFallback = () => {
         let list = [...SEED_ESTABLISHMENTS];
-        if (selectedHcb !== 'all') {
-            list = list.filter((e) => (e.certifying_bodies?.code || '').toUpperCase() === selectedHcb.toUpperCase());
-        }
         if (selectedStatus !== 'all') {
-            list = list.filter((e) => getStatusConfig(e.halal_status).key === selectedStatus);
+            list = list.filter((e) => {
+                const key = getStatusConfig(e.halal_status).key;
+                if (selectedStatus === 'needs_review' || selectedStatus === 'pending_review') {
+                    return key === 'needs_review' || key === 'pending_review';
+                }
+                return key === selectedStatus;
+            });
         }
         if (userLocation) {
             list = list.map((e) => ({
@@ -425,7 +179,7 @@ export default function EstablishmentsMap({ userRole, onViewChange }) {
 
     useEffect(() => {
         fetchEstablishments();
-    }, [userLocation, selectedRadius, selectedHcb, selectedStatus]);
+    }, [userLocation, selectedRadius, selectedStatus]);
 
     const handleFindNearMe = () => {
         if (!navigator.geolocation) {
@@ -569,8 +323,10 @@ export default function EstablishmentsMap({ userRole, onViewChange }) {
                         if (!est.latitude || !est.longitude) return;
 
                         const statusConfig = getStatusConfig(est.halal_status);
-                        const hcbName = est.certifying_bodies?.code || 'Local Body';
                         const distText = est.distance_km ? `${est.distance_km} km away` : '';
+                        const hcbInfo = est.certifying_bodies?.code
+                            ? `<div>Accredited HCB: <b>${est.certifying_bodies.code}</b></div>`
+                            : `<div style="color: #b45309; font-weight:600;">Classification: Self-Declared</div>`;
 
                         const marker = L.circleMarker([est.latitude, est.longitude], {
                             radius: 9,
@@ -592,7 +348,7 @@ export default function EstablishmentsMap({ userRole, onViewChange }) {
                                 <strong style="font-size: 13px; color: #0f172a; display: block; margin-bottom: 2px;">${est.name}</strong>
                                 <span style="color: #64748b; font-size: 11px;">${est.type || 'Establishment'} — ${est.address || 'Zamboanga City'}</span>
                                 <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #475569;">
-                                    <div>Accredited: <b>${hcbName}</b></div>
+                                    ${hcbInfo}
                                     ${est.certificate_number ? `<div>Cert: <b>${est.certificate_number}</b></div>` : ''}
                                 </div>
                             </div>
@@ -628,25 +384,28 @@ export default function EstablishmentsMap({ userRole, onViewChange }) {
                         radius: 35,
                         blur: 22,
                         maxZoom: 15,
-                        gradient: { 0.2: '#fde047', 0.5: '#f97316', 0.85: '#dc2626' },
+                        gradient: {
+                            0.2: '#34d399',
+                            0.5: '#fbbf24',
+                            0.8: '#f97316',
+                            1.0: '#ef4444',
+                        },
                     }).addTo(map);
                 }
             }
-        } catch (err) {
-            console.warn('Leaflet layer render notice:', err);
+        } catch (e) {
+            console.warn('Map layer update handled:', e);
         }
-    }, [filteredList, userLocation, showHeatmap, showMarkers, mobileTab]);
+    }, [filteredList, showHeatmap, showMarkers, userLocation, mobileTab]);
 
     useEffect(() => {
-        const handleResize = () => {
+        const timer = setTimeout(() => {
             if (mapInstanceRef.current) {
                 mapInstanceRef.current.invalidateSize();
             }
-        };
-        window.addEventListener('resize', handleResize);
-        const timer = setTimeout(handleResize, 250);
+        }, 200);
+
         return () => {
-            window.removeEventListener('resize', handleResize);
             clearTimeout(timer);
         };
     }, [mobileTab]);
@@ -678,49 +437,49 @@ export default function EstablishmentsMap({ userRole, onViewChange }) {
         <div className="p-3 sm:p-5 md:p-6 space-y-4 sm:space-y-5 flex-1 flex flex-col h-full bg-slate-50">
             <Topbar
                 title="Interactive Spatial Map & Establishment Directory"
-                subtitle="Locate verified Halal restaurants, eateries, and retail stores across Zamboanga City with PostGIS spatial queries and accredited certification filters."
+                subtitle="Locate verified Halal and Muslim-owned restaurants, eateries, and food establishments across Zamboanga City."
             />
 
-            {/* Filter & Geolocation Control Bar */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 shrink-0">
-                <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+            {/* Compact Filter & Search Toolbar */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-2.5 sm:p-3 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 shrink-0">
+                <div className="flex flex-wrap items-center gap-2">
                     <button
                         type="button"
                         onClick={handleFindNearMe}
                         disabled={isLocating}
-                        className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition shadow-sm ${
+                        className={`h-9 px-3 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm shrink-0 ${
                             userLocation
                                 ? 'bg-blue-600 text-white hover:bg-blue-700'
                                 : 'bg-emerald-700 hover:bg-emerald-800 text-white'
                         }`}
-                        title="Use HTML5 browser GPS to locate establishments near you"
+                        title="Use browser GPS to locate establishments near you"
                     >
                         {isLocating ? (
-                            <Loader2 size={15} className="animate-spin text-white" />
+                            <Loader2 size={14} className="animate-spin text-white" />
                         ) : (
-                            <Crosshair size={15} className={userLocation ? 'animate-pulse' : ''} />
+                            <Crosshair size={14} className={userLocation ? 'animate-pulse' : ''} />
                         )}
-                        <span>{userLocation ? 'GPS Located (Near Me)' : 'Find Near Me (GPS)'}</span>
+                        <span>{userLocation ? 'Near Me (Active)' : 'Find Near Me'}</span>
                     </button>
 
                     {userLocation && (
                         <button
                             type="button"
                             onClick={handleResetCenter}
-                            className="px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition"
-                            title="Reset map view to City Center"
+                            className="h-9 px-2.5 rounded-xl text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition shrink-0"
+                            title="Reset to City Center"
                         >
-                            Reset City Center
+                            Reset
                         </button>
                     )}
 
-                    <div className="flex items-center gap-1.5 bg-slate-100/80 px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs">
-                        <Compass size={14} className="text-slate-500" />
-                        <span className="font-semibold text-slate-600 hidden sm:inline">Radius:</span>
+                    <div className="h-9 flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100/80 px-2.5 rounded-xl border border-slate-200 text-xs transition">
+                        <Compass size={13} className="text-slate-500 shrink-0" />
+                        <span className="font-semibold text-slate-500 hidden sm:inline">Radius:</span>
                         <select
                             value={selectedRadius}
                             onChange={(e) => setSelectedRadius(e.target.value)}
-                            className="bg-transparent font-bold text-slate-800 focus:outline-none cursor-pointer"
+                            className="bg-transparent font-bold text-slate-800 focus:outline-none cursor-pointer text-xs"
                         >
                             <option value="all">Citywide</option>
                             <option value="1">1 km</option>
@@ -731,76 +490,70 @@ export default function EstablishmentsMap({ userRole, onViewChange }) {
                         </select>
                     </div>
 
-                    <div className="flex items-center gap-1.5 bg-slate-100/80 px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs">
-                        <Award size={14} className="text-emerald-600" />
-                        <span className="font-semibold text-slate-600 hidden sm:inline">Certifier:</span>
-                        <select
-                            value={selectedHcb}
-                            onChange={(e) => setSelectedHcb(e.target.value)}
-                            className="bg-transparent font-bold text-slate-800 focus:outline-none cursor-pointer"
-                        >
-                            <option value="all">All Certifiers</option>
-                            <option value="UCZP">UCZP (Zamboanga Peninsula)</option>
-                            <option value="IDCP">IDCP (Islamic Da'wah)</option>
-                            <option value="HDIP">HDIP (Halal Development)</option>
-                        </select>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 bg-slate-100/80 px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs">
-                        <Filter size={14} className="text-slate-500" />
+                    <div className="h-9 flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100/80 px-2.5 rounded-xl border border-slate-200 text-xs transition">
+                        <Filter size={13} className="text-slate-500 shrink-0" />
                         <select
                             value={selectedStatus}
                             onChange={(e) => setSelectedStatus(e.target.value)}
-                            className="bg-transparent font-bold text-slate-800 focus:outline-none cursor-pointer"
+                            className="bg-transparent font-bold text-slate-800 focus:outline-none cursor-pointer text-xs"
                         >
                             <option value="all">All Classifications</option>
                             <option value="verified">🟢 Verified Halal</option>
-                            <option value="pending_review">🟡 Pending Review</option>
+                            <option value="needs_review">🟡 Self-Declared / Review</option>
                             <option value="flagged">🔴 Flagged / Suspended</option>
                         </select>
                     </div>
                 </div>
 
-                <div className="relative w-full min-w-0 sm:min-w-[220px]">
+                <div className="relative flex-1 min-w-[200px] max-w-full md:max-w-xs">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search name, cuisine, street..."
-                        className="w-full pl-8 pr-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:border-emerald-500"
+                        className="w-full h-9 pl-8 pr-7 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-emerald-500 transition"
                     />
+                    {searchQuery && (
+                        <button
+                            type="button"
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        >
+                            <X size={12} />
+                        </button>
+                    )}
                 </div>
             </div>
 
-            {/* Mobile View Toggle Bar */}
-            <div className="flex lg:hidden bg-slate-200/80 p-1 rounded-xl gap-1 shrink-0">
+            {/* Segmented View Tabs for Mobile & Tablet */}
+            <div className="flex lg:hidden bg-slate-100 p-1 rounded-xl border border-slate-200/80 gap-1 shrink-0 shadow-inner">
                 <button
                     type="button"
                     onClick={() => {
                         setMobileTab('map');
                         setTimeout(() => mapInstanceRef.current?.invalidateSize(), 150);
                     }}
-                    className={`flex-1 py-2 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition ${
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition ${
                         mobileTab === 'map'
-                            ? 'bg-white text-emerald-700 shadow-sm'
+                            ? 'bg-white text-emerald-800 shadow-sm border border-slate-200/60'
                             : 'text-slate-600 hover:text-slate-900'
                     }`}
                 >
-                    <MapPin size={15} className={mobileTab === 'map' ? 'text-emerald-600' : 'text-slate-400'} />
-                    Map View
+                    <MapPin size={14} className={mobileTab === 'map' ? 'text-emerald-600' : 'text-slate-400'} />
+                    <span>Map View</span>
                 </button>
                 <button
                     type="button"
                     onClick={() => setMobileTab('list')}
-                    className={`flex-1 py-2 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition ${
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition ${
                         mobileTab === 'list'
-                            ? 'bg-white text-emerald-700 shadow-sm'
+                            ? 'bg-white text-emerald-800 shadow-sm border border-slate-200/60'
                             : 'text-slate-600 hover:text-slate-900'
                     }`}
                 >
-                    <Store size={15} className={mobileTab === 'list' ? 'text-emerald-600' : 'text-slate-400'} />
-                    Establishment Directory ({filteredList.length})
+                    <Store size={14} className={mobileTab === 'list' ? 'text-emerald-600' : 'text-slate-400'} />
+                    <span>Directory ({filteredList.length})</span>
                 </button>
             </div>
 
@@ -849,7 +602,7 @@ export default function EstablishmentsMap({ userRole, onViewChange }) {
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                            <span className="text-slate-600 text-[11px] font-medium">Pending Review</span>
+                            <span className="text-slate-600 text-[11px] font-medium">Self-Declared / Review</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
@@ -895,7 +648,6 @@ export default function EstablishmentsMap({ userRole, onViewChange }) {
                                         type="button"
                                         onClick={() => {
                                             setSelectedStatus('all');
-                                            setSelectedHcb('all');
                                             setSelectedRadius('all');
                                             setSearchQuery('');
                                         }}
@@ -908,7 +660,7 @@ export default function EstablishmentsMap({ userRole, onViewChange }) {
                                 filteredList.map((est) => {
                                     const statusConfig = getStatusConfig(est.halal_status);
                                     const isSelected = selectedEstablishment?.id === est.id;
-                                    const hcbCode = est.certifying_bodies?.code || 'Local HCB';
+                                    const isCertified = Boolean(est.certifying_bodies?.code);
                                     const productsCount = est.products?.length || 0;
 
                                     return (
@@ -939,9 +691,15 @@ export default function EstablishmentsMap({ userRole, onViewChange }) {
 
                                             <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-slate-200/50">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="font-semibold text-emerald-800 bg-emerald-100/70 px-1.5 py-0.5 rounded">
-                                                        {hcbCode}
-                                                    </span>
+                                                    {isCertified ? (
+                                                        <span className="font-bold text-emerald-800 bg-emerald-100/70 border border-emerald-200/80 px-1.5 py-0.5 rounded">
+                                                            {est.certifying_bodies.code}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="font-medium text-amber-800 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded">
+                                                            Self-Declared
+                                                        </span>
+                                                    )}
                                                     {est.distance_km && (
                                                         <span className="text-blue-700 font-bold">
                                                             {est.distance_km} km
@@ -979,6 +737,30 @@ export default function EstablishmentsMap({ userRole, onViewChange }) {
                     onClose={() => setSelectedEstablishment(null)}
                     title=""
                     size="lg"
+                    footer={
+                        <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-2">
+                            <button
+                                type="button"
+                                onClick={() => handleFlagEstablishment(selectedEstablishment)}
+                                className="w-full sm:w-auto px-3 py-2 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl flex items-center justify-center gap-1.5 transition"
+                            >
+                                <Flag size={13} className="text-amber-600" />
+                                <span>Flag / Report Discrepancy</span>
+                            </button>
+
+                            <div className="w-full sm:w-auto flex items-center gap-2">
+                                <a
+                                    href={`https://www.google.com/maps/dir/?api=1&destination=${selectedEstablishment.latitude},${selectedEstablishment.longitude}${userLocation ? `&origin=${userLocation.lat},${userLocation.lng}` : ''}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="flex-1 sm:flex-none px-4 py-2 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-xl flex items-center justify-center gap-1.5 transition shadow-sm"
+                                >
+                                    <Navigation size={13} />
+                                    <span>Get Directions</span>
+                                </a>
+                            </div>
+                        </div>
+                    }
                 >
                     <div className="space-y-4">
                         <div className="flex items-start justify-between gap-3 pb-3 border-b border-slate-200">
@@ -1002,55 +784,149 @@ export default function EstablishmentsMap({ userRole, onViewChange }) {
                                         </span>
                                     )}
                                 </p>
+                                <div className="text-[10px] text-slate-400 flex items-center gap-1 pt-1">
+                                    <ShieldCheck size={11} className="text-slate-400 shrink-0" />
+                                    <span>Verified listing · Source: Muslim in Manila Directory</span>
+                                </div>
                             </div>
-
-                            <button
-                                type="button"
-                                onClick={() => setSelectedEstablishment(null)}
-                                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                            >
-                                <X size={18} />
-                            </button>
                         </div>
 
-                        <div className="rounded-xl bg-emerald-50/60 border border-emerald-200 p-3 text-xs space-y-2">
-                            <div className="flex items-center justify-between">
-                                <span className="font-bold text-emerald-900 flex items-center gap-1.5">
-                                    <Award size={15} className="text-emerald-600" />
-                                    Halal Certifying Authority (HCB)
-                                </span>
-                                <span className="font-black text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-300">
-                                    {selectedEstablishment.certifying_bodies?.code || 'UCZP (Zamboanga Peninsula)'}
-                                </span>
-                            </div>
-
-                            <p className="text-slate-600 text-[11px]">
-                                {selectedEstablishment.certifying_bodies?.name ||
-                                    'United Cultural Communities of Zamboanga Peninsula Halal Certification Board'}
-                            </p>
-
-                            <div className="grid grid-cols-2 gap-2 pt-1 border-t border-emerald-200/60 text-[11px]">
-                                <div>
-                                    <span className="text-slate-500 block">Certificate No:</span>
-                                    <span className="font-bold text-slate-800">
-                                        {selectedEstablishment.certificate_number || 'NCMF / UCZP Accredited'}
+                        {/* HCB Certification Standing */}
+                        {selectedEstablishment.certifying_bodies ? (
+                            <div className="rounded-xl bg-emerald-50/60 border border-emerald-200 p-3 text-xs space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="font-bold text-emerald-900 flex items-center gap-1.5">
+                                        <Award size={15} className="text-emerald-600" />
+                                        Halal Certifying Authority (HCB)
+                                    </span>
+                                    <span className="font-black text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-300">
+                                        {selectedEstablishment.certifying_bodies.code || selectedEstablishment.certifying_bodies.acronym || 'Accredited HCB'}
                                     </span>
                                 </div>
-                                <div>
-                                    <span className="text-slate-500 block">Accreditation Standing:</span>
-                                    <span className="font-bold text-emerald-700">Official Compliant</span>
+
+                                <p className="text-slate-600 text-[11px]">
+                                    {selectedEstablishment.certifying_bodies.name}
+                                </p>
+
+                                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-emerald-200/60 text-[11px]">
+                                    <div>
+                                        <span className="text-slate-500 block">Certificate No:</span>
+                                        <span className="font-bold text-slate-800">
+                                            {selectedEstablishment.certificate_number || 'Official Accredited Record'}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="text-slate-500 block">Accreditation Standing:</span>
+                                        <span className="font-bold text-emerald-700">Official Compliant</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        ) : (
+                            <div className="rounded-xl bg-amber-50/80 border border-amber-200 p-3 text-xs space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                    <span className="font-bold text-amber-900 flex items-center gap-1.5">
+                                        <AlertCircle size={15} className="text-amber-600" />
+                                        No Accredited HCB on Record
+                                    </span>
+                                    <span className="font-bold text-[10px] text-amber-800 bg-white px-2 py-0.5 rounded border border-amber-300">
+                                        Self-Declared / Unverified
+                                    </span>
+                                </div>
 
+                                <p className="text-slate-600 text-[11px] leading-relaxed">
+                                    This establishment does not have an active accredited Halal Certification Body (HCB) audit record. Listed as Muslim-owned or self-declared catering.
+                                </p>
+
+                                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-amber-200/60 text-[11px]">
+                                    <div>
+                                        <span className="text-slate-500 block">Certificate Status:</span>
+                                        <span className="font-bold text-slate-700">No Official Cert No.</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-slate-500 block">Compliance Status:</span>
+                                        <span className="font-bold text-amber-700">Pending Review</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* About this restaurant & Contact Information */}
+                        {(selectedEstablishment.description || selectedEstablishment.phone || selectedEstablishment.email || selectedEstablishment.source_url) && (
+                            <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-xs space-y-2.5">
+                                {selectedEstablishment.description && (
+                                    <div className="space-y-1">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                            About this restaurant
+                                        </span>
+                                        <p className="text-slate-700 text-[11px] leading-relaxed">
+                                            {selectedEstablishment.description}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {(selectedEstablishment.phone || selectedEstablishment.email || selectedEstablishment.source_url) && (
+                                    <div className="pt-2 border-t border-slate-200/60 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px]">
+                                        {selectedEstablishment.phone && (
+                                            <div className="flex items-center gap-1.5 text-slate-600">
+                                                <Phone size={12} className="text-emerald-600 shrink-0" />
+                                                <span className="font-semibold text-slate-800">{selectedEstablishment.phone}</span>
+                                            </div>
+                                        )}
+                                        {selectedEstablishment.email && (
+                                            <div className="flex items-center gap-1.5 text-slate-600">
+                                                <Mail size={12} className="text-emerald-600 shrink-0" />
+                                                <a
+                                                    href={`mailto:${selectedEstablishment.email}`}
+                                                    className="font-semibold text-emerald-700 hover:underline"
+                                                >
+                                                    {selectedEstablishment.email}
+                                                </a>
+                                            </div>
+                                        )}
+                                        {selectedEstablishment.source_url && (
+                                            <div className="flex items-center gap-1.5 text-slate-500">
+                                                <ExternalLink size={12} className="text-slate-400 shrink-0" />
+                                                <a
+                                                    href={selectedEstablishment.source_url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="hover:text-emerald-700 hover:underline"
+                                                >
+                                                    Directory Reference
+                                                </a>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Truthful Menu Highlights & Specialties Section */}
                         <div className="space-y-2">
-                            <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                                <UtensilsCrossed size={14} className="text-emerald-600" />
-                                Verified Compliant Menu & Product Inventory
-                            </h4>
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                    <UtensilsCrossed size={14} className={selectedEstablishment.certifying_bodies ? "text-emerald-600" : "text-slate-600"} />
+                                    {selectedEstablishment.certifying_bodies ? "Menu Highlights & Specialties" : "Reported Menu & Specialties"}
+                                </h4>
+                                {selectedEstablishment.certifying_bodies ? (
+                                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md">
+                                        {selectedEstablishment.certifying_bodies.code || 'Certified'} Kitchen
+                                    </span>
+                                ) : (
+                                    <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-md">
+                                        Self-Reported / Unaudited
+                                    </span>
+                                )}
+                            </div>
+
+                            {!selectedEstablishment.certifying_bodies && selectedEstablishment.products && selectedEstablishment.products.length > 0 && (
+                                <p className="text-[11px] text-slate-500 leading-snug">
+                                    Menu items below are sourced from public directory profiles. Individual dishes and kitchen inventory have not been audited or verified compliant by an accredited Halal Certification Body (HCB).
+                                </p>
+                            )}
 
                             {selectedEstablishment.products && selectedEstablishment.products.length > 0 ? (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     {selectedEstablishment.products.map((p) => (
                                         <div
                                             key={p.id}
@@ -1064,40 +940,25 @@ export default function EstablishmentsMap({ userRole, onViewChange }) {
                                                     {p.category || 'Food Item'}
                                                 </span>
                                             </div>
-                                            <span className="shrink-0 text-[10px] font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-md flex items-center gap-0.5">
-                                                <CheckCircle2 size={10} /> Halal
-                                            </span>
+                                            {selectedEstablishment.certifying_bodies ? (
+                                                <span className="shrink-0 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/70 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                                    <CheckCircle2 size={10} /> Listed Dish
+                                                </span>
+                                            ) : (
+                                                <span className="shrink-0 text-[10px] font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
+                                                    Reported
+                                                </span>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
                             ) : (
                                 <div className="p-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 text-center text-xs text-slate-500">
-                                    Kitchen operations and core preparation methods certified Halal. Full menu available on-site.
+                                    {selectedEstablishment.certifying_bodies
+                                        ? 'No individual dishes itemized in directory record. Refer to physical establishment menu.'
+                                        : 'No individual menu items reported in directory profile. Refer to physical establishment menu.'}
                                 </div>
                             )}
-                        </div>
-
-                        <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-slate-100">
-                            <button
-                                type="button"
-                                onClick={() => handleFlagEstablishment(selectedEstablishment)}
-                                className="w-full sm:w-auto px-3 py-2 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl flex items-center justify-center gap-1.5 transition"
-                            >
-                                <Flag size={13} className="text-amber-600" />
-                                <span>Flag / Report Discrepancy</span>
-                            </button>
-
-                            <div className="w-full sm:w-auto flex items-center gap-2">
-                                <a
-                                    href={`https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${userLocation ? `${userLocation.lat},${userLocation.lng}` : `${ZAMBOANGA_CENTER.lat},${ZAMBOANGA_CENTER.lng}`};${selectedEstablishment.latitude},${selectedEstablishment.longitude}`}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="flex-1 sm:flex-none px-4 py-2 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-xl flex items-center justify-center gap-1.5 transition shadow-sm"
-                                >
-                                    <Navigation size={13} />
-                                    <span>Get Directions</span>
-                                </a>
-                            </div>
                         </div>
                     </div>
                 </Modal>
@@ -1114,14 +975,15 @@ export default function EstablishmentsMap({ userRole, onViewChange }) {
                 isOpen={showReportModal}
                 onClose={() => setShowReportModal(false)}
                 initialData={{
-                    relatedTo: 'establishment',
-                    establishmentId: selectedEstablishment?.id,
-                    subjectName: selectedEstablishment?.name || '',
+                    establishment_id: selectedEstablishment?.id,
+                    establishment_name: selectedEstablishment?.name,
+                    category: 'establishment_concern',
                 }}
-                onSubmitted={() => {
+                onSuccess={() => {
+                    setShowReportModal(false);
                     setToast({
                         visible: true,
-                        message: 'Report submitted for administrative review.',
+                        message: 'Report submitted for regulatory review.',
                         type: 'success',
                     });
                 }}
@@ -1131,7 +993,7 @@ export default function EstablishmentsMap({ userRole, onViewChange }) {
                 visible={toast.visible}
                 message={toast.message}
                 type={toast.type}
-                onClose={() => setToast({ visible: false, message: '', type: 'info' })}
+                onClose={() => setToast({ ...toast, visible: false })}
             />
         </div>
     );

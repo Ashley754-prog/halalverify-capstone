@@ -146,6 +146,10 @@ def get_establishments_map(
                     "logo_url": item.get("logo_url"),
                     "distance_meters": dist_m,
                     "distance_km": dist_km,
+                    "phone": item.get("phone"),
+                    "email": item.get("email"),
+                    "description": item.get("description"),
+                    "source_url": item.get("source_url"),
                     "certifying_bodies": {
                         "code": item.get("hcb_code"),
                         "name": item.get("hcb_name"),
