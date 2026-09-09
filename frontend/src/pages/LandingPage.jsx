@@ -18,6 +18,7 @@ import {
   ExternalLink,
   X,
   Building2,
+  Plus,
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import ContributionModal from '../components/submissions/ContributionModal';
@@ -131,9 +132,11 @@ export default function LandingPage({ onViewChange, userRole }) {
             </button>
             <button 
               onClick={() => handleOpenContribution('establishment')}
-              className="shrink-0 hover:text-emerald-400 transition flex items-center gap-1 text-emerald-400 font-semibold"
+              className="shrink-0 flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] md:text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:text-emerald-200 transition active:scale-95 shadow-xs"
+              title="Submit an establishment or product to the registry"
             >
-              <span>+ Contribute</span>
+              <Plus size={13} strokeWidth={2.5} className="text-emerald-400" />
+              <span>Submit Spot</span>
             </button>
           </nav>
 
