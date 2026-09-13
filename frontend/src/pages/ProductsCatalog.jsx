@@ -74,7 +74,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
     const [selectedCategory, setSelectedCategory] = useState('All Categories');
     const [selectedStatus, setSelectedStatus] = useState('All Statuses');
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(12);
+    const itemsPerPage = 24;
 
     const [activeModal, setActiveModal] = useState(null); // 'add-product', 'edit-product', 'delete-product', 'view-product'
     const [selectedProduct, setSelectedProduct] = useState(null);
@@ -312,7 +312,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery, selectedCategory, selectedStatus, itemsPerPage]);
+    }, [searchQuery, selectedCategory, selectedStatus]);
 
     const totalItems = filteredProducts.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
@@ -483,21 +483,11 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             {!loading && filteredProducts.length > 0 && totalPages > 1 && (
                 <div className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
                     <div className="flex items-center gap-2 text-slate-500 text-xs">
-                        <span>Show</span>
-                        <select
-                            value={itemsPerPage}
-                            onChange={(e) => {
-                                setItemsPerPage(Number(e.target.value));
-                                setCurrentPage(1);
-                            }}
-                            className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500"
-                        >
-                            <option value={12}>12 per page</option>
-                            <option value={24}>24 per page</option>
-                            <option value={48}>48 per page</option>
-                        </select>
-                        <span className="hidden sm:inline text-slate-400">|</span>
-                        <span className="hidden sm:inline">Page {currentPage} of {totalPages}</span>
+                        <span>
+                            Showing <strong className="font-semibold text-slate-700">{startIndex + 1}</strong>–<strong className="font-semibold text-slate-700">{endIndex}</strong> of <strong className="font-semibold text-slate-700">{totalItems}</strong> products
+                        </span>
+                        <span className="hidden sm:inline text-slate-300">•</span>
+                        <span className="hidden sm:inline">Page <strong className="font-semibold text-slate-700">{currentPage}</strong> of <strong className="font-semibold text-slate-700">{totalPages}</strong></span>
                     </div>
 
                     <div className="flex items-center gap-1 sm:gap-1.5">

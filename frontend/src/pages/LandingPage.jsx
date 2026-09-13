@@ -152,10 +152,10 @@ export default function LandingPage({ onViewChange, userRole }) {
             ) : (
               <button
                 onClick={() => onViewChange('login')}
-                className="flex items-center gap-1 rounded-lg text-slate-300 hover:text-white px-1 py-0.5 sm:gap-1.5 sm:rounded-xl sm:px-3 sm:py-2 text-[9px] sm:text-sm font-semibold transition"
+                className="flex items-center gap-1 rounded-lg text-slate-300 hover:text-white px-1.5 py-0.5 sm:gap-1.5 sm:rounded-xl sm:px-3 sm:py-2 text-[10px] sm:text-sm font-semibold transition shrink-0 whitespace-nowrap"
               >
-                <LogIn size={15} />
-                <span>Sign In</span>
+                <LogIn size={15} className="shrink-0" />
+                <span className="whitespace-nowrap">Sign In</span>
               </button>
             )}
 
