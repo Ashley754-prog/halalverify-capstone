@@ -319,36 +319,40 @@ export default function LandingPage({ onViewChange, userRole }) {
               )}
             </div>
 
-            {/* Main CTAs */}
-            <div className="mt-5 sm:mt-8 grid grid-cols-3 items-stretch gap-1.5 sm:flex sm:items-center sm:justify-center sm:gap-4">
-              <button
-                onClick={() => onViewChange('scanner')}
-                className="flex min-w-0 flex-row items-center justify-center gap-0.5 px-0.5 py-2 sm:gap-2 sm:px-6 sm:py-3.5 rounded-xl sm:rounded-2xl bg-emerald-600 hover:bg-emerald-500 font-bold text-white text-[8px] sm:text-base shadow-xl shadow-emerald-900/50 transition transform hover:-translate-y-0.5 active:translate-y-0 duration-150"
-              >
-                <Camera size={14} className="shrink-0 sm:h-5 sm:w-5" />
-                <span className="text-center leading-tight">Launch Scanner</span>
-              </button>
+            {/* Main CTAs - Displayed during idle state; hidden while searching to focus on search results/fallback */}
+            {!searchQuery.trim() && (
+              <>
+                <div className="mt-5 sm:mt-8 grid grid-cols-3 items-stretch gap-1.5 sm:flex sm:items-center sm:justify-center sm:gap-4">
+                  <button
+                    onClick={() => onViewChange('scanner')}
+                    className="flex min-w-0 flex-row items-center justify-center gap-0.5 px-0.5 py-2 sm:gap-2 sm:px-6 sm:py-3.5 rounded-xl sm:rounded-2xl bg-emerald-600 hover:bg-emerald-500 font-bold text-white text-[8px] sm:text-base shadow-xl shadow-emerald-900/50 transition transform hover:-translate-y-0.5 active:translate-y-0 duration-150"
+                  >
+                    <Camera size={14} className="shrink-0 sm:h-5 sm:w-5" />
+                    <span className="text-center leading-tight">Launch Scanner</span>
+                  </button>
 
-              <button
-                onClick={() => onViewChange('products')}
-                className="flex min-w-0 flex-row items-center justify-center gap-0.5 px-0.5 py-2 sm:gap-2 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 font-semibold text-slate-200 text-[8px] sm:text-base transition"
-              >
-                <Search size={14} className="shrink-0 text-slate-400 sm:h-[18px] sm:w-[18px]" />
-                <span className="text-center leading-tight">Browse Products</span>
-              </button>
+                  <button
+                    onClick={() => onViewChange('products')}
+                    className="flex min-w-0 flex-row items-center justify-center gap-0.5 px-0.5 py-2 sm:gap-2 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 font-semibold text-slate-200 text-[8px] sm:text-base transition"
+                  >
+                    <Search size={14} className="shrink-0 text-slate-400 sm:h-[18px] sm:w-[18px]" />
+                    <span className="text-center leading-tight">Browse Products</span>
+                  </button>
 
-              <button
-                onClick={() => onViewChange('map')}
-                className="flex min-w-0 flex-row items-center justify-center gap-0.5 px-0.5 py-2 sm:gap-2 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 font-semibold text-slate-200 text-[8px] sm:text-base transition"
-              >
-                <MapPin size={14} className="shrink-0 text-emerald-400 sm:h-[18px] sm:w-[18px]" />
-                <span className="text-center leading-tight">Establishments Map</span>
-              </button>
-            </div>
+                  <button
+                    onClick={() => onViewChange('map')}
+                    className="flex min-w-0 flex-row items-center justify-center gap-0.5 px-0.5 py-2 sm:gap-2 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 font-semibold text-slate-200 text-[8px] sm:text-base transition"
+                  >
+                    <MapPin size={14} className="shrink-0 text-emerald-400 sm:h-[18px] sm:w-[18px]" />
+                    <span className="text-center leading-tight">Establishments Map</span>
+                  </button>
+                </div>
 
-            <p className="mt-4 text-xs text-slate-400">
-              No account required for scanning and searches.
-            </p>
+                <p className="mt-4 text-xs text-slate-400">
+                  No account required for scanning and searches.
+                </p>
+              </>
+            )}
           </div>
 
           {/* Interactive Feature Mockup Preview */}
