@@ -9,7 +9,7 @@ from app.schemas.products import (
     ProductUpdate,
 )
 from app.supabase_client import supabase
-from app.utils.db_helpers import ensure_deleted, ensure_updated, model_dump_without_none
+from app.utils.db_helpers import ensure_deleted, ensure_updated, model_dump_without_none, sanitize_postgrest_search
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 router = APIRouter(tags=["products"])
@@ -36,11 +36,12 @@ def get_products(
     )
 
     if query:
-        # Search by name or brand or barcode
-        sanitized_query = query.strip()
-        builder = builder.or_(
-            f"name.ilike.%{sanitized_query}%,brand.ilike.%{sanitized_query}%,barcode.ilike.%{sanitized_query}%"
-        )
+        # Search by name or brand or barcode (sanitized to prevent PostgREST filter injection)
+        sanitized_query = sanitize_postgrest_search(query)
+        if sanitized_query:
+            builder = builder.or_(
+                f"name.ilike.%{sanitized_query}%,brand.ilike.%{sanitized_query}%,barcode.ilike.%{sanitized_query}%"
+            )
 
     if category:
         builder = builder.eq("category", category)
@@ -148,10 +149,11 @@ def get_manufacturers(
     )
 
     if query:
-        sanitized_query = query.strip()
-        builder = builder.or_(
-            f"name.ilike.%{sanitized_query}%,country.ilike.%{sanitized_query}%"
-        )
+        sanitized_query = sanitize_postgrest_search(query)
+        if sanitized_query:
+            builder = builder.or_(
+                f"name.ilike.%{sanitized_query}%,country.ilike.%{sanitized_query}%"
+            )
 
     response = builder.order("name").range(offset, offset + limit - 1).execute()
 

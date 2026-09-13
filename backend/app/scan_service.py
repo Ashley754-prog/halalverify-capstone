@@ -313,7 +313,7 @@ def analyze_label_image(image_base64: str) -> dict:
     }
 
 
-def save_scan_history(mode: str, result: dict):
+def save_scan_history(mode: str, result: dict, user_id: str = None):
     if mode == "label":
         verdict = VERDICT_TO_STATUS.get(result.get("verdict"), "Unknown")
         confidence = result.get("logoConfidence", 0)
@@ -327,18 +327,22 @@ def save_scan_history(mode: str, result: dict):
         detected_logo = result.get("certifyingBody")
         extracted_text = result.get("certificateNumber")
 
+    payload = {
+        "mode": mode,
+        "image_name": image_name,
+        "verdict": verdict,
+        "confidence": confidence,
+        "extracted_text": extracted_text,
+        "detected_logo": detected_logo,
+        "raw_result": result,
+    }
+    if user_id:
+        payload["user_id"] = str(user_id)
+
     scan_response = (
         supabase
         .table("scan_history")
-        .insert({
-            "mode": mode,
-            "image_name": image_name,
-            "verdict": verdict,
-            "confidence": confidence,
-            "extracted_text": extracted_text,
-            "detected_logo": detected_logo,
-            "raw_result": result,
-        })
+        .insert(payload)
         .execute()
     )
 

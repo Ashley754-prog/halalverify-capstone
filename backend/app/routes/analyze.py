@@ -15,8 +15,9 @@ def analyze_label(
     request: AnalyzeRequest,
     user=Depends(get_optional_current_user),
 ) -> dict:
+    user_id = getattr(user, "id", None) or (user.get("id") if isinstance(user, dict) else None)
     result = analyze_label_image(request.imageBase64)
-    save_scan_history("label", result)
+    save_scan_history("label", result, user_id=str(user_id) if user_id else None)
     return result
 
 
@@ -25,6 +26,8 @@ def analyze_certificate(
     request: AnalyzeRequest,
     user=Depends(get_optional_current_user),
 ) -> dict:
+    user_id = getattr(user, "id", None) or (user.get("id") if isinstance(user, dict) else None)
     result = analyze_certificate_image(request.imageBase64)
-    save_scan_history("certificate", result)
+    save_scan_history("certificate", result, user_id=str(user_id) if user_id else None)
     return result
+

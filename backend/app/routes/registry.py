@@ -8,7 +8,7 @@ from app.schemas.registry import (
 )
 from app.supabase_client import supabase
 from typing import Optional
-from app.utils.db_helpers import ensure_deleted, ensure_updated, model_dump_without_none
+from app.utils.db_helpers import ensure_deleted, ensure_updated, model_dump_without_none, sanitize_postgrest_search
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 router = APIRouter(tags=["registry"])
@@ -224,7 +224,7 @@ def search_establishments(q: Optional[str] = Query(None, description="Search que
     Public query endpoint to search registered establishment profiles.
     Matches establishment name, city, address, or type.
     """
-    query_str = (q or "").strip()
+    query_str = sanitize_postgrest_search(q)
     try:
         base_query = supabase.table("establishments").select("*, certifying_bodies(*)")
         if query_str:

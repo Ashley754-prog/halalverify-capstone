@@ -2,9 +2,11 @@ import base64
 import re
 from io import BytesIO
 
+import binascii
 import easyocr
 import numpy as np
-from PIL import Image, ImageEnhance, ImageOps
+from PIL import Image, ImageEnhance, ImageOps, UnidentifiedImageError
+from fastapi import HTTPException
 
 
 _reader = None
@@ -19,22 +21,37 @@ def get_reader():
     return _reader
 
 
-def decode_base64_image(image_base64: str):
+def safe_load_pil_image(image_base64: str) -> Image.Image:
+    """Safely decode base64 string to PIL Image, catching malformed input, corruption, and invalid formats."""
+    if not image_base64 or not isinstance(image_base64, str):
+        raise HTTPException(status_code=400, detail="Missing or invalid image data")
+
     if "," in image_base64:
         image_base64 = image_base64.split(",", 1)[1]
 
-    image_bytes = base64.b64decode(image_base64)
-    image = Image.open(BytesIO(image_bytes)).convert("RGB")
+    try:
+        image_bytes = base64.b64decode(image_base64)
+    except (binascii.Error, ValueError):
+        raise HTTPException(status_code=400, detail="Malformed base64 image encoding")
 
+    if len(image_bytes) < 16:
+        raise HTTPException(status_code=400, detail="Image payload is too small to be a valid image")
+
+    try:
+        image = Image.open(BytesIO(image_bytes))
+        image.load()  # Force decode to detect corrupted data or decompression bombs early
+        return image.convert("RGB")
+    except (UnidentifiedImageError, OSError, ValueError) as err:
+        raise HTTPException(status_code=400, detail="Unsupported or corrupt image format") from err
+
+
+def decode_base64_image(image_base64: str):
+    image = safe_load_pil_image(image_base64)
     return np.array(image)
 
 
 def build_ocr_images(image_base64: str):
-    if "," in image_base64:
-        image_base64 = image_base64.split(",", 1)[1]
-
-    image_bytes = base64.b64decode(image_base64)
-    image = Image.open(BytesIO(image_bytes)).convert("RGB")
+    image = safe_load_pil_image(image_base64)
     image = upscale_small_image(image)
 
     grayscale = ImageOps.grayscale(image)

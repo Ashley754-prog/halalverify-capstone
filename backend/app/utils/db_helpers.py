@@ -1,7 +1,17 @@
+import re
 from pydantic import BaseModel
 
 from app.supabase_client import supabase
 from fastapi import HTTPException
+
+
+def sanitize_postgrest_search(query: str, max_length: int = 100) -> str:
+    """Sanitize user input for PostgREST .or_() clauses by stripping delimiter characters."""
+    if not query:
+        return ""
+    # Remove PostgREST reserved filter operators and delimiter characters
+    cleaned = re.sub(r'[,()\'"%&|{}]', '', query.strip())
+    return cleaned[:max_length].strip()
 
 
 def model_dump_without_none(model: BaseModel):
