@@ -85,6 +85,7 @@ const ProfilePage = ({ onViewChange }) => {
             <Topbar
                 title="Profile & Account Settings"
                 subtitle="Manage your personal details and system verification preferences"
+                onBack={() => onViewChange?.('back')}
             />
 
             {loading ? (
@@ -185,7 +186,7 @@ const ProfilePage = ({ onViewChange }) => {
 
                         <button
                             type="button"
-                            onClick={() => onViewChange?.('dashboard')}
+                            onClick={() => onViewChange?.('back')}
                             className="px-4 sm:px-6 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
                         >
                             Cancel

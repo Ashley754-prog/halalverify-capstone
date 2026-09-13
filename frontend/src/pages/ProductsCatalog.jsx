@@ -344,6 +344,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             <Topbar
                 title="Verified Halal Product Catalog"
                 subtitle="Cross-referenced food products and brands verified against accredited certifying-body published registries."
+                onBack={() => onViewChange?.('back')}
             />
 
             {/* Actions & Filters Bar */}

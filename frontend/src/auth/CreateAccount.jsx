@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { User, Lock, Mail, Eye, EyeOff, Compass, ChevronRight } from 'lucide-react';
+import { User, Lock, Mail, Eye, EyeOff, Compass, ChevronRight, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { signInWithProvider } from '../lib/auth';
 
@@ -98,8 +98,19 @@ export const CreateAccount = ({ onViewChange, layout = 'create' }) => {
 
         <div className={`flex min-h-0 items-center justify-center overflow-hidden bg-white p-6 md:p-12 transition-all duration-500 ${layout === 'create' ? 'md:order-1' : 'md:order-2'} ${mounted ? 'opacity-100 translate-x-0' : layout === 'create' ? 'opacity-0 -translate-x-8' : 'opacity-0 translate-x-8'}`}>
           <form onSubmit={handleCreateAccount} className="no-scrollbar flex h-full min-h-0 w-full max-w-sm flex-col justify-start overflow-y-auto py-2 pr-2">
+            <div className="mb-2 shrink-0 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => onViewChange?.('login')}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition p-1.5 rounded-lg hover:bg-slate-100 active:scale-95"
+              >
+                <ArrowLeft size={15} />
+                <span>Return to Sign In</span>
+              </button>
+            </div>
+
             <div className="mb-4 shrink-0">
-              <h3 className="text-4xl font-extrabold tracking-tight text-slate-900 text-center">Create Account</h3>
+              <h3 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 text-center">Create Account</h3>
             </div>
 
             <div className="shrink-0 space-y-4">

@@ -1,13 +1,26 @@
 import React from 'react';
-import { Menu, X, User } from 'lucide-react';
+import { Menu, X, User, ArrowLeft } from 'lucide-react';
 
 // Page Header Topbar (used inside views like Settings, Dashboard, etc.)
-export const Topbar = ({ title, subtitle, action }) => (
+export const Topbar = ({ title, subtitle, action, onBack }) => (
     <div className="top-0 z-20 mb-3 sm:mb-5 w-full rounded-2xl border border-slate-200 bg-white p-3 sm:px-4 sm:py-3 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-0 flex-1">
-                <h2 className="text-base sm:text-xl font-bold text-slate-800 tracking-tight">{title}</h2>
-                {subtitle && <p className="text-xs sm:text-sm text-slate-500 mt-0.5">{subtitle}</p>}
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                {onBack && (
+                    <button
+                        type="button"
+                        onClick={onBack}
+                        className="p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition shrink-0 border border-slate-200 shadow-xs active:scale-95"
+                        title="Go back"
+                        aria-label="Go back"
+                    >
+                        <ArrowLeft size={18} />
+                    </button>
+                )}
+                <div className="min-w-0 flex-1">
+                    <h2 className="text-base sm:text-xl font-bold text-slate-800 tracking-tight">{title}</h2>
+                    {subtitle && <p className="text-xs sm:text-sm text-slate-500 mt-0.5">{subtitle}</p>}
+                </div>
             </div>
             {action && <div className="flex items-center shrink-0">{action}</div>}
         </div>

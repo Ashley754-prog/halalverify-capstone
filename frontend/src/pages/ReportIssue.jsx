@@ -141,7 +141,11 @@ export const ReportIssue = ({ userRole, onViewChange }) => {
     if (!userRole) {
         return (
             <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 flex-1">
-                <Topbar title="Report an Issue" subtitle="Help us improve HalalVerify's accuracy." />
+                <Topbar 
+                    title="Report an Issue" 
+                    subtitle="Help us improve HalalVerify's accuracy." 
+                    onBack={() => onViewChange?.('back')} 
+                />
                 <div className="max-w-lg mx-auto mt-6 sm:mt-12 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-10 text-center flex flex-col items-center gap-4">
                     <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-amber-100 flex items-center justify-center">
                         <Flag size={28} className="text-amber-600 sm:w-8 sm:h-8" />
@@ -150,12 +154,20 @@ export const ReportIssue = ({ userRole, onViewChange }) => {
                     <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-sm">
                         To maintain report integrity and prevent abuse, submitting verification discrepancies or data reports requires signing in to your HalalVerify account.
                     </p>
-                    <button
-                        onClick={() => onViewChange?.('login')}
-                        className="mt-2 px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs sm:text-sm hover:bg-emerald-700 transition shadow-sm"
-                    >
-                        Sign In / Register
-                    </button>
+                    <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
+                        <button
+                            onClick={() => onViewChange?.('login')}
+                            className="px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs sm:text-sm hover:bg-emerald-700 transition shadow-sm"
+                        >
+                            Sign In / Register
+                        </button>
+                        <button
+                            onClick={() => onViewChange?.('back')}
+                            className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold text-xs sm:text-sm hover:bg-slate-50 transition"
+                        >
+                            Go Back
+                        </button>
+                    </div>
                 </div>
             </div>
         );
@@ -164,7 +176,11 @@ export const ReportIssue = ({ userRole, onViewChange }) => {
     if (submitted) {
         return (
             <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 flex-1">
-                <Topbar title="Report an Issue" subtitle="Help us improve HalalVerify's accuracy." />
+                <Topbar 
+                    title="Report an Issue" 
+                    subtitle="Help us improve HalalVerify's accuracy." 
+                    onBack={() => onViewChange?.('back')} 
+                />
                 <div className="max-w-lg mx-auto mt-6 sm:mt-12 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-10 text-center flex flex-col items-center gap-3 sm:gap-4">
                     <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-emerald-100 flex items-center justify-center">
                         <CheckCircle size={28} className="text-emerald-600 sm:w-8 sm:h-8" />
@@ -173,12 +189,20 @@ export const ReportIssue = ({ userRole, onViewChange }) => {
                     <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-sm">
                         Thank you! Your report has been logged and will be reviewed by our team. This helps us improve the accuracy of the HalalVerify pipeline.
                     </p>
-                    <button
-                        onClick={resetForm}
-                        className="mt-2 sm:mt-4 px-5 sm:px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs sm:text-sm hover:bg-emerald-700 transition"
-                    >
-                        Submit Another Report
-                    </button>
+                    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mt-2 sm:mt-4">
+                        <button
+                            onClick={resetForm}
+                            className="px-5 sm:px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs sm:text-sm hover:bg-emerald-700 transition"
+                        >
+                            Submit Another Report
+                        </button>
+                        <button
+                            onClick={() => onViewChange?.('dashboard')}
+                            className="px-5 sm:px-6 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold text-xs sm:text-sm hover:bg-slate-50 transition"
+                        >
+                            Return to Dashboard
+                        </button>
+                    </div>
                 </div>
 
                 <Toast
@@ -196,6 +220,7 @@ export const ReportIssue = ({ userRole, onViewChange }) => {
             <Topbar
                 title="Report an Issue"
                 subtitle="Flag incorrect scanner results, suspicious logos, or database inaccuracies."
+                onBack={() => onViewChange?.('back')}
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">

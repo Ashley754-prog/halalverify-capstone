@@ -295,6 +295,7 @@ export default function VerificationQueue({ userRole, onViewChange }) {
             <Topbar
                 title="Admin Anti-Fraud & Document Verification Queue"
                 subtitle="Review pending community submissions, audit uploaded Halal certificates, and resolve user-flagged compliance discrepancies."
+                onBack={() => onViewChange?.('back')}
             />
 
             {/* Navigation Tabs Bar */}

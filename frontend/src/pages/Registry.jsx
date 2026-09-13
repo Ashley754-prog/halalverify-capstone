@@ -500,6 +500,7 @@ export const Registry = ({ userRole, onViewChange }) => {
             <Topbar
                 title="Municipal & National Compliance Directories"
                 subtitle="Philippine accredited HCBs, raw chemical E-number ledgers, and Zamboanga City Ordinance No. 489 registry."
+                onBack={() => onViewChange?.('back')}
             />
 
             {/* Navigation Tabs and Actions */}

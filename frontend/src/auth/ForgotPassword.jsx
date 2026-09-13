@@ -1,5 +1,5 @@
-﻿import React, { useState } from 'react';
-import { Mail, CheckCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Mail, CheckCircle, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { getAuthRedirectUrl } from '../lib/auth';
 
@@ -44,6 +44,17 @@ export const ForgotPassword = ({ onViewChange }) => {
                     <div className="flex min-h-0 md:min-h-[420px] w-full max-w-sm flex-col justify-center">
                         {!submitted ? (
                             <form onSubmit={handleSubmit}>
+                                <div className="mb-3 flex items-center justify-between">
+                                    <button
+                                        type="button"
+                                        onClick={() => onViewChange?.('login')}
+                                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition p-1.5 rounded-lg hover:bg-slate-100 active:scale-95"
+                                    >
+                                        <ArrowLeft size={15} />
+                                        <span>Back to Sign In</span>
+                                    </button>
+                                </div>
+
                                 <div className="mb-6">
                                     <h3 className="text-3xl font-extrabold tracking-tight text-slate-900">Recovery</h3>
                                     <p className="mt-1 text-sm text-slate-500">Request a secure credential recovery link</p>

@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { AlertTriangle, RefreshCw, Eye, ScanSearch, FileText, X, Image as ImageIcon, ShieldCheck, ShieldAlert, Shield, CheckCircle2, Sparkles, FlipHorizontal, SwitchCamera } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Eye, ScanSearch, FileText, X, Image as ImageIcon, ShieldCheck, ShieldAlert, Shield, CheckCircle2, Sparkles, FlipHorizontal, SwitchCamera, Flag } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import Toast from '../components/ui/Toast';
 import { analyzeImage, simulateFallback } from '../utils/api';
 
-export const Scanner = () => {
+export const Scanner = ({ isOnline, onViewChange }) => {
     const [scannerMode, setScannerMode] = useState('label'); // 'label' or 'cert'
     const [isCapturing, setIsCapturing] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
@@ -153,6 +153,7 @@ export const Scanner = () => {
             <Topbar
                 title="Visual Inspection Scanner"
                 subtitle="Capture or upload a product label or halal certificate for OCR analysis."
+                onBack={() => onViewChange?.('back')}
             />
 
             {/* Mode Toggle Controls */}
@@ -404,6 +405,23 @@ export const Scanner = () => {
                                     </p>
                                 </div>
                             )}
+
+                            <div className="pt-3 border-t border-slate-100 flex flex-wrap gap-2">
+                                <button
+                                    type="button"
+                                    onClick={resetState}
+                                    className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition shadow-sm active:scale-95"
+                                >
+                                    <RefreshCw size={14} /> Scan Another Item
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => onViewChange?.('report-issue')}
+                                    className="py-2 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center justify-center gap-1.5 transition"
+                                >
+                                    <Flag size={14} /> Report Discrepancy
+                                </button>
+                            </div>
                         </div>
                     )}
 
@@ -483,6 +501,23 @@ export const Scanner = () => {
                                     </p>
                                 </div>
                             )}
+
+                            <div className="pt-3 border-t border-slate-100 flex flex-wrap gap-2">
+                                <button
+                                    type="button"
+                                    onClick={resetState}
+                                    className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition shadow-sm active:scale-95"
+                                >
+                                    <RefreshCw size={14} /> Scan Another Certificate
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => onViewChange?.('report-issue')}
+                                    className="py-2 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center justify-center gap-1.5 transition"
+                                >
+                                    <Flag size={14} /> Report Discrepancy
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>

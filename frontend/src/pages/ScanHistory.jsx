@@ -45,7 +45,7 @@ const FILTERS = [
     { id: 'certificate', label: 'Logo Scans' },
 ];
 
-export const ScanHistory = ({ userRole }) => {
+export const ScanHistory = ({ userRole, onViewChange }) => {
     const [filter, setFilter] = useState('all');
     const [search, setSearch] = useState('');
     const [scanHistory, setScanHistory] = useState([]);
@@ -129,6 +129,7 @@ export const ScanHistory = ({ userRole }) => {
             <Topbar
                 title="Scan History"
                 subtitle={isAdmin ? "Full audit log of all scan events across all users." : "Your personal scan log and past verification results."}
+                onBack={() => onViewChange?.('back')}
             />
 
             <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">

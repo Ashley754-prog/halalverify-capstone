@@ -22,8 +22,37 @@ import { supabase } from './lib/supabaseClient';
 import { AUTH_VIEWS, fetchUserRole, signOut } from './lib/auth';
 import { API_BASE_URL } from './utils/api';
 
+const VALID_VIEWS = new Set([
+  'landing',
+  'profile',
+  'dashboard',
+  'scanner',
+  'products',
+  'map',
+  'registry',
+  'scan-history',
+  'report-issue',
+  'verification-queue',
+  'analytics',
+  'settings',
+  'login',
+  'create-account',
+  'forgot-password',
+  'reset-password',
+]);
+
+const getInitialView = () => {
+  if (typeof window === 'undefined') return 'landing';
+  const hash = window.location.hash.replace('#', '').trim();
+  if (hash && VALID_VIEWS.has(hash)) {
+    return hash;
+  }
+  return 'landing';
+};
+
 export default function App() {
-  const [currentView, setCurrentView] = useState('landing');
+  const [currentView, setCurrentView] = useState(getInitialView);
+  const [viewParams, setViewParams] = useState({});
   const [userRole, setUserRole] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [authLoading, setAuthLoading] = useState(true);
@@ -52,6 +81,58 @@ export default function App() {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  const handleViewChange = useCallback((view, params = {}, pushHistory = true) => {
+    // In-app back action: pops browser history if available, else falls back to landing
+    if (view === 'back') {
+      if (typeof window !== 'undefined' && window.history.length > 1) {
+        window.history.back();
+        return;
+      }
+      view = 'landing';
+    }
+
+    if (view === 'profile' && !userRole) {
+      view = 'login';
+    }
+
+    if (view === 'analytics' && userRole !== 'admin') {
+      view = 'dashboard';
+    }
+
+    if (view === 'verification-queue' && userRole !== 'admin') {
+      view = 'dashboard';
+    }
+
+    setViewParams(params || {});
+    setCurrentView(view);
+
+    // Push into browser history so back button navigates between in-app views without exiting to Google
+    if (pushHistory && typeof window !== 'undefined') {
+      const hash = view === 'landing' ? '' : `#${view}`;
+      const url = hash ? `${window.location.pathname}${hash}` : window.location.pathname;
+      window.history.pushState({ view, params: params || {} }, '', url);
+    }
+  }, [userRole]);
+
+  // Synchronize browser Back / Forward buttons with in-app views via popstate
+  useEffect(() => {
+    const handlePopState = (e) => {
+      if (e.state?.view && VALID_VIEWS.has(e.state.view)) {
+        handleViewChange(e.state.view, e.state.params || {}, false);
+      } else {
+        const hash = window.location.hash.replace('#', '').trim();
+        if (hash && VALID_VIEWS.has(hash)) {
+          handleViewChange(hash, {}, false);
+        } else {
+          handleViewChange('landing', {}, false);
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [handleViewChange]);
 
   const restoreAuthenticatedUser = useCallback(async (userId) => {
     const role = await fetchUserRole(userId);
@@ -88,13 +169,13 @@ export default function App() {
       }
 
       if (event === 'PASSWORD_RECOVERY') {
-        setCurrentView('reset-password');
+        handleViewChange('reset-password', {}, true);
         return;
       }
 
       if (event === 'SIGNED_OUT') {
         setUserRole(null);
-        setCurrentView('landing');
+        handleViewChange('landing', {}, true);
         return;
       }
 
@@ -107,30 +188,13 @@ export default function App() {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [restoreAuthenticatedUser]);
+  }, [restoreAuthenticatedUser, handleViewChange]);
 
   const handleLogin = (view, role) => {
     if (role !== null) {
       setUserRole(role);
     }
-    setCurrentView(view);
-  };
-
-  const [viewParams, setViewParams] = useState({});
-
-  const handleViewChange = (view, params = {}) => {
-    if (view === 'profile' && !userRole) {
-      setCurrentView('login');
-      return;
-    }
-
-    if (view === 'analytics' && userRole !== 'admin') {
-      setCurrentView('dashboard');
-      return;
-    }
-
-    setViewParams(params || {});
-    setCurrentView(view);
+    handleViewChange(view, {}, true);
   };
 
   const handleSignOut = async () => {
@@ -140,7 +204,7 @@ export default function App() {
       // Clear local state even if the remote sign-out request fails.
     } finally {
       setUserRole(null);
-      setCurrentView('landing');
+      handleViewChange('landing', {}, true);
     }
   };
 
@@ -155,9 +219,9 @@ export default function App() {
       case 'profile':
         return <ProfilePage onViewChange={handleViewChange} />;
       case 'dashboard':
-        return <Dashboard userRole={userRole} />;
+        return <Dashboard userRole={userRole} onViewChange={handleViewChange} />;
       case 'scanner':
-        return <Scanner isOnline={isOnline} />;
+        return <Scanner isOnline={isOnline} onViewChange={handleViewChange} />;
       case 'products':
         return (
           <ProductsCatalog
@@ -171,25 +235,25 @@ export default function App() {
       case 'registry':
         return <Registry userRole={userRole} onViewChange={handleViewChange} />;
       case 'scan-history':
-        return <ScanHistory userRole={userRole} />;
+        return <ScanHistory userRole={userRole} onViewChange={handleViewChange} />;
       case 'report-issue':
         return <ReportIssue userRole={userRole} onViewChange={handleViewChange} />;
       case 'verification-queue':
         return userRole === 'admin' ? (
           <VerificationQueue userRole={userRole} onViewChange={handleViewChange} />
         ) : (
-          <Dashboard userRole={userRole} />
+          <Dashboard userRole={userRole} onViewChange={handleViewChange} />
         );
       case 'analytics':
         return userRole === 'admin' ? (
           <Analytics onViewChange={handleViewChange} />
         ) : (
-          <Dashboard userRole={userRole} />
+          <Dashboard userRole={userRole} onViewChange={handleViewChange} />
         );
       case 'settings':
-        return <Settings />;
+        return <Settings onViewChange={handleViewChange} />;
       default:
-        return <Dashboard userRole={userRole} />;
+        return <Dashboard userRole={userRole} onViewChange={handleViewChange} />;
     }
   };
 
@@ -208,19 +272,19 @@ export default function App() {
   }
 
   if (currentView === 'login') {
-    return <Login onLogin={handleLogin} layout="login" />;
+    return <Login onLogin={handleLogin} onViewChange={handleViewChange} layout="login" />;
   }
 
   if (currentView === 'create-account') {
-    return <CreateAccount onViewChange={setCurrentView} layout="create" />;
+    return <CreateAccount onViewChange={handleViewChange} layout="create" />;
   }
 
   if (currentView === 'forgot-password') {
-    return <ForgotPassword onViewChange={setCurrentView} />;
+    return <ForgotPassword onViewChange={handleViewChange} />;
   }
 
   if (currentView === 'reset-password') {
-    return <ResetPassword onViewChange={setCurrentView} />;
+    return <ResetPassword onViewChange={handleViewChange} />;
   }
 
   return (

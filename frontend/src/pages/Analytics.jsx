@@ -128,6 +128,7 @@ export default function Analytics({ onViewChange }) {
             <Topbar
                 title="System Analytics & Compliance Trend Dashboard"
                 subtitle="Administrative market compliance trends, scan frequency rankings, top questionable E-numbers, and community flag resolution."
+                onBack={() => onViewChange?.('back')}
             />
 
             {/* Timeframe Selector & Actions Bar */}

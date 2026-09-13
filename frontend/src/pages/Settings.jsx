@@ -3,12 +3,13 @@ import { BookOpen } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import { PROPONENTS, JURISDICTION } from '../data/constants';
 
-export const Settings = () => {
+export const Settings = ({ onViewChange }) => {
     return (
         <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 flex-1">
             <Topbar
                 title="System Settings"
                 subtitle="Application information and capstone details."
+                onBack={() => onViewChange?.('back')}
             />
 
             {/* Offline dictionary status — honest placeholder until offline caching is actually built */}

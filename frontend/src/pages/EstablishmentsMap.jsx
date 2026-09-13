@@ -471,6 +471,7 @@ export default function EstablishmentsMap({ userRole, onViewChange }) {
             <Topbar
                 title="Interactive Spatial Map & Establishment Directory"
                 subtitle="Locate verified Halal and Muslim-owned restaurants, eateries, and food establishments across Zamboanga City."
+                onBack={() => onViewChange?.('back')}
             />
 
             {/* Compact Filter & Search Toolbar */}

@@ -5,7 +5,7 @@ import Topbar from '../components/layouts/Topbar';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
 
-export const Dashboard = () => {
+export const Dashboard = ({ onViewChange }) => {
     const [summary, setSummary] = useState(null);
     const [loadError, setLoadError] = useState(false);
 
@@ -59,6 +59,7 @@ export const Dashboard = () => {
             <Topbar
                 title="Live System Telemetry"
                 subtitle="Real-time registry and scan statistics from the HalalVerify database."
+                onBack={() => onViewChange?.('landing')}
             />
 
             {loadError && (

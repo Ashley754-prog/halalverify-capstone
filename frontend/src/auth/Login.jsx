@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { User, Lock, Eye, EyeOff, Compass, ChevronRight } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, Compass, ChevronRight, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { fetchUserRole, signInWithProvider } from '../lib/auth';
 
-export const Login = ({ onLogin, layout = 'login' }) => {
+export const Login = ({ onLogin, onViewChange, layout = 'login' }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -70,7 +70,18 @@ export const Login = ({ onLogin, layout = 'login' }) => {
 
                 <div className={`flex min-h-0 items-center justify-center overflow-hidden bg-white p-6 md:p-12 transition-all duration-500 ${layout === 'create' ? 'md:order-1' : 'md:order-2'}`}>
                     <form onSubmit={handleSignIn} className={`no-scrollbar flex h-full min-h-0 w-full max-w-sm flex-col justify-start overflow-y-auto py-2 pr-2 transition-all duration-500 ease-out ${mounted ? 'opacity-100 translate-x-0' : layout === 'create' ? 'opacity-0 -translate-x-8' : 'opacity-0 translate-x-8'}`}>
-                        <div className="mb-6 md:mb-8">
+                        <div className="mb-3 flex items-center justify-between">
+                            <button
+                                type="button"
+                                onClick={() => (onViewChange ? onViewChange('landing') : onLogin('landing', null))}
+                                className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition p-1.5 rounded-lg hover:bg-slate-100 active:scale-95"
+                            >
+                                <ArrowLeft size={15} />
+                                <span>Return to Home</span>
+                            </button>
+                        </div>
+
+                        <div className="mb-5 md:mb-7">
                             <h3 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 text-center">Login</h3>
                         </div>
 
