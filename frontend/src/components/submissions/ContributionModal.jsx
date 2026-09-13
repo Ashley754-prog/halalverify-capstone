@@ -8,6 +8,7 @@ import {
 import Modal from '../ui/Modal';
 import { supabase } from '../../lib/supabaseClient';
 import { API_BASE_URL, authFetch } from '../../utils/api';
+import { validateUploadFile } from '../../utils/security';
 import EstablishmentContributionForm, { ESTABLISHMENT_TYPES } from './EstablishmentContributionForm';
 import ProductContributionForm, { PRODUCT_CATEGORIES } from './ProductContributionForm';
 
@@ -54,8 +55,9 @@ export default function ContributionModal({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
-      setErrorMessage('Please upload a valid image (PNG, JPG, WEBP) or PDF document.');
+    const validation = validateUploadFile(file, { maxSizeMB: 10 });
+    if (!validation.valid) {
+      setErrorMessage(validation.error);
       return;
     }
 

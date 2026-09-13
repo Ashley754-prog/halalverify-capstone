@@ -26,6 +26,7 @@ import Topbar from '../components/layouts/Topbar';
 import Modal from '../components/ui/Modal';
 import Toast from '../components/ui/Toast';
 import { API_BASE_URL, authFetch } from '../utils/api';
+import { getSafeUrl } from '../utils/security';
 import { supabase } from '../lib/supabaseClient';
 
 export default function VerificationQueue({ userRole, onViewChange }) {
@@ -564,10 +565,10 @@ export default function VerificationQueue({ userRole, onViewChange }) {
                                         "{rep.description}"
                                     </p>
 
-                                    {rep.evidence_url && (
+                                    {getSafeUrl(rep.evidence_url) && (
                                         <div className="flex items-center gap-2 text-xs text-emerald-700">
                                             <FileText size={13} />
-                                            <a href={rep.evidence_url} target="_blank" rel="noreferrer" className="underline font-semibold flex items-center gap-1">
+                                            <a href={getSafeUrl(rep.evidence_url)} target="_blank" rel="noopener noreferrer" className="underline font-semibold flex items-center gap-1">
                                                 View Attached Photo Evidence <ExternalLink size={11} />
                                             </a>
                                         </div>
@@ -670,15 +671,17 @@ export default function VerificationQueue({ userRole, onViewChange }) {
                                             >
                                                 <RotateCw size={13} />
                                             </button>
-                                            <a
-                                                href={inspectingItem.certificate_url}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="p-1 rounded bg-slate-800 hover:bg-slate-700 ml-1 text-emerald-400"
-                                                title="Open in new tab"
-                                            >
-                                                <ExternalLink size={13} />
-                                            </a>
+                                            {getSafeUrl(inspectingItem.certificate_url) && (
+                                                <a
+                                                    href={getSafeUrl(inspectingItem.certificate_url)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="p-1 rounded bg-slate-800 hover:bg-slate-700 ml-1 text-emerald-400"
+                                                    title="Open in new tab"
+                                                >
+                                                    <ExternalLink size={13} />
+                                                </a>
+                                            )}
                                         </div>
                                     )}
                                 </div>

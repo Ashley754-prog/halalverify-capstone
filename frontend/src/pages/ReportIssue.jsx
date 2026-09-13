@@ -5,6 +5,7 @@ import Modal from '../components/ui/Modal';
 import Toast from '../components/ui/Toast';
 import { supabase } from '../lib/supabaseClient';
 import { API_BASE_URL, authFetch } from '../utils/api';
+import { validateUploadFile } from '../utils/security';
 
 const ISSUE_TYPES = [
     'Wrong Verdict (Scanner Error)',
@@ -34,6 +35,16 @@ export const ReportIssue = ({ userRole, onViewChange }) => {
     const handleFileUpload = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        const validation = validateUploadFile(file, { maxSizeMB: 10 });
+        if (!validation.valid) {
+            setToast({
+                visible: true,
+                message: validation.error,
+                type: 'error',
+            });
+            return;
+        }
 
         try {
             setUploadingImage(true);

@@ -13,6 +13,7 @@ import {
     Trash2,
     ExternalLink,
 } from 'lucide-react';
+import { getSafeUrl } from '../../utils/security';
 
 export default function ProductCard({
     product,
@@ -148,9 +149,9 @@ export default function ProductCard({
                             </button>
                         </div>
                     ) : (
-                        product.source_url && (
+                        getSafeUrl(product.source_url) && (
                             <a
-                                href={product.source_url}
+                                href={getSafeUrl(product.source_url)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5"

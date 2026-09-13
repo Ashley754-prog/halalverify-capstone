@@ -13,6 +13,7 @@ import {
     Navigation,
 } from 'lucide-react';
 import Modal from '../ui/Modal';
+import { getSafeUrl } from '../../utils/security';
 
 export const getStatusConfig = (status) => {
     const s = (status || '').toLowerCase();
@@ -205,13 +206,13 @@ export default function EstablishmentDetailModal({
                                         </a>
                                     </div>
                                 )}
-                                {establishment.source_url && (
+                                {getSafeUrl(establishment.source_url) && (
                                     <div className="flex items-center gap-1.5 text-slate-500">
                                         <ExternalLink size={12} className="text-slate-400 shrink-0" />
                                         <a
-                                            href={establishment.source_url}
+                                            href={getSafeUrl(establishment.source_url)}
                                             target="_blank"
-                                            rel="noreferrer"
+                                            rel="noopener noreferrer"
                                             className="hover:text-emerald-700 hover:underline"
                                         >
                                             Directory Reference
