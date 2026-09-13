@@ -43,10 +43,19 @@ const VALID_VIEWS = new Set([
 
 const getInitialView = () => {
   if (typeof window === 'undefined') return 'landing';
+
+  // 1. Check clean HTML5 pathname (e.g. /products, /scanner, /map, /registry)
+  const path = window.location.pathname.replace(/^\/+|\/+$/g, '').trim();
+  if (path && VALID_VIEWS.has(path)) {
+    return path;
+  }
+
+  // 2. Fallback to hash navigation for backward compatibility (e.g. /#products)
   const hash = window.location.hash.replace('#', '').trim();
   if (hash && VALID_VIEWS.has(hash)) {
     return hash;
   }
+
   return 'landing';
 };
 
@@ -57,6 +66,17 @@ export default function App() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [authLoading, setAuthLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Normalize legacy hash URL (e.g. /#products) into clean pathname (/products)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const hash = window.location.hash.replace('#', '').trim();
+      if (hash && VALID_VIEWS.has(hash)) {
+        const cleanPath = hash === 'landing' ? '/' : `/${hash}`;
+        window.history.replaceState({ view: hash, params: {} }, '', cleanPath);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     // Silently warm up the Render backend container in the background
@@ -107,11 +127,10 @@ export default function App() {
     setViewParams(params || {});
     setCurrentView(view);
 
-    // Push into browser history so back button navigates between in-app views without exiting to Google
+    // Push clean path into browser history so back button navigates logically between in-app views
     if (pushHistory && typeof window !== 'undefined') {
-      const hash = view === 'landing' ? '' : `#${view}`;
-      const url = hash ? `${window.location.pathname}${hash}` : window.location.pathname;
-      window.history.pushState({ view, params: params || {} }, '', url);
+      const cleanPath = view === 'landing' ? '/' : `/${view}`;
+      window.history.pushState({ view, params: params || {} }, '', cleanPath);
     }
   }, [userRole]);
 
@@ -121,11 +140,16 @@ export default function App() {
       if (e.state?.view && VALID_VIEWS.has(e.state.view)) {
         handleViewChange(e.state.view, e.state.params || {}, false);
       } else {
-        const hash = window.location.hash.replace('#', '').trim();
-        if (hash && VALID_VIEWS.has(hash)) {
-          handleViewChange(hash, {}, false);
+        const path = window.location.pathname.replace(/^\/+|\/+$/g, '').trim();
+        if (path && VALID_VIEWS.has(path)) {
+          handleViewChange(path, {}, false);
         } else {
-          handleViewChange('landing', {}, false);
+          const hash = window.location.hash.replace('#', '').trim();
+          if (hash && VALID_VIEWS.has(hash)) {
+            handleViewChange(hash, {}, false);
+          } else {
+            handleViewChange('landing', {}, false);
+          }
         }
       }
     };
