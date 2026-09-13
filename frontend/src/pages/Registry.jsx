@@ -26,6 +26,7 @@ import ContributionModal from '../components/submissions/ContributionModal';
 import AuthPromptModal from '../components/submissions/AuthPromptModal';
 import ReportIssueModal from '../components/reports/ReportIssueModal';
 import { API_BASE_URL, authFetch } from '../utils/api';
+import { supabase } from '../lib/supabaseClient';
 
 const ADDITIVE_STATUSES = ['Halal', 'Haram', 'Doubtful', 'Needs Review'];
 const ADDITIVE_ORIGINS = ['Plant', 'Animal', 'Insect', 'Synthetic / Mineral', 'Multiple / Unknown'];
@@ -122,23 +123,43 @@ export const Registry = ({ userRole, onViewChange }) => {
                 setLoading(true);
                 setError('');
 
-                const [additivesResponse, establishmentsResponse, hcbsResponse] = await Promise.all([
-                    authFetch(`${API_BASE_URL}/registry/additives`),
-                    authFetch(`${API_BASE_URL}/registry/establishments`),
-                    authFetch(`${API_BASE_URL}/api/v1/hcb-registry`),
-                ]);
+                // 1. Try Backend API with a 3-second timeout
+                try {
+                    const [additivesResponse, establishmentsResponse, hcbsResponse] = await Promise.all([
+                        authFetch(`${API_BASE_URL}/registry/additives`, { timeout: 3000 }),
+                        authFetch(`${API_BASE_URL}/registry/establishments`, { timeout: 3000 }),
+                        authFetch(`${API_BASE_URL}/api/v1/hcb-registry`, { timeout: 3000 }),
+                    ]);
 
-                if (!additivesResponse.ok || !establishmentsResponse.ok) {
-                    throw new Error('Failed to load core registry data');
+                    if (additivesResponse.ok && establishmentsResponse.ok) {
+                        const additivesJson = await additivesResponse.json();
+                        const establishmentsJson = await establishmentsResponse.json();
+                        const hcbsJson = hcbsResponse.ok ? await hcbsResponse.json() : { data: [] };
+
+                        setAdditives(additivesJson.data || []);
+                        setEstablishments(establishmentsJson.data || []);
+                        setHcbs(hcbsJson.data || []);
+                        return;
+                    }
+                } catch (apiErr) {
+                    console.warn('Backend registry endpoint unavailable or timed out, loading via Supabase:', apiErr);
                 }
 
-                const additivesJson = await additivesResponse.json();
-                const establishmentsJson = await establishmentsResponse.json();
-                const hcbsJson = hcbsResponse.ok ? await hcbsResponse.json() : { data: [] };
+                // 2. Direct Supabase Query Fallback (Instant ~150ms)
+                const [sbAdd, sbEst, sbHcb] = await Promise.all([
+                    supabase.from('additives').select('*').order('code'),
+                    supabase.from('establishments').select('*').order('name'),
+                    supabase.from('certifying_bodies').select('*').order('name'),
+                ]);
 
-                setAdditives(additivesJson.data || []);
-                setEstablishments(establishmentsJson.data || []);
-                setHcbs(hcbsJson.data || []);
+                if (!sbAdd.error && !sbEst.error) {
+                    setAdditives(sbAdd.data || []);
+                    setEstablishments(sbEst.data || []);
+                    setHcbs(sbHcb.data || []);
+                    return;
+                }
+
+                throw new Error('Failed to load core registry data from both API and database');
             } catch (err) {
                 console.error(err);
                 setError('Could not load registry data. Please check if the backend is running.');

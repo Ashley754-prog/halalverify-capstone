@@ -20,6 +20,7 @@ import VerificationQueue from './pages/VerificationQueue.jsx';
 import LandingPage from './pages/LandingPage.jsx';
 import { supabase } from './lib/supabaseClient';
 import { AUTH_VIEWS, fetchUserRole, signOut } from './lib/auth';
+import { API_BASE_URL } from './utils/api';
 
 export default function App() {
   const [currentView, setCurrentView] = useState('landing');
@@ -27,6 +28,12 @@ export default function App() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [authLoading, setAuthLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  useEffect(() => {
+    // Silently warm up the Render backend container in the background
+    fetch(`${API_BASE_URL}/health`).catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (window.innerWidth < 768) {
       setIsSidebarOpen(false);

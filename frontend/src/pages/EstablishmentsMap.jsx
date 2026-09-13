@@ -130,17 +130,50 @@ export default function EstablishmentsMap({ userRole, onViewChange }) {
                 params.append('status', selectedStatus);
             }
 
-            const url = `${API_BASE_URL}/api/v1/establishments/map?${params.toString()}`;
-            const response = await authFetch(url);
-
-            if (response.ok) {
-                const json = await response.json();
-                const data = json.data || [];
-                const withCoords = data.filter((e) => e.latitude && e.longitude);
-                if (withCoords.length > 0) {
-                    setEstablishments(withCoords);
-                    return;
+            // 1. Query Supabase directly first for instant ~150ms response (zero cold start)
+            try {
+                let query = supabase.from('establishments').select('*').order('name');
+                if (selectedStatus !== 'all') {
+                    query = query.eq('halal_status', selectedStatus);
                 }
+                const { data: sbData, error: sbErr } = await query;
+                if (!sbErr && sbData && sbData.length > 0) {
+                    let withCoords = sbData.filter((e) => e.latitude && e.longitude);
+                    if (userLocation) {
+                        withCoords = withCoords.map((e) => ({
+                            ...e,
+                            distance_km: calculateDistanceKm(userLocation.lat, userLocation.lng, e.latitude, e.longitude)
+                        }));
+                        if (selectedRadius !== 'all') {
+                            const radiusKm = parseFloat(selectedRadius);
+                            withCoords = withCoords.filter((e) => e.distance_km <= radiusKm);
+                        }
+                    }
+                    if (withCoords.length > 0) {
+                        setEstablishments(withCoords);
+                        return;
+                    }
+                }
+            } catch (sbErr) {
+                console.warn('Direct Supabase fetch for map warning, trying backend:', sbErr);
+            }
+
+            // 2. Fallback to backend API with a 3s timeout
+            try {
+                const url = `${API_BASE_URL}/api/v1/establishments/map?${params.toString()}`;
+                const response = await authFetch(url, { timeout: 3000 });
+
+                if (response.ok) {
+                    const json = await response.json();
+                    const data = json.data || [];
+                    const withCoords = data.filter((e) => e.latitude && e.longitude);
+                    if (withCoords.length > 0) {
+                        setEstablishments(withCoords);
+                        return;
+                    }
+                }
+            } catch (apiErr) {
+                console.warn('Map API fallback notice, using curated seeds:', apiErr);
             }
 
             applySeedFallback();

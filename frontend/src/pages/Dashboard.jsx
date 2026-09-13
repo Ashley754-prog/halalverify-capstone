@@ -3,6 +3,7 @@ import { ScanSearch, ShieldAlert, Store, Flag, Package } from 'lucide-react';
 import KpiCard from '../components/ui/KpiCard';
 import Topbar from '../components/layouts/Topbar';
 import { API_BASE_URL, authFetch } from '../utils/api';
+import { supabase } from '../lib/supabaseClient';
 
 export const Dashboard = () => {
     const [summary, setSummary] = useState(null);
@@ -11,15 +12,39 @@ export const Dashboard = () => {
     useEffect(() => {
         const loadSummary = async () => {
             try {
-                const response = await authFetch(`${API_BASE_URL}/dashboard-summary`);
-                if (!response.ok) {
-                    throw new Error('Dashboard summary request failed');
+                const response = await authFetch(`${API_BASE_URL}/dashboard-summary`, { timeout: 3000 });
+                if (response.ok) {
+                    const json = await response.json();
+                    setSummary(json.data || null);
+                    setLoadError(false);
+                    return;
                 }
-                const json = await response.json();
-                setSummary(json.data || null);
-                setLoadError(false);
             } catch (err) {
-                console.error(err);
+                console.warn('Backend summary request slow or unavailable, querying Supabase directly:', err);
+            }
+
+            // Direct Supabase telemetry fallback (instant ~100ms)
+            try {
+                const [scansCount, prodCount, addCount, estCount, repCount] = await Promise.all([
+                    supabase.from('scan_history').select('*', { count: 'exact', head: true }),
+                    supabase.from('products').select('*', { count: 'exact', head: true }),
+                    supabase.from('additives').select('*', { count: 'exact', head: true }).eq('halal_status', 'haram'),
+                    supabase.from('establishments').select('*', { count: 'exact', head: true }),
+                    supabase.from('issue_reports').select('*', { count: 'exact', head: true }).eq('status', 'open'),
+                ]);
+
+                setSummary({
+                    totals: {
+                        scans: scansCount.count ?? 0,
+                        products: prodCount.count ?? 0,
+                        flagged_additives: addCount.count ?? 0,
+                        establishments: estCount.count ?? 0,
+                        open_reports: repCount.count ?? 0,
+                    }
+                });
+                setLoadError(false);
+            } catch (sbErr) {
+                console.error(sbErr);
                 setSummary(null);
                 setLoadError(true);
             }

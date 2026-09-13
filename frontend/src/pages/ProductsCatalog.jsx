@@ -121,42 +121,46 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             let loadedProducts = null;
             let loadedMfg = null;
 
-            // 1. First attempt to load via Backend API
+            // 1. Direct Supabase Query (Instant ~150ms response, zero cold start)
             try {
                 const [productsRes, mfgRes] = await Promise.all([
-                    authFetch(`${API_BASE_URL}/products?limit=200`),
-                    authFetch(`${API_BASE_URL}/manufacturers?limit=200`),
+                    supabase
+                        .from('products')
+                        .select('*, manufacturers(*), certifying_bodies(*)')
+                        .order('name'),
+                    supabase
+                        .from('manufacturers')
+                        .select('*')
+                        .order('name'),
                 ]);
 
-                if (productsRes.ok) {
-                    const productsJson = await productsRes.json();
-                    loadedProducts = productsJson.data || [];
+                if (!productsRes.error && productsRes.data && productsRes.data.length > 0) {
+                    loadedProducts = productsRes.data;
+                    if (mfgRes.data) loadedMfg = mfgRes.data;
                 }
-                if (mfgRes && mfgRes.ok) {
-                    const mfgJson = await mfgRes.json();
-                    loadedMfg = mfgJson.data || [];
-                }
-            } catch (apiErr) {
-                console.warn('Backend API request not available, loading directly via Supabase client:', apiErr);
+            } catch (sbErr) {
+                console.warn('Direct Supabase fetch failed, attempting backend fallback:', sbErr);
             }
 
-            // 2. If backend API was unreachable or returned empty, query Supabase directly
-            if (!loadedProducts) {
-                const { data: sbProducts, error: sbErr } = await supabase
-                    .from('products')
-                    .select('*, manufacturers(*), certifying_bodies(*)')
-                    .order('name');
+            // 2. Fallback to Backend API with a 3.5s timeout if direct Supabase didn't return items
+            if (!loadedProducts || loadedProducts.length === 0) {
+                try {
+                    const [productsRes, mfgRes] = await Promise.all([
+                        authFetch(`${API_BASE_URL}/products?limit=200`, { timeout: 3500 }),
+                        authFetch(`${API_BASE_URL}/manufacturers?limit=200`, { timeout: 3500 }),
+                    ]);
 
-                if (sbErr) {
-                    throw sbErr;
+                    if (productsRes.ok) {
+                        const productsJson = await productsRes.json();
+                        loadedProducts = productsJson.data || [];
+                    }
+                    if (mfgRes && mfgRes.ok) {
+                        const mfgJson = await mfgRes.json();
+                        loadedMfg = mfgJson.data || [];
+                    }
+                } catch (apiErr) {
+                    console.warn('Backend API request timed out or unavailable:', apiErr);
                 }
-                loadedProducts = sbProducts || [];
-
-                const { data: sbMfg } = await supabase
-                    .from('manufacturers')
-                    .select('*')
-                    .order('name');
-                if (sbMfg) loadedMfg = sbMfg;
             }
 
             setProducts(loadedProducts || []);

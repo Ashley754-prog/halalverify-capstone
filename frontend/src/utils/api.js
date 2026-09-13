@@ -7,14 +7,28 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0
  * Backend write endpoints reject requests without a valid bearer token.
  */
 export async function authFetch(url, options = {}) {
+    const { timeout, signal: userSignal, ...fetchOptions } = options;
     const { data: { session } } = await supabase.auth.getSession();
-    const headers = new Headers(options.headers || {});
+    const headers = new Headers(fetchOptions.headers || {});
 
     if (session?.access_token) {
         headers.set('Authorization', `Bearer ${session.access_token}`);
     }
 
-    return fetch(url, { ...options, headers });
+    if (timeout && !userSignal) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        try {
+            const res = await fetch(url, { ...fetchOptions, headers, signal: controller.signal });
+            clearTimeout(timeoutId);
+            return res;
+        } catch (err) {
+            clearTimeout(timeoutId);
+            throw err;
+        }
+    }
+
+    return fetch(url, { ...fetchOptions, headers, signal: userSignal });
 }
 
 /**
