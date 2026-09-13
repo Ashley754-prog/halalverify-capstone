@@ -27,6 +27,9 @@ import Toast from '../components/ui/Toast';
 import ContributionModal from '../components/submissions/ContributionModal';
 import AuthPromptModal from '../components/submissions/AuthPromptModal';
 import ReportIssueModal from '../components/reports/ReportIssueModal';
+import ProductCard from '../components/catalog/ProductCard';
+import ProductFormModal from '../components/catalog/ProductFormModal';
+import ProductDeleteModal from '../components/catalog/ProductDeleteModal';
 import { supabase } from '../lib/supabaseClient';
 import { API_BASE_URL, authFetch } from '../utils/api';
 
@@ -463,152 +466,16 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-3 gap-y-5 sm:gap-x-5 sm:gap-y-6">
-                    {paginatedProducts.map((product) => {
-                        const isHalal = product.status === 'Halal';
-                        const isDoubtful = product.status === 'Doubtful';
-
-                        return (
-                            <div
-                                key={product.id}
-                                className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 p-3 sm:p-5 mb-4 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-3 sm:space-y-4 min-w-0"
-                            >
-                                <div className="space-y-2 sm:space-y-3">
-                                    {/* Header: Brand & Status Badge */}
-                                    <div className="flex items-start justify-between gap-2">
-                                        <div className="space-y-0.5 min-w-0">
-                                            {product.brand && (
-                                                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-1.5 sm:px-2 py-0.5 rounded-md border border-emerald-100">
-                                                    {product.brand}
-                                                </span>
-                                            )}
-                                            <h3 className="text-xs sm:text-base font-bold text-slate-900 leading-tight pt-1 break-words">
-                                                {product.name}
-                                            </h3>
-                                        </div>
-
-                                        <span
-                                            className={`text-[10px] sm:text-[11px] font-bold px-1.5 sm:px-2.5 py-1 rounded-lg shrink-0 flex items-center gap-1 border ${
-                                                isHalal
-                                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                                    : isDoubtful
-                                                    ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                                    : 'bg-red-50 text-red-700 border-red-200'
-                                            }`}
-                                        >
-                                            {isHalal && <CheckCircle2 size={10} className="sm:w-3 sm:h-3" />}
-                                            {isDoubtful && <AlertCircle size={10} className="sm:w-3 sm:h-3" />}
-                                            {product.status}
-                                        </span>
-                                    </div>
-
-                                    {/* Category & Barcode */}
-                                    <div className="flex flex-wrap gap-1 sm:gap-2 text-[10px] sm:text-xs text-slate-500 pt-1">
-                                        <span className="flex items-center gap-1 bg-slate-100 px-1.5 sm:px-2 py-0.5 rounded-md">
-                                            <Tag size={10} className="sm:w-3 sm:h-3" /> {product.category || 'Food'}
-                                        </span>
-                                        {product.barcode && (
-                                            <span className="flex items-center gap-1 bg-slate-100 px-1.5 sm:px-2 py-0.5 rounded-md font-mono text-[9px] sm:text-[11px]">
-                                                <Barcode size={10} className="sm:w-3 sm:h-3" /> {product.barcode}
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    {/* Manufacturer & Certification Info */}
-                                    <div className="space-y-1 text-[11px] sm:text-xs text-slate-600 bg-slate-50 rounded-lg sm:rounded-xl p-2 sm:p-3 border border-slate-100">
-                                        <div className="flex items-center gap-1.5">
-                                            <Building2 size={11} className="text-slate-400 shrink-0 sm:w-[13px] sm:h-[13px]" />
-                                            <span className="font-semibold text-slate-800">
-                                                {product.manufacturers?.name || 'Manufacturer Unspecified'}
-                                            </span>
-                                        </div>
-
-                                        {product.certificate_no && (
-                                            <div className="flex items-center gap-1.5 text-slate-500">
-                                                <ShieldCheck size={13} className="text-emerald-600 shrink-0" />
-                                                <span>
-                                                    Cert: <strong className="font-mono text-slate-700">{product.certificate_no}</strong>
-                                                    {product.certifying_bodies?.code && (
-                                                        <span className="ml-1 text-slate-400">({product.certifying_bodies.code})</span>
-                                                    )}
-                                                </span>
-                                            </div>
-                                        )}
-
-                                        {product.expiry_date && (
-                                            <div className="flex items-center gap-1.5 text-slate-500">
-                                                <Calendar size={13} className="text-slate-400 shrink-0" />
-                                                <span>Valid until: {product.expiry_date}</span>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Ingredients Summary */}
-                                    {product.ingredients_summary && (
-                                        <div className="text-xs text-slate-600">
-                                            <p className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
-                                                Ingredients:
-                                            </p>
-                                            <p className="line-clamp-2 text-slate-600 text-[10px] sm:text-[11px] leading-relaxed">
-                                                {product.ingredients_summary}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Footer: Provenance & Admin Actions */}
-                                <div className="pt-2 sm:pt-3 border-t border-slate-100 flex items-center justify-between text-[9px] sm:text-xs gap-1">
-                                    <span className="text-[10px] sm:text-[10px] text-slate-400 flex items-center gap-1 min-w-0" title={product.source_url || product.source}>
-                                        <FileText size={10} className="shrink-0 sm:w-[11px] sm:h-[11px]" />
-                                        {product.source || 'IDCP Registry'}
-                                    </span>
-
-                                    <div className="flex items-center gap-1.5">
-                                        <button
-                                            type="button"
-                                            onClick={() => handleReportProduct(product)}
-                                            className="text-[10px] sm:text-[11px] font-semibold text-slate-400 hover:text-amber-600 flex items-center gap-1 transition px-1 sm:px-1.5 py-0.5 rounded hover:bg-amber-50"
-                                            title="Flag issue or report non-compliance"
-                                        >
-                                            <Flag size={10} className="sm:w-[11px] sm:h-[11px]" />
-                                            <span>Flag</span>
-                                        </button>
-
-                                        {isAdmin ? (
-                                            <div className="flex items-center gap-1.5">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => openModal('edit-product', product)}
-                                                    className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-slate-100 rounded-lg transition"
-                                                    title="Edit Product"
-                                                >
-                                                    <Pencil size={14} />
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => openModal('delete-product', product)}
-                                                    className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                                                    title="Delete Product"
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            product.source_url && (
-                                                <a
-                                                    href={product.source_url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5"
-                                                >
-                                                    Source <ExternalLink size={10} />
-                                                </a>
-                                            )
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
+                    {paginatedProducts.map((product) => (
+                        <ProductCard
+                            key={product.id}
+                            product={product}
+                            isAdmin={isAdmin}
+                            onReport={handleReportProduct}
+                            onEdit={(p) => openModal('edit-product', p)}
+                            onDelete={(p) => openModal('delete-product', p)}
+                        />
+                    ))}
                 </div>
             )}
 
@@ -686,187 +553,27 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             )}
 
             {/* Add / Edit Modal */}
-            {(activeModal === 'add-product' || activeModal === 'edit-product') && (
-                <Modal
-                    isOpen={true}
-                    onClose={closeModal}
-                    title={activeModal === 'add-product' ? 'Register New Halal Product' : 'Edit Product Record'}
-                >
-                    <form onSubmit={handleFormSubmit} className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                            <div className="sm:col-span-2 space-y-1">
-                                <label className="text-xs font-bold text-slate-700">Product Name *</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={modalForm.name}
-                                    onChange={(e) => setModalForm({ ...modalForm, name: e.target.value })}
-                                    placeholder="e.g. Purefoods Corned Beef 150g"
-                                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500"
-                                />
-                            </div>
-
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-slate-700">Brand</label>
-                                <input
-                                    type="text"
-                                    value={modalForm.brand}
-                                    onChange={(e) => setModalForm({ ...modalForm, brand: e.target.value })}
-                                    placeholder="e.g. Purefoods"
-                                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500"
-                                />
-                            </div>
-
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-slate-700">Category</label>
-                                <select
-                                    value={modalForm.category}
-                                    onChange={(e) => setModalForm({ ...modalForm, category: e.target.value })}
-                                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500 bg-white"
-                                >
-                                    {PRODUCT_CATEGORIES.filter((c) => c !== 'All Categories').map((cat) => (
-                                        <option key={cat} value={cat}>
-                                            {cat}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-slate-700">Barcode (GTIN / EAN)</label>
-                                <input
-                                    type="text"
-                                    value={modalForm.barcode}
-                                    onChange={(e) => setModalForm({ ...modalForm, barcode: e.target.value })}
-                                    placeholder="e.g. 4800016012345"
-                                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm font-mono focus:outline-none focus:border-emerald-500"
-                                />
-                            </div>
-
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-slate-700">Halal Status</label>
-                                <select
-                                    value={modalForm.status}
-                                    onChange={(e) => setModalForm({ ...modalForm, status: e.target.value })}
-                                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500 bg-white"
-                                >
-                                    {PRODUCT_STATUSES.filter((s) => s !== 'All Statuses').map((st) => (
-                                        <option key={st} value={st}>
-                                            {st}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-slate-700">Manufacturer</label>
-                                <select
-                                    value={modalForm.manufacturer_id}
-                                    onChange={(e) => setModalForm({ ...modalForm, manufacturer_id: e.target.value })}
-                                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500 bg-white"
-                                >
-                                    <option value="">-- Select Manufacturer --</option>
-                                    {manufacturers.map((m) => (
-                                        <option key={m.id} value={m.id}>
-                                            {m.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-slate-700">Certificate Number</label>
-                                <input
-                                    type="text"
-                                    value={modalForm.certificate_no}
-                                    onChange={(e) => setModalForm({ ...modalForm, certificate_no: e.target.value })}
-                                    placeholder="e.g. IDCP-2024-0891"
-                                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm font-mono focus:outline-none focus:border-emerald-500"
-                                />
-                            </div>
-
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-slate-700">Certificate Expiry Date</label>
-                                <input
-                                    type="date"
-                                    value={modalForm.expiry_date}
-                                    onChange={(e) => setModalForm({ ...modalForm, expiry_date: e.target.value })}
-                                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500"
-                                />
-                            </div>
-
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-slate-700">Data Source</label>
-                                <input
-                                    type="text"
-                                    value={modalForm.source}
-                                    onChange={(e) => setModalForm({ ...modalForm, source: e.target.value })}
-                                    placeholder="e.g. IDCP Published Registry"
-                                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500"
-                                />
-                            </div>
-
-                            <div className="sm:col-span-2 space-y-1">
-                                <label className="text-xs font-bold text-slate-700">Ingredients Summary</label>
-                                <textarea
-                                    rows={2}
-                                    value={modalForm.ingredients_summary}
-                                    onChange={(e) => setModalForm({ ...modalForm, ingredients_summary: e.target.value })}
-                                    placeholder="e.g. Cooked Beef, Beef Broth, Iodized Salt, Sugar, Spices..."
-                                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
-                            <button
-                                type="button"
-                                onClick={closeModal}
-                                className="px-4 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition font-medium"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={isSaving}
-                                className="px-5 py-2 text-xs sm:text-sm rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition disabled:opacity-50"
-                            >
-                                {isSaving ? 'Saving...' : 'Save Product'}
-                            </button>
-                        </div>
-                    </form>
-                </Modal>
-            )}
+            <ProductFormModal
+                isOpen={activeModal === 'add-product' || activeModal === 'edit-product'}
+                isEdit={activeModal === 'edit-product'}
+                modalForm={modalForm}
+                setModalForm={setModalForm}
+                manufacturers={manufacturers}
+                categories={PRODUCT_CATEGORIES}
+                statuses={PRODUCT_STATUSES}
+                isSaving={isSaving}
+                onClose={closeModal}
+                onSubmit={handleFormSubmit}
+            />
 
             {/* Delete Confirmation Modal */}
-            {activeModal === 'delete-product' && selectedProduct && (
-                <Modal isOpen={true} onClose={closeModal} title="Confirm Product Deletion">
-                    <div className="space-y-4">
-                        <p className="text-xs sm:text-sm text-slate-600">
-                            Are you sure you want to remove{' '}
-                            <strong className="text-slate-900">{selectedProduct.name}</strong> from the verified
-                            product directory? This action cannot be undone.
-                        </p>
-                        <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
-                            <button
-                                type="button"
-                                onClick={closeModal}
-                                className="px-4 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition font-medium"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleDeleteProduct}
-                                disabled={isSaving}
-                                className="px-5 py-2 text-xs sm:text-sm rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold transition disabled:opacity-50"
-                            >
-                                {isSaving ? 'Deleting...' : 'Delete Product'}
-                            </button>
-                        </div>
-                    </div>
-                </Modal>
-            )}
+            <ProductDeleteModal
+                isOpen={activeModal === 'delete-product'}
+                product={selectedProduct}
+                isSaving={isSaving}
+                onClose={closeModal}
+                onDelete={handleDeleteProduct}
+            />
 
             {/* Community Contribution Modal */}
             <ContributionModal
