@@ -39,10 +39,45 @@ VERDICT_TO_STATUS = {
 }
 
 ADDITIVE_ALIASES = {
-    "E120": ["carmine", "cochineal", "cochineal extract", "natural red 4"],
-    "E441": ["gelatin", "gelatine"],
+    "E100": ["curcumin", "turmeric extract", "turmeric yellow"],
+    "E120": ["carmine", "cochineal", "cochineal extract", "natural red 4", "carminic acid"],
+    "E150A": ["plain caramel", "caramel color", "caramel i"],
+    "E150D": ["caramel iv", "ammonia caramel", "sulfite ammonia caramel"],
+    "E160A": ["beta-carotene", "beta carotene", "carotenes"],
+    "E202": ["potassium sorbate", "sorbate of potassium"],
+    "E211": ["sodium benzoate", "benzoate of soda"],
+    "E282": ["calcium propionate"],
+    "E300": ["ascorbic acid", "vitamin c"],
+    "E322": ["lecithin", "soy lecithin", "soya lecithin", "sunflower lecithin"],
+    "E330": ["citric acid"],
+    "E407": ["carrageenan", "carrageen", "irish moss"],
+    "E412": ["guar gum"],
+    "E415": ["xanthan gum"],
+    "E422": ["glycerol", "glycerin", "glycerine", "vegetable glycerin"],
+    "E441": ["gelatin", "gelatine", "edible gelatin", "animal gelatin"],
+    "E471": [
+        "mono- and diglycerides",
+        "mono and diglycerides",
+        "monoglycerides",
+        "diglycerides",
+        "monoglyceride",
+        "mono- and di-glycerides",
+        "mono- and diglycerides of fatty acids"
+    ],
+    "E472E": [
+        "datem",
+        "diacetyl tartaric acid esters",
+        "diacetyl tartaric acid esters of mono- and diglycerides"
+    ],
+    "E476": ["polyglycerol polyricinoleate", "pgpr"],
+    "E481": ["sodium stearoyl lactylate", "sodium stearoyl-2-lactylate", "ssl"],
     "E542": ["bone phosphate", "edible bone phosphate"],
-    "E904": ["shellac"],
+    "E621": ["monosodium glutamate", "msg", "monosodium l-glutamate", "glutamate"],
+    "E627": ["disodium guanylate", "sodium guanylate"],
+    "E631": ["disodium inosinate", "sodium inosinate"],
+    "E635": ["disodium 5'-ribonucleotides", "disodium ribonucleotides", "i+g", "ribonucleotides"],
+    "E904": ["shellac", "confectioner's glaze", "resinous glaze"],
+    "E920": ["l-cysteine", "cysteine", "l-cysteine hydrochloride"],
 }
 
 
