@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
     Search,
     Package,
@@ -85,9 +85,19 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
     const [showAuthPrompt, setShowAuthPrompt] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
     const [reportingTarget, setReportingTarget] = useState(null);
-
     const isAdmin = userRole === 'admin';
 
+    const availableCategories = useMemo(() => {
+        const cats = new Set();
+        products.forEach((p) => {
+            if (p.category && p.category.trim()) {
+                cats.add(p.category.trim());
+            }
+        });
+        return cats.size > 0
+            ? ['All Categories', ...Array.from(cats).sort()]
+            : PRODUCT_CATEGORIES;
+    }, [products]);
     const handleOpenContribution = () => {
         if (!userRole) {
             setShowAuthPrompt(true);
@@ -391,7 +401,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                         onChange={(e) => setSelectedCategory(e.target.value)}
                         className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-1.5 sm:px-2.5 py-1 sm:py-1.5 text-[10px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500"
                     >
-                        {PRODUCT_CATEGORIES.map((cat) => (
+                        {availableCategories.map((cat) => (
                             <option key={cat} value={cat}>
                                 {cat}
                             </option>
