@@ -94,6 +94,8 @@ def detect_halal_logo(image_input) -> Dict:
         result = results[0]
         boxes = result.boxes
 
+        img_w, img_h = image.size
+
         if boxes is None or len(boxes) == 0:
             return {
                 "logoDetected": False,
@@ -101,6 +103,8 @@ def detect_halal_logo(image_input) -> Dict:
                 "logoBody": "No Halal Logo Detected",
                 "isInvalidLogo": False,
                 "detectedLogos": [],
+                "imageWidth": img_w,
+                "imageHeight": img_h,
             }
 
         detected_logos: List[Dict] = []
@@ -117,6 +121,12 @@ def detect_halal_logo(image_input) -> Dict:
 
             xyxy = box.xyxy[0].tolist()
             normalized_box = [round(coord, 2) for coord in xyxy]
+            norm_pct_box = [
+                max(0.0, min(1.0, round(xyxy[0] / img_w, 4))),
+                max(0.0, min(1.0, round(xyxy[1] / img_h, 4))),
+                max(0.0, min(1.0, round(xyxy[2] / img_w, 4))),
+                max(0.0, min(1.0, round(xyxy[3] / img_h, 4))),
+            ]
 
             if is_invalid:
                 has_invalid = True
@@ -132,6 +142,7 @@ def detect_halal_logo(image_input) -> Dict:
                 "confidence": round(conf * 100, 1),
                 "is_invalid": is_invalid,
                 "box": normalized_box,
+                "norm_box": norm_pct_box,
             })
 
         # Sort detections by confidence descending
@@ -143,6 +154,9 @@ def detect_halal_logo(image_input) -> Dict:
             "logoBody": best_logo_body,
             "isInvalidLogo": has_invalid,
             "detectedLogos": detected_logos,
+            "bestBox": detected_logos[0]["norm_box"] if detected_logos else None,
+            "imageWidth": img_w,
+            "imageHeight": img_h,
         }
 
     except Exception as e:

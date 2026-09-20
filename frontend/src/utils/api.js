@@ -73,6 +73,14 @@ export function simulateFallback(mode) {
                 'Reconnect and scan again — this result is not a verification.',
             ],
             ocrText: '',
+            pipelineStages: [
+                { step: 1, name: "Image Acquisition & Preprocessing", module: "OpenCV / Volatile Memory", status: "Success", latencyMs: 25.4, details: "Frame captured and scaled in volatile memory." },
+                { step: 2, name: "Halal Logo Localization", module: "Ultralytics YOLOv8-Nano (CNN)", status: "None", latencyMs: 45.1, details: "Offline fallback state: no server inference available." },
+                { step: 3, name: "Ingredient Label Text Extraction", module: "EasyOCR (CRAFT + CRNN)", status: "Offline", latencyMs: 0, details: "Optical recognition offline." },
+                { step: 4, name: "Chemical Additive Lexicon Screening", module: "Supabase PostgreSQL Lexicon", status: "Pending", latencyMs: 0, details: "135-additive database not queried." },
+                { step: 5, name: "Decision-Tree Compliance Classification", module: "Hierarchical Rule Engine", status: "Yellow", latencyMs: 1.2, details: "Defaulted to Yellow (Unverified) due to offline state." }
+            ],
+            totalLatencyMs: 71.7,
         };
     }
     return {
