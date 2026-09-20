@@ -112,12 +112,30 @@ export const Registry = ({ userRole, onViewChange }) => {
                 setLoading(true);
                 setError('');
 
-                // 1. Try Backend API with a 3-second timeout
+                // 1. Direct Supabase Query (Instant ~150ms, zero cold start)
+                try {
+                    const [sbAdd, sbEst, sbHcb] = await Promise.all([
+                        supabase.from('additives').select('*').order('code'),
+                        supabase.from('establishments').select('*').order('name'),
+                        supabase.from('certifying_bodies').select('*').order('name'),
+                    ]);
+
+                    if (!sbAdd.error && !sbEst.error) {
+                        setAdditives(sbAdd.data || []);
+                        setEstablishments(sbEst.data || []);
+                        setHcbs(sbHcb.data || []);
+                        return;
+                    }
+                } catch (sbErr) {
+                    console.warn('Direct Supabase registry fetch failed, attempting backend fallback:', sbErr);
+                }
+
+                // 2. Fallback to Backend API with a 2-second timeout
                 try {
                     const [additivesResponse, establishmentsResponse, hcbsResponse] = await Promise.all([
-                        authFetch(`${API_BASE_URL}/registry/additives`, { timeout: 3000 }),
-                        authFetch(`${API_BASE_URL}/registry/establishments`, { timeout: 3000 }),
-                        authFetch(`${API_BASE_URL}/api/v1/hcb-registry`, { timeout: 3000 }),
+                        authFetch(`${API_BASE_URL}/registry/additives`, { timeout: 2000 }),
+                        authFetch(`${API_BASE_URL}/registry/establishments`, { timeout: 2000 }),
+                        authFetch(`${API_BASE_URL}/api/v1/hcb-registry`, { timeout: 2000 }),
                     ]);
 
                     if (additivesResponse.ok && establishmentsResponse.ok) {
@@ -131,24 +149,10 @@ export const Registry = ({ userRole, onViewChange }) => {
                         return;
                     }
                 } catch (apiErr) {
-                    console.warn('Backend registry endpoint unavailable or timed out, loading via Supabase:', apiErr);
+                    console.warn('Backend registry endpoint unavailable or timed out:', apiErr);
                 }
 
-                // 2. Direct Supabase Query Fallback (Instant ~150ms)
-                const [sbAdd, sbEst, sbHcb] = await Promise.all([
-                    supabase.from('additives').select('*').order('code'),
-                    supabase.from('establishments').select('*').order('name'),
-                    supabase.from('certifying_bodies').select('*').order('name'),
-                ]);
-
-                if (!sbAdd.error && !sbEst.error) {
-                    setAdditives(sbAdd.data || []);
-                    setEstablishments(sbEst.data || []);
-                    setHcbs(sbHcb.data || []);
-                    return;
-                }
-
-                throw new Error('Failed to load core registry data from both API and database');
+                throw new Error('Failed to load core registry data from both database and API');
             } catch (err) {
                 console.error(err);
                 setError('Could not load registry data. Please check if the backend is running.');

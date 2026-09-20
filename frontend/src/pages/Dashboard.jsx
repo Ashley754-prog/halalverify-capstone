@@ -11,19 +11,7 @@ export const Dashboard = ({ onViewChange }) => {
 
     useEffect(() => {
         const loadSummary = async () => {
-            try {
-                const response = await authFetch(`${API_BASE_URL}/dashboard-summary`, { timeout: 3000 });
-                if (response.ok) {
-                    const json = await response.json();
-                    setSummary(json.data || null);
-                    setLoadError(false);
-                    return;
-                }
-            } catch (err) {
-                console.warn('Backend summary request slow or unavailable, querying Supabase directly:', err);
-            }
-
-            // Direct Supabase telemetry fallback (instant ~100ms)
+            // 1. Direct Supabase telemetry query (Instant ~100ms, zero cold start)
             try {
                 const [scansCount, prodCount, addCount, estCount, repCount] = await Promise.all([
                     supabase.from('scan_history').select('*', { count: 'exact', head: true }),
@@ -43,8 +31,22 @@ export const Dashboard = ({ onViewChange }) => {
                     }
                 });
                 setLoadError(false);
+                return;
             } catch (sbErr) {
-                console.error(sbErr);
+                console.warn('Direct Supabase summary failed, trying backend fallback:', sbErr);
+            }
+
+            // 2. Fallback to backend API if direct query fails
+            try {
+                const response = await authFetch(`${API_BASE_URL}/dashboard-summary`, { timeout: 2000 });
+                if (response.ok) {
+                    const json = await response.json();
+                    setSummary(json.data || null);
+                    setLoadError(false);
+                    return;
+                }
+            } catch (err) {
+                console.error(err);
                 setSummary(null);
                 setLoadError(true);
             }

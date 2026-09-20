@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Clock, ScanSearch, FileText, CheckCircle, AlertTriangle, XCircle, RefreshCw } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import { API_BASE_URL, authFetch } from '../utils/api';
+import { supabase } from '../lib/supabaseClient';
 
 const VerdictBadge = ({ verdict }) => {
     const styles = {
@@ -65,8 +66,31 @@ export const ScanHistory = ({ userRole, onViewChange }) => {
 
             setError('');
 
+            // 1. Direct Supabase Query (Instant ~100ms, zero cold start)
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                let query = supabase
+                    .from('scan_history')
+                    .select('*, scan_flagged_items(*)')
+                    .order('created_at', { ascending: false });
+
+                if (!isAdmin && session?.user?.id) {
+                    query = query.eq('user_id', session.user.id);
+                }
+
+                const { data: sbData, error: sbErr } = await query;
+                if (!sbErr && sbData) {
+                    setScanHistory(sbData);
+                    return;
+                }
+            } catch (sbErr) {
+                console.warn('Direct Supabase scan history failed, falling back to API:', sbErr);
+            }
+
+            // 2. Fallback to backend API
             const response = await authFetch(`${API_BASE_URL}/scan-history?t=${Date.now()}`, {
                 cache: 'no-store',
+                timeout: 2500,
             });
 
             if (!response.ok) {
@@ -77,7 +101,7 @@ export const ScanHistory = ({ userRole, onViewChange }) => {
             setScanHistory(json.data || []);
         } catch (err) {
             console.error(err);
-            setError('Could not load scan history. Please check if the backend is running.');
+            setError('Could not load scan history. Please check if your database or backend is accessible.');
         } finally {
             setLoading(false);
             setRefreshing(false);
