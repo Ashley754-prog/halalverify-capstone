@@ -24,11 +24,15 @@ CLASS_LABEL_MAPPING = {
     "MASLAHA": "MASLAHA Halal Certification",
     "Philcosed": "PHILCOSED Halal Certification",
     "NCMF_General": "NCMF Official Halal Seal (Philippines)",
+    "National_Halal_Logo": "Philippine National Halal Seal (DTI / NCMF)",
+    "Thailand_CICOT": "Thailand Halal - CICOT (Recognized Foreign Certifier)",
+    "Malaysia_JAKIM": "Malaysia Halal - JAKIM (Recognized Foreign Certifier)",
+    "Indonesia_BPJPH": "Indonesia Halal - BPJPH / MUI (Recognized Foreign Certifier)",
     "Invalid_Logo": "Unrecognized / Suspected Counterfeit Logo",
     # Backward compatibility with legacy SEA classes
-    "Philippines1": "IDCP Halal (Philippines)",
-    "Philippines2": "HDIP Halal (Philippines)",
-    "Philippines3": "Accredited Halal Mark (Philippines)",
+    "Philippines1": "Philippine National Halal Seal (DTI / NCMF)",
+    "Philippines2": "IDCP Halal (Philippines)",
+    "Philippines3": "HDIP Halal (Philippines)",
     "Invalid_logo": "Unrecognized / Suspected Counterfeit Logo",
 }
 
@@ -95,8 +99,8 @@ def detect_halal_logo(image_input) -> Dict:
         if model is None:
             return _empty_logo_result("YOLOv8 model not loaded")
 
-        # Run inference (conf threshold 0.35)
-        results = model(image, conf=0.35, imgsz=640, verbose=False)
+        # Run inference (standard YOLO conf threshold 0.25 for real-world phone scans)
+        results = model(image, conf=0.25, imgsz=640, verbose=False)
         if not results or len(results) == 0:
             return _empty_logo_result("No detections returned")
 

@@ -23,6 +23,11 @@ __pycache__/
 runs/
 spikes/s2-yolo/.venv/
 spikes/s2-yolo/datasets/
+spikes/s2-yolo/*.zip
+spikes/s2-yolo/roboflow_dataset/
+spikes/s2-yolo/philippines_roboflow_dataset/
+spikes/s2-yolo/incoming_real_logos/
+spikes/s2-yolo/roboflow_ph_samples/
 spikes/s2-yolo/debug_*.png
 spikes/s2-yolo/test_*.png
 
