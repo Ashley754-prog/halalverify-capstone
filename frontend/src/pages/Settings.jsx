@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { BookOpen } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import { PROPONENTS, JURISDICTION } from '../data/constants';

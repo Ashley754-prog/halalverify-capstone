@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Database, Search, AlertOctagon, Pencil, Trash2 } from 'lucide-react';
 
 export default function AdditivesRegistryTab({

@@ -1,17 +1,5 @@
-import React from 'react';
-import { Package, FileText, Upload, X, Loader2, ShieldCheck } from 'lucide-react';
-
-export const PRODUCT_CATEGORIES = [
-  'Food & Beverage',
-  'Processed Meat',
-  'Poultry',
-  'Canned Seafood',
-  'Snacks',
-  'Beverages',
-  'Instant Noodles',
-  'Dairy & Bakery',
-  'Condiments & Sauces',
-];
+import { FileText, Upload, X, Loader2, ShieldCheck } from 'lucide-react';
+import { PRODUCT_CATEGORIES } from '../../data/constants';
 
 export default function ProductContributionForm({
   prodForm,

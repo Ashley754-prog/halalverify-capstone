@@ -1,28 +1,14 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
     Search,
-    Package,
-    Building2,
-    ShieldCheck,
     AlertCircle,
-    Calendar,
-    ExternalLink,
     Filter,
     Plus,
-    Pencil,
-    Trash2,
-    CheckCircle2,
-    Clock,
-    Tag,
-    Barcode,
-    FileText,
     Camera,
-    Flag,
     ChevronLeft,
     ChevronRight,
 } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
-import Modal from '../components/ui/Modal';
 import Toast from '../components/ui/Toast';
 import ContributionModal from '../components/submissions/ContributionModal';
 import AuthPromptModal from '../components/submissions/AuthPromptModal';
@@ -67,7 +53,6 @@ const emptyProductForm = {
 export default function ProductsCatalog({ userRole, onViewChange, initialSearchQuery = '' }) {
     const [products, setProducts] = useState([]);
     const [manufacturers, setManufacturers] = useState([]);
-    const [certifyingBodies, setCertifyingBodies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [searchQuery, setSearchQuery] = useState(initialSearchQuery || '');

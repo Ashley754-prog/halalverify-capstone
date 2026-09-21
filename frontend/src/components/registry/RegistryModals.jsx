@@ -1,12 +1,11 @@
-import React from 'react';
 import { Save } from 'lucide-react';
 import Modal from '../ui/Modal';
 
-export const ADDITIVE_STATUSES = ['Halal', 'Haram', 'Doubtful', 'Needs Review'];
-export const ADDITIVE_ORIGINS = ['Plant', 'Animal', 'Insect', 'Synthetic / Mineral', 'Multiple / Unknown'];
-export const ESTABLISHMENT_STATUSES = ['verified', 'needs_review'];
-export const HCB_CATEGORIES = ['Accredited HCB', 'Government Oversight', 'International Authority'];
-export const HCB_STATUSES = ['Accredited', 'Active Oversight', 'International Recognized', 'active', 'inactive', 'suspended'];
+const ADDITIVE_STATUSES = ['Halal', 'Haram', 'Doubtful', 'Needs Review'];
+const ADDITIVE_ORIGINS = ['Plant', 'Animal', 'Insect', 'Synthetic / Mineral', 'Multiple / Unknown'];
+const ESTABLISHMENT_STATUSES = ['verified', 'needs_review'];
+const HCB_CATEGORIES = ['Accredited HCB', 'Government Oversight', 'International Authority'];
+const HCB_STATUSES = ['Accredited', 'Active Oversight', 'International Recognized', 'active', 'inactive', 'suspended'];
 
 export default function RegistryModals({
     activeModal,

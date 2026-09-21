@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 export const NavItem = ({ active, icon, label, onClick, collapsed = false }) => (
     <button

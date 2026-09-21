@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { 
     ShieldCheck, 
     MapPin, 
@@ -13,13 +13,7 @@ import ReportIssueModal from '../components/reports/ReportIssueModal';
 import AdditivesRegistryTab from '../components/registry/AdditivesRegistryTab';
 import HcbsRegistryTab from '../components/registry/HcbsRegistryTab';
 import EstablishmentsRegistryTab from '../components/registry/EstablishmentsRegistryTab';
-import RegistryModals, {
-    ADDITIVE_STATUSES,
-    ADDITIVE_ORIGINS,
-    ESTABLISHMENT_STATUSES,
-    HCB_CATEGORIES,
-    HCB_STATUSES
-} from '../components/registry/RegistryModals';
+import RegistryModals from '../components/registry/RegistryModals';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
 

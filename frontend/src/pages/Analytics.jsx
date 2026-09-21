@@ -1,22 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     BarChart2,
-    TrendingUp,
     ShieldAlert,
     CheckCircle2,
     AlertTriangle,
-    XCircle,
     Store,
-    Package,
     RefreshCw,
-    Calendar,
-    Award,
-    Filter,
-    ArrowUpRight,
-    ArrowDownRight,
-    Layers,
-    Clock,
-    FileText,
     ChevronRight,
     AlertOctagon,
     PieChart,
@@ -24,7 +13,6 @@ import {
 } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import { API_BASE_URL, authFetch } from '../utils/api';
-import { supabase } from '../lib/supabaseClient';
 
 const DEFAULT_TOP_ADDITIVES = [
     { code: 'E120', name: 'Cochineal / Carmine', status: 'Doubtful', source_description: 'Insect-derived red colorant', detection_count: 34 },

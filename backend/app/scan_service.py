@@ -5,32 +5,7 @@ from app.logo_service import detect_halal_logo
 from app.ocr_service import extract_text_from_image, find_e_numbers, normalize_text
 from app.supabase_client import supabase
 
-# Re-export certificate service functions for backwards compatibility
-from app.certificate_service import (
-    CERTIFYING_BODIES,
-    CERTIFICATE_PREFIXES,
-    OCR_CERT_CHAR_FIXES,
-    analyze_certificate_image,
-    fetch_establishments,
-    extract_certificate_fields,
-    extract_certificate_number,
-    normalize_certificate_number,
-    fix_ocr_certificate_number,
-    extract_establishment_name,
-    clean_establishment_name,
-    extract_expiration_date,
-    parse_date,
-    extract_certifying_body,
-    fuzzy_match_score,
-    names_are_similar,
-    certificate_numbers_match,
-    find_registry_match,
-    calculate_layout_confidence,
-    describe_ocr_quality,
-    build_structural_zones,
-    validate_certificate_result,
-    _is_past_date,
-)
+
 
 VERDICT_TO_STATUS = {
     "Green": "Halal",

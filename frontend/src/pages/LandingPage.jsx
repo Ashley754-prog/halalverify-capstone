@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Camera, 
   Package, 
@@ -8,11 +8,7 @@ import {
   CheckCircle2, 
   ArrowRight, 
   Sparkles, 
-  Smartphone, 
   Search, 
-  Info, 
-  Check, 
-  AlertCircle,
   LogIn,
   LayoutDashboard,
   ExternalLink,

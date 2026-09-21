@@ -1,4 +1,3 @@
-import React from 'react';
 import { LogIn, ShieldAlert, Sparkles } from 'lucide-react';
 import Modal from '../ui/Modal';
 
@@ -27,7 +26,7 @@ export default function AuthPromptModal({
 
         <div className="space-y-2">
           <h3 className="text-lg font-black text-slate-900">
-            Account Required to Contribute
+            {actionTitle ? `Account Required: ${actionTitle}` : 'Account Required to Contribute'}
           </h3>
           <p className="text-xs sm:text-sm text-slate-500 max-w-sm mx-auto leading-relaxed">
             To prevent spam and protect the verified Zamboanga City halal registry, only registered users can submit new establishments, logos, or products for verification.

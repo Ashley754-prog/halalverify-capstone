@@ -1,20 +1,21 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import {
     MapPin,
     Flame,
-    Navigation,
     Store,
     Filter,
     Search,
     Compass,
     Crosshair,
+    Loader2,
     X,
 } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import Toast from '../components/ui/Toast';
 import AuthPromptModal from '../components/submissions/AuthPromptModal';
 import ReportIssueModal from '../components/reports/ReportIssueModal';
-import EstablishmentDetailModal, { getStatusConfig } from '../components/map/EstablishmentDetailModal';
+import EstablishmentDetailModal from '../components/map/EstablishmentDetailModal';
+import { getStatusConfig } from '../data/constants';
 import EstablishmentsSidebarList from '../components/map/EstablishmentsSidebarList';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
@@ -42,7 +43,7 @@ const calculateDistanceKm = (lat1, lon1, lat2, lon2) => {
 
 const ZAMBOANGA_CENTER = { lat: 6.9214, lng: 122.0790 };
 
-export default function EstablishmentsMap({ userRole, onViewChange }) {
+export default function EstablishmentsMap({ onViewChange }) {
     const mapContainerRef = useRef(null);
     const mapInstanceRef = useRef(null);
     const heatLayerRef = useRef(null);
@@ -356,7 +357,9 @@ export default function EstablishmentsMap({ userRole, onViewChange }) {
             if (heatLayerRef.current) {
                 try {
                     map.removeLayer(heatLayerRef.current);
-                } catch (e) {}
+                } catch {
+                    // Layer might have already been removed
+                }
                 heatLayerRef.current = null;
             }
 

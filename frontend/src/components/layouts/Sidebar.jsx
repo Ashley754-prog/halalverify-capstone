@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Home, LayoutDashboard, Camera, Package, MapPin, BookOpen, Clock, Flag, BarChart2, Settings, LogOut, LogIn, Menu, ShieldCheck } from 'lucide-react';
 import NavItem from '../ui/NavItem';
 

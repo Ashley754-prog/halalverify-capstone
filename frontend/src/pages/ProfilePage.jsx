@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { User, Mail, Save, CheckCircle2, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import { supabase } from '../lib/supabaseClient';

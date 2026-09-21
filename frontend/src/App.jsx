@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import Login from "./auth/Login.jsx";
 import CreateAccount from "./auth/CreateAccount.jsx";
@@ -65,7 +65,7 @@ export default function App() {
   const [userRole, setUserRole] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [authLoading, setAuthLoading] = useState(true);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => (typeof window !== 'undefined' ? window.innerWidth >= 768 : true));
 
   // Normalize legacy hash URL (e.g. /#products) into clean pathname (/products)
   useEffect(() => {
@@ -81,12 +81,6 @@ export default function App() {
   useEffect(() => {
     // Silently warm up the Render backend container in the background
     fetch(`${API_BASE_URL}/health`).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    if (window.innerWidth < 768) {
-      setIsSidebarOpen(false);
-    }
   }, []);
 
   useEffect(() => {

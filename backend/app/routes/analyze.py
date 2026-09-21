@@ -1,6 +1,6 @@
 from app.auth import get_optional_current_user
+from app.certificate_service import analyze_certificate_image
 from app.scan_service import (
-    analyze_certificate_image,
     analyze_label_image,
     save_scan_history,
 )

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Building2,
   Package,
@@ -9,10 +9,8 @@ import Modal from '../ui/Modal';
 import { supabase } from '../../lib/supabaseClient';
 import { API_BASE_URL, authFetch } from '../../utils/api';
 import { validateUploadFile } from '../../utils/security';
-import EstablishmentContributionForm, { ESTABLISHMENT_TYPES } from './EstablishmentContributionForm';
-import ProductContributionForm, { PRODUCT_CATEGORIES } from './ProductContributionForm';
-
-export { ESTABLISHMENT_TYPES, PRODUCT_CATEGORIES };
+import EstablishmentContributionForm from './EstablishmentContributionForm';
+import ProductContributionForm from './ProductContributionForm';
 
 export default function ContributionModal({
   isOpen,

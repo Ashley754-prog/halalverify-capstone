@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Award, Search, Building2, Globe, ShieldCheck, Calendar, FileText, ExternalLink, Pencil, Trash2 } from 'lucide-react';
 
 export default function HcbsRegistryTab({

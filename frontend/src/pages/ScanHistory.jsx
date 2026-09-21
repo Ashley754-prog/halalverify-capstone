@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Clock, ScanSearch, FileText, CheckCircle, AlertTriangle, XCircle, RefreshCw } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import { API_BASE_URL, authFetch } from '../utils/api';
@@ -106,7 +106,7 @@ export const ScanHistory = ({ userRole, onViewChange }) => {
             setLoading(false);
             setRefreshing(false);
         }
-    }, []);
+    }, [isAdmin]);
 
     useEffect(() => {
         fetchScanHistory(true);

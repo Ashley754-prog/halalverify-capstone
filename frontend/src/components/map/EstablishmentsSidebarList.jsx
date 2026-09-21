@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
     Store,
     Loader2,
@@ -6,7 +6,7 @@ import {
     ChevronRight,
     Navigation
 } from 'lucide-react';
-import { getStatusConfig } from './EstablishmentDetailModal';
+import { getStatusConfig } from '../../data/constants';
 
 export default function EstablishmentsSidebarList({
     filteredList,

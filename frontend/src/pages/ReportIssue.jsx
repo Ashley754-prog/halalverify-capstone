@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Flag, ScanSearch, FileText, Store, CheckCircle, Upload, X, FileImage, AlertTriangle } from 'lucide-react';
+import { useState } from 'react';
+import { Flag, ScanSearch, FileText, Store, CheckCircle, Upload, X, FileImage } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import Modal from '../components/ui/Modal';
 import Toast from '../components/ui/Toast';
@@ -304,6 +304,44 @@ export const ReportIssue = ({ userRole, onViewChange }) => {
                             rows={5}
                             className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 sm:py-3 px-3.5 sm:px-4 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-emerald-500 transition resize-none"
                         />
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-1.5 sm:mb-2">
+                            Attach Photo Proof (Packaging, Receipt, or Certificate)
+                        </label>
+                        <div className="rounded-xl border-2 border-dashed border-slate-200 p-3.5 text-center hover:border-emerald-500 transition bg-slate-50/50">
+                            {form.evidenceUrl ? (
+                                <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg p-2.5">
+                                    <div className="flex items-center gap-2 truncate">
+                                        <FileImage size={18} className="text-emerald-600 shrink-0" />
+                                        <span className="text-xs text-emerald-900 font-medium truncate">Proof Photo Attached</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleChange('evidenceUrl', '')}
+                                        className="text-slate-400 hover:text-red-500 p-1"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                </div>
+                            ) : (
+                                <label className="cursor-pointer flex flex-col items-center">
+                                    <Upload size={20} className="text-slate-400 mb-1" />
+                                    <span className="text-xs font-semibold text-emerald-600 hover:underline">
+                                        {uploadingImage ? 'Uploading photo...' : 'Click to take or upload photo evidence'}
+                                    </span>
+                                    <span className="text-[11px] text-slate-400 mt-0.5">PNG, JPG, PDF up to 10MB</span>
+                                    <input
+                                        type="file"
+                                        accept="image/*,application/pdf"
+                                        disabled={uploadingImage}
+                                        onChange={handleFileUpload}
+                                        className="hidden"
+                                    />
+                                </label>
+                            )}
+                        </div>
                     </div>
 
                     <button

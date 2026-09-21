@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
     ShieldCheck,
     Store,
     Package,
     Flag,
-    AlertCircle,
     CheckCircle2,
     XCircle,
     FileText,
@@ -12,14 +11,8 @@ import {
     ZoomIn,
     ZoomOut,
     RotateCw,
-    Award,
-    Calendar,
     MapPin,
-    User,
-    Loader2,
-    Clock,
     RefreshCw,
-    Search,
     AlertTriangle
 } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
@@ -29,7 +22,7 @@ import { API_BASE_URL, authFetch } from '../utils/api';
 import { getSafeUrl } from '../utils/security';
 import { supabase } from '../lib/supabaseClient';
 
-export default function VerificationQueue({ userRole, onViewChange }) {
+export default function VerificationQueue({ onViewChange }) {
     const [activeTab, setActiveTab] = useState('establishments'); // 'establishments' | 'products' | 'reports'
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState(null);
@@ -41,7 +34,6 @@ export default function VerificationQueue({ userRole, onViewChange }) {
 
     // Inspection Modal state
     const [inspectingItem, setInspectingItem] = useState(null);
-    const [inspectType, setInspectType] = useState(null); // 'establishment' | 'report' | 'product'
     const [adminNotes, setAdminNotes] = useState('');
     const [certNumber, setCertNumber] = useState('');
     const [expiryDate, setExpiryDate] = useState('');
@@ -120,9 +112,8 @@ export default function VerificationQueue({ userRole, onViewChange }) {
         fetchCertifyingBodies();
     }, []);
 
-    const openInspection = (item, type) => {
+    const openInspection = (item) => {
         setInspectingItem(item);
-        setInspectType(type);
         setAdminNotes(item.admin_notes || '');
         setCertNumber(item.certificate_number || '');
         setExpiryDate(item.expiry_date || '');
@@ -133,7 +124,6 @@ export default function VerificationQueue({ userRole, onViewChange }) {
 
     const closeInspection = () => {
         setInspectingItem(null);
-        setInspectType(null);
         setAdminNotes('');
         setCertNumber('');
         setExpiryDate('');
@@ -443,7 +433,7 @@ export default function VerificationQueue({ userRole, onViewChange }) {
 
                                     <button
                                         type="button"
-                                        onClick={() => openInspection(est, 'establishment')}
+                                        onClick={() => openInspection(est)}
                                         className="w-full py-2 px-3 rounded-xl text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 transition flex items-center justify-center gap-1.5 shadow-sm"
                                     >
                                         <ShieldCheck size={14} />

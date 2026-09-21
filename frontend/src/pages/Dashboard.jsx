@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScanSearch, ShieldAlert, Store, Flag, Package } from 'lucide-react';
 import KpiCard from '../components/ui/KpiCard';
 import Topbar from '../components/layouts/Topbar';

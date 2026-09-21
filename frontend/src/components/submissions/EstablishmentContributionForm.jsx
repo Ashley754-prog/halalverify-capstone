@@ -1,15 +1,5 @@
-import React from 'react';
-import { Building2, MapPin, FileText, Upload, X, Loader2 } from 'lucide-react';
-
-export const ESTABLISHMENT_TYPES = [
-  'Restaurant',
-  'Cafeteria / Eatery',
-  'Bakery & Pastry',
-  'Fast Food',
-  'Halal Meat & Poultry Shop',
-  'Grocery / Supermarket',
-  'Food Processing Facility',
-];
+import { MapPin, FileText, Upload, X, Loader2 } from 'lucide-react';
+import { ESTABLISHMENT_TYPES } from '../../data/constants';
 
 export default function EstablishmentContributionForm({
   estForm,
