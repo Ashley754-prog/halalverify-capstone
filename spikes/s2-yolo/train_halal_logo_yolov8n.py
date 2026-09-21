@@ -8,6 +8,7 @@ Usage:
 """
 
 import argparse
+from pathlib import Path
 
 from ultralytics import YOLO
 
@@ -15,19 +16,26 @@ from ultralytics import YOLO
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", required=True, help="Path to the Roboflow data.yaml")
+    parser.add_argument("--weights", default="spikes/s2-yolo/yolov8n.pt", help="Base weights")
     parser.add_argument("--epochs", type=int, default=50)
+    parser.add_argument("--batch", type=int, default=16)
     parser.add_argument("--imgsz", type=int, default=640)
+    parser.add_argument("--workers", type=int, default=0)
     args = parser.parse_args()
 
-    model = YOLO("yolov8n.pt")  # nano variant — matches the manuscript's claim
+    project_dir = Path("runs/spike_s2").resolve()
+
+    model = YOLO(args.weights)  # nano variant — matches the manuscript's claim
     model.train(
         data=args.data,
         epochs=args.epochs,
         imgsz=args.imgsz,
-        batch=16,
+        batch=args.batch,
         device=0,
-        project="runs/spike_s2",
+        workers=args.workers,
+        project=str(project_dir),
         name="halal_logo_yolov8n",
+        exist_ok=True,
     )
 
     metrics = model.val(split="test")

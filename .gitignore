@@ -19,8 +19,12 @@ __pycache__/
 
 # Spike tooling artifacts (model weights, training runs, local venvs)
 *.pt
+!backend/app/models/*.pt
 runs/
 spikes/s2-yolo/.venv/
+spikes/s2-yolo/datasets/
+spikes/s2-yolo/debug_*.png
+spikes/s2-yolo/test_*.png
 
 # AI assistant tool folders (never commit)
 .claude/

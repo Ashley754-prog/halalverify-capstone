@@ -223,7 +223,7 @@ def explain_label_verdict(flagged_items, extracted_text: str, logo_result: dict)
             ),
             "recommendations": [
                 "Do not purchase or consume without independent halal authority verification.",
-                "Report this suspected counterfeit mark to local Islamic authorities (e.g. IDCP / HDIP).",
+                "Report this suspected counterfeit mark to Philippine Halal authorities (NCMF / accredited HCBs).",
                 "Cross-check manufacturer in the HalalVerify Product Catalog.",
             ],
         }

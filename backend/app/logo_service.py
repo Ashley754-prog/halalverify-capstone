@@ -7,19 +7,28 @@ from PIL import Image
 
 logger = logging.getLogger(__name__)
 
-# Human-readable labels for Sea Halal Logo v3 classes
+# Human-readable labels for Philippine Accredited Halal Certification Bodies & Seals
 CLASS_LABEL_MAPPING = {
+    # 15 Philippine-specific classes trained on NCMF, IDCP & accredited certifiers
+    "IDCP": "IDCP (Islamic Da'wah Council of the Philippines)",
+    "BUSC": "BUSC (Bangsamoro Unity Summit Consultative)",
+    "BPCC": "BPCC (Bangsamoro Professional Certification)",
+    "MMHCB": "MMHCB (Mindanao Muslim Halal Certification Board)",
+    "PUCOI": "PUCOI (Philippine Ulama Congress Organization)",
+    "AHIP": "AHIP (Alliance for Halal Integrity in the Phils)",
+    "HICCIP": "HICCIP (Halal International Chamber of Commerce & Industries Phils)",
+    "MinHA": "MinHA (Mindanao Halal Authority)",
+    "PRIME": "PRIME Certification Asia",
+    "FIQHI": "FIQHI Islamic Certification",
+    "HDIP": "HDIP (Halal Development Institute of the Philippines)",
+    "MASLAHA": "MASLAHA Halal Certification",
+    "Philcosed": "PHILCOSED Halal Certification",
+    "NCMF_General": "NCMF Official Halal Seal (Philippines)",
+    "Invalid_Logo": "Unrecognized / Suspected Counterfeit Logo",
+    # Backward compatibility with legacy SEA classes
     "Philippines1": "IDCP Halal (Philippines)",
     "Philippines2": "HDIP Halal (Philippines)",
     "Philippines3": "Accredited Halal Mark (Philippines)",
-    "Malaysia": "JAKIM Halal (Malaysia)",
-    "Singapore": "MUIS Halal (Singapore)",
-    "Indonesia_new": "BPJPH Halal (Indonesia)",
-    "Indonesia_old": "MUI Halal (Indonesia)",
-    "Brunei": "MUIB Halal (Brunei)",
-    "Thailand": "CICOT Halal (Thailand)",
-    "Vietnam": "Hao Halal (Vietnam)",
-    "Cambodia": "Halal Cambodia",
     "Invalid_logo": "Unrecognized / Suspected Counterfeit Logo",
 }
 
@@ -117,7 +126,7 @@ def detect_halal_logo(image_input) -> Dict:
             cls_id = int(box.cls[0].item())
             raw_class_name = model.names.get(cls_id, f"class_{cls_id}")
             formatted_name = CLASS_LABEL_MAPPING.get(raw_class_name, raw_class_name)
-            is_invalid = raw_class_name == "Invalid_logo"
+            is_invalid = raw_class_name.lower() in ("invalid_logo", "counterfeit")
 
             xyxy = box.xyxy[0].tolist()
             normalized_box = [round(coord, 2) for coord in xyxy]
