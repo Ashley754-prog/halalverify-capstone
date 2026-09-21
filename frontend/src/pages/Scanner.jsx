@@ -969,6 +969,27 @@ export const Scanner = ({ isOnline, onViewChange }) => {
                                     </div>
                                 </div>
 
+                                {/* Extracted Ingredients Text (EasyOCR) */}
+                                <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 space-y-2.5">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs uppercase font-bold text-slate-300 flex items-center gap-1.5">
+                                            <FileText size={14} className="text-emerald-400" /> Extracted Ingredients Text
+                                        </span>
+                                        <span className="text-[10px] font-mono bg-slate-900 px-2 py-0.5 rounded text-slate-400 border border-slate-800">
+                                            EasyOCR Engine
+                                        </span>
+                                    </div>
+                                    {scanResult.ocrText ? (
+                                        <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 text-xs text-slate-200 leading-relaxed font-mono whitespace-pre-wrap max-h-44 overflow-y-auto select-text">
+                                            {scanResult.ocrText}
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-slate-400 p-2.5 bg-slate-900/60 rounded-xl border border-slate-800">
+                                            No readable ingredient text extracted from this photo frame.
+                                        </p>
+                                    )}
+                                </div>
+
                                 {/* 5-Stage IPO Process Inspector */}
                                 {scanResult.pipelineStages?.length > 0 && (
                                     <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-lg">
