@@ -444,14 +444,22 @@ export const Scanner = ({ isOnline, onViewChange }) => {
     }, [startCamera, stopCamera]);
 
     return (
-        <div className="flex-1 flex flex-col h-full bg-slate-950 text-slate-100 p-2 sm:p-4 md:p-6 overflow-hidden">
-            {/* Topbar Navigation */}
-            <div className="mb-2 shrink-0">
-                <Topbar
-                    title="Optical AI Scanner"
-                    subtitle="Dual-engine halal logo detection and chemical additive verification"
-                    onBack={() => onViewChange?.('back')}
-                />
+        <div className="flex-1 flex flex-col h-full bg-slate-950 text-slate-100 p-2 sm:p-4 md:p-6 overflow-hidden relative">
+            {/* Dark Themed Page Header */}
+            <div className="mb-2 shrink-0 rounded-2xl border border-slate-800 bg-slate-900/90 p-3 sm:px-4 sm:py-3 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <div className="min-w-0 flex-1">
+                            <h2 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                                <Camera size={18} className="text-emerald-400 shrink-0" />
+                                <span>Optical AI Scanner</span>
+                            </h2>
+                            <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 truncate">
+                                Dual-engine halal logo detection and chemical additive verification
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {!isOnline && (
@@ -815,37 +823,65 @@ export const Scanner = ({ isOnline, onViewChange }) => {
                 <canvas ref={canvasRef} className="hidden" />
             </div>
 
-            {/* Slide-Up Results Bottom Sheet */}
-            {(showResultsSheet || selectedImage) && (
-                <div className="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] bg-slate-900 border-t border-slate-700 rounded-t-3xl shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300 text-slate-100">
-                    {/* Grab Handle & Sheet Header */}
-                    <div className="p-3 pb-2 flex flex-col items-center border-b border-slate-800 cursor-pointer" onClick={() => setShowResultsSheet(!showResultsSheet)}>
-                        <div className="w-12 h-1.5 bg-slate-700 rounded-full mb-2"></div>
-                        <div className="w-full flex items-center justify-between px-3">
-                            <div className="flex items-center gap-2">
-                                <Sparkles size={16} className="text-emerald-400" />
-                                <h3 className="text-xs sm:text-sm font-bold tracking-wide uppercase text-slate-200">
-                                    Inspection & Pipeline Evaluation
-                                </h3>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={resetState}
-                                    className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold flex items-center gap-1 active:scale-95 transition"
-                                >
-                                    <RefreshCw size={12} /> Retake / Scan Next
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowResultsSheet(false)}
-                                    className="p-1 rounded-lg text-slate-400 hover:text-white"
-                                >
-                                    <ChevronDown size={18} />
-                                </button>
+            {/* Floating Action Button to Re-Open Results Sheet when Collapsed */}
+            {!showResultsSheet && (scanResult || certResult) && (
+                <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-30">
+                    <button
+                        type="button"
+                        onClick={() => setShowResultsSheet(true)}
+                        className="px-4 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-2xl flex items-center gap-2 active:scale-95 transition border border-emerald-400/40 backdrop-blur-sm"
+                    >
+                        <Sparkles size={14} className="text-emerald-200" />
+                        <span>View Inspection Results ({scanResult?.verdict || certResult?.status || 'Ready'})</span>
+                    </button>
+                </div>
+            )}
+
+            {/* Slide-Up Results Bottom Sheet (Scoped strictly to Scanner viewport) */}
+            {showResultsSheet && (
+                <div className="absolute inset-0 z-40 flex flex-col justify-end">
+                    {/* Clickable Backdrop to easily click outside and collapse */}
+                    <div 
+                        className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity"
+                        onClick={() => setShowResultsSheet(false)}
+                        aria-label="Collapse inspection sheet"
+                    />
+                    <div className="relative w-full max-h-[88%] bg-slate-900 border-t border-slate-700 rounded-t-3xl shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300 text-slate-100 z-10">
+                        {/* Grab Handle & Sheet Header */}
+                        <div className="p-3 pb-2 flex flex-col items-center border-b border-slate-800 cursor-pointer" onClick={() => setShowResultsSheet(false)}>
+                            <div className="w-12 h-1.5 bg-slate-700 rounded-full mb-2"></div>
+                            <div className="w-full flex items-center justify-between px-3">
+                                <div className="flex items-center gap-2">
+                                    <Sparkles size={16} className="text-emerald-400" />
+                                    <h3 className="text-xs sm:text-sm font-bold tracking-wide uppercase text-slate-200">
+                                        Inspection & Pipeline Evaluation
+                                    </h3>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            resetState();
+                                        }}
+                                        className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold flex items-center gap-1 active:scale-95 transition"
+                                    >
+                                        <RefreshCw size={12} /> Retake / Scan Next
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowResultsSheet(false);
+                                        }}
+                                        className="p-1 rounded-lg text-slate-400 hover:text-white"
+                                        title="Collapse sheet"
+                                    >
+                                        <ChevronDown size={18} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
                     {/* Scrollable Results Content */}
                     <div className="overflow-y-auto p-4 sm:p-6 space-y-4 max-h-[75vh]">
@@ -1110,6 +1146,7 @@ export const Scanner = ({ isOnline, onViewChange }) => {
                         )}
                     </div>
                 </div>
+            </div>
             )}
 
             {/* Notification Toast */}
