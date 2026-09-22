@@ -30,6 +30,11 @@ spikes/s2-yolo/incoming_real_logos/
 spikes/s2-yolo/roboflow_ph_samples/
 spikes/s2-yolo/debug_*.png
 spikes/s2-yolo/test_*.png
+spikes/s3-ocr/*.jpg
+spikes/s3-ocr/*.jpeg
+spikes/s3-ocr/*.heic
+spikes/s3-ocr/*.png
+spikes/s3-ocr/incoming_ingredients/
 
 # AI assistant tool folders (never commit)
 .claude/
