@@ -149,15 +149,15 @@ export const Scanner = ({ isOnline, onViewChange }) => {
             className="flex-1 flex flex-col h-full bg-slate-950 text-slate-100 p-2 sm:p-4 md:p-6 overflow-hidden relative"
         >
             {/* Dark Themed Page Header */}
-            <div className="mb-2 shrink-0 rounded-2xl border border-slate-800 bg-slate-900/90 p-3 sm:px-4 sm:py-3 shadow-sm">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <div className="mb-2 shrink-0 rounded-xl sm:rounded-2xl border border-slate-800 bg-slate-900/90 p-2.5 sm:px-4 sm:py-3 shadow-sm">
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                         <div className="min-w-0 flex-1">
-                            <h2 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
-                                <Camera size={18} className="text-emerald-400 shrink-0" />
+                            <h2 className="text-sm sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                                <Camera size={16} className="text-emerald-400 shrink-0 sm:h-[18px] sm:w-[18px]" />
                                 <span>Optical AI Scanner</span>
                             </h2>
-                            <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 truncate">
+                            <p className="hidden sm:block text-[11px] sm:text-xs text-slate-400 mt-0.5 truncate">
                                 Dual-engine halal logo detection and chemical additive verification
                             </p>
                         </div>

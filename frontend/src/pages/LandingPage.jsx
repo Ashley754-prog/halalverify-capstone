@@ -15,6 +15,7 @@ import {
   X,
   Building2,
   Plus,
+  Menu,
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import ContributionModal from '../components/submissions/ContributionModal';
@@ -28,6 +29,7 @@ export default function LandingPage({ onViewChange, userRole }) {
   const [showContributionModal, setShowContributionModal] = useState(false);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [initialContributionTab, setInitialContributionTab] = useState('establishment');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleOpenContribution = (tab = 'establishment') => {
     setInitialContributionTab(tab);
@@ -88,11 +90,12 @@ export default function LandingPage({ onViewChange, userRole }) {
   return (
     <div className="min-h-screen bg-[#0e1625] text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white">
       {/* Top Navigation Bar */}
-      <header className="sticky top-0 z-50 w-full border-b border-slate-800/80 bg-[#0e1625]/90 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-y-2 px-3 py-2 sm:h-20 sm:flex-nowrap sm:gap-y-0 sm:px-6 sm:py-0 lg:px-8">
+      <header className="sticky top-0 z-50 w-full border-b border-slate-800/80 bg-[#0e1625]/95 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto flex items-center justify-between h-16 sm:h-20 px-4 sm:px-6 lg:px-8">
+          {/* Logo & Brand Name */}
           <div 
-            className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3 md:flex-none cursor-pointer group"
-            onClick={() => onViewChange('landing')}
+            className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0"
+            onClick={() => { setIsMobileMenuOpen(false); onViewChange('landing'); }}
           >
             <img 
               src="/halalverify-logo.png" 
@@ -101,34 +104,35 @@ export default function LandingPage({ onViewChange, userRole }) {
             />
             <div>
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="font-black text-[13px] sm:text-xl tracking-[0.1em] sm:tracking-[0.18em] text-white">HALALVERIFY</span>
+                <span className="font-black text-sm sm:text-xl tracking-[0.1em] sm:tracking-[0.18em] text-white">HALALVERIFY</span>
                 <span className="inline-block px-1.5 py-0.5 text-[8px] sm:px-2 sm:text-[10px] font-bold uppercase tracking-wider bg-emerald-950 text-emerald-400 border border-emerald-800/60 rounded-full">
                   Zamboanga
                 </span>
               </div>
-              <p className="block text-[8px] sm:text-[10px] text-slate-400 tracking-wide">Verification & Compliance Pipeline</p>
+              <p className="hidden xs:block text-[8px] sm:text-[10px] text-slate-400 tracking-wide">Verification & Compliance Pipeline</p>
             </div>
           </div>
 
-          <nav className="order-3 flex w-full min-w-0 items-center gap-5 overflow-x-auto no-scrollbar text-[11px] font-medium text-slate-300 md:order-none md:w-auto md:gap-8 md:overflow-visible md:text-sm">
-            <a href="#features" className="shrink-0 hover:text-emerald-400 transition">Features</a>
-            <a href="#how-it-works" className="shrink-0 hover:text-emerald-400 transition">How It Works</a>
-            <a href="#certifiers" className="shrink-0 hover:text-emerald-400 transition">Certifiers</a>
+          {/* Desktop Navigation Links (Large Screens Only: >= 1024px) */}
+          <nav className="hidden lg:flex items-center gap-6 xl:gap-8 text-sm font-medium text-slate-300">
+            <a href="#features" className="hover:text-emerald-400 transition">Features</a>
+            <a href="#how-it-works" className="hover:text-emerald-400 transition">How It Works</a>
+            <a href="#certifiers" className="hover:text-emerald-400 transition">Certifiers</a>
             <button 
               onClick={() => onViewChange('products')}
-              className="shrink-0 hover:text-emerald-400 transition"
+              className="hover:text-emerald-400 transition font-medium"
             >
               Catalog
             </button>
             <button 
               onClick={() => onViewChange('map')}
-              className="shrink-0 hover:text-emerald-400 transition"
+              className="hover:text-emerald-400 transition font-medium"
             >
               Map
             </button>
             <button 
               onClick={() => handleOpenContribution('establishment')}
-              className="shrink-0 flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] md:text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:text-emerald-200 transition active:scale-95 shadow-xs"
+              className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:text-emerald-200 transition active:scale-95 shadow-xs"
               title="Submit an establishment or product to the registry"
             >
               <Plus size={13} strokeWidth={2.5} className="text-emerald-400" />
@@ -136,11 +140,12 @@ export default function LandingPage({ onViewChange, userRole }) {
             </button>
           </nav>
 
-          <div className="flex shrink-0 items-center gap-1 sm:gap-3">
+          {/* Desktop Action Buttons (Large Screens Only) */}
+          <div className="hidden lg:flex items-center gap-3 shrink-0">
             {userRole ? (
               <button
                 onClick={() => onViewChange('dashboard')}
-                className="flex items-center gap-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2 py-1 sm:gap-2 sm:rounded-xl sm:px-4 sm:py-2 text-[10px] sm:text-sm font-semibold text-white transition shadow-sm"
+                className="flex items-center gap-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 text-sm font-semibold text-white transition shadow-sm"
               >
                 <LayoutDashboard size={16} className="text-emerald-400" />
                 <span>Dashboard</span>
@@ -148,23 +153,140 @@ export default function LandingPage({ onViewChange, userRole }) {
             ) : (
               <button
                 onClick={() => onViewChange('login')}
-                className="flex items-center gap-1 rounded-lg text-slate-300 hover:text-white px-1.5 py-0.5 sm:gap-1.5 sm:rounded-xl sm:px-3 sm:py-2 text-[10px] sm:text-sm font-semibold transition shrink-0 whitespace-nowrap"
+                className="flex items-center gap-1.5 rounded-xl text-slate-300 hover:text-white px-3 py-2 text-sm font-semibold transition"
               >
-                <LogIn size={15} className="shrink-0" />
-                <span className="whitespace-nowrap">Sign In</span>
+                <LogIn size={16} className="text-slate-400" />
+                <span>Sign In</span>
               </button>
             )}
 
             <button
               onClick={() => onViewChange('scanner')}
-                className="flex items-center gap-1 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 px-1.5 py-0.5 sm:gap-2 sm:rounded-xl sm:px-4 sm:py-2 text-[9px] sm:text-sm font-bold text-white shadow-lg shadow-emerald-900/40 transition active:scale-95"
+              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-emerald-900/40 transition active:scale-95"
             >
               <Camera size={16} />
-              <span className="hidden sm:inline">Start Scanning</span>
-              <span className="sm:hidden">Scan</span>
+              <span>Start Scanning</span>
+            </button>
+          </div>
+
+          {/* Mobile & Tablet Controls (< 1024px) */}
+          <div className="flex items-center gap-2 lg:hidden">
+            <button
+              onClick={() => onViewChange('scanner')}
+              className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 px-3 py-1.5 text-xs font-bold text-white shadow-md shadow-emerald-900/40 transition active:scale-95"
+            >
+              <Camera size={14} />
+              <span>Scan</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+              className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/80 transition focus:outline-none"
+              aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            >
+              {isMobileMenuOpen ? <X size={22} className="text-emerald-400" /> : <Menu size={22} />}
             </button>
           </div>
         </div>
+
+        {/* Mobile Slide-Down Navigation Menu */}
+        {isMobileMenuOpen && (
+          <div className="lg:hidden border-t border-slate-800 bg-[#0e1625]/98 backdrop-blur-xl animate-in slide-in-from-top-3 duration-200 shadow-2xl">
+            <div className="px-4 py-4 space-y-3">
+              <nav className="flex flex-col space-y-1 text-sm font-medium">
+                <a
+                  href="#features"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="px-3 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
+                >
+                  Features
+                </a>
+                <a
+                  href="#how-it-works"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="px-3 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
+                >
+                  How It Works
+                </a>
+                <a
+                  href="#certifiers"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="px-3 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
+                >
+                  Certifiers
+                </a>
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    onViewChange('products');
+                  }}
+                  className="flex items-center justify-between px-3 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-left"
+                >
+                  <span>Product Catalog</span>
+                  <Package size={16} className="text-emerald-400" />
+                </button>
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    onViewChange('map');
+                  }}
+                  className="flex items-center justify-between px-3 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-left"
+                >
+                  <span>Establishments Map</span>
+                  <MapPin size={16} className="text-teal-400" />
+                </button>
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    handleOpenContribution('establishment');
+                  }}
+                  className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-emerald-950/50 border border-emerald-800/60 text-emerald-300 hover:bg-emerald-900/50 transition text-left font-semibold"
+                >
+                  <span>+ Submit Establishment / Product</span>
+                  <Plus size={16} className="text-emerald-400" />
+                </button>
+              </nav>
+
+              <div className="pt-3 border-t border-slate-800 flex flex-col gap-2">
+                {userRole ? (
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      onViewChange('dashboard');
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm transition"
+                  >
+                    <LayoutDashboard size={16} className="text-emerald-400" />
+                    <span>Open Dashboard</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      onViewChange('login');
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm transition"
+                  >
+                    <LogIn size={16} className="text-emerald-400" />
+                    <span>Sign In / Register</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    onViewChange('scanner');
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-900/40 transition"
+                >
+                  <Camera size={16} />
+                  <span>Start Optical Scanner</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Hero Section */}
@@ -318,29 +440,29 @@ export default function LandingPage({ onViewChange, userRole }) {
             {/* Main CTAs - Displayed during idle state; hidden while searching to focus on search results/fallback */}
             {!searchQuery.trim() && (
               <>
-                <div className="mt-5 sm:mt-8 grid grid-cols-3 items-stretch gap-1.5 sm:flex sm:items-center sm:justify-center sm:gap-4">
+                <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2.5 sm:gap-4 max-w-md sm:max-w-none mx-auto">
                   <button
                     onClick={() => onViewChange('scanner')}
-                    className="flex min-w-0 flex-row items-center justify-center gap-0.5 px-0.5 py-2 sm:gap-2 sm:px-6 sm:py-3.5 rounded-xl sm:rounded-2xl bg-emerald-600 hover:bg-emerald-500 font-bold text-white text-[8px] sm:text-base shadow-xl shadow-emerald-900/50 transition transform hover:-translate-y-0.5 active:translate-y-0 duration-150"
+                    className="flex items-center justify-center gap-2 px-5 py-3 sm:px-6 sm:py-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 font-bold text-white text-xs sm:text-base shadow-xl shadow-emerald-900/50 transition transform hover:-translate-y-0.5 active:translate-y-0 duration-150"
                   >
-                    <Camera size={14} className="shrink-0 sm:h-5 sm:w-5" />
-                    <span className="text-center leading-tight">Launch Scanner</span>
+                    <Camera size={18} className="shrink-0 sm:h-5 sm:w-5" />
+                    <span>Launch Scanner</span>
                   </button>
 
                   <button
                     onClick={() => onViewChange('products')}
-                    className="flex min-w-0 flex-row items-center justify-center gap-0.5 px-0.5 py-2 sm:gap-2 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 font-semibold text-slate-200 text-[8px] sm:text-base transition"
+                    className="flex items-center justify-center gap-2 px-5 py-3 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 font-semibold text-slate-200 text-xs sm:text-base transition"
                   >
-                    <Search size={14} className="shrink-0 text-slate-400 sm:h-[18px] sm:w-[18px]" />
-                    <span className="text-center leading-tight">Browse Products</span>
+                    <Search size={16} className="shrink-0 text-slate-400 sm:h-[18px] sm:w-[18px]" />
+                    <span>Browse Products</span>
                   </button>
 
                   <button
                     onClick={() => onViewChange('map')}
-                    className="flex min-w-0 flex-row items-center justify-center gap-0.5 px-0.5 py-2 sm:gap-2 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 font-semibold text-slate-200 text-[8px] sm:text-base transition"
+                    className="flex items-center justify-center gap-2 px-5 py-3 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 font-semibold text-slate-200 text-xs sm:text-base transition"
                   >
-                    <MapPin size={14} className="shrink-0 text-emerald-400 sm:h-[18px] sm:w-[18px]" />
-                    <span className="text-center leading-tight">Establishments Map</span>
+                    <MapPin size={16} className="shrink-0 text-emerald-400 sm:h-[18px] sm:w-[18px]" />
+                    <span>Establishments Map</span>
                   </button>
                 </div>
 
@@ -531,7 +653,7 @@ export default function LandingPage({ onViewChange, userRole }) {
             </p>
           </div>
 
-          <div className="relative grid grid-cols-3 gap-2 sm:gap-6">
+          <div className="relative grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
             <div
               className="workflow-step flex min-h-[200px] flex-col items-center rounded-xl border border-emerald-500/50 bg-slate-900/60 p-3 text-center shadow-lg shadow-emerald-950/30 sm:p-5"
               style={{ animationDelay: '0s' }}
@@ -711,20 +833,20 @@ export default function LandingPage({ onViewChange, userRole }) {
                 Scan your first product, check halal logos, or browse certified local restaurants across Zamboanga City right now.
               </p>
 
-              <div className="mt-5 sm:mt-8 flex flex-row items-center justify-center gap-2 sm:gap-4">
+              <div className="mt-5 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 max-w-sm sm:max-w-none mx-auto">
                 <button
                   onClick={() => onViewChange('scanner')}
-                  className="flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2.5 font-bold text-white text-[10px] shadow-lg shadow-emerald-900/50 transition hover:bg-emerald-500 sm:gap-2 sm:px-6 sm:py-3.5 sm:text-base"
+                  className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-3 sm:px-6 sm:py-3.5 font-bold text-white text-xs sm:text-base shadow-lg shadow-emerald-900/50 transition hover:from-emerald-500 hover:to-teal-500"
                 >
-                  <Camera size={16} className="sm:h-5 sm:w-5" />
+                  <Camera size={18} className="sm:h-5 sm:w-5" />
                   <span>Open Halal Scanner</span>
                 </button>
 
                 <button
                   onClick={() => onViewChange('login')}
-                  className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 font-semibold text-slate-200 text-[10px] transition hover:bg-slate-700 sm:gap-2 sm:px-6 sm:py-3.5 sm:text-base"
+                  className="flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-5 py-3 sm:px-6 sm:py-3.5 font-semibold text-slate-200 text-xs sm:text-base transition hover:bg-slate-700"
                 >
-                  <LogIn size={15} className="sm:h-[18px] sm:w-[18px]" />
+                  <LogIn size={17} className="sm:h-[18px] sm:w-[18px]" />
                   <span>Sign In / Register</span>
                 </button>
               </div>

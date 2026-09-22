@@ -367,15 +367,17 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                     <button
                         type="button"
                         onClick={handleOpenContribution}
-                        className="inline-flex items-center justify-center gap-1.5 sm:gap-2 rounded-lg sm:rounded-xl bg-emerald-600 px-2.5 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-sm font-semibold text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-500 transition active:scale-[0.98] shrink-0 whitespace-nowrap"
+                        className="inline-flex items-center justify-center gap-1.5 sm:gap-2 rounded-lg sm:rounded-xl bg-emerald-600 px-2.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-500 transition active:scale-[0.98] shrink-0 whitespace-nowrap"
+                        title="Submit Missing Product"
                     >
-                        <Plus size={14} className="sm:w-4 sm:h-4" />
-                        Submit Missing Product
+                        <Plus size={15} className="sm:w-4 sm:h-4" />
+                        <span className="hidden sm:inline">Submit Missing Product</span>
+                        <span className="sm:hidden">Submit</span>
                     </button>
                 </div>
 
                 {/* Filter Tags */}
-                <div className="flex flex-nowrap gap-1.5 sm:gap-2.5 items-center pt-2 border-t border-slate-100 text-[10px] sm:text-xs">
+                <div className="flex flex-wrap sm:flex-nowrap gap-2 sm:gap-2.5 items-center pt-2 border-t border-slate-100 text-xs">
                     <div className="flex items-center gap-1 text-slate-500 font-medium shrink-0">
                         <Filter size={13} className="sm:w-3.5 sm:h-3.5" /> Filter:
                     </div>
@@ -384,7 +386,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                     <select
                         value={selectedCategory}
                         onChange={(e) => setSelectedCategory(e.target.value)}
-                        className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-1.5 sm:px-2.5 py-1 sm:py-1.5 text-[10px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500"
+                        className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500"
                     >
                         {availableCategories.map((cat) => (
                             <option key={cat} value={cat}>
@@ -397,7 +399,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                     <select
                         value={selectedStatus}
                         onChange={(e) => setSelectedStatus(e.target.value)}
-                        className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-1.5 sm:px-2.5 py-1 sm:py-1.5 text-[10px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500"
+                        className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500"
                     >
                         {PRODUCT_STATUSES.map((st) => (
                             <option key={st} value={st}>
@@ -406,7 +408,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                         ))}
                     </select>
 
-                    <span className="text-slate-400 ml-auto whitespace-nowrap text-[9px] sm:text-xs">
+                    <span className="text-slate-400 w-full sm:w-auto sm:ml-auto text-left sm:text-right whitespace-nowrap text-[10px] sm:text-xs pt-1 sm:pt-0">
                         Showing <strong className="text-slate-700">{totalItems === 0 ? 0 : `${startIndex + 1}–${endIndex}`}</strong> of{' '}
                         <strong className="text-slate-700">{totalItems}</strong> products
                     </span>
