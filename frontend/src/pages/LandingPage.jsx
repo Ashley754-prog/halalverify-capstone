@@ -114,25 +114,25 @@ export default function LandingPage({ onViewChange, userRole }) {
           </div>
 
           {/* Desktop Navigation Links (Large Screens Only: >= 1024px) */}
-          <nav className="hidden lg:flex items-center gap-6 xl:gap-8 text-sm font-medium text-slate-300">
-            <a href="#features" className="hover:text-emerald-400 transition">Features</a>
-            <a href="#how-it-works" className="hover:text-emerald-400 transition">How It Works</a>
-            <a href="#certifiers" className="hover:text-emerald-400 transition">Certifiers</a>
+          <nav className="hidden lg:flex items-center gap-3.5 xl:gap-7 text-xs xl:text-sm font-medium text-slate-300 whitespace-nowrap">
+            <a href="#features" className="hover:text-emerald-400 transition whitespace-nowrap shrink-0">Features</a>
+            <a href="#how-it-works" className="hover:text-emerald-400 transition whitespace-nowrap shrink-0">How It Works</a>
+            <a href="#certifiers" className="hover:text-emerald-400 transition whitespace-nowrap shrink-0">Certifiers</a>
             <button 
               onClick={() => onViewChange('products')}
-              className="hover:text-emerald-400 transition font-medium"
+              className="hover:text-emerald-400 transition font-medium whitespace-nowrap shrink-0"
             >
               Catalog
             </button>
             <button 
               onClick={() => onViewChange('map')}
-              className="hover:text-emerald-400 transition font-medium"
+              className="hover:text-emerald-400 transition font-medium whitespace-nowrap shrink-0"
             >
               Map
             </button>
             <button 
               onClick={() => handleOpenContribution('establishment')}
-              className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:text-emerald-200 transition active:scale-95 shadow-xs"
+              className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 xl:px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:text-emerald-200 transition active:scale-95 shadow-xs whitespace-nowrap shrink-0"
               title="Submit an establishment or product to the registry"
             >
               <Plus size={13} strokeWidth={2.5} className="text-emerald-400" />
@@ -141,30 +141,30 @@ export default function LandingPage({ onViewChange, userRole }) {
           </nav>
 
           {/* Desktop Action Buttons (Large Screens Only) */}
-          <div className="hidden lg:flex items-center gap-3 shrink-0">
+          <div className="hidden lg:flex items-center gap-2 xl:gap-3 shrink-0 whitespace-nowrap">
             {userRole ? (
               <button
                 onClick={() => onViewChange('dashboard')}
-                className="flex items-center gap-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 text-sm font-semibold text-white transition shadow-sm"
+                className="flex items-center gap-1.5 xl:gap-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 xl:px-4 py-2 text-xs xl:text-sm font-semibold text-white transition shadow-sm whitespace-nowrap shrink-0"
               >
-                <LayoutDashboard size={16} className="text-emerald-400" />
+                <LayoutDashboard size={15} className="text-emerald-400" />
                 <span>Dashboard</span>
               </button>
             ) : (
               <button
                 onClick={() => onViewChange('login')}
-                className="flex items-center gap-1.5 rounded-xl text-slate-300 hover:text-white px-3 py-2 text-sm font-semibold transition"
+                className="flex items-center gap-1.5 rounded-xl text-slate-300 hover:text-white px-2.5 xl:px-3 py-2 text-xs xl:text-sm font-semibold transition whitespace-nowrap shrink-0"
               >
-                <LogIn size={16} className="text-slate-400" />
+                <LogIn size={15} className="text-slate-400" />
                 <span>Sign In</span>
               </button>
             )}
 
             <button
               onClick={() => onViewChange('scanner')}
-              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-emerald-900/40 transition active:scale-95"
+              className="flex items-center gap-1.5 xl:gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 px-3 xl:px-4 py-2 text-xs xl:text-sm font-bold text-white shadow-lg shadow-emerald-900/40 transition active:scale-95 whitespace-nowrap shrink-0"
             >
-              <Camera size={16} />
+              <Camera size={15} />
               <span>Start Scanning</span>
             </button>
           </div>
@@ -306,14 +306,13 @@ export default function LandingPage({ onViewChange, userRole }) {
             <h1 className="text-2xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight sm:leading-tight">
               Verify Halal Authenticity in{' '}
               <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-200 bg-clip-text text-transparent">
-                Zamboanga City
-              </span>{' '}
-              with Confidence.
+                Zamboanga City.
+              </span>
             </h1>
 
             {/* Subtitle */}
             <p className="mt-3 sm:mt-5 text-xs sm:text-lg text-slate-300 leading-relaxed max-w-2xl mx-auto">
-              Empowering consumers and families to inspect food packaging labels, detect certifying logos, and discover certified dining establishments across Zamboanga City — instantly and freely.
+              Empowering consumers and families to inspect food packaging labels, detect certifying logos, and discover certified dining establishments across Zamboanga City, instantly and freely.
             </p>
 
             {/* Interactive Search Interface (Finalized Features Section 1) */}
