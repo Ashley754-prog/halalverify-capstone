@@ -1,4 +1,4 @@
-const CACHE_NAME = "halalverify-cache-v1";
+const CACHE_NAME = "halalverify-cache-v2";
 const ASSETS_TO_CACHE = [
     "/",
     "/index.html",
@@ -7,7 +7,7 @@ const ASSETS_TO_CACHE = [
     "/halalverify-logo.png"
 ];
 
-// Install Event - Caching App Shell
+// Install Event - Pre-cache critical offline shell and activate immediately
 self.addEventListener("install", (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
@@ -15,13 +15,14 @@ self.addEventListener("install", (event) => {
     self.skipWaiting();
 });
 
-// Activate Event - Clean old caches
+// Activate Event - Evict any outdated caches from prior versions immediately
 self.addEventListener("activate", (event) => {
     event.waitUntil(
         caches.keys().then((keys) => {
             return Promise.all(
                 keys.map((key) => {
                     if (key !== CACHE_NAME) {
+                        console.log(`[ServiceWorker] Evicting legacy cache: ${key}`);
                         return caches.delete(key);
                     }
                 })
@@ -46,13 +47,33 @@ self.addEventListener("fetch", (event) => {
         return;
     }
 
+    // Network-First for Navigation / HTML documents:
+    // Ensures mobile and web visitors ALWAYS fetch the latest deployed build when online.
+    // Falls back to offline shell or cache only when device is disconnected.
+    if (event.request.mode === "navigate" || url.pathname === "/" || url.pathname.endsWith(".html")) {
+        event.respondWith(
+            fetch(event.request)
+                .then((networkResponse) => {
+                    if (networkResponse && networkResponse.status === 200) {
+                        const responseToCache = networkResponse.clone();
+                        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
+                    }
+                    return networkResponse;
+                })
+                .catch(() => {
+                    return caches.match(event.request).then((cached) => cached || caches.match("/offline.html"));
+                })
+        );
+        return;
+    }
+
+    // Cache-First with Network Fallback for immutable hashed assets (/assets/*, fonts, icons)
     event.respondWith(
         caches.match(event.request).then((cachedResponse) => {
             if (cachedResponse) return cachedResponse;
 
             return fetch(event.request)
                 .then((response) => {
-                    // Check for valid response before caching
                     if (!response || response.status !== 200 || response.type !== "basic") {
                         return response;
                     }
@@ -65,11 +86,17 @@ self.addEventListener("fetch", (event) => {
                     return response;
                 })
                 .catch(() => {
-                    // Fallback to offline page for page navigations
                     if (event.request.mode === "navigate") {
                         return caches.match("/offline.html");
                     }
                 });
         })
     );
+});
+
+// Allow client pages to trigger immediate skipWaiting
+self.addEventListener("message", (event) => {
+    if (event.data && event.data.type === "SKIP_WAITING") {
+        self.skipWaiting();
+    }
 });
