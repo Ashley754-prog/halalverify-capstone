@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
     ShieldCheck,
     ShieldAlert,
@@ -17,6 +18,23 @@ export const LabelResultsSheet = ({
     onClose,
     onViewChange
 }) => {
+    const [touchStartY, setTouchStartY] = useState(null);
+
+    const handleTouchStart = (e) => {
+        setTouchStartY(e.touches[0].clientY);
+    };
+
+    const handleTouchEnd = (e) => {
+        if (touchStartY === null) return;
+        const touchEndY = e.changedTouches[0].clientY;
+        const deltaY = touchEndY - touchStartY;
+        // If swiped down by more than 40px, dismiss sheet to return to camera
+        if (deltaY > 40) {
+            onClose();
+        }
+        setTouchStartY(null);
+    };
+
     return (
         <div className="absolute inset-0 z-40 flex flex-col justify-end">
             {/* Clickable Backdrop to collapse */}
@@ -27,26 +45,41 @@ export const LabelResultsSheet = ({
             />
 
             <div className="relative w-full max-h-[88%] bg-slate-900 border-t border-slate-700 rounded-t-3xl shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300 text-slate-100 z-10">
-                {/* Grab Handle & Sheet Header */}
-                <div className="p-3 pb-2 flex flex-col items-center border-b border-slate-800 cursor-pointer" onClick={onClose}>
-                    <div className="w-12 h-1.5 bg-slate-700 rounded-full mb-2"></div>
-                    <div className="w-full flex items-center justify-between px-3">
-                        <div className="flex items-center gap-2">
-                            <Sparkles size={16} className="text-emerald-400" />
-                            <h3 className="text-xs sm:text-sm font-bold tracking-wide uppercase text-slate-200">
-                                Inspection & Pipeline Evaluation
+                {/* Grab Handle & Sheet Header with Swipe-Down Gesture */}
+                <div 
+                    className="p-3 pb-2 flex flex-col items-center border-b border-slate-800 touch-none select-none"
+                    onTouchStart={handleTouchStart}
+                    onTouchEnd={handleTouchEnd}
+                >
+                    {/* Draggable & Tappable Pill Handle */}
+                    <div 
+                        className="w-full py-1.5 flex justify-center cursor-pointer active:opacity-75"
+                        onClick={onClose}
+                        title="Swipe down or tap to return to camera"
+                    >
+                        <div className="w-14 h-1.5 bg-slate-600 rounded-full hover:bg-slate-500 transition" />
+                    </div>
+
+                    <div className="w-full flex items-center justify-between px-2 pt-1">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <Sparkles size={16} className="text-emerald-400 shrink-0" />
+                            <h3 className="text-xs sm:text-sm font-bold tracking-wide uppercase text-slate-200 truncate">
+                                Inspection & Pipeline
                             </h3>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 shrink-0">
                             <button
                                 type="button"
+                                disabled={isLoading}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     onReset();
                                 }}
-                                className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold flex items-center gap-1 active:scale-95 transition"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/35 hover:bg-emerald-500/25 active:scale-95 text-emerald-300 text-xs font-semibold whitespace-nowrap transition disabled:opacity-50 disabled:pointer-events-none shadow-xs"
+                                title="Retake photo or scan another product"
                             >
-                                <RefreshCw size={12} /> Retake / Scan Next
+                                <RefreshCw size={12} className={`text-emerald-400 shrink-0 ${isLoading ? 'animate-spin' : ''}`} />
+                                <span>Scan Again</span>
                             </button>
                             <button
                                 type="button"
@@ -54,10 +87,11 @@ export const LabelResultsSheet = ({
                                     e.stopPropagation();
                                     onClose();
                                 }}
-                                className="p-1 rounded-lg text-slate-400 hover:text-white"
-                                title="Collapse sheet"
+                                className="p-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition flex items-center justify-center shrink-0 border border-slate-700/60 active:scale-95"
+                                title="Collapse sheet and return to camera"
+                                aria-label="Collapse inspection sheet"
                             >
-                                <ChevronDown size={18} />
+                                <ChevronDown size={17} />
                             </button>
                         </div>
                     </div>
