@@ -84,8 +84,8 @@ allowed_origins = [
     if origin.strip()
 ]
 
-# Matches localhost, 127.0.0.1, Vercel deployments (*.vercel.app), and Hugging Face (*.hf.space)
-CORS_ORIGIN_REGEX = r"^(https?://(localhost|127\.0\.0\.1)(:\d+)?|https://.*\.vercel\.app|https://.*\.hf\.space|https://.*\.onrender\.com)$"
+# Matches localhost, 127.0.0.1, Vercel deployments (*.vercel.app), and ngrok domains
+CORS_ORIGIN_REGEX = r"^(https?://(localhost|127\.0\.0\.1)(:\d+)?|https://.*\.vercel\.app|https://.*\.hf\.space|https://.*\.ngrok-free\.(dev|app)|https://.*\.onrender\.com)$"
 
 app.add_middleware(
     CORSMiddleware,

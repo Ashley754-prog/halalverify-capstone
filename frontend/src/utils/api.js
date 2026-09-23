@@ -17,8 +17,8 @@ function resolveApiBaseUrl() {
         }
     }
 
-    // Default HTTPS backend for deployed production web app (Cloudflare Tunnel)
-    return 'https://relocation-usa-drinking-achieve.trycloudflare.com';
+    // Default permanent HTTPS backend for deployed production web app (Ngrok static domain)
+    return 'https://flaky-catwalk-finally.ngrok-free.dev';
 }
 
 export const API_BASE_URL = resolveApiBaseUrl();
@@ -31,6 +31,9 @@ export async function authFetch(url, options = {}) {
     const { timeout = 30000, signal: userSignal, ...fetchOptions } = options;
     const { data: { session } } = await supabase.auth.getSession();
     const headers = new Headers(fetchOptions.headers || {});
+
+    // Ensure ngrok free interstitial page is bypassed for API calls
+    headers.set('ngrok-skip-browser-warning', 'true');
 
     if (session?.access_token) {
         headers.set('Authorization', `Bearer ${session.access_token}`);
@@ -54,11 +57,11 @@ export async function authFetch(url, options = {}) {
 
 /**
  * HalalVerify backend analysis: FastAPI + EasyOCR + Supabase.
- * Tries the primary API endpoint first; if unreachable, falls back to the secure Cloudflare tunnel.
+ * Tries the primary API endpoint first; if unreachable, falls back to the secure permanent domain.
  */
 export async function analyzeImage(base64Image, mode) {
     const primaryUrl = resolveApiBaseUrl();
-    const fallbackTunnel = 'https://relocation-usa-drinking-achieve.trycloudflare.com';
+    const fallbackTunnel = 'https://flaky-catwalk-finally.ngrok-free.dev';
     const endpointsToTry = [
         primaryUrl,
         primaryUrl !== fallbackTunnel ? fallbackTunnel : null
@@ -75,9 +78,12 @@ export async function analyzeImage(base64Image, mode) {
             console.log(`[HalalVerify API] Sending scan request to ${endpoint}`);
             const response = await authFetch(endpoint, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true',
+                },
                 body: JSON.stringify({ imageBase64: base64Image }),
-                timeout: 30000,
+                timeout: 35000,
             });
 
             if (response.ok) {
