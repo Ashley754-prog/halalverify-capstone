@@ -55,8 +55,8 @@ export const Scanner = ({ isOnline, onViewChange }) => {
             } else {
                 setCertResult(result);
             }
-            setToast({ visible: true, message: 'Analysis complete. Verification results ready.', type: 'success' });
-        } catch {
+        } catch (err) {
+            console.error('Backend scan failed:', err);
             setErrorMsg('Backend server unreachable. Displaying fallback inspection details.');
             setTimeout(() => {
                 const result = simulateFallback(scannerMode);
