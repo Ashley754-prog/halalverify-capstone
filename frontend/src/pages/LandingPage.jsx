@@ -105,7 +105,7 @@ export default function LandingPage({ onViewChange, userRole }) {
             <div>
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <span className="font-black text-sm sm:text-xl tracking-[0.1em] sm:tracking-[0.18em] text-white">HALALVERIFY</span>
-                <span className="inline-block px-1.5 py-0.5 text-[8px] sm:px-2 sm:text-[10px] font-bold uppercase tracking-wider bg-emerald-950 text-emerald-400 border border-emerald-800/60 rounded-full">
+                <span className="hidden sm:inline-block px-1.5 py-0.5 text-[8px] sm:px-2 sm:text-[10px] font-bold uppercase tracking-wider bg-emerald-950 text-emerald-400 border border-emerald-800/60 rounded-full">
                   Zamboanga
                 </span>
               </div>
