@@ -10,9 +10,9 @@ function resolveApiBaseUrl() {
             return (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '');
         }
 
-        // On deployed HTTPS site (e.g. Vercel), only accept an HTTPS env url to avoid Mixed Content
+        // On deployed HTTPS site (e.g. Vercel), only accept an HTTPS env url if it is not the dead onrender domain
         const envUrl = import.meta.env.VITE_API_BASE_URL;
-        if (envUrl && envUrl.startsWith('https://')) {
+        if (envUrl && envUrl.startsWith('https://') && !envUrl.includes('onrender.com')) {
             return envUrl.replace(/\/+$/, '');
         }
     }
@@ -28,7 +28,7 @@ export const API_BASE_URL = resolveApiBaseUrl();
  * Backend write endpoints reject requests without a valid bearer token.
  */
 export async function authFetch(url, options = {}) {
-    const { timeout, signal: userSignal, ...fetchOptions } = options;
+    const { timeout = 30000, signal: userSignal, ...fetchOptions } = options;
     const { data: { session } } = await supabase.auth.getSession();
     const headers = new Headers(fetchOptions.headers || {});
 
@@ -54,24 +54,46 @@ export async function authFetch(url, options = {}) {
 
 /**
  * HalalVerify backend analysis: FastAPI + EasyOCR + Supabase.
+ * Tries the primary API endpoint first; if unreachable, falls back to the secure Cloudflare tunnel.
  */
 export async function analyzeImage(base64Image, mode) {
-    const endpoint = mode === 'label'
-        ? `${API_BASE_URL}/analyze/label`
-        : `${API_BASE_URL}/analyze/certificate`;
+    const primaryUrl = resolveApiBaseUrl();
+    const fallbackTunnel = 'https://relocation-usa-drinking-achieve.trycloudflare.com';
+    const endpointsToTry = [
+        primaryUrl,
+        primaryUrl !== fallbackTunnel ? fallbackTunnel : null
+    ].filter(Boolean);
 
-    const response = await authFetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageBase64: base64Image }),
-    });
+    let lastError = null;
 
-    if (!response.ok) {
-        const errorText = await response.text().catch(() => '');
-        throw new Error(`Backend unavailable (${response.status}): ${errorText}`);
+    for (const baseUrl of endpointsToTry) {
+        const endpoint = mode === 'label'
+            ? `${baseUrl}/analyze/label`
+            : `${baseUrl}/analyze/certificate`;
+
+        try {
+            console.log(`[HalalVerify API] Sending scan request to ${endpoint}`);
+            const response = await authFetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imageBase64: base64Image }),
+                timeout: 30000,
+            });
+
+            if (response.ok) {
+                return await response.json();
+            }
+
+            const errorText = await response.text().catch(() => '');
+            lastError = new Error(`Backend (${baseUrl}) returned ${response.status}: ${errorText}`);
+            console.warn(`[HalalVerify API] HTTP error from ${baseUrl}:`, lastError);
+        } catch (err) {
+            lastError = err;
+            console.warn(`[HalalVerify API] Connection failure on ${baseUrl}:`, err.message || err);
+        }
     }
 
-    return response.json();
+    throw lastError || new Error('Backend server is unreachable on all configured endpoints.');
 }
 
 /**
