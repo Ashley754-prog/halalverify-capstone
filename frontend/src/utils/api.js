@@ -1,6 +1,22 @@
 import { supabase } from '../lib/supabaseClient';
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+function resolveApiBaseUrl() {
+    if (typeof window !== 'undefined') {
+        const customUrl = localStorage.getItem('halalverify_api_url');
+        if (customUrl) return customUrl.replace(/\/+$/, '');
+
+        // If accessed locally on localhost or 127.0.0.1, use local dev backend
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            return (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '');
+        }
+    }
+
+    // Default for deployed production web app (Vercel over HTTPS):
+    // Routes to the secure HTTPS Cloudflare tunnel pointing to your active backend.
+    return (import.meta.env.VITE_API_BASE_URL || 'https://relocation-usa-drinking-achieve.trycloudflare.com').replace(/\/+$/, '');
+}
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 /**
  * fetch wrapper that attaches the current Supabase session token.
