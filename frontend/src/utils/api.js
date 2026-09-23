@@ -9,11 +9,16 @@ function resolveApiBaseUrl() {
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             return (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '');
         }
+
+        // On deployed HTTPS site (e.g. Vercel), only accept an HTTPS env url to avoid Mixed Content
+        const envUrl = import.meta.env.VITE_API_BASE_URL;
+        if (envUrl && envUrl.startsWith('https://')) {
+            return envUrl.replace(/\/+$/, '');
+        }
     }
 
-    // Default for deployed production web app (Vercel over HTTPS):
-    // Routes to the secure HTTPS Cloudflare tunnel pointing to your active backend.
-    return (import.meta.env.VITE_API_BASE_URL || 'https://relocation-usa-drinking-achieve.trycloudflare.com').replace(/\/+$/, '');
+    // Default HTTPS backend for deployed production web app (Cloudflare Tunnel)
+    return 'https://relocation-usa-drinking-achieve.trycloudflare.com';
 }
 
 export const API_BASE_URL = resolveApiBaseUrl();
