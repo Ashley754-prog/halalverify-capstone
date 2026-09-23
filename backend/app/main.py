@@ -84,8 +84,8 @@ allowed_origins = [
     if origin.strip()
 ]
 
-# Tightened regex matches localhost, 127.0.0.1, legitimate HalalVerify vercel deployments, and Render domains
-CORS_ORIGIN_REGEX = r"^(https?://(localhost|127\.0\.0\.1)(:\d+)?|https://(halalverify|capstone)[a-z0-9-]*\.vercel\.app|https://.*\.onrender\.com)$"
+# Matches localhost, 127.0.0.1, Vercel deployments (*.vercel.app), and Hugging Face (*.hf.space)
+CORS_ORIGIN_REGEX = r"^(https?://(localhost|127\.0\.0\.1)(:\d+)?|https://.*\.vercel\.app|https://.*\.hf\.space|https://.*\.onrender\.com)$"
 
 app.add_middleware(
     CORSMiddleware,
