@@ -88,7 +88,7 @@ export default function LandingPage({ onViewChange, userRole }) {
     });
   };
   return (
-    <div className="min-h-screen bg-[#0e1625] text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white">
+    <div className="min-h-screen bg-[#0e1625] text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white overflow-x-hidden w-full max-w-full">
       {/* Top Navigation Bar */}
       <header className="sticky top-0 z-50 w-full border-b border-slate-800/80 bg-[#0e1625]/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto flex items-center justify-between h-16 sm:h-20 px-4 sm:px-6 lg:px-8">
@@ -487,50 +487,50 @@ export default function LandingPage({ onViewChange, userRole }) {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-1.5 text-left sm:grid-cols-1 sm:gap-4 md:grid-cols-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-left">
                 {/* Simulated Step 1 */}
-                <div className="no-scrollbar h-36 min-w-0 overflow-y-auto rounded-xl bg-slate-800/60 border border-slate-700/50 p-2 sm:h-auto sm:rounded-2xl sm:p-4">
+                <div className="rounded-xl bg-slate-800/60 border border-slate-700/50 p-3 sm:rounded-2xl sm:p-4 flex flex-col justify-between">
                   <div>
-                    <div className="flex items-center justify-between text-[8px] text-slate-400 mb-1 sm:mb-2 sm:text-xs">
+                    <div className="flex items-center justify-between text-[9px] text-slate-400 mb-1.5 sm:mb-2 sm:text-xs">
                       <span className="font-semibold uppercase tracking-wider text-emerald-400">Step 1</span>
-                      <Camera size={12} className="sm:h-[14px] sm:w-[14px]" />
+                      <Camera size={13} className="sm:h-[14px] sm:w-[14px]" />
                     </div>
-                    <h4 className="font-bold text-white text-[9px] sm:text-sm">Label OCR Extraction</h4>
-                    <p className="mt-1 max-h-10 overflow-y-auto text-[8px] text-slate-400 sm:max-h-none sm:overflow-visible sm:text-xs">High-speed optical text recognition reads ingredients on packaging.</p>
+                    <h4 className="font-bold text-white text-xs sm:text-sm">Label OCR Extraction</h4>
+                    <p className="mt-1 text-[10px] text-slate-400 sm:text-xs leading-relaxed">High-speed optical text recognition reads ingredients on packaging.</p>
                   </div>
-                  <div className="mt-2 max-h-10 overflow-y-auto rounded-lg bg-slate-950/80 p-1.5 font-mono text-[8px] text-slate-300 border border-slate-800 sm:mt-3 sm:max-h-none sm:overflow-visible sm:rounded-xl sm:p-2.5 sm:text-[11px]">
+                  <div className="mt-3 rounded-lg bg-slate-950/80 p-2 font-mono text-[9px] text-slate-300 border border-slate-800 sm:rounded-xl sm:p-2.5 sm:text-[11px]">
                     <span className="text-emerald-400">&gt;</span> Wheat flour, water, salt, yeast, vegetable oil...
                   </div>
                 </div>
 
                 {/* Simulated Step 2 */}
-                <div className="no-scrollbar h-36 min-w-0 overflow-y-auto rounded-xl bg-slate-800/60 border border-slate-700/50 p-2 sm:h-auto sm:rounded-2xl sm:p-4">
+                <div className="rounded-xl bg-slate-800/60 border border-slate-700/50 p-3 sm:rounded-2xl sm:p-4 flex flex-col justify-between">
                   <div>
-                    <div className="flex items-center justify-between text-[8px] text-slate-400 mb-1 sm:mb-2 sm:text-xs">
+                    <div className="flex items-center justify-between text-[9px] text-slate-400 mb-1.5 sm:mb-2 sm:text-xs">
                       <span className="font-semibold uppercase tracking-wider text-emerald-400">Step 2</span>
-                      <ShieldCheck size={12} className="sm:h-[14px] sm:w-[14px]" />
+                      <ShieldCheck size={13} className="sm:h-[14px] sm:w-[14px]" />
                     </div>
-                    <h4 className="font-bold text-white text-[9px] sm:text-sm">Ingredient & Logo Audit</h4>
-                    <p className="mt-1 max-h-10 overflow-y-auto text-[8px] text-slate-400 sm:max-h-none sm:overflow-visible sm:text-xs">Cross-referenced with haram/mashbooh additives and certifiers.</p>
+                    <h4 className="font-bold text-white text-xs sm:text-sm">Ingredient & Logo Audit</h4>
+                    <p className="mt-1 text-[10px] text-slate-400 sm:text-xs leading-relaxed">Cross-referenced with haram/mashbooh additives and certifiers.</p>
                   </div>
-                  <div className="mt-2 max-h-10 overflow-y-auto rounded-lg bg-slate-950/80 p-1.5 font-mono text-[8px] text-slate-300 border border-slate-800 sm:mt-3 sm:max-h-none sm:overflow-visible sm:rounded-xl sm:p-2.5 sm:text-[11px]">
+                  <div className="mt-3 rounded-lg bg-slate-950/80 p-2 font-mono text-[9px] text-slate-300 border border-slate-800 sm:rounded-xl sm:p-2.5 sm:text-[11px] space-y-0.5">
                     <span className="block"><span className="text-emerald-400">&gt;</span> 0 Flagged Haram Additives</span>
                     <span className="block"><span className="text-emerald-400">&gt;</span> Logo: HDIP Philippines</span>
                   </div>
                 </div>
 
                 {/* Simulated Step 3 */}
-                <div className="no-scrollbar h-36 min-w-0 overflow-y-auto rounded-xl bg-emerald-950/30 border border-emerald-700/40 p-2 sm:h-auto sm:rounded-2xl sm:p-4">
+                <div className="rounded-xl bg-emerald-950/30 border border-emerald-700/40 p-3 sm:rounded-2xl sm:p-4 flex flex-col justify-between">
                   <div>
-                    <div className="flex items-center justify-between text-[8px] text-slate-400 mb-1 sm:mb-2 sm:text-xs">
+                    <div className="flex items-center justify-between text-[9px] text-slate-400 mb-1.5 sm:mb-2 sm:text-xs">
                       <span className="font-semibold uppercase tracking-wider text-emerald-400">Step 3</span>
-                      <CheckCircle2 size={12} className="text-emerald-400 sm:h-[14px] sm:w-[14px]" />
+                      <CheckCircle2 size={13} className="text-emerald-400 sm:h-[14px] sm:w-[14px]" />
                     </div>
-                    <h4 className="font-bold text-emerald-300 text-[9px] sm:text-sm">Instant Verdict</h4>
-                    <p className="mt-1 max-h-10 overflow-y-auto text-[8px] text-slate-300 sm:max-h-none sm:overflow-visible sm:text-xs">Clear confidence rating and certifier accreditation details.</p>
+                    <h4 className="font-bold text-emerald-300 text-xs sm:text-sm">Instant Verdict</h4>
+                    <p className="mt-1 text-[10px] text-slate-300 sm:text-xs leading-relaxed">Clear confidence rating and certifier accreditation details.</p>
                   </div>
-                  <div className="mt-2 max-h-10 overflow-y-auto rounded-lg bg-emerald-900/40 p-1.5 text-center border border-emerald-700/60 sm:mt-3 sm:max-h-none sm:overflow-visible sm:rounded-xl sm:p-2.5">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-emerald-300 sm:text-xs">
+                  <div className="mt-3 rounded-lg bg-emerald-900/40 p-2 text-center border border-emerald-700/60 sm:rounded-xl sm:p-2.5">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-300 sm:text-xs">
                       ✓ Halal Verified
                     </span>
                   </div>
@@ -556,22 +556,22 @@ export default function LandingPage({ onViewChange, userRole }) {
             </p>
           </div>
 
-          <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:pb-0 lg:grid-cols-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             {/* Feature 1 */}
             <div 
               onClick={() => onViewChange('scanner')}
-              className="group w-[70vw] shrink-0 cursor-pointer rounded-xl border border-slate-800 bg-slate-900/90 p-3 transition-all duration-200 hover:-translate-y-1 hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-950/30 sm:w-auto sm:rounded-2xl sm:p-6"
+              className="group w-full cursor-pointer rounded-xl border border-slate-800 bg-slate-900/90 p-4 transition-all duration-200 hover:-translate-y-1 hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-950/30 sm:rounded-2xl sm:p-6"
             >
-              <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-emerald-950 border border-emerald-800/60 flex items-center justify-center text-emerald-400 mb-2 sm:mb-4 group-hover:scale-110 transition duration-200">
-                <Camera size={16} className="sm:h-[22px] sm:w-[22px]" />
+              <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-emerald-950 border border-emerald-800/60 flex items-center justify-center text-emerald-400 mb-3 sm:mb-4 group-hover:scale-110 transition duration-200">
+                <Camera size={18} className="sm:h-[22px] sm:w-[22px]" />
               </div>
               <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-emerald-300 transition">
                 Halal Scanner & OCR
               </h3>
-              <p className="mt-1 text-[11px] sm:mt-1.5 sm:text-sm text-slate-400 leading-relaxed">
+              <p className="mt-1 text-xs sm:mt-1.5 sm:text-sm text-slate-400 leading-relaxed">
                 Scan packaged goods using EasyOCR to analyze ingredient lists for doubtful additives and verify certifying logos.
               </p>
-              <div className="mt-2 sm:mt-4 flex items-center gap-1.5 text-[10px] sm:text-xs font-semibold text-emerald-400">
+              <div className="mt-3 sm:mt-4 flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
                 <span>Try Scanner</span>
                 <ArrowRight size={14} className="group-hover:translate-x-1 transition" />
               </div>
@@ -580,18 +580,18 @@ export default function LandingPage({ onViewChange, userRole }) {
             {/* Feature 2 */}
             <div 
               onClick={() => onViewChange('products')}
-              className="group w-[70vw] shrink-0 cursor-pointer rounded-xl border border-slate-800 bg-slate-900/90 p-3 transition-all duration-200 hover:-translate-y-1 hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-950/30 sm:w-auto sm:rounded-2xl sm:p-6"
+              className="group w-full cursor-pointer rounded-xl border border-slate-800 bg-slate-900/90 p-4 transition-all duration-200 hover:-translate-y-1 hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-950/30 sm:rounded-2xl sm:p-6"
             >
-              <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-emerald-950 border border-emerald-800/60 flex items-center justify-center text-emerald-400 mb-2 sm:mb-4 group-hover:scale-110 transition duration-200">
-                <Package size={16} className="sm:h-[22px] sm:w-[22px]" />
+              <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-emerald-950 border border-emerald-800/60 flex items-center justify-center text-emerald-400 mb-3 sm:mb-4 group-hover:scale-110 transition duration-200">
+                <Package size={18} className="sm:h-[22px] sm:w-[22px]" />
               </div>
               <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-emerald-300 transition">
                 Product Catalog
               </h3>
-              <p className="mt-1 text-[11px] sm:mt-1.5 sm:text-sm text-slate-400 leading-relaxed">
+              <p className="mt-1 text-xs sm:mt-1.5 sm:text-sm text-slate-400 leading-relaxed">
                 Search verified consumer food, beverages, and household goods sold across local Zamboanga stores and supermarkets.
               </p>
-              <div className="mt-2 sm:mt-4 flex items-center gap-1.5 text-[10px] sm:text-xs font-semibold text-emerald-400">
+              <div className="mt-3 sm:mt-4 flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
                 <span>View Products</span>
                 <ArrowRight size={14} className="group-hover:translate-x-1 transition" />
               </div>
@@ -600,18 +600,18 @@ export default function LandingPage({ onViewChange, userRole }) {
             {/* Feature 3 */}
             <div 
               onClick={() => onViewChange('map')}
-              className="group w-[70vw] shrink-0 cursor-pointer rounded-xl border border-slate-800 bg-slate-900/90 p-3 transition-all duration-200 hover:-translate-y-1 hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-950/30 sm:w-auto sm:rounded-2xl sm:p-6"
+              className="group w-full cursor-pointer rounded-xl border border-slate-800 bg-slate-900/90 p-4 transition-all duration-200 hover:-translate-y-1 hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-950/30 sm:rounded-2xl sm:p-6"
             >
-              <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-emerald-950 border border-emerald-800/60 flex items-center justify-center text-emerald-400 mb-2 sm:mb-4 group-hover:scale-110 transition duration-200">
-                <MapPin size={16} className="sm:h-[22px] sm:w-[22px]" />
+              <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-emerald-950 border border-emerald-800/60 flex items-center justify-center text-emerald-400 mb-3 sm:mb-4 group-hover:scale-110 transition duration-200">
+                <MapPin size={18} className="sm:h-[22px] sm:w-[22px]" />
               </div>
               <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-emerald-300 transition">
                 Establishments Map
               </h3>
-              <p className="mt-1 text-[11px] sm:mt-1.5 sm:text-sm text-slate-400 leading-relaxed">
+              <p className="mt-1 text-xs sm:mt-1.5 sm:text-sm text-slate-400 leading-relaxed">
                 Interactive map pinpointing halal-certified dining options, restaurants, cafes, and caterers across Zamboanga City.
               </p>
-              <div className="mt-2 sm:mt-4 flex items-center gap-1.5 text-[10px] sm:text-xs font-semibold text-emerald-400">
+              <div className="mt-3 sm:mt-4 flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
                 <span>Open Map</span>
                 <ArrowRight size={14} className="group-hover:translate-x-1 transition" />
               </div>
@@ -620,18 +620,18 @@ export default function LandingPage({ onViewChange, userRole }) {
             {/* Feature 4 */}
             <div 
               onClick={() => onViewChange('registry')}
-              className="group w-[70vw] shrink-0 cursor-pointer rounded-xl border border-slate-800 bg-slate-900/90 p-3 transition-all duration-200 hover:-translate-y-1 hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-950/30 sm:w-auto sm:rounded-2xl sm:p-6"
+              className="group w-full cursor-pointer rounded-xl border border-slate-800 bg-slate-900/90 p-4 transition-all duration-200 hover:-translate-y-1 hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-950/30 sm:rounded-2xl sm:p-6"
             >
-              <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-emerald-950 border border-emerald-800/60 flex items-center justify-center text-emerald-400 mb-2 sm:mb-4 group-hover:scale-110 transition duration-200">
-                <BookOpen size={16} className="sm:h-[22px] sm:w-[22px]" />
+              <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-emerald-950 border border-emerald-800/60 flex items-center justify-center text-emerald-400 mb-3 sm:mb-4 group-hover:scale-110 transition duration-200">
+                <BookOpen size={18} className="sm:h-[22px] sm:w-[22px]" />
               </div>
               <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-emerald-300 transition">
                 Accredited Registry
               </h3>
-              <p className="mt-1 text-[11px] sm:mt-1.5 sm:text-sm text-slate-400 leading-relaxed">
+              <p className="mt-1 text-xs sm:mt-1.5 sm:text-sm text-slate-400 leading-relaxed">
                 Direct public lookup of certified bodies, standards, and accreditation statuses recognized under Philippine frameworks.
               </p>
-              <div className="mt-2 sm:mt-4 flex items-center gap-1.5 text-[10px] sm:text-xs font-semibold text-emerald-400">
+              <div className="mt-3 sm:mt-4 flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
                 <span>Check Registry</span>
                 <ArrowRight size={14} className="group-hover:translate-x-1 transition" />
               </div>
