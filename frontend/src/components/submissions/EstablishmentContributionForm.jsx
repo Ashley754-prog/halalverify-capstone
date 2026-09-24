@@ -23,7 +23,7 @@ export default function EstablishmentContributionForm({
             placeholder="e.g., Al-Makkah Restaurant"
             value={estForm.name}
             onChange={(e) => setEstForm((prev) => ({ ...prev, name: e.target.value }))}
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 placeholder:text-slate-400 placeholder:opacity-100 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
           />
         </div>
 
@@ -32,10 +32,10 @@ export default function EstablishmentContributionForm({
           <select
             value={estForm.type}
             onChange={(e) => setEstForm((prev) => ({ ...prev, type: e.target.value }))}
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-emerald-500 bg-white"
+            className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-emerald-500 bg-white text-slate-800"
           >
             {ESTABLISHMENT_TYPES.map((t) => (
-              <option key={t} value={t}>
+              <option key={t} value={t} className="text-slate-800 bg-white">
                 {t}
               </option>
             ))}
@@ -55,7 +55,7 @@ export default function EstablishmentContributionForm({
             placeholder="e.g., Gov. Lim Ave, Zone II, Zamboanga City"
             value={estForm.address}
             onChange={(e) => setEstForm((prev) => ({ ...prev, address: e.target.value }))}
-            className="w-full rounded-xl border border-slate-300 pl-9 pr-3 py-2 outline-none focus:border-emerald-500"
+            className="w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-2 text-slate-800 placeholder:text-slate-400 placeholder:opacity-100 outline-none focus:border-emerald-500"
           />
         </div>
       </div>
@@ -70,7 +70,7 @@ export default function EstablishmentContributionForm({
             placeholder="e.g., IDCP-ZC-2024-019"
             value={estForm.certificate_number}
             onChange={(e) => setEstForm((prev) => ({ ...prev, certificate_number: e.target.value }))}
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-emerald-500"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 placeholder:text-slate-400 placeholder:opacity-100 outline-none focus:border-emerald-500"
           />
         </div>
 
@@ -80,7 +80,7 @@ export default function EstablishmentContributionForm({
             type="date"
             value={estForm.expiry_date}
             onChange={(e) => setEstForm((prev) => ({ ...prev, expiry_date: e.target.value }))}
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-emerald-500 bg-white"
+            className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-emerald-500 bg-white text-slate-800"
           />
         </div>
       </div>
@@ -133,7 +133,7 @@ export default function EstablishmentContributionForm({
           placeholder="e.g., Beef Satti, Chicken Inasal, Roti Canai"
           value={estForm.product_names}
           onChange={(e) => setEstForm((prev) => ({ ...prev, product_names: e.target.value }))}
-          className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-emerald-500"
+          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 placeholder:text-slate-400 placeholder:opacity-100 outline-none focus:border-emerald-500"
         />
         <p className="text-[11px] text-slate-400 mt-1">Help the community know what dishes are served here.</p>
       </div>

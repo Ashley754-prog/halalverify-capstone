@@ -19,7 +19,7 @@ export default function Modal({ isOpen, title, description, onClose, children, f
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 overflow-y-auto">
-            <div className={`w-full ${sizeClass} max-h-[90vh] flex flex-col rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-2xl transition-all`}> 
+            <div className={`w-full ${sizeClass} max-h-[90vh] flex flex-col rounded-2xl border border-slate-200 bg-white text-slate-900 [color-scheme:light] p-4 sm:p-6 shadow-2xl transition-all`}> 
                 <div className="flex items-start justify-between gap-4 shrink-0">
                     <div>
                         {title && <h3 className="text-base sm:text-lg font-bold text-slate-900">{title}</h3>}

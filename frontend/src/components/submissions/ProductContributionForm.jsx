@@ -23,7 +23,7 @@ export default function ProductContributionForm({
             placeholder="e.g., Lucky Me! Pancit Canton"
             value={prodForm.name}
             onChange={(e) => setProdForm((prev) => ({ ...prev, name: e.target.value }))}
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-emerald-500"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 placeholder:text-slate-400 placeholder:opacity-100 outline-none focus:border-emerald-500"
           />
         </div>
 
@@ -34,7 +34,7 @@ export default function ProductContributionForm({
             placeholder="e.g., Monde Nissin"
             value={prodForm.brand}
             onChange={(e) => setProdForm((prev) => ({ ...prev, brand: e.target.value }))}
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-emerald-500"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 placeholder:text-slate-400 placeholder:opacity-100 outline-none focus:border-emerald-500"
           />
         </div>
       </div>
@@ -45,10 +45,10 @@ export default function ProductContributionForm({
           <select
             value={prodForm.category}
             onChange={(e) => setProdForm((prev) => ({ ...prev, category: e.target.value }))}
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-emerald-500 bg-white"
+            className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-emerald-500 bg-white text-slate-800"
           >
             {PRODUCT_CATEGORIES.map((c) => (
-              <option key={c} value={c}>
+              <option key={c} value={c} className="text-slate-800 bg-white">
                 {c}
               </option>
             ))}
@@ -62,7 +62,7 @@ export default function ProductContributionForm({
             placeholder="e.g., 4800016445566"
             value={prodForm.barcode}
             onChange={(e) => setProdForm((prev) => ({ ...prev, barcode: e.target.value }))}
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-emerald-500"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 placeholder:text-slate-400 placeholder:opacity-100 outline-none focus:border-emerald-500"
           />
         </div>
       </div>
@@ -113,7 +113,7 @@ export default function ProductContributionForm({
           placeholder="e.g., Wheat Flour, Palm Oil, Salt, Tartrazine (E102)"
           value={prodForm.ingredients_summary}
           onChange={(e) => setProdForm((prev) => ({ ...prev, ingredients_summary: e.target.value }))}
-          className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-emerald-500 resize-none"
+          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 placeholder:text-slate-400 placeholder:opacity-100 outline-none focus:border-emerald-500 resize-none"
         />
       </div>
 

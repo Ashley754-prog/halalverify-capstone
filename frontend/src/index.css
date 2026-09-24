@@ -32,3 +32,15 @@ html, body, #root {
     scrollbar-width: thin;
     scrollbar-color: #cbd5e1 transparent;
 }
+
+/* Universal Form Input & Placeholder Visibility */
+input::placeholder,
+textarea::placeholder {
+    color: #94a3b8 !important;
+    opacity: 1 !important;
+}
+
+select option {
+    color: #0f172a !important;
+    background-color: #ffffff !important;
+}
