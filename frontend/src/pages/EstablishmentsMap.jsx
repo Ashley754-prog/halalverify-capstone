@@ -242,12 +242,24 @@ export default function EstablishmentsMap({ onViewChange }) {
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
             maxZoom: 19,
+            subdomains: ['a', 'b', 'c'],
+            crossOrigin: true,
         }).addTo(map);
 
         markersLayerRef.current = L.layerGroup().addTo(map);
         mapInstanceRef.current = map;
 
+        // Force Leaflet to re-calculate container dimensions after mount
+        const timer1 = setTimeout(() => {
+            if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
+        }, 150);
+        const timer2 = setTimeout(() => {
+            if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
+        }, 400);
+
         return () => {
+            clearTimeout(timer1);
+            clearTimeout(timer2);
             if (mapInstanceRef.current) {
                 mapInstanceRef.current.remove();
                 mapInstanceRef.current = null;
