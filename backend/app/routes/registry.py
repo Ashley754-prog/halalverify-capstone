@@ -8,6 +8,7 @@ from app.schemas.registry import (
 )
 from app.supabase_client import supabase
 from typing import Optional
+from app.auto_verification_service import evaluate_establishment_submission
 from app.utils.db_helpers import ensure_deleted, ensure_updated, model_dump_without_none, sanitize_postgrest_search
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -316,9 +317,9 @@ def submit_establishment(
     user: dict = Depends(get_current_user),
 ):
     """
-    Community user submission endpoint (requires authentication).
-    Submissions default to 'PENDING_VERIFICATION' and do not appear in public verified
-    queries until validated by administrators.
+    Community user establishment submission endpoint with automated AI verification pipeline.
+    High-confidence submissions (accredited HCB, active expiry, name match >= 70%)
+    are automatically verified and published live immediately.
     """
     user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
     if not user_id:
@@ -329,7 +330,6 @@ def submit_establishment(
         "type": submission.type or "Restaurant",
         "address": submission.address.strip(),
         "city": submission.city or "Zamboanga City",
-        "halal_status": "PENDING_VERIFICATION",
         "certifying_body_id": submission.certifying_body_id,
         "certificate_number": submission.certificate_number,
         "expiry_date": submission.expiry_date,
@@ -338,6 +338,21 @@ def submit_establishment(
         "submitted_by": str(user_id),
         "source": "Community User Submission",
     }
+
+    # Execute Automated AI Verification Pipeline
+    ai_eval = evaluate_establishment_submission(establishment_payload)
+
+    # Apply AI decision and enriched metadata
+    establishment_payload["halal_status"] = ai_eval["status"]
+    establishment_payload["verified_at"] = ai_eval["verified_at"]
+    establishment_payload["verified_by"] = ai_eval["verified_by"]
+    establishment_payload["admin_notes"] = ai_eval["admin_notes"]
+
+    if ai_eval.get("certificate_number"):
+        establishment_payload["certificate_number"] = ai_eval["certificate_number"]
+    if ai_eval.get("expiry_date"):
+        establishment_payload["expiry_date"] = ai_eval["expiry_date"]
+
     clean_payload = {k: v for k, v in establishment_payload.items() if v is not None}
 
     response = (
@@ -351,27 +366,39 @@ def submit_establishment(
     if not created_establishment:
         raise HTTPException(status_code=500, detail="Failed to record establishment submission")
 
-    # If associated product names were submitted, insert them as pending draft items
+    # If associated product names were submitted, insert them
     created_products = []
     if submission.product_names and created_establishment.get("id"):
         for p_name in submission.product_names:
             if not p_name.strip():
                 continue
+            prod_status = "VERIFIED" if ai_eval["is_auto_approved"] else "PENDING_VERIFICATION"
             prod_payload = {
                 "name": p_name.strip(),
                 "establishment_id": created_establishment["id"],
                 "category": "Food & Beverage",
-                "status": "PENDING_VERIFICATION",
+                "status": prod_status,
+                "verified_at": ai_eval["verified_at"],
+                "verified_by": ai_eval["verified_by"],
                 "submitted_by": str(user_id),
                 "source": "Community User Submission",
             }
-            p_res = supabase.table("products").insert(prod_payload).execute()
+            clean_prod = {k: v for k, v in prod_payload.items() if v is not None}
+            p_res = supabase.table("products").insert(clean_prod).execute()
             if p_res.data:
                 created_products.append(p_res.data[0])
 
+    msg = (
+        "Instant AI Verification Complete! Establishment authenticated and published live to directory."
+        if ai_eval["is_auto_approved"]
+        else "Establishment submitted successfully and queued for standard verification."
+    )
+
     return {
         "success": True,
-        "message": "Establishment submitted successfully and queued for admin verification.",
+        "auto_approved": ai_eval["is_auto_approved"],
+        "message": msg,
         "data": created_establishment,
         "associated_products": created_products,
+        "audit_trail": ai_eval["audit_trail"],
     }

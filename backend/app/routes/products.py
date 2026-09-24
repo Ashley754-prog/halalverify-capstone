@@ -9,6 +9,7 @@ from app.schemas.products import (
     ProductUpdate,
 )
 from app.supabase_client import supabase
+from app.auto_verification_service import evaluate_product_submission
 from app.utils.db_helpers import ensure_deleted, ensure_updated, model_dump_without_none, sanitize_postgrest_search
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -244,9 +245,9 @@ def submit_product(
     user: dict = Depends(get_current_user),
 ):
     """
-    Community user product submission endpoint (requires authentication).
-    Submissions default to 'PENDING_VERIFICATION' and do not appear in public verified
-    queries until validated by administrators.
+    Community user product submission endpoint with automated AI verification pipeline.
+    High-confidence submissions with clean screened additives and valid HCB certification
+    are automatically verified and published live immediately.
     """
     user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
     if not user_id:
@@ -264,10 +265,19 @@ def submit_product(
         "expiry_date": submission.expiry_date,
         "image_url": submission.image_url,
         "ingredients_summary": submission.ingredients_summary,
-        "status": "PENDING_VERIFICATION",
         "submitted_by": str(user_id),
         "source": "Community User Submission",
     }
+
+    # Execute Automated AI Verification Pipeline
+    ai_eval = evaluate_product_submission(product_payload)
+
+    # Apply AI decision and enriched metadata
+    product_payload["status"] = ai_eval["status"]
+    product_payload["verified_at"] = ai_eval["verified_at"]
+    product_payload["verified_by"] = ai_eval["verified_by"]
+    product_payload["admin_notes"] = ai_eval["admin_notes"]
+
     clean_payload = {k: v for k, v in product_payload.items() if v is not None}
 
     response = (
@@ -281,8 +291,16 @@ def submit_product(
     if not created_product:
         raise HTTPException(status_code=500, detail="Failed to record product submission")
 
+    msg = (
+        "Instant AI Verification Complete! Product authenticated and published live to catalog."
+        if ai_eval["is_auto_approved"]
+        else "Product submitted successfully and queued for standard verification."
+    )
+
     return {
         "success": True,
-        "message": "Product submitted successfully and queued for admin verification.",
+        "auto_approved": ai_eval["is_auto_approved"],
+        "message": msg,
         "data": created_product,
+        "audit_trail": ai_eval["audit_trail"],
     }

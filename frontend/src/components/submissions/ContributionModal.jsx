@@ -4,6 +4,8 @@ import {
   Package,
   CheckCircle2,
   AlertCircle,
+  Sparkles,
+  ShieldCheck,
 } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { supabase } from '../../lib/supabaseClient';
@@ -23,6 +25,7 @@ export default function ContributionModal({
   const [uploadingImage, setUploadingImage] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
+  const [submissionResult, setSubmissionResult] = useState(null);
 
   // Form state for establishment
   const [estForm, setEstForm] = useState({
@@ -137,6 +140,8 @@ export default function ContributionModal({
           body: JSON.stringify(payload),
         });
         if (response.ok) {
+          const resJson = await response.json();
+          setSubmissionResult(resJson);
           success = true;
         }
       } catch (apiErr) {
@@ -210,6 +215,8 @@ export default function ContributionModal({
           body: JSON.stringify(payload),
         });
         if (response.ok) {
+          const resJson = await response.json();
+          setSubmissionResult(resJson);
           success = true;
         }
       } catch (apiErr) {
@@ -253,6 +260,7 @@ export default function ContributionModal({
 
   const handleReset = () => {
     setIsSuccess(false);
+    setSubmissionResult(null);
     setErrorMessage('');
     setEstForm({
       name: '',
@@ -291,19 +299,73 @@ export default function ContributionModal({
     >
       {isSuccess ? (
         <div className="py-6 text-center space-y-4">
-          <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
-            <CheckCircle2 size={36} />
-          </div>
+          {submissionResult?.auto_approved ? (
+            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm ring-4 ring-emerald-50">
+              <Sparkles size={36} />
+            </div>
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mx-auto shadow-sm">
+              <CheckCircle2 size={36} />
+            </div>
+          )}
 
           <div className="space-y-2">
-            <h3 className="text-xl font-bold text-slate-900">Submission Received!</h3>
-            <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-              Your contribution has been successfully queued in{' '}
-              <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                PENDING_VERIFICATION
-              </span>{' '}
-              status. It will be audited by the administrative team before public release.
-            </p>
+            <h3 className="text-xl font-bold text-slate-900">
+              {submissionResult?.auto_approved
+                ? '⚡ Instant AI Verification Complete!'
+                : 'Submission Received!'}
+            </h3>
+
+            {submissionResult?.auto_approved ? (
+              <div className="space-y-3">
+                <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
+                  The automated AI verification pipeline authenticated the credentials and published your entry{' '}
+                  <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-300">
+                    LIVE &amp; VERIFIED
+                  </span>{' '}
+                  to the official registry immediately.
+                </p>
+
+                {submissionResult.audit_trail && (
+                  <div className="max-w-md mx-auto p-3 rounded-xl bg-slate-50 border border-slate-200 text-left text-xs space-y-1.5 shadow-inner">
+                    <div className="flex items-center justify-between text-slate-700 font-bold border-b border-slate-200 pb-1">
+                      <span className="flex items-center gap-1 text-emerald-600">
+                        <ShieldCheck size={14} /> AI Verification Score
+                      </span>
+                      <span className="font-mono bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full text-[11px]">
+                        {submissionResult.audit_trail.score}/100
+                      </span>
+                    </div>
+                    {submissionResult.audit_trail.notes?.map((n, idx) => (
+                      <p key={idx} className="text-slate-600 text-[11px] flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                        <span>{n}</span>
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+                  Your contribution has been successfully queued in{' '}
+                  <span className="font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                    NEEDS_REVIEW
+                  </span>{' '}
+                  status. The automated AI audit recorded your submission for auditor verification.
+                </p>
+                {submissionResult?.audit_trail?.reasons?.length > 0 && (
+                  <div className="max-w-md mx-auto p-2.5 rounded-xl bg-amber-50/80 border border-amber-200/80 text-left text-xs text-amber-900">
+                    <p className="font-semibold text-[11px] mb-1">Items for Auditor Review:</p>
+                    <ul className="list-disc pl-4 space-y-0.5 text-[10px] text-amber-800">
+                      {submissionResult.audit_trail.reasons.map((r, i) => (
+                        <li key={i}>{r}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="pt-4 flex items-center justify-center gap-3">
