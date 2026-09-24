@@ -92,18 +92,33 @@ def extract_text_from_image(image_base64: str) -> str:
     return dedupe_text_parts(text_parts)
 
 
+def sanitize_ocr_text(text: str) -> str:
+    """
+    Sanitize OCR extracted strings against potential XSS and control-character injection
+    from adversarial camera inputs.
+    """
+    if not text:
+        return ""
+    # Strip any embedded HTML/XML tags
+    clean = re.sub(r"<[^>]*>", "", str(text))
+    # Neutralize dangerous characters and null bytes
+    clean = clean.replace("<", "&lt;").replace(">", "&gt;").replace("\x00", "")
+    return clean.strip()
+
+
 def dedupe_text_parts(text_parts):
     seen = set()
     unique_parts = []
 
     for part in text_parts:
-        normalized = normalize_text(str(part))
+        sanitized = sanitize_ocr_text(part)
+        normalized = normalize_text(sanitized)
 
         if not normalized or normalized in seen:
             continue
 
         seen.add(normalized)
-        unique_parts.append(str(part).strip())
+        unique_parts.append(sanitized)
 
     return " ".join(unique_parts)
 

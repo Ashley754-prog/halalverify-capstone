@@ -74,12 +74,8 @@ def get_yolo_model():
 
 
 def decode_image_base64(image_base64: str) -> Image.Image:
-    if "," in image_base64:
-        image_base64 = image_base64.split(",", 1)[1]
-
-    image_bytes = base64.b64decode(image_base64)
-    image = Image.open(io.BytesIO(image_bytes))
-    return image.convert("RGB")
+    from app.ocr_service import safe_load_pil_image
+    return safe_load_pil_image(image_base64)
 
 
 def detect_halal_logo(image_input) -> Dict:
@@ -94,6 +90,9 @@ def detect_halal_logo(image_input) -> Dict:
             image = image_input
         else:
             return _empty_logo_result("Invalid image input type")
+    except Exception as err:
+        logger.warning(f"Image decode failed in logo detection: {err}")
+        return _empty_logo_result(f"Invalid image format: {err}")
 
         model = get_yolo_model()
         if model is None:
