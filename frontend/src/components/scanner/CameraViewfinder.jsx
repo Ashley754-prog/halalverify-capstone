@@ -32,6 +32,8 @@ export const CameraViewfinder = ({
     onFileUpload,
     onReset,
     setToast,
+    fusionState = null,
+    onCancelFusion = null,
 }) => {
     const containerRef = useRef(null);
     const nativeCameraInputRef = useRef(null);
@@ -191,6 +193,41 @@ export const CameraViewfinder = ({
 
                 {/* 5. Top Viewfinder HUD Toolbar */}
                 <div className="relative z-20 flex flex-col gap-2 p-3 sm:p-4 bg-gradient-to-b from-slate-950/90 via-slate-950/40 to-transparent">
+                    {/* Step 2 Multi-Angle Packaging Fusion Guidance Banner */}
+                    {fusionState?.active && (
+                        <div className="w-full p-2.5 rounded-xl bg-slate-900/95 border border-emerald-500/50 backdrop-blur-md shadow-2xl flex items-center justify-between gap-2 animate-in fade-in slide-in-from-top-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                                    <Camera size={15} className="animate-pulse" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-[11px] font-bold text-emerald-300 leading-tight">
+                                        {fusionState.target === 'ingredients'
+                                            ? 'Step 2/2: Capture Ingredients List'
+                                            : 'Step 2/2: Capture Halal Logo Seal'}
+                                    </p>
+                                    <p className="text-[10px] text-slate-400 truncate">
+                                        {fusionState.target === 'ingredients'
+                                            ? 'Position ingredient text (back, side, or bottom) in frame'
+                                            : 'Position the Halal certification mark in frame'}
+                                    </p>
+                                </div>
+                            </div>
+                            {onCancelFusion && (
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onCancelFusion();
+                                    }}
+                                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-semibold shrink-0 border border-slate-700 active:scale-95 transition"
+                                >
+                                    Cancel
+                                </button>
+                            )}
+                        </div>
+                    )}
+
                     <div className="flex items-center justify-between">
                         {/* Hardware Camera Sensor Indicator Badge */}
                         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/80 border border-slate-700/70 backdrop-blur-md text-[11px] font-semibold text-slate-200 shadow-md">

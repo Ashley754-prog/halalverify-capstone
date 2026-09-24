@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Camera, AlertTriangle, Sparkles } from 'lucide-react';
 import Toast from '../components/ui/Toast';
 import { analyzeImage, simulateFallback } from '../utils/api';
+import { mergeLabelScans } from '../utils/scanFusion';
 import { useCameraStream } from '../hooks/useCameraStream';
 import CameraViewfinder from '../components/scanner/CameraViewfinder';
 import LabelResultsSheet from '../components/scanner/LabelResultsSheet';
@@ -14,6 +15,9 @@ export const Scanner = ({ isOnline, onViewChange }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [, setErrorMsg] = useState(null);
     const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
+
+    // Multi-Capture Packaging Fusion State
+    const [fusionState, setFusionState] = useState(null);
 
     // Inspection Output
     const [scanResult, setScanResult] = useState(null);
@@ -51,7 +55,23 @@ export const Scanner = ({ isOnline, onViewChange }) => {
         try {
             const result = await analyzeImage(base64Img, scannerMode);
             if (scannerMode === 'label') {
-                setScanResult(result);
+                if (fusionState?.active && fusionState.firstScan) {
+                    const merged = mergeLabelScans(
+                        fusionState.firstScan,
+                        result,
+                        fusionState.firstImage,
+                        base64Img
+                    );
+                    setScanResult(merged);
+                    setFusionState(null);
+                    setToast({
+                        visible: true,
+                        message: 'Multi-angle packaging fusion complete!',
+                        type: 'success'
+                    });
+                } else {
+                    setScanResult(result);
+                }
             } else {
                 setCertResult(result);
             }
@@ -60,13 +80,60 @@ export const Scanner = ({ isOnline, onViewChange }) => {
             setErrorMsg('Backend server unreachable. Displaying fallback inspection details.');
             setTimeout(() => {
                 const result = simulateFallback(scannerMode);
-                if (scannerMode === 'label') setScanResult(result);
-                else setCertResult(result);
+                if (scannerMode === 'label') {
+                    if (fusionState?.active && fusionState.firstScan) {
+                        const merged = mergeLabelScans(
+                            fusionState.firstScan,
+                            result,
+                            fusionState.firstImage,
+                            base64Img
+                        );
+                        setScanResult(merged);
+                        setFusionState(null);
+                    } else {
+                        setScanResult(result);
+                    }
+                } else {
+                    setCertResult(result);
+                }
                 setIsLoading(false);
             }, 800);
         } finally {
             setIsLoading(false);
         }
+    };
+
+    /**
+     * Trigger secondary scan for multi-angle packaging fusion
+     */
+    const handleScanSecondary = (target) => {
+        setFusionState({
+            active: true,
+            target,
+            firstScan: scanResult,
+            firstImage: selectedImage
+        });
+        setShowResultsSheet(false);
+        startCamera(actualFacing);
+        setToast({
+            visible: true,
+            message: target === 'ingredients'
+                ? 'Point camera at the ingredients panel (back or side)'
+                : 'Point camera at the Halal logo seal',
+            type: 'info'
+        });
+    };
+
+    /**
+     * Cancel secondary scan and restore first result
+     */
+    const handleCancelFusion = () => {
+        if (fusionState?.firstScan) {
+            setScanResult(fusionState.firstScan);
+            setSelectedImage(fusionState.firstImage);
+            setShowResultsSheet(true);
+        }
+        setFusionState(null);
     };
 
     /**
@@ -107,6 +174,7 @@ export const Scanner = ({ isOnline, onViewChange }) => {
         setScanResult(null);
         setCertResult(null);
         setErrorMsg(null);
+        setFusionState(null);
         setShowResultsSheet(false);
         startCamera(actualFacing);
     };
@@ -193,6 +261,8 @@ export const Scanner = ({ isOnline, onViewChange }) => {
                 onFileUpload={handleFileUpload}
                 onReset={resetState}
                 setToast={setToast}
+                fusionState={fusionState}
+                onCancelFusion={handleCancelFusion}
             />
 
             {/* Floating Action Button to Re-Open Results Sheet when Collapsed */}
@@ -217,6 +287,7 @@ export const Scanner = ({ isOnline, onViewChange }) => {
                     onReset={resetState}
                     onClose={() => setShowResultsSheet(false)}
                     onViewChange={onViewChange}
+                    onScanSecondary={handleScanSecondary}
                 />
             )}
 

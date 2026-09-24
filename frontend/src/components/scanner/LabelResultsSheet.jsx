@@ -8,7 +8,9 @@ import {
     Sparkles,
     RefreshCw,
     Flag,
-    ChevronDown
+    ChevronDown,
+    Camera,
+    Layers
 } from 'lucide-react';
 
 export const LabelResultsSheet = ({
@@ -16,9 +18,11 @@ export const LabelResultsSheet = ({
     isLoading,
     onReset,
     onClose,
-    onViewChange
+    onViewChange,
+    onScanSecondary
 }) => {
     const [touchStartY, setTouchStartY] = useState(null);
+    const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
     const handleTouchStart = (e) => {
         setTouchStartY(e.touches[0].clientY);
@@ -140,6 +144,95 @@ export const LabelResultsSheet = ({
                                     )}
                                 </div>
                             </div>
+
+                            {/* Multi-Angle Packaging Fusion Card */}
+                            {scanResult.isDualScan ? (
+                                <div className="p-3.5 bg-gradient-to-r from-emerald-950/80 via-slate-900 to-slate-900 border border-emerald-500/40 rounded-2xl flex flex-col gap-2.5 shadow-lg">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                                                <Layers size={14} />
+                                            </div>
+                                            <span className="text-xs font-bold text-emerald-300">Dual-Angle Packaging Fusion</span>
+                                        </div>
+                                        <span className="text-[10px] font-mono font-bold bg-emerald-900/60 border border-emerald-500/30 text-emerald-200 px-2 py-0.5 rounded-full">
+                                            2 Frames Fused
+                                        </span>
+                                    </div>
+                                    {scanResult.images && scanResult.images.length > 1 && (
+                                        <div className="flex items-center gap-2 pt-1 border-t border-slate-800">
+                                            <span className="text-[10px] text-slate-400 font-semibold mr-1">Captured Frames:</span>
+                                            {scanResult.images.map((img, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    type="button"
+                                                    onClick={() => setSelectedImageIndex(idx)}
+                                                    className={`relative w-12 h-12 rounded-lg overflow-hidden border-2 transition ${
+                                                        selectedImageIndex === idx
+                                                            ? 'border-emerald-400 ring-2 ring-emerald-500/40 scale-105'
+                                                            : 'border-slate-700 opacity-60 hover:opacity-100'
+                                                    }`}
+                                                >
+                                                    <img src={img} alt={`Frame ${idx + 1}`} className="w-full h-full object-cover" />
+                                                    <span className="absolute bottom-0 right-0 px-1 text-[8px] font-bold bg-black/80 text-white rounded-tl">
+                                                        #{idx + 1}
+                                                    </span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Case A: Logo detected, but NO ingredients text found */}
+                                    {scanResult.logoDetected && (!scanResult.ocrText || scanResult.ocrText.trim().length === 0) && (
+                                        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-950/80 via-slate-900 to-slate-900 border border-emerald-500/40 shadow-xl space-y-2.5">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
+                                                    <Sparkles size={14} className="text-emerald-400" /> Multi-Angle Fusion Available
+                                                </span>
+                                                <span className="text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                                                    Step 1 of 2 Complete
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-slate-300 leading-relaxed">
+                                                Halal seal verified! To check for hidden chemical additives or E-numbers, scan the ingredients panel (back, side, or bottom of package).
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={() => onScanSecondary?.('ingredients')}
+                                                className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition"
+                                            >
+                                                <Camera size={15} /> Scan Ingredients Panel
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* Case B: Ingredients detected, but NO logo detected */}
+                                    {!scanResult.logoDetected && scanResult.ocrText && scanResult.ocrText.trim().length > 0 && (
+                                        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-950/80 via-slate-900 to-slate-900 border border-emerald-500/40 shadow-xl space-y-2.5">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
+                                                    <Sparkles size={14} className="text-emerald-400" /> Multi-Angle Fusion Available
+                                                </span>
+                                                <span className="text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                                                    Step 1 of 2 Complete
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-slate-300 leading-relaxed">
+                                                Ingredients screened! To confirm accredited Halal certification, scan the certification logo seal anywhere on the packaging.
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={() => onScanSecondary?.('logo')}
+                                                className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition"
+                                            >
+                                                <ShieldCheck size={15} /> Scan Halal Logo / Seal
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
+                            )}
 
                             {/* Halal Logo Localization (YOLOv8-Nano) */}
                             <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 space-y-2">
