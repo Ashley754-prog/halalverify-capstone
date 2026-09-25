@@ -52,29 +52,34 @@ def decode_base64_image(image_base64: str):
 
 def build_ocr_images(image_base64: str):
     image = safe_load_pil_image(image_base64)
-    image = upscale_small_image(image)
+    image = normalize_ocr_image(image)
 
     grayscale = ImageOps.grayscale(image)
-    high_contrast = ImageEnhance.Contrast(grayscale).enhance(1.8)
-    sharpened = ImageEnhance.Sharpness(high_contrast).enhance(1.5)
+    high_contrast = ImageEnhance.Contrast(grayscale).enhance(1.6)
 
     return [
-        np.array(image),
-        np.array(sharpened),
+        np.array(high_contrast),
     ]
 
 
-def upscale_small_image(image: Image.Image) -> Image.Image:
+def normalize_ocr_image(image: Image.Image) -> Image.Image:
     width, height = image.size
     longest_side = max(width, height)
 
-    if longest_side >= 1200:
-        return image
+    if longest_side < 800:
+        scale = 800 / longest_side
+        new_size = (int(width * scale), int(height * scale))
+        return image.resize(new_size, Image.Resampling.LANCZOS)
+    elif longest_side > 1280:
+        scale = 1280 / longest_side
+        new_size = (int(width * scale), int(height * scale))
+        return image.resize(new_size, Image.Resampling.LANCZOS)
 
-    scale = 1200 / longest_side
-    new_size = (int(width * scale), int(height * scale))
+    return image
 
-    return image.resize(new_size, Image.Resampling.LANCZOS)
+
+def upscale_small_image(image: Image.Image) -> Image.Image:
+    return normalize_ocr_image(image)
 
 
 def extract_text_from_image(image_base64: str) -> str:

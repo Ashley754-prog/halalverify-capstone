@@ -260,8 +260,18 @@ export const useCameraStream = (onToast) => {
         if (videoRef.current && canvasRef.current) {
             const video = videoRef.current;
             const canvas = canvasRef.current;
-            canvas.width = video.videoWidth || 1280;
-            canvas.height = video.videoHeight || 720;
+            const vw = video.videoWidth || 1280;
+            const vh = video.videoHeight || 720;
+            const maxDim = 1280;
+            let targetW = vw;
+            let targetH = vh;
+            if (Math.max(vw, vh) > maxDim) {
+                const ratio = maxDim / Math.max(vw, vh);
+                targetW = Math.round(vw * ratio);
+                targetH = Math.round(vh * ratio);
+            }
+            canvas.width = targetW;
+            canvas.height = targetH;
             const ctx = canvas.getContext('2d');
 
             ctx.save();
@@ -281,7 +291,7 @@ export const useCameraStream = (onToast) => {
             }
             ctx.restore();
 
-            const dataUrl = canvas.toDataURL('image/png', 0.95);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
             stopCamera();
 
             if (window.navigator?.vibrate) {

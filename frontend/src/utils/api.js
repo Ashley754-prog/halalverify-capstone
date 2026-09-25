@@ -10,9 +10,9 @@ function resolveApiBaseUrl() {
             return (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '');
         }
 
-        // On deployed HTTPS site (e.g. Vercel), only accept an HTTPS env url if it is not the dead onrender domain
+        // On deployed HTTPS site (e.g. Vercel), only accept an HTTPS env url if it is not a dead tunnel/domain
         const envUrl = import.meta.env.VITE_API_BASE_URL;
-        if (envUrl && envUrl.startsWith('https://') && !envUrl.includes('onrender.com')) {
+        if (envUrl && envUrl.startsWith('https://') && !envUrl.includes('onrender.com') && !envUrl.includes('trycloudflare.com')) {
             return envUrl.replace(/\/+$/, '');
         }
     }
@@ -83,7 +83,7 @@ export async function analyzeImage(base64Image, mode) {
                     'ngrok-skip-browser-warning': 'true',
                 },
                 body: JSON.stringify({ imageBase64: base64Image }),
-                timeout: 35000,
+                timeout: 45000,
             });
 
             if (response.ok) {

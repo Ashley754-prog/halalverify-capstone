@@ -155,11 +155,29 @@ export const Scanner = ({ isOnline, onViewChange }) => {
         if (file) {
             const reader = new FileReader();
             reader.onload = () => {
-                const dataUrl = reader.result;
-                setSelectedImage(dataUrl);
-                setShowResultsSheet(true);
-                stopCamera();
-                triggerAIScan(dataUrl);
+                const img = new Image();
+                img.onload = () => {
+                    const maxDim = 1280;
+                    let w = img.width;
+                    let h = img.height;
+                    if (Math.max(w, h) > maxDim) {
+                        const ratio = maxDim / Math.max(w, h);
+                        w = Math.round(w * ratio);
+                        h = Math.round(h * ratio);
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+                    setSelectedImage(compressedDataUrl);
+                    setShowResultsSheet(true);
+                    stopCamera();
+                    triggerAIScan(compressedDataUrl);
+                };
+                img.src = reader.result;
             };
             reader.readAsDataURL(file);
         }
