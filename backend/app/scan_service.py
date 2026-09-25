@@ -180,7 +180,9 @@ def build_additive_match_terms(code, name: str):
     return cleaned_terms
 
 
-def explain_label_verdict(flagged_items, extracted_text: str, logo_result: dict):
+def explain_label_verdict(flagged_items, extracted_text: str, logo_result: dict = None):
+    if not logo_result:
+        logo_result = {}
     has_text = bool(extracted_text and extracted_text.strip())
     logo_detected = logo_result.get("logoDetected", False)
     is_invalid_logo = logo_result.get("isInvalidLogo", False)
@@ -307,6 +309,14 @@ def analyze_label_image(image_base64: str) -> dict:
     # Stage 2: YOLOv8-Nano Logo Detection
     t_logo = time.time()
     logo_result = detect_halal_logo(image_base64)
+    if not logo_result:
+        logo_result = {
+            "logoDetected": False,
+            "logoConfidence": 0.0,
+            "logoBody": "Not Detected",
+            "isInvalidLogo": False,
+            "detectedLogos": [],
+        }
     logo_time = round((time.time() - t_logo) * 1000, 1)
 
     # Stage 3: EasyOCR Text Extraction (CRAFT + CRNN)

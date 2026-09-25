@@ -94,6 +94,7 @@ def detect_halal_logo(image_input) -> Dict:
         logger.warning(f"Image decode failed in logo detection: {err}")
         return _empty_logo_result(f"Invalid image format: {err}")
 
+    try:
         model = get_yolo_model()
         if model is None:
             return _empty_logo_result("YOLOv8 model not loaded")
