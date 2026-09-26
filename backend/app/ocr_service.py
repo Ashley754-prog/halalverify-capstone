@@ -109,48 +109,42 @@ def extract_text_with_gemini(image_base64: str) -> str:
         pil_img.save(buf, format="JPEG", quality=85)
         raw_b64 = base64.b64encode(buf.getvalue()).decode()
 
-        candidate_models = ["gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-2.5-flash"]
-        for model in candidate_models:
-            try:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-                payload = json.dumps({
-                    "contents": [{
-                        "parts": [
-                            {
-                                "text": (
-                                    "Extract all text from this product packaging label. "
-                                    "Focus on ingredients, food additives, chemical E-numbers, brand name, and certification markings. "
-                                    "Output ONLY the plain extracted text without commentary or formatting."
-                                )
-                            },
-                            {"inline_data": {"mime_type": "image/jpeg", "data": raw_b64}}
-                        ]
-                    }],
-                    "generationConfig": {
-                        "temperature": 0.1,
-                        "maxOutputTokens": 600
-                    }
-                }).encode()
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
+        payload = json.dumps({
+            "contents": [{
+                "parts": [
+                    {
+                        "text": (
+                            "Extract all text from this product packaging label. "
+                            "Focus on ingredients, food additives, chemical E-numbers, brand name, and certification markings. "
+                            "Output ONLY the plain extracted text without commentary or formatting."
+                        )
+                    },
+                    {"inline_data": {"mime_type": "image/jpeg", "data": raw_b64}}
+                ]
+            }],
+            "generationConfig": {
+                "temperature": 0.1,
+                "maxOutputTokens": 600
+            }
+        }).encode()
 
-                req = urllib.request.Request(
-                    url,
-                    data=payload,
-                    headers={"Content-Type": "application/json"},
-                    method="POST"
-                )
-                with urllib.request.urlopen(req, timeout=7) as resp:
-                    data = json.loads(resp.read().decode())
-                    candidates = data.get("candidates", [])
-                    if candidates:
-                        parts = candidates[0].get("content", {}).get("parts", [])
-                        if parts:
-                            extracted = parts[0].get("text", "").strip()
-                            if extracted and len(extracted) > 3:
-                                logger.info(f"Cloud Vision OCR extraction succeeded with {model}.")
-                                return extracted
-            except Exception as model_err:
-                logger.warning(f"Cloud Vision OCR with {model} failed: {model_err}")
-                continue
+        req = urllib.request.Request(
+            url,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode())
+            candidates = data.get("candidates", [])
+            if candidates:
+                parts = candidates[0].get("content", {}).get("parts", [])
+                if parts:
+                    extracted = parts[0].get("text", "").strip()
+                    if extracted and len(extracted) > 3:
+                        logger.info("Cloud Vision OCR extraction succeeded.")
+                        return extracted
     except Exception as err:
         logger.warning(f"Cloud Vision OCR error: {err}")
 
