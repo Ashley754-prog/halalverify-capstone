@@ -18,5 +18,7 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+      - key: GEMINI_API_KEY
+        sync: false
       - key: ALLOWED_ORIGINS
         value: "https://*,http://localhost:5173"

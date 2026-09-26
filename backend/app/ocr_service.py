@@ -108,8 +108,77 @@ def upscale_small_image(image: Image.Image) -> Image.Image:
     return normalize_ocr_image(image)
 
 
+def extract_text_with_gemini(image_base64: str) -> str:
+    import json
+    import os
+    import urllib.request
+    from io import BytesIO
+
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not api_key:
+        return ""
+
+    try:
+        pil_img = safe_load_pil_image(image_base64)
+        w, h = pil_img.size
+        longest = max(w, h)
+        if longest > 800:
+            scale = 800 / longest
+            pil_img = pil_img.resize((int(w * scale), int(h * scale)), Image.Resampling.BILINEAR)
+
+        buf = BytesIO()
+        pil_img.save(buf, format="JPEG", quality=85)
+        raw_b64 = base64.b64encode(buf.getvalue()).decode()
+
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={api_key}"
+        payload = json.dumps({
+            "contents": [{
+                "parts": [
+                    {
+                        "text": (
+                            "Extract all text from this product packaging label. "
+                            "Focus on ingredients, food additives, chemical E-numbers, brand name, and certification markings. "
+                            "Output ONLY the plain extracted text without commentary or formatting."
+                        )
+                    },
+                    {"inline_data": {"mime_type": "image/jpeg", "data": raw_b64}}
+                ]
+            }],
+            "generationConfig": {
+                "temperature": 0.1,
+                "maxOutputTokens": 600
+            }
+        }).encode()
+
+        req = urllib.request.Request(
+            url,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            data = json.loads(resp.read().decode())
+            candidates = data.get("candidates", [])
+            if candidates:
+                parts = candidates[0].get("content", {}).get("parts", [])
+                if parts:
+                    extracted = parts[0].get("text", "").strip()
+                    if extracted and len(extracted) > 3:
+                        logger.info("Gemini Cloud Vision OCR extraction succeeded.")
+                        return extracted
+    except Exception as err:
+        logger.warning(f"Gemini Cloud Vision OCR error: {err}")
+
+    return ""
+
+
 def extract_text_from_image(image_base64: str) -> str:
-    # 1. Primary Engine: RapidOCR (ONNX Runtime, ~50MB RAM, ~1.5s CPU latency)
+    # 1. Primary Engine: High-Speed Cloud AI Vision (0MB RAM, fast cloud inference)
+    gemini_text = extract_text_with_gemini(image_base64)
+    if gemini_text:
+        return gemini_text
+
+    # 2. Local Fallback Engine: RapidOCR (ONNX Runtime, ~50MB RAM, ~1.5s CPU latency)
     try:
         engine = get_rapid_ocr()
         if engine is not None:
