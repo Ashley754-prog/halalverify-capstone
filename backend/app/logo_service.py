@@ -53,6 +53,10 @@ _yolo_model = None
 
 
 def get_model_path() -> Optional[Path]:
+    onnx_path = Path(__file__).resolve().parent / "models" / "halal_logo_yolov8n.onnx"
+    if onnx_path.exists():
+        return onnx_path
+
     primary_path = Path(__file__).resolve().parent / "models" / "halal_logo_yolov8n.pt"
     if primary_path.exists():
         return primary_path
