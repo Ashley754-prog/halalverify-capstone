@@ -10,7 +10,7 @@ def health_check() -> dict:
     return {
         "status": "ok",
         "service": "HalalVerify API",
-        "version": "gemini-cloud-v1",
+        "version": "onnx-cloud-v2",
         "gemini_configured": bool(os.getenv("GEMINI_API_KEY", "").strip()),
     }
 

@@ -11,13 +11,6 @@ import time
 from collections import defaultdict
 from threading import Lock
 
-import torch
-torch.set_grad_enabled(False)
-try:
-    torch.set_num_threads(1)
-except Exception:
-    pass
-
 from app.routes import admin, analyze, health, issue_reports, products, registry, scan_history, summaries
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware

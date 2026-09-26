@@ -8,17 +8,9 @@ from io import BytesIO
 import numpy as np
 from PIL import Image, ImageEnhance, ImageOps, UnidentifiedImageError
 from fastapi import HTTPException
-import torch
-
 logger = logging.getLogger(__name__)
 
-try:
-    torch.set_num_threads(1)
-except Exception:
-    pass
-
 _rapid_ocr = None
-_reader = None
 
 
 def get_rapid_ocr():
@@ -32,19 +24,6 @@ def get_rapid_ocr():
             logger.warning(f"RapidOCR unavailable: {err}")
             _rapid_ocr = None
     return _rapid_ocr
-
-
-def get_reader():
-    global _reader
-    if _reader is None:
-        try:
-            import easyocr
-            _reader = easyocr.Reader(["en"], gpu=False, quantize=True)
-            logger.info("EasyOCR initialized.")
-        except Exception as err:
-            logger.warning(f"EasyOCR unavailable: {err}")
-            _reader = None
-    return _reader
 
 
 def safe_load_pil_image(image_base64: str) -> Image.Image:
@@ -130,53 +109,59 @@ def extract_text_with_gemini(image_base64: str) -> str:
         pil_img.save(buf, format="JPEG", quality=85)
         raw_b64 = base64.b64encode(buf.getvalue()).decode()
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={api_key}"
-        payload = json.dumps({
-            "contents": [{
-                "parts": [
-                    {
-                        "text": (
-                            "Extract all text from this product packaging label. "
-                            "Focus on ingredients, food additives, chemical E-numbers, brand name, and certification markings. "
-                            "Output ONLY the plain extracted text without commentary or formatting."
-                        )
-                    },
-                    {"inline_data": {"mime_type": "image/jpeg", "data": raw_b64}}
-                ]
-            }],
-            "generationConfig": {
-                "temperature": 0.1,
-                "maxOutputTokens": 600
-            }
-        }).encode()
+        candidate_models = ["gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-2.5-flash"]
+        for model in candidate_models:
+            try:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+                payload = json.dumps({
+                    "contents": [{
+                        "parts": [
+                            {
+                                "text": (
+                                    "Extract all text from this product packaging label. "
+                                    "Focus on ingredients, food additives, chemical E-numbers, brand name, and certification markings. "
+                                    "Output ONLY the plain extracted text without commentary or formatting."
+                                )
+                            },
+                            {"inline_data": {"mime_type": "image/jpeg", "data": raw_b64}}
+                        ]
+                    }],
+                    "generationConfig": {
+                        "temperature": 0.1,
+                        "maxOutputTokens": 600
+                    }
+                }).encode()
 
-        req = urllib.request.Request(
-            url,
-            data=payload,
-            headers={"Content-Type": "application/json"},
-            method="POST"
-        )
-        with urllib.request.urlopen(req, timeout=12) as resp:
-            data = json.loads(resp.read().decode())
-            candidates = data.get("candidates", [])
-            if candidates:
-                parts = candidates[0].get("content", {}).get("parts", [])
-                if parts:
-                    extracted = parts[0].get("text", "").strip()
-                    if extracted and len(extracted) > 3:
-                        logger.info("Gemini Cloud Vision OCR extraction succeeded.")
-                        return extracted
+                req = urllib.request.Request(
+                    url,
+                    data=payload,
+                    headers={"Content-Type": "application/json"},
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, timeout=7) as resp:
+                    data = json.loads(resp.read().decode())
+                    candidates = data.get("candidates", [])
+                    if candidates:
+                        parts = candidates[0].get("content", {}).get("parts", [])
+                        if parts:
+                            extracted = parts[0].get("text", "").strip()
+                            if extracted and len(extracted) > 3:
+                                logger.info(f"Cloud Vision OCR extraction succeeded with {model}.")
+                                return extracted
+            except Exception as model_err:
+                logger.warning(f"Cloud Vision OCR with {model} failed: {model_err}")
+                continue
     except Exception as err:
-        logger.warning(f"Gemini Cloud Vision OCR error: {err}")
+        logger.warning(f"Cloud Vision OCR error: {err}")
 
     return ""
 
 
 def extract_text_from_image(image_base64: str) -> str:
     # 1. Primary Engine: High-Speed Cloud AI Vision (0MB RAM, fast cloud inference)
-    gemini_text = extract_text_with_gemini(image_base64)
-    if gemini_text:
-        return gemini_text
+    cloud_text = extract_text_with_gemini(image_base64)
+    if cloud_text:
+        return cloud_text
 
     # 2. Local Fallback Engine: RapidOCR (ONNX Runtime, ~50MB RAM, ~1.5s CPU latency)
     try:
@@ -194,26 +179,6 @@ def extract_text_from_image(image_base64: str) -> str:
                     return extracted
     except Exception as err:
         logger.warning(f"RapidOCR extraction warning: {err}")
-
-    # 2. Secondary Fallback Engine: EasyOCR (CRAFT + CRNN)
-    try:
-        reader = get_reader()
-        if reader is not None:
-            text_parts = []
-            with torch.inference_mode():
-                for image in build_ocr_images(image_base64):
-                    results = reader.readtext(
-                        image,
-                        detail=0,
-                        paragraph=True,
-                        canvas_size=640,
-                        mag_ratio=1.0,
-                    )
-                    text_parts.extend(results)
-            gc.collect()
-            return dedupe_text_parts(text_parts)
-    except Exception as err:
-        logger.warning(f"EasyOCR fallback warning: {err}")
 
     return ""
 
