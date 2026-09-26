@@ -22,8 +22,7 @@ WORKDIR $HOME/app
 # Install Python requirements
 COPY --chown=user:user requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt && \
-    python -c "import easyocr; easyocr.Reader(['en'], gpu=False, quantize=True)"
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy backend application
 COPY --chown=user:user . .

@@ -1,31 +1,49 @@
 import base64
+import binascii
+import gc
+import logging
 import re
 from io import BytesIO
 
-import binascii
-import easyocr
 import numpy as np
 from PIL import Image, ImageEnhance, ImageOps, UnidentifiedImageError
 from fastapi import HTTPException
-
-
-import gc
 import torch
 
+logger = logging.getLogger(__name__)
+
 try:
-    torch.set_num_threads(2)
+    torch.set_num_threads(1)
 except Exception:
     pass
 
+_rapid_ocr = None
 _reader = None
+
+
+def get_rapid_ocr():
+    global _rapid_ocr
+    if _rapid_ocr is None:
+        try:
+            from rapidocr_onnxruntime import RapidOCR
+            _rapid_ocr = RapidOCR()
+            logger.info("RapidOCR (ONNX Runtime) initialized.")
+        except Exception as err:
+            logger.warning(f"RapidOCR unavailable: {err}")
+            _rapid_ocr = None
+    return _rapid_ocr
 
 
 def get_reader():
     global _reader
-
     if _reader is None:
-        _reader = easyocr.Reader(["en"], gpu=False, quantize=True)
-
+        try:
+            import easyocr
+            _reader = easyocr.Reader(["en"], gpu=False, quantize=True)
+            logger.info("EasyOCR initialized.")
+        except Exception as err:
+            logger.warning(f"EasyOCR unavailable: {err}")
+            _reader = None
     return _reader
 
 
@@ -91,27 +109,44 @@ def upscale_small_image(image: Image.Image) -> Image.Image:
 
 
 def extract_text_from_image(image_base64: str) -> str:
+    # 1. Primary Engine: RapidOCR (ONNX Runtime, ~50MB RAM, ~1.5s CPU latency)
+    try:
+        engine = get_rapid_ocr()
+        if engine is not None:
+            image = safe_load_pil_image(image_base64)
+            image = normalize_ocr_image(image)
+            arr = np.array(image)
+            result, _ = engine(arr)
+            if result:
+                text_parts = [line[1] for line in result if line and len(line) > 1]
+                extracted = dedupe_text_parts(text_parts)
+                if extracted and len(extracted.strip()) > 3:
+                    gc.collect()
+                    return extracted
+    except Exception as err:
+        logger.warning(f"RapidOCR extraction warning: {err}")
+
+    # 2. Secondary Fallback Engine: EasyOCR (CRAFT + CRNN)
     try:
         reader = get_reader()
-        text_parts = []
-
-        with torch.inference_mode():
-            for image in build_ocr_images(image_base64):
-                results = reader.readtext(
-                    image,
-                    detail=0,
-                    paragraph=True,
-                    canvas_size=640,
-                    mag_ratio=1.0,
-                )
-                text_parts.extend(results)
-
-        gc.collect()
-        return dedupe_text_parts(text_parts)
+        if reader is not None:
+            text_parts = []
+            with torch.inference_mode():
+                for image in build_ocr_images(image_base64):
+                    results = reader.readtext(
+                        image,
+                        detail=0,
+                        paragraph=True,
+                        canvas_size=640,
+                        mag_ratio=1.0,
+                    )
+                    text_parts.extend(results)
+            gc.collect()
+            return dedupe_text_parts(text_parts)
     except Exception as err:
-        import logging
-        logging.getLogger(__name__).warning(f"EasyOCR extraction issue: {err}")
-        return ""
+        logger.warning(f"EasyOCR fallback warning: {err}")
+
+    return ""
 
 
 def sanitize_ocr_text(text: str) -> str:

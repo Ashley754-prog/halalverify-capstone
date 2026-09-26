@@ -378,7 +378,7 @@ def analyze_label_image(image_base64: str) -> dict:
         {
             "step": 3,
             "name": "Ingredient Label Text Extraction",
-            "module": "EasyOCR (CRAFT + CRNN)",
+            "module": "RapidOCR (ONNX Runtime) / EasyOCR",
             "status": "Success" if extracted_text else "No Text Found",
             "latencyMs": ocr_time,
             "details": f"Parsed {len(extracted_text)} characters from packaging label."
