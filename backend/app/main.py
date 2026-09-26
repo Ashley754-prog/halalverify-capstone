@@ -26,7 +26,7 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         # Exempt health check and CORS preflight
-        if request.method == "OPTIONS" or request.url.path in ["/health", "/"]:
+        if request.method in ["OPTIONS", "HEAD"] or request.url.path in ["/health", "/"]:
             return await call_next(request)
 
         forwarded = request.headers.get("x-forwarded-for")
@@ -93,7 +93,7 @@ app.add_middleware(
     allow_origins=allowed_origins,
     allow_origin_regex=CORS_ORIGIN_REGEX,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
     allow_headers=["*"],
 )
 
