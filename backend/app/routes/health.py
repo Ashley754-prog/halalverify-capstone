@@ -30,3 +30,46 @@ def test_supabase():
         "success": True,
         "data": response.data,
     }
+
+
+@router.get("/test-ai")
+def test_ai():
+    import time
+    from PIL import Image, ImageDraw
+    import numpy as np
+
+    t0 = time.time()
+    img = Image.new("RGB", (300, 100), color=(255, 255, 255))
+    d = ImageDraw.Draw(img)
+    d.text((10, 30), "TEST E471 CITRIC ACID", fill=(0, 0, 0))
+
+    t_yolo_start = time.time()
+    yolo_err = None
+    yolo_res = None
+    try:
+        from app.logo_service import detect_halal_logo
+        yolo_res = detect_halal_logo(img)
+    except Exception as e:
+        yolo_err = str(e)
+    yolo_ms = round((time.time() - t_yolo_start) * 1000, 1)
+
+    t_ocr_start = time.time()
+    ocr_err = None
+    ocr_text = ""
+    try:
+        from app.ocr_service import get_rapid_ocr
+        engine = get_rapid_ocr()
+        if engine:
+            res, _ = engine(np.array(img))
+            if res:
+                ocr_text = " ".join([line[1] for line in res])
+    except Exception as e:
+        ocr_err = str(e)
+    ocr_ms = round((time.time() - t_ocr_start) * 1000, 1)
+
+    return {
+        "status": "ok",
+        "yolo": {"ms": yolo_ms, "error": yolo_err, "detected": yolo_res.get("logoDetected") if yolo_res else False},
+        "ocr": {"ms": ocr_ms, "error": ocr_err, "text": ocr_text},
+        "total_ms": round((time.time() - t0) * 1000, 1),
+    }

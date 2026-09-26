@@ -26,8 +26,8 @@ def get_rapid_ocr():
     if _rapid_ocr is None:
         try:
             from rapidocr_onnxruntime import RapidOCR
-            _rapid_ocr = RapidOCR()
-            logger.info("RapidOCR (ONNX Runtime) initialized.")
+            _rapid_ocr = RapidOCR(intra_op_num_threads=1, inter_op_num_threads=1)
+            logger.info("RapidOCR (ONNX Runtime, 1 thread) initialized.")
         except Exception as err:
             logger.warning(f"RapidOCR unavailable: {err}")
             _rapid_ocr = None
