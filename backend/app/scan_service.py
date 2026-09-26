@@ -463,48 +463,56 @@ def analyze_label_image(image_base64: str) -> dict:
 
 
 def save_scan_history(mode: str, result: dict, user_id: str = None):
-    if mode == "label":
-        verdict = VERDICT_TO_STATUS.get(result.get("verdict"), "Unknown")
-        confidence = result.get("logoConfidence", 0)
-        image_name = "Product Label Scan"
-        detected_logo = result.get("logoBody")
-        extracted_text = ", ".join(result.get("ingredientsFound", []))
-    else:
-        verdict = result.get("status", "Unknown")
-        confidence = result.get("layoutConfidence", 0)
-        image_name = result.get("establishmentName", "Certificate Scan")
-        detected_logo = result.get("certifyingBody")
-        extracted_text = result.get("certificateNumber")
+    try:
+        if mode == "label":
+            verdict = VERDICT_TO_STATUS.get(result.get("verdict"), "Unknown")
+            confidence = result.get("logoConfidence", 0)
+            image_name = "Product Label Scan"
+            detected_logo = result.get("logoBody")
+            extracted_text = ", ".join(result.get("ingredientsFound", []))
+        else:
+            verdict = result.get("status", "Unknown")
+            confidence = result.get("layoutConfidence", 0)
+            image_name = result.get("establishmentName", "Certificate Scan")
+            detected_logo = result.get("certifyingBody")
+            extracted_text = result.get("certificateNumber")
 
-    payload = {
-        "mode": mode,
-        "image_name": image_name,
-        "verdict": verdict,
-        "confidence": confidence,
-        "extracted_text": extracted_text,
-        "detected_logo": detected_logo,
-        "raw_result": result,
-    }
-    if user_id:
-        payload["user_id"] = str(user_id)
+        payload = {
+            "mode": mode,
+            "image_name": image_name,
+            "verdict": verdict,
+            "confidence": confidence,
+            "extracted_text": extracted_text,
+            "detected_logo": detected_logo,
+            "raw_result": result,
+        }
+        if user_id:
+            payload["user_id"] = str(user_id)
 
-    scan_response = (
-        supabase
-        .table("scan_history")
-        .insert(payload)
-        .execute()
-    )
+        scan_response = (
+            supabase
+            .table("scan_history")
+            .insert(payload)
+            .execute()
+        )
 
-    scan_data = scan_response.data[0] if scan_response.data else None
+        scan_data = scan_response.data[0] if scan_response.data else None
 
-    if mode == "label" and scan_data:
-        for item in result.get("flaggedIngredients", []):
-            supabase.table("scan_flagged_items").insert({
-                "scan_id": scan_data["id"],
-                "additive_id": item.get("additive_id"),
-                "matched_text": item.get("matched_text") or item.get("ingredient"),
-                "status": item.get("status"),
-                "reason": item.get("reason"),
-            }).execute()
+        if mode == "label" and scan_data:
+            flagged_rows = [
+                {
+                    "scan_id": scan_data["id"],
+                    "additive_id": item.get("additive_id"),
+                    "matched_text": item.get("matched_text") or item.get("ingredient"),
+                    "status": item.get("status"),
+                    "reason": item.get("reason"),
+                }
+                for item in result.get("flaggedIngredients", [])
+            ]
+            if flagged_rows:
+                supabase.table("scan_flagged_items").insert(flagged_rows).execute()
 
-    return scan_data
+        return scan_data
+    except Exception as err:
+        logger.warning(f"Error saving scan history: {err}")
+        return None
