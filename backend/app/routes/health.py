@@ -6,10 +6,12 @@ router = APIRouter(tags=["health"])
 
 @router.api_route("/health", methods=["GET", "HEAD"])
 def health_check() -> dict:
+    import os
     return {
         "status": "ok",
         "service": "HalalVerify API",
-        "version": "rapidocr-v1",
+        "version": "gemini-cloud-v1",
+        "gemini_configured": bool(os.getenv("GEMINI_API_KEY", "").strip()),
     }
 
 
