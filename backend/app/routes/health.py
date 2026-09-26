@@ -75,3 +75,59 @@ def test_ai():
         "ocr": {"ms": ocr_ms, "error": ocr_err, "text": ocr_text},
         "total_ms": round((time.time() - t0) * 1000, 1),
     }
+
+
+@router.get("/test-gemini")
+def test_gemini_endpoint():
+    import time
+    from PIL import Image, ImageDraw
+    import io, base64
+
+    img = Image.new("RGB", (400, 100), color=(255, 255, 255))
+    d = ImageDraw.Draw(img)
+    d.text((10, 20), "TEST E471 CITRIC ACID", fill=(0, 0, 0))
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG")
+    b64 = base64.b64encode(buf.getvalue()).decode()
+
+    t0 = time.time()
+    try:
+        from app.ocr_service import extract_text_with_gemini
+        text = extract_text_with_gemini(f"data:image/jpeg;base64,{b64}")
+        return {
+            "status": "ok",
+            "extracted": text,
+            "latency_ms": round((time.time() - t0) * 1000, 1),
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "latency_ms": round((time.time() - t0) * 1000, 1),
+        }
+
+
+@router.get("/test-yolo")
+def test_yolo_endpoint():
+    import time
+    from PIL import Image, ImageDraw
+
+    img = Image.new("RGB", (300, 100), color=(255, 255, 255))
+    d = ImageDraw.Draw(img)
+    d.text((10, 30), "TEST LOGO", fill=(0, 0, 0))
+
+    t0 = time.time()
+    try:
+        from app.logo_service import detect_halal_logo
+        res = detect_halal_logo(img)
+        return {
+            "status": "ok",
+            "yolo_result": res,
+            "latency_ms": round((time.time() - t0) * 1000, 1),
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "latency_ms": round((time.time() - t0) * 1000, 1),
+        }
