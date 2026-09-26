@@ -58,6 +58,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
     const [searchQuery, setSearchQuery] = useState(initialSearchQuery || '');
     const [selectedCategory, setSelectedCategory] = useState('All Categories');
     const [selectedStatus, setSelectedStatus] = useState('All Statuses');
+    const [selectedCertifier, setSelectedCertifier] = useState('All Certifiers / Origins');
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 24;
 
@@ -82,6 +83,21 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         return cats.size > 0
             ? ['All Categories', ...Array.from(cats).sort()]
             : PRODUCT_CATEGORIES;
+    }, [products]);
+
+    const availableCertifiers = useMemo(() => {
+        const certs = new Set();
+        products.forEach((p) => {
+            const certName = p.certifying_bodies?.name || p.certifying_bodies?.code;
+            if (certName && certName.trim()) {
+                certs.add(certName.trim());
+            } else if (p.source && p.source.trim()) {
+                certs.add(p.source.trim());
+            }
+        });
+        return certs.size > 0
+            ? ['All Certifiers / Origins', ...Array.from(certs).sort()]
+            : ['All Certifiers / Origins'];
     }, [products]);
     const handleOpenContribution = () => {
         if (!userRole) {
@@ -294,7 +310,10 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             item.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             item.barcode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.manufacturers?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+            item.manufacturers?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.certifying_bodies?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.certifying_bodies?.code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.source?.toLowerCase().includes(searchQuery.toLowerCase());
 
         const matchesCategory =
             selectedCategory === 'All Categories' || item.category === selectedCategory;
@@ -302,12 +321,18 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         const matchesStatus =
             selectedStatus === 'All Statuses' || item.status === selectedStatus;
 
-        return matchesQuery && matchesCategory && matchesStatus;
+        const matchesCertifier =
+            selectedCertifier === 'All Certifiers / Origins' ||
+            item.certifying_bodies?.name === selectedCertifier ||
+            item.certifying_bodies?.code === selectedCertifier ||
+            item.source === selectedCertifier;
+
+        return matchesQuery && matchesCategory && matchesStatus && matchesCertifier;
     });
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery, selectedCategory, selectedStatus]);
+    }, [searchQuery, selectedCategory, selectedStatus, selectedCertifier]);
 
     const totalItems = filteredProducts.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
@@ -404,6 +429,20 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                         {PRODUCT_STATUSES.map((st) => (
                             <option key={st} value={st}>
                                 {st}
+                            </option>
+                        ))}
+                    </select>
+
+                    {/* Certifying Body / Origin Source Selector */}
+                    <select
+                        value={selectedCertifier}
+                        onChange={(e) => setSelectedCertifier(e.target.value)}
+                        className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500 max-w-[200px] truncate"
+                        title="Filter by certifying body or registry origin"
+                    >
+                        {availableCertifiers.map((c) => (
+                            <option key={c} value={c}>
+                                {c}
                             </option>
                         ))}
                     </select>

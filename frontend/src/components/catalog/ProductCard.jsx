@@ -30,13 +30,21 @@ export default function ProductCard({
             <div className="space-y-2 sm:space-y-3">
                 {/* Header: Brand & Status Badge */}
                 <div className="flex items-start justify-between gap-2">
-                    <div className="space-y-0.5 min-w-0">
-                        {product.brand && (
-                            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-1.5 sm:px-2 py-0.5 rounded-md border border-emerald-100">
-                                {product.brand}
-                            </span>
-                        )}
-                        <h3 className="text-xs sm:text-base font-bold text-slate-900 leading-tight pt-1 break-words">
+                    <div className="space-y-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                            {product.brand && (
+                                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-1.5 sm:px-2 py-0.5 rounded-md border border-emerald-100">
+                                    {product.brand}
+                                </span>
+                            )}
+                            {(product.certifying_bodies?.code || product.certifying_bodies?.name || (product.source?.includes('ZAMPEN') ? 'DTI ZAMPEN' : null)) && (
+                                <span className="text-[10px] sm:text-[10px] font-semibold text-blue-700 bg-blue-50 px-1.5 sm:px-2 py-0.5 rounded-md border border-blue-100 flex items-center gap-1">
+                                    <Award size={10} className="text-blue-600 shrink-0" />
+                                    {product.certifying_bodies?.code || (product.source?.includes('ZAMPEN') ? 'DTI ZAMPEN' : (product.certifying_bodies?.name ? product.certifying_bodies.name.split(' ')[0] : 'IDCP'))}
+                                </span>
+                            )}
+                        </div>
+                        <h3 className="text-xs sm:text-base font-bold text-slate-900 leading-tight pt-0.5 break-words">
                             {product.name}
                         </h3>
                     </div>
