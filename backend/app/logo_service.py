@@ -112,17 +112,17 @@ def detect_halal_logo(image_input) -> Dict:
         if model is None:
             return _empty_logo_result("YOLOv8 model not loaded")
 
-        # Downscale large mobile uploads to 640px max for rapid inference
+        # Downscale large mobile uploads to 400px max for ultra-fast CPU inference
         orig_w, orig_h = image.size
         longest = max(orig_w, orig_h)
         scaled_img = image
-        if longest > 640:
-            scale = 640 / longest
+        if longest > 400:
+            scale = 400 / longest
             scaled_img = image.resize((int(orig_w * scale), int(orig_h * scale)), Image.Resampling.BILINEAR)
 
-        # Run inference (conf threshold 0.25, imgsz 256 for sub-second CPU latency on 512MB RAM)
+        # Run inference (conf threshold 0.25, imgsz 192 for ultra-fast CPU latency on 512MB RAM)
         with torch.inference_mode():
-            results = model(scaled_img, conf=0.25, imgsz=256, verbose=False)
+            results = model(scaled_img, conf=0.25, imgsz=192, verbose=False)
             if not results or len(results) == 0:
                 return _empty_logo_result("No detections returned")
 

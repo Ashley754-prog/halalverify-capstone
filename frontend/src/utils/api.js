@@ -1,5 +1,15 @@
 import { supabase } from '../lib/supabaseClient';
 
+// Cleanse any legacy local tunnel pointers from browser localStorage
+if (typeof window !== 'undefined') {
+    try {
+        const stored = localStorage.getItem('halalverify_api_url');
+        if (stored && (stored.includes('ngrok') || stored.includes('trycloudflare') || stored.includes('localhost'))) {
+            localStorage.removeItem('halalverify_api_url');
+        }
+    } catch (_) {}
+}
+
 function resolveApiBaseUrl() {
     if (typeof window !== 'undefined') {
         const customUrl = localStorage.getItem('halalverify_api_url');
