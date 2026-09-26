@@ -9,6 +9,7 @@ def health_check() -> dict:
     return {
         "status": "ok",
         "service": "HalalVerify API",
+        "version": "rapidocr-v1",
     }
 
 
