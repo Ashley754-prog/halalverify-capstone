@@ -10,9 +10,9 @@ function resolveApiBaseUrl() {
             return (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '');
         }
 
-        // On deployed HTTPS site (e.g. Vercel), only accept an HTTPS env url if it is not a dead tunnel/domain
+        // On deployed HTTPS site (e.g. Vercel), accept any valid HTTPS env url
         const envUrl = import.meta.env.VITE_API_BASE_URL;
-        if (envUrl && envUrl.startsWith('https://') && !envUrl.includes('onrender.com') && !envUrl.includes('trycloudflare.com')) {
+        if (envUrl && envUrl.startsWith('https://') && !envUrl.includes('trycloudflare.com')) {
             return envUrl.replace(/\/+$/, '');
         }
     }

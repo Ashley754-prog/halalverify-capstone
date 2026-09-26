@@ -25,8 +25,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy backend application
 COPY --chown=user:user . .
 
-# Hugging Face Spaces port
-EXPOSE 7860
+# Ports: 7860 (Hugging Face Spaces), 8000 (Local / Cloud), 10000 (Render default)
+EXPOSE 7860 8000 10000
 
-# Run FastAPI with Uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860"]
+# Run FastAPI with dynamic PORT binding
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-7860}"]
