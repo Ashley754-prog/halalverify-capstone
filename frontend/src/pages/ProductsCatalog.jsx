@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import {
     Search,
     AlertCircle,
@@ -7,6 +7,7 @@ import {
     Camera,
     ChevronLeft,
     ChevronRight,
+    X,
 } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import Toast from '../components/ui/Toast';
@@ -143,14 +144,9 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         }
     };
 
-    // Synchronize initialSearchQuery if passed dynamically
-    useEffect(() => {
-        if (initialSearchQuery) {
-            setSearchQuery(initialSearchQuery);
-        }
-    }, [initialSearchQuery]);
+    const searchDebounceRef = useRef(null);
 
-    const loadData = async () => {
+    const loadData = useCallback(async (queryParam) => {
         try {
             setLoading(true);
             setError('');
@@ -158,20 +154,33 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             let loadedProducts = null;
             let loadedMfg = null;
 
+            const q = (queryParam !== undefined ? queryParam : searchQuery).trim();
+
             // 1. Direct Supabase Query (Instant ~150ms response, zero cold start)
             try {
+                let pBuilder = supabase
+                    .from('products')
+                    .select('*, manufacturers(*), certifying_bodies(*)')
+                    .order('name');
+
+                if (q) {
+                    pBuilder = pBuilder
+                        .or(`name.ilike.%${q}%,brand.ilike.%${q}%,barcode.ilike.%${q}%,certificate_no.ilike.%${q}%`)
+                        .limit(500);
+                } else {
+                    pBuilder = pBuilder.limit(1000);
+                }
+
                 const [productsRes, mfgRes] = await Promise.all([
-                    supabase
-                        .from('products')
-                        .select('*, manufacturers(*), certifying_bodies(*)')
-                        .order('name'),
+                    pBuilder,
                     supabase
                         .from('manufacturers')
                         .select('*')
-                        .order('name'),
+                        .order('name')
+                        .limit(500),
                 ]);
 
-                if (!productsRes.error && productsRes.data && productsRes.data.length > 0) {
+                if (!productsRes.error && productsRes.data) {
                     loadedProducts = productsRes.data;
                     if (mfgRes.data) loadedMfg = mfgRes.data;
                 }
@@ -180,10 +189,11 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             }
 
             // 2. Fallback to Backend API with a 3.5s timeout if direct Supabase didn't return items
-            if (!loadedProducts || loadedProducts.length === 0) {
+            if (!loadedProducts || (q && loadedProducts.length === 0)) {
                 try {
+                    const searchArg = q ? `&query=${encodeURIComponent(q)}` : '';
                     const [productsRes, mfgRes] = await Promise.all([
-                        authFetch(`${API_BASE_URL}/products?limit=200`, { timeout: 3500 }),
+                        authFetch(`${API_BASE_URL}/products?limit=200${searchArg}`, { timeout: 3500 }),
                         authFetch(`${API_BASE_URL}/manufacturers?limit=200`, { timeout: 3500 }),
                     ]);
 
@@ -208,11 +218,31 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         } finally {
             setLoading(false);
         }
+    }, [searchQuery]);
+
+    // Synchronize initialSearchQuery if passed dynamically, or load default items
+    useEffect(() => {
+        if (initialSearchQuery) {
+            setSearchQuery(initialSearchQuery);
+            loadData(initialSearchQuery);
+        } else {
+            loadData('');
+        }
+    }, [initialSearchQuery]);
+
+    const handleSearchChange = (val) => {
+        setSearchQuery(val);
+        if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+        searchDebounceRef.current = setTimeout(() => {
+            loadData(val);
+        }, 350);
     };
 
-    useEffect(() => {
-        loadData();
-    }, []);
+    const handleClearSearch = () => {
+        setSearchQuery('');
+        if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+        loadData('');
+    };
 
     const showToast = (message, type = 'success') => {
         setToast({ visible: true, message, type });
@@ -403,10 +433,26 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                         <input
                             type="text"
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search by product name, brand, manufacturer, or barcode..."
-                            className="w-full pl-8 sm:pl-10 pr-2 sm:pr-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl border border-slate-200 bg-slate-50/50 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                            onChange={(e) => handleSearchChange(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+                                    loadData(searchQuery);
+                                }
+                            }}
+                            placeholder="Search by product name, brand, manufacturer, or certificate #..."
+                            className="w-full pl-8 sm:pl-10 pr-8 py-2 sm:py-2.5 rounded-lg sm:rounded-xl border border-slate-200 bg-slate-50/50 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
                         />
+                        {searchQuery && (
+                            <button
+                                type="button"
+                                onClick={handleClearSearch}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded transition"
+                                title="Clear search"
+                            >
+                                <X size={14} />
+                            </button>
+                        )}
                     </div>
 
                     {/* Community Submit Button (Accessible to all users; triggers auth prompt if guest) */}

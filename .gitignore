@@ -56,6 +56,6 @@ skills-lock.json
 
 # S3 label photos (heavy, regenerable - transcripts are the evidence)
 spikes/s3-cer-baseline/images/
-spikes/s1-idcp-registry/
+spikes/s1-idcp-registry/*.csv
 spikes/s5-additives-lexicon/
 spikes/s6-packaging-validation/

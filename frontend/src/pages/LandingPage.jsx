@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Camera, 
   Package, 
@@ -40,12 +40,14 @@ export default function LandingPage({ onViewChange, userRole }) {
     }
   };
 
+  const searchDebounceRef = useRef(null);
+
   useEffect(() => {
     let isMounted = true;
     const loadRegistryData = async () => {
       try {
         const [prodRes, estRes] = await Promise.all([
-          supabase.from('products').select('id, name, brand, category, status').neq('status', 'PENDING_VERIFICATION').limit(200),
+          supabase.from('products').select('id, name, brand, category, status').neq('status', 'PENDING_VERIFICATION').limit(300),
           supabase.from('establishments').select('id, name, address, halal_status').neq('halal_status', 'PENDING_VERIFICATION').limit(200),
         ]);
 
@@ -59,26 +61,33 @@ export default function LandingPage({ onViewChange, userRole }) {
     };
 
     loadRegistryData();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
   }, []);
 
   const handleSearch = (term) => {
     setSearchQuery(term);
-    const q = term.trim().toLowerCase();
+    const q = term.trim();
     if (!q) {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
       setSearchResults(null);
       return;
     }
 
+    const qLower = q.toLowerCase();
+
+    // 1. Instant local matching
     const matchedProducts = allProducts.filter((p) =>
-      (p.name && p.name.toLowerCase().includes(q)) ||
-      (p.brand && p.brand.toLowerCase().includes(q)) ||
-      (p.category && p.category.toLowerCase().includes(q))
+      (p.name && p.name.toLowerCase().includes(qLower)) ||
+      (p.brand && p.brand.toLowerCase().includes(qLower)) ||
+      (p.category && p.category.toLowerCase().includes(qLower))
     );
 
     const matchedEstablishments = allEstablishments.filter((e) =>
-      (e.name && e.name.toLowerCase().includes(q)) ||
-      (e.address && e.address.toLowerCase().includes(q))
+      (e.name && e.name.toLowerCase().includes(qLower)) ||
+      (e.address && e.address.toLowerCase().includes(qLower))
     );
 
     setSearchResults({
@@ -86,6 +95,49 @@ export default function LandingPage({ onViewChange, userRole }) {
       establishments: matchedEstablishments,
       totalCount: matchedProducts.length + matchedEstablishments.length,
     });
+
+    // 2. Debounced live Supabase search across entire 13k+ database
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+
+    searchDebounceRef.current = setTimeout(async () => {
+      try {
+        const [liveProdRes, liveEstRes] = await Promise.all([
+          supabase
+            .from('products')
+            .select('id, name, brand, category, status')
+            .or(`name.ilike.%${q}%,brand.ilike.%${q}%,category.ilike.%${q}%`)
+            .neq('status', 'PENDING_VERIFICATION')
+            .limit(25),
+          supabase
+            .from('establishments')
+            .select('id, name, address, halal_status')
+            .or(`name.ilike.%${q}%,address.ilike.%${q}%`)
+            .neq('halal_status', 'PENDING_VERIFICATION')
+            .limit(25),
+        ]);
+
+        const mergedProdsMap = new Map();
+        matchedProducts.forEach(p => mergedProdsMap.set(p.id, p));
+        (liveProdRes.data || []).forEach(p => mergedProdsMap.set(p.id, p));
+
+        const mergedEstMap = new Map();
+        matchedEstablishments.forEach(e => mergedEstMap.set(e.id, e));
+        (liveEstRes.data || []).forEach(e => mergedEstMap.set(e.id, e));
+
+        const finalProducts = Array.from(mergedProdsMap.values());
+        const finalEstablishments = Array.from(mergedEstMap.values());
+
+        setSearchResults({
+          products: finalProducts,
+          establishments: finalEstablishments,
+          totalCount: finalProducts.length + finalEstablishments.length,
+        });
+      } catch (err) {
+        console.warn('Live search error:', err);
+      }
+    }, 250);
   };
   return (
     <div className="min-h-screen bg-[#0e1625] text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white overflow-x-hidden w-full max-w-full">
