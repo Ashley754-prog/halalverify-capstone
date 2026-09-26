@@ -99,8 +99,8 @@ def detect_halal_logo(image_input) -> Dict:
         if model is None:
             return _empty_logo_result("YOLOv8 model not loaded")
 
-        # Run inference (standard YOLO conf threshold 0.25 for real-world phone scans)
-        results = model(image, conf=0.25, imgsz=640, verbose=False)
+        # Run inference (standard YOLO conf threshold 0.25 for real-world phone scans, imgsz 512 for low memory)
+        results = model(image, conf=0.25, imgsz=512, verbose=False)
         if not results or len(results) == 0:
             return _empty_logo_result("No detections returned")
 

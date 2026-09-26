@@ -9,6 +9,14 @@ from PIL import Image, ImageEnhance, ImageOps, UnidentifiedImageError
 from fastapi import HTTPException
 
 
+import gc
+import torch
+
+try:
+    torch.set_num_threads(2)
+except Exception:
+    pass
+
 _reader = None
 
 
@@ -16,7 +24,7 @@ def get_reader():
     global _reader
 
     if _reader is None:
-        _reader = easyocr.Reader(["en"], gpu=False)
+        _reader = easyocr.Reader(["en"], gpu=False, quantize=True)
 
     return _reader
 
@@ -91,9 +99,12 @@ def extract_text_from_image(image_base64: str) -> str:
             image,
             detail=0,
             paragraph=True,
+            canvas_size=960,
+            mag_ratio=1.0,
         )
         text_parts.extend(results)
 
+    gc.collect()
     return dedupe_text_parts(text_parts)
 
 

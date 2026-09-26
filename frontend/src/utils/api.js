@@ -17,8 +17,8 @@ function resolveApiBaseUrl() {
         }
     }
 
-    // Default permanent HTTPS backend for deployed production web app (Ngrok static domain)
-    return 'https://flaky-catwalk-finally.ngrok-free.dev';
+    // Default permanent 24/7 cloud backend on Render
+    return 'https://halalverify-backend.onrender.com';
 }
 
 export const API_BASE_URL = resolveApiBaseUrl();
