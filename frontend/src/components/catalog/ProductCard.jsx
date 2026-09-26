@@ -15,6 +15,27 @@ import {
 } from 'lucide-react';
 import { getSafeUrl } from '../../utils/security';
 
+function getProductCertifierBadge(product) {
+    const raw = `${product.certifying_bodies?.code || ''} ${product.certifying_bodies?.name || ''} ${product.source || ''}`.toLowerCase();
+
+    if (raw.includes('idcp') || raw.includes("islamic da'wah") || raw.includes("islamic dawah")) {
+        return 'IDCP';
+    }
+    if (raw.includes('busc') || raw.includes('basilan ulama')) {
+        return 'BUSC';
+    }
+    if (raw.includes('bpcc') || raw.includes('bangsamoro')) {
+        return 'BPCC';
+    }
+    if (raw.includes('hdip') || raw.includes('halal development institute')) {
+        return 'HDIP';
+    }
+    if (raw.includes('zampen') || raw.includes('dti region ix')) {
+        return 'DTI ZAMPEN';
+    }
+    return product.certifying_bodies?.code || null;
+}
+
 export default function ProductCard({
     product,
     isAdmin,
@@ -24,6 +45,7 @@ export default function ProductCard({
 }) {
     const isHalal = product.status === 'Halal';
     const isDoubtful = product.status === 'Doubtful';
+    const certBadge = getProductCertifierBadge(product);
 
     return (
         <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 p-3 sm:p-5 mb-4 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-3 sm:space-y-4 min-w-0">
@@ -37,10 +59,10 @@ export default function ProductCard({
                                     {product.brand}
                                 </span>
                             )}
-                            {(product.certifying_bodies?.code || product.certifying_bodies?.name || (product.source?.includes('ZAMPEN') ? 'DTI ZAMPEN' : null)) && (
+                            {certBadge && (
                                 <span className="text-[10px] sm:text-[10px] font-semibold text-blue-700 bg-blue-50 px-1.5 sm:px-2 py-0.5 rounded-md border border-blue-100 flex items-center gap-1">
                                     <Award size={10} className="text-blue-600 shrink-0" />
-                                    {product.certifying_bodies?.code || (product.source?.includes('ZAMPEN') ? 'DTI ZAMPEN' : (product.certifying_bodies?.name ? product.certifying_bodies.name.split(' ')[0] : 'IDCP'))}
+                                    {certBadge}
                                 </span>
                             )}
                         </div>

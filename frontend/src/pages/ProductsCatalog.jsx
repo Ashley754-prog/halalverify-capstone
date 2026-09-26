@@ -50,6 +50,33 @@ const emptyProductForm = {
     source_url: 'https://www.idcphalal.org/certified-product-page',
 };
 
+export function getProductCertifierGroup(product) {
+    const raw = `${product.certifying_bodies?.code || ''} ${product.certifying_bodies?.name || ''} ${product.source || ''}`.toLowerCase();
+
+    if (raw.includes('idcp') || raw.includes("islamic da'wah") || raw.includes("islamic dawah")) {
+        return "IDCP (Islamic Da'wah Council of the Philippines)";
+    }
+    if (raw.includes('busc') || raw.includes('basilan ulama')) {
+        return 'BUSC (Basilan Ulama Supreme Council)';
+    }
+    if (raw.includes('bpcc') || raw.includes('bangsamoro')) {
+        return 'BPCC (Bangsamoro Provincial Consultative Council)';
+    }
+    if (raw.includes('hdip') || raw.includes('halal development institute')) {
+        return 'HDIP (Halal Development Institute of the Philippines)';
+    }
+    if (raw.includes('zampen') || raw.includes('dti region ix')) {
+        return 'DTI Region IX (ZAMPEN MSME Catalogue)';
+    }
+    if (raw.includes('muslim in manila')) {
+        return 'Muslim in Manila Directory';
+    }
+    if (raw.includes('community')) {
+        return 'Community User Submissions';
+    }
+    return product.certifying_bodies?.name || product.source || 'Other Recognized Sources';
+}
+
 export default function ProductsCatalog({ userRole, onViewChange, initialSearchQuery = '' }) {
     const [products, setProducts] = useState([]);
     const [manufacturers, setManufacturers] = useState([]);
@@ -88,12 +115,8 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
     const availableCertifiers = useMemo(() => {
         const certs = new Set();
         products.forEach((p) => {
-            const certName = p.certifying_bodies?.name || p.certifying_bodies?.code;
-            if (certName && certName.trim()) {
-                certs.add(certName.trim());
-            } else if (p.source && p.source.trim()) {
-                certs.add(p.source.trim());
-            }
+            const group = getProductCertifierGroup(p);
+            if (group) certs.add(group);
         });
         return certs.size > 0
             ? ['All Certifiers / Origins', ...Array.from(certs).sort()]
@@ -323,9 +346,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
 
         const matchesCertifier =
             selectedCertifier === 'All Certifiers / Origins' ||
-            item.certifying_bodies?.name === selectedCertifier ||
-            item.certifying_bodies?.code === selectedCertifier ||
-            item.source === selectedCertifier;
+            getProductCertifierGroup(item) === selectedCertifier;
 
         return matchesQuery && matchesCategory && matchesStatus && matchesCertifier;
     });
