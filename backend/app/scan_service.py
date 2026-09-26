@@ -342,6 +342,42 @@ def analyze_label_image(image_base64: str) -> dict:
 
     gc.collect()
 
+    # Smart Dual-Check: Detect certification seals from OCR text if visual logo was missed
+    if not logo_result.get("logoDetected") and extracted_text:
+        upper_text = extracted_text.upper()
+        if "IDCP" in upper_text:
+            logo_result = {
+                "logoDetected": True,
+                "logoConfidence": 95.0,
+                "logoBody": "IDCP (Islamic Da'wah Council of the Philippines)",
+                "isInvalidLogo": False,
+                "detectedLogos": [{"label": "IDCP Halal", "confidence": 95.0, "is_invalid": False}],
+            }
+        elif "HDIP" in upper_text:
+            logo_result = {
+                "logoDetected": True,
+                "logoConfidence": 95.0,
+                "logoBody": "HDIP (Halal Development Institute of the Philippines)",
+                "isInvalidLogo": False,
+                "detectedLogos": [{"label": "HDIP Halal", "confidence": 95.0, "is_invalid": False}],
+            }
+        elif "JAKIM" in upper_text:
+            logo_result = {
+                "logoDetected": True,
+                "logoConfidence": 95.0,
+                "logoBody": "Malaysia Halal - JAKIM (Recognized Foreign Certifier)",
+                "isInvalidLogo": False,
+                "detectedLogos": [{"label": "JAKIM Halal", "confidence": 95.0, "is_invalid": False}],
+            }
+        elif "HALAL CERTIFIED" in upper_text or "CERTIFIED HALAL" in upper_text:
+            logo_result = {
+                "logoDetected": True,
+                "logoConfidence": 90.0,
+                "logoBody": "Halal Certified Packaging Seal",
+                "isInvalidLogo": False,
+                "detectedLogos": [{"label": "Halal Certified", "confidence": 90.0, "is_invalid": False}],
+            }
+
     # Stage 4: Relational Lexicon Cross-Matching against Database Additives
     t_match = time.time()
     flagged_items = match_additives_from_text(extracted_text)

@@ -1,3 +1,9 @@
+import os
+os.environ["YOLO_OFFLINE"] = "true"
+os.environ["YOLO_VERBOSE"] = "false"
+os.environ["ULTRALYTICS_ANALYTICS"] = "false"
+os.environ["ULTRALYTICS_SYNC"] = "false"
+
 import io
 import gc
 import base64
@@ -6,6 +12,11 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from PIL import Image
 import torch
+
+try:
+    torch.set_num_threads(1)
+except Exception:
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -101,16 +112,24 @@ def detect_halal_logo(image_input) -> Dict:
         if model is None:
             return _empty_logo_result("YOLOv8 model not loaded")
 
-        # Run inference (conf threshold 0.25, imgsz 384 for low memory footprint on 512MB RAM)
+        # Downscale large mobile uploads to 640px max for rapid inference
+        orig_w, orig_h = image.size
+        longest = max(orig_w, orig_h)
+        scaled_img = image
+        if longest > 640:
+            scale = 640 / longest
+            scaled_img = image.resize((int(orig_w * scale), int(orig_h * scale)), Image.Resampling.BILINEAR)
+
+        # Run inference (conf threshold 0.25, imgsz 256 for sub-second CPU latency on 512MB RAM)
         with torch.inference_mode():
-            results = model(image, conf=0.25, imgsz=384, verbose=False)
+            results = model(scaled_img, conf=0.25, imgsz=256, verbose=False)
             if not results or len(results) == 0:
                 return _empty_logo_result("No detections returned")
 
             result = results[0]
             boxes = result.boxes
 
-            img_w, img_h = image.size
+            img_w, img_h = orig_w, orig_h
 
             if boxes is None or len(boxes) == 0:
                 del results
