@@ -3,18 +3,18 @@ import { supabase } from '../lib/supabaseClient';
 function resolveApiBaseUrl() {
     if (typeof window !== 'undefined') {
         const customUrl = localStorage.getItem('halalverify_api_url');
-        if (customUrl && !customUrl.includes('trycloudflare.com')) {
+        if (customUrl && !customUrl.includes('trycloudflare.com') && !customUrl.includes('ngrok')) {
             return customUrl.replace(/\/+$/, '');
         }
 
         const envUrl = import.meta.env.VITE_API_BASE_URL;
-        if (envUrl && envUrl.startsWith('http') && !envUrl.includes('trycloudflare.com')) {
+        if (envUrl && envUrl.startsWith('http') && !envUrl.includes('trycloudflare.com') && !envUrl.includes('ngrok')) {
             return envUrl.replace(/\/+$/, '');
         }
     }
 
-    // Default primary tunnel (fastest inference), fallback to cloud
-    return 'https://flaky-catwalk-finally.ngrok-free.dev';
+    // Default primary cloud backend (100% cloud execution, 0MB local dependency)
+    return 'https://halalverify-backend.onrender.com';
 }
 
 export const API_BASE_URL = resolveApiBaseUrl();
@@ -57,12 +57,10 @@ export async function authFetch(url, options = {}) {
  */
 export async function analyzeImage(base64Image, mode) {
     const primaryUrl = resolveApiBaseUrl();
-    const tunnelUrl = 'https://flaky-catwalk-finally.ngrok-free.dev';
     const cloudUrl = 'https://halalverify-backend.onrender.com';
     const endpointsToTry = [
         primaryUrl,
-        primaryUrl !== tunnelUrl ? tunnelUrl : null,
-        primaryUrl !== cloudUrl && tunnelUrl !== cloudUrl ? cloudUrl : null
+        primaryUrl !== cloudUrl ? cloudUrl : null
     ].filter(Boolean);
 
     let lastError = null;
