@@ -1,5 +1,9 @@
+import gc
+import logging
 import re
 import time
+
+logger = logging.getLogger(__name__)
 
 from app.logo_service import detect_halal_logo
 from app.ocr_service import extract_text_from_image, find_e_numbers, normalize_text
@@ -308,7 +312,12 @@ def analyze_label_image(image_base64: str) -> dict:
 
     # Stage 2: YOLOv8-Nano Logo Detection
     t_logo = time.time()
-    logo_result = detect_halal_logo(image_base64)
+    try:
+        logo_result = detect_halal_logo(image_base64)
+    except Exception as err:
+        logger.warning(f"Logo detection error: {err}")
+        logo_result = None
+
     if not logo_result:
         logo_result = {
             "logoDetected": False,
@@ -319,10 +328,19 @@ def analyze_label_image(image_base64: str) -> dict:
         }
     logo_time = round((time.time() - t_logo) * 1000, 1)
 
+    # Reclaim YOLO memory before starting OCR
+    gc.collect()
+
     # Stage 3: EasyOCR Text Extraction (CRAFT + CRNN)
     t_ocr = time.time()
-    extracted_text = extract_text_from_image(image_base64)
+    try:
+        extracted_text = extract_text_from_image(image_base64)
+    except Exception as err:
+        logger.warning(f"OCR extraction error: {err}")
+        extracted_text = ""
     ocr_time = round((time.time() - t_ocr) * 1000, 1)
+
+    gc.collect()
 
     # Stage 4: Relational Lexicon Cross-Matching against Database Additives
     t_match = time.time()

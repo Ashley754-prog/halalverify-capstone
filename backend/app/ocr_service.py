@@ -74,14 +74,14 @@ def normalize_ocr_image(image: Image.Image) -> Image.Image:
     width, height = image.size
     longest_side = max(width, height)
 
-    if longest_side < 800:
+    if longest_side > 800:
         scale = 800 / longest_side
         new_size = (int(width * scale), int(height * scale))
-        return image.resize(new_size, Image.Resampling.LANCZOS)
-    elif longest_side > 1280:
-        scale = 1280 / longest_side
+        return image.resize(new_size, Image.Resampling.BILINEAR)
+    elif longest_side < 400 and longest_side > 0:
+        scale = 400 / longest_side
         new_size = (int(width * scale), int(height * scale))
-        return image.resize(new_size, Image.Resampling.LANCZOS)
+        return image.resize(new_size, Image.Resampling.BILINEAR)
 
     return image
 
@@ -91,21 +91,27 @@ def upscale_small_image(image: Image.Image) -> Image.Image:
 
 
 def extract_text_from_image(image_base64: str) -> str:
-    reader = get_reader()
-    text_parts = []
+    try:
+        reader = get_reader()
+        text_parts = []
 
-    for image in build_ocr_images(image_base64):
-        results = reader.readtext(
-            image,
-            detail=0,
-            paragraph=True,
-            canvas_size=960,
-            mag_ratio=1.0,
-        )
-        text_parts.extend(results)
+        with torch.inference_mode():
+            for image in build_ocr_images(image_base64):
+                results = reader.readtext(
+                    image,
+                    detail=0,
+                    paragraph=True,
+                    canvas_size=640,
+                    mag_ratio=1.0,
+                )
+                text_parts.extend(results)
 
-    gc.collect()
-    return dedupe_text_parts(text_parts)
+        gc.collect()
+        return dedupe_text_parts(text_parts)
+    except Exception as err:
+        import logging
+        logging.getLogger(__name__).warning(f"EasyOCR extraction issue: {err}")
+        return ""
 
 
 def sanitize_ocr_text(text: str) -> str:

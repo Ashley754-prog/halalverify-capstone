@@ -1,9 +1,11 @@
 import io
+import gc
 import base64
 import logging
 from pathlib import Path
 from typing import Dict, List, Optional
 from PIL import Image
+import torch
 
 logger = logging.getLogger(__name__)
 
@@ -99,64 +101,70 @@ def detect_halal_logo(image_input) -> Dict:
         if model is None:
             return _empty_logo_result("YOLOv8 model not loaded")
 
-        # Run inference (standard YOLO conf threshold 0.25 for real-world phone scans, imgsz 512 for low memory)
-        results = model(image, conf=0.25, imgsz=512, verbose=False)
-        if not results or len(results) == 0:
-            return _empty_logo_result("No detections returned")
+        # Run inference (conf threshold 0.25, imgsz 384 for low memory footprint on 512MB RAM)
+        with torch.inference_mode():
+            results = model(image, conf=0.25, imgsz=384, verbose=False)
+            if not results or len(results) == 0:
+                return _empty_logo_result("No detections returned")
 
-        result = results[0]
-        boxes = result.boxes
+            result = results[0]
+            boxes = result.boxes
 
-        img_w, img_h = image.size
+            img_w, img_h = image.size
 
-        if boxes is None or len(boxes) == 0:
-            return {
-                "logoDetected": False,
-                "logoConfidence": 0.0,
-                "logoBody": "No Halal Logo Detected",
-                "isInvalidLogo": False,
-                "detectedLogos": [],
-                "imageWidth": img_w,
-                "imageHeight": img_h,
-            }
+            if boxes is None or len(boxes) == 0:
+                del results
+                gc.collect()
+                return {
+                    "logoDetected": False,
+                    "logoConfidence": 0.0,
+                    "logoBody": "No Halal Logo Detected",
+                    "isInvalidLogo": False,
+                    "detectedLogos": [],
+                    "imageWidth": img_w,
+                    "imageHeight": img_h,
+                }
 
-        detected_logos: List[Dict] = []
-        highest_conf = 0.0
-        best_logo_body = "Accredited Halal Logo"
-        has_invalid = False
+            detected_logos: List[Dict] = []
+            highest_conf = 0.0
+            best_logo_body = "Accredited Halal Logo"
+            has_invalid = False
 
-        for box in boxes:
-            conf = float(box.conf[0].item())
-            cls_id = int(box.cls[0].item())
-            raw_class_name = model.names.get(cls_id, f"class_{cls_id}")
-            formatted_name = CLASS_LABEL_MAPPING.get(raw_class_name, raw_class_name)
-            is_invalid = raw_class_name.lower() in ("invalid_logo", "counterfeit")
+            for box in boxes:
+                conf = float(box.conf[0].item())
+                cls_id = int(box.cls[0].item())
+                raw_class_name = model.names.get(cls_id, f"class_{cls_id}")
+                formatted_name = CLASS_LABEL_MAPPING.get(raw_class_name, raw_class_name)
+                is_invalid = raw_class_name.lower() in ("invalid_logo", "counterfeit")
 
-            xyxy = box.xyxy[0].tolist()
-            normalized_box = [round(coord, 2) for coord in xyxy]
-            norm_pct_box = [
-                max(0.0, min(1.0, round(xyxy[0] / img_w, 4))),
-                max(0.0, min(1.0, round(xyxy[1] / img_h, 4))),
-                max(0.0, min(1.0, round(xyxy[2] / img_w, 4))),
-                max(0.0, min(1.0, round(xyxy[3] / img_h, 4))),
-            ]
+                xyxy = box.xyxy[0].tolist()
+                normalized_box = [round(coord, 2) for coord in xyxy]
+                norm_pct_box = [
+                    max(0.0, min(1.0, round(xyxy[0] / img_w, 4))),
+                    max(0.0, min(1.0, round(xyxy[1] / img_h, 4))),
+                    max(0.0, min(1.0, round(xyxy[2] / img_w, 4))),
+                    max(0.0, min(1.0, round(xyxy[3] / img_h, 4))),
+                ]
 
-            if is_invalid:
-                has_invalid = True
+                if is_invalid:
+                    has_invalid = True
 
-            if conf > highest_conf:
-                highest_conf = conf
-                best_logo_body = formatted_name
+                if conf > highest_conf:
+                    highest_conf = conf
+                    best_logo_body = formatted_name
 
-            detected_logos.append({
-                "class_id": cls_id,
-                "class_name": raw_class_name,
-                "label": formatted_name,
-                "confidence": round(conf * 100, 1),
-                "is_invalid": is_invalid,
-                "box": normalized_box,
-                "norm_box": norm_pct_box,
-            })
+                detected_logos.append({
+                    "class_id": cls_id,
+                    "class_name": raw_class_name,
+                    "label": formatted_name,
+                    "confidence": round(conf * 100, 1),
+                    "is_invalid": is_invalid,
+                    "box": normalized_box,
+                    "norm_box": norm_pct_box,
+                })
+
+            del results
+            gc.collect()
 
         # Sort detections by confidence descending
         detected_logos.sort(key=lambda x: x["confidence"], reverse=True)

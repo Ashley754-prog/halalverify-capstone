@@ -13,14 +13,17 @@ RUN useradd -m -u 1000 user
 USER user
 ENV HOME=/home/user \
     PATH=/home/user/.local/bin:$PATH \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    MALLOC_ARENA_MAX=2 \
+    OMP_NUM_THREADS=1
 
 WORKDIR $HOME/app
 
 # Install Python requirements
 COPY --chown=user:user requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt && \
+    python -c "import easyocr; easyocr.Reader(['en'], gpu=False, quantize=True)"
 
 # Copy backend application
 COPY --chown=user:user . .

@@ -3,13 +3,17 @@ services:
     name: halalverify-api
     runtime: python
     rootDir: backend
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt && python -c "import easyocr; easyocr.Reader(['en'], gpu=False, quantize=True)"
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     autoDeploy: true
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
+      - key: MALLOC_ARENA_MAX
+        value: "2"
+      - key: OMP_NUM_THREADS
+        value: "1"
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY

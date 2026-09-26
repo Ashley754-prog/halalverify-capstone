@@ -3,16 +3,14 @@ import { supabase } from '../lib/supabaseClient';
 function resolveApiBaseUrl() {
     if (typeof window !== 'undefined') {
         const customUrl = localStorage.getItem('halalverify_api_url');
-        if (customUrl) return customUrl.replace(/\/+$/, '');
-
-        // If accessed locally on localhost or 127.0.0.1, use local dev backend
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            return (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/+$/, '');
+        // Ignore obsolete ngrok or trycloudflare tunnels that may be left over in localStorage
+        if (customUrl && !customUrl.includes('ngrok-free.dev') && !customUrl.includes('trycloudflare.com')) {
+            return customUrl.replace(/\/+$/, '');
         }
 
-        // On deployed HTTPS site (e.g. Vercel), accept any valid HTTPS env url
+        // On localhost or deployed site, use configured VITE_API_BASE_URL or default cloud backend
         const envUrl = import.meta.env.VITE_API_BASE_URL;
-        if (envUrl && envUrl.startsWith('https://') && !envUrl.includes('trycloudflare.com')) {
+        if (envUrl && envUrl.startsWith('http') && !envUrl.includes('ngrok-free.dev') && !envUrl.includes('trycloudflare.com')) {
             return envUrl.replace(/\/+$/, '');
         }
     }
@@ -61,10 +59,10 @@ export async function authFetch(url, options = {}) {
  */
 export async function analyzeImage(base64Image, mode) {
     const primaryUrl = resolveApiBaseUrl();
-    const fallbackTunnel = 'https://flaky-catwalk-finally.ngrok-free.dev';
+    const cloudUrl = 'https://halalverify-backend.onrender.com';
     const endpointsToTry = [
         primaryUrl,
-        primaryUrl !== fallbackTunnel ? fallbackTunnel : null
+        primaryUrl !== cloudUrl ? cloudUrl : null
     ].filter(Boolean);
 
     let lastError = null;

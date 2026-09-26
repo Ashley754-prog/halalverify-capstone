@@ -1,7 +1,21 @@
 import os
+
+# Limit thread allocations and glibc arenas to prevent OOM in 512MB cloud environments
+os.environ.setdefault("MALLOC_ARENA_MAX", "2")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+
 import time
 from collections import defaultdict
 from threading import Lock
+
+import torch
+torch.set_grad_enabled(False)
+try:
+    torch.set_num_threads(1)
+except Exception:
+    pass
 
 from app.routes import admin, analyze, health, issue_reports, products, registry, scan_history, summaries
 from fastapi import FastAPI, Request
