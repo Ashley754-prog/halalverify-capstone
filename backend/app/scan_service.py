@@ -310,31 +310,13 @@ def analyze_label_image(image_base64: str) -> dict:
     # (Image format checked and held in memory)
     prep_time = round((time.time() - t0) * 1000, 1)
 
-    # Stage 2 & 3: Concurrent Halal Logo Localization (YOLO) and Text Extraction (Cloud Vision)
-    import concurrent.futures
-
-    logo_result = None
-    extracted_text = ""
-    logo_time = 0.0
-    ocr_time = 0.0
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-        fut_logo = executor.submit(detect_halal_logo, image_base64)
-        fut_ocr = executor.submit(extract_text_from_image, image_base64)
-
-        try:
-            logo_result = fut_logo.result(timeout=14)
-            logo_time = 1500.0
-        except Exception as err:
-            logger.warning(f"Logo detection error or timeout: {err}")
-            logo_result = None
-
-        try:
-            extracted_text = fut_ocr.result(timeout=14)
-            ocr_time = 2000.0
-        except Exception as err:
-            logger.warning(f"OCR extraction error or timeout: {err}")
-            extracted_text = ""
+    # Stage 2: Fast Halal Logo Localization (Preloaded YOLO in RAM)
+    t_logo = time.time()
+    try:
+        logo_result = detect_halal_logo(image_base64)
+    except Exception as err:
+        logger.warning(f"Logo detection error: {err}")
+        logo_result = None
 
     if not logo_result:
         logo_result = {
@@ -344,6 +326,18 @@ def analyze_label_image(image_base64: str) -> dict:
             "isInvalidLogo": False,
             "detectedLogos": [],
         }
+    logo_time = round((time.time() - t_logo) * 1000, 1)
+
+    gc.collect()
+
+    # Stage 3: High-Speed Cloud Vision OCR Text Extraction
+    t_ocr = time.time()
+    try:
+        extracted_text = extract_text_from_image(image_base64)
+    except Exception as err:
+        logger.warning(f"OCR extraction error: {err}")
+        extracted_text = ""
+    ocr_time = round((time.time() - t_ocr) * 1000, 1)
 
     gc.collect()
 

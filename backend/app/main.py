@@ -120,3 +120,12 @@ app.include_router(summaries.router)
 app.include_router(issue_reports.router)
 app.include_router(scan_history.router)
 app.include_router(admin.router)
+
+
+@app.on_event("startup")
+def preload_ml_models():
+    try:
+        from app.logo_service import get_yolo_model
+        get_yolo_model()
+    except Exception as e:
+        pass

@@ -35,7 +35,14 @@ export const API_BASE_URL = resolveApiBaseUrl();
  */
 export async function authFetch(url, options = {}) {
     const { timeout = 30000, signal: userSignal, ...fetchOptions } = options;
-    const { data: { session } } = await supabase.auth.getSession();
+    let session = null;
+    try {
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve({ data: {} }), 1500));
+        const sessionRes = await Promise.race([sessionPromise, timeoutPromise]);
+        session = sessionRes?.data?.session;
+    } catch (_) {}
+
     const headers = new Headers(fetchOptions.headers || {});
 
     // Ensure ngrok free interstitial page is bypassed for API calls
