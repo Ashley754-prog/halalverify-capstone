@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Camera, AlertTriangle, Sparkles } from 'lucide-react';
 import Toast from '../components/ui/Toast';
-import { analyzeImage, simulateFallback } from '../utils/api';
+import { analyzeImage, simulateFallback, API_BASE_URL } from '../utils/api';
 import { mergeLabelScans } from '../utils/scanFusion';
 import { useCameraStream } from '../hooks/useCameraStream';
 import CameraViewfinder from '../components/scanner/CameraViewfinder';
@@ -26,6 +26,11 @@ export const Scanner = ({ isOnline, onViewChange }) => {
 
     // Touch Swipe Gesture State
     const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
+
+    // Pre-warm cloud backend in background so it is active before capture
+    useEffect(() => {
+        fetch(`${API_BASE_URL}/health`).catch(() => {});
+    }, []);
 
     // Custom Camera Stream Hook
     const {
