@@ -1,13 +1,9 @@
---extra-index-url https://download.pytorch.org/whl/cpu
-torch>=2.0.0
-torchvision>=0.15.0
 fastapi==0.115.0
 uvicorn[standard]==0.32.0
 python-dotenv==1.0.1
 supabase==2.31.0
-easyocr
+onnxruntime>=1.16.0
 rapidocr-onnxruntime>=1.2.0
 numpy
 pillow
-ultralytics
 opencv-python-headless
