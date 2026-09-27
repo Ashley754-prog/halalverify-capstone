@@ -89,7 +89,7 @@ export default function EstablishmentsMap({ onViewChange }) {
 
             // 1. Query Supabase directly first for instant ~150ms response (zero cold start)
             try {
-                let query = supabase.from('establishments').select('*').order('name');
+                let query = supabase.from('establishments').select('*, certifying_bodies(*)').order('name');
                 if (selectedStatus !== 'all') {
                     query = query.eq('halal_status', selectedStatus);
                 }

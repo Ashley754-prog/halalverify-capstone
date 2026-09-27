@@ -80,7 +80,7 @@ export default function EstablishmentDetailModal({
                         </p>
                         <div className="text-[10px] text-slate-400 flex items-center gap-1 pt-1">
                             <ShieldCheck size={11} className="text-slate-400 shrink-0" />
-                            <span>Verified listing · Source: Muslim in Manila Directory</span>
+                            <span>Verified listing · Source: {establishment.source || 'Official Halal Registry'}</span>
                         </div>
                     </div>
                 </div>
@@ -150,7 +150,7 @@ export default function EstablishmentDetailModal({
                         {establishment.description && (
                             <div className="space-y-1">
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                    About this restaurant
+                                    About this establishment
                                 </span>
                                 <p className="text-slate-700 text-[11px] leading-relaxed">
                                     {establishment.description}
