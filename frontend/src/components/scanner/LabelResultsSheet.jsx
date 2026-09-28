@@ -118,7 +118,7 @@ export const LabelResultsSheet = ({
                         <div className="space-y-3.5">
                             {/* 1. Primary Verdict Card */}
                             <div
-                                className={`p-4 rounded-2xl border flex items-center justify-between ${
+                                className={`p-4 rounded-2xl border flex items-center justify-between gap-3 ${
                                     scanResult.verdict === 'Green'
                                         ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-100'
                                         : scanResult.verdict === 'Yellow'
@@ -126,19 +126,21 @@ export const LabelResultsSheet = ({
                                         : 'bg-red-950/60 border-red-500/40 text-red-100'
                                 }`}
                             >
-                                <div className="space-y-1">
+                                <div className="space-y-1 min-w-0">
                                     <span className="text-[10px] font-bold uppercase tracking-wider opacity-75">
                                         Halal Status
                                     </span>
                                     <p className="text-xl font-bold tracking-tight">
-                                        {scanResult.verdict === 'Green'
-                                            ? 'Verified Halal'
-                                            : scanResult.verdict === 'Yellow'
-                                            ? 'Doubtful (Mashbooh)'
-                                            : 'Prohibited (Haram)'}
+                                        {scanResult.riskLevel || (
+                                            scanResult.verdict === 'Green'
+                                                ? 'Verified Halal'
+                                                : scanResult.verdict === 'Yellow'
+                                                ? 'Needs Review'
+                                                : 'Prohibited (Not Halal)'
+                                        )}
                                     </p>
                                     <p className="text-xs opacity-90 leading-snug">
-                                        {scanResult.riskLevel}
+                                        {scanResult.analysisSummary || scanResult.riskLevel}
                                     </p>
                                 </div>
                                 <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-black/30 border border-white/10 shrink-0">
@@ -152,8 +154,18 @@ export const LabelResultsSheet = ({
                                 </div>
                             </div>
 
-                            {/* 2. Long Packaging / Multi-Section Continuing Scan Action */}
-                            {isMultiPart ? (
+                            {/* 2. Packaging Continuation or Guidance */}
+                            {scanResult.riskLevel === 'No Product Detected' ? (
+                                <div className="p-3 bg-amber-950/30 border border-amber-500/30 rounded-xl space-y-1.5 text-xs text-amber-200">
+                                    <p className="font-semibold flex items-center gap-1.5 text-amber-300">
+                                        <AlertTriangle size={14} className="text-amber-400 shrink-0" />
+                                        <span>How to get an accurate scan</span>
+                                    </p>
+                                    <p className="text-[11px] text-amber-100/80 leading-relaxed">
+                                        Point your camera directly at the packaging showing either the list of ingredients or an accredited Halal logo. Ensure the text is clear, well-lit, and not blurry.
+                                    </p>
+                                </div>
+                            ) : isMultiPart ? (
                                 /* Multi-Part Already Captured View */
                                 <div className="p-3 bg-slate-800/80 border border-slate-700 rounded-xl space-y-2.5">
                                     <div className="flex items-center justify-between">
@@ -294,6 +306,11 @@ export const LabelResultsSheet = ({
                                             );
                                         })}
                                     </div>
+                                ) : scanResult.riskLevel === 'No Product Detected' ? (
+                                    <div className="p-2.5 bg-slate-800/50 border border-slate-700/60 rounded-lg text-xs text-slate-400 flex items-center gap-2">
+                                        <FileText size={15} className="text-slate-500 shrink-0" />
+                                        <span>No ingredient label detected in this photo.</span>
+                                    </div>
                                 ) : (
                                     <div className="p-2.5 bg-emerald-950/40 border border-emerald-500/30 rounded-lg text-xs text-emerald-300 flex items-center gap-2">
                                         <CheckCircle2 size={15} className="text-emerald-400 shrink-0" />
@@ -317,7 +334,24 @@ export const LabelResultsSheet = ({
                                 )}
                             </div>
 
-                            {/* 5. Collapsible Technical & IPO Pipeline Details (Thesis Reference) */}
+                            {/* 5. Recommendations / Next Steps */}
+                            {scanResult.recommendations && scanResult.recommendations.length > 0 && (
+                                <div className="bg-slate-800/80 border border-slate-700 rounded-xl p-3.5 space-y-2">
+                                    <span className="text-xs font-bold uppercase tracking-wider text-slate-300 block">
+                                        Next Steps
+                                    </span>
+                                    <ul className="space-y-1.5 text-xs text-slate-300">
+                                        {scanResult.recommendations.map((rec, idx) => (
+                                            <li key={idx} className="flex items-start gap-2">
+                                                <span className="text-emerald-400 font-bold shrink-0 mt-0.5">•</span>
+                                                <span className="leading-snug">{rec}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {/* 6. Collapsible Technical & IPO Pipeline Details (Thesis Reference) */}
                             <details className="group rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-xs">
                                 <summary className="cursor-pointer font-semibold text-slate-400 hover:text-slate-200 flex items-center justify-between select-none">
                                     <span className="flex items-center gap-1.5">
@@ -362,14 +396,14 @@ export const LabelResultsSheet = ({
                                 </div>
                             </details>
 
-                            {/* 6. Footer Actions */}
+                            {/* 7. Footer Actions */}
                             <div className="pt-2 flex flex-wrap gap-2">
                                 <button
                                     type="button"
                                     onClick={onReset}
                                     className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg active:scale-95 transition"
                                 >
-                                    <RefreshCw size={14} /> Scan Next Product
+                                    <RefreshCw size={14} /> {scanResult.riskLevel === 'No Product Detected' ? 'Scan Food Product' : 'Scan Next Product'}
                                 </button>
                                 <button
                                     type="button"

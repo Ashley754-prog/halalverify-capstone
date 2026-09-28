@@ -109,8 +109,8 @@ def extract_text_with_gemini(image_base64: str) -> str:
         pil_img.save(buf, format="JPEG", quality=85)
         raw_b64 = base64.b64encode(buf.getvalue()).decode()
 
-        # Try gemini-flash-lite-latest first, fallback to gemini-2.5-flash-lite and gemini-flash-latest
-        for model_name in ["gemini-flash-lite-latest", "gemini-2.5-flash-lite", "gemini-flash-latest"]:
+        # Try gemini-flash-lite-latest first, fallback to gemini-2.5-flash and gemini-flash-latest
+        for model_name in ["gemini-flash-lite-latest", "gemini-2.5-flash", "gemini-flash-latest"]:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
             payload = json.dumps({
                 "contents": [{
@@ -148,6 +148,24 @@ def extract_text_with_gemini(image_base64: str) -> str:
                         if parts:
                             extracted = parts[0].get("text", "").strip()
                             if extracted and len(extracted) > 3:
+                                # Check if the response is conversational filler indicating no text was found
+                                lower_text = extracted.lower()
+                                no_text_phrases = [
+                                    "no readable text",
+                                    "no text visible",
+                                    "no text found",
+                                    "no text is visible",
+                                    "no visible text",
+                                    "there is no text",
+                                    "there is no readable text",
+                                    "unable to read text",
+                                    "cannot read any text",
+                                    "no text could be",
+                                ]
+                                if any(phrase in lower_text for phrase in no_text_phrases) and len(extracted) < 120:
+                                    logger.info("Cloud Vision indicated no readable text in image.")
+                                    return ""
+
                                 logger.info(f"Cloud Vision OCR succeeded with {model_name}.")
                                 return extracted
             except Exception as model_err:

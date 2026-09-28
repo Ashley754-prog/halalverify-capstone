@@ -136,7 +136,7 @@ def match_additives_from_text(extracted_text: str):
                 "status": "Doubtful",
                 "reason": (
                     f"E-number {code} was detected on the label but is not yet cataloged in the local halal database. "
-                    "Classified as Doubtful (Syubhah) pending verification."
+                    "Classified as Doubtful pending verification."
                 ),
             })
 
@@ -184,20 +184,45 @@ def build_additive_match_terms(code, name: str):
     return cleaned_terms
 
 
+FOOD_LABEL_KEYWORDS = [
+    "ingredient", "ingredients", "nutrition", "serving", "calories",
+    "sugar", "salt", "water", "oil", "fat", "flour", "wheat", "milk",
+    "flavor", "flavour", "acid", "sodium", "contains", "preservative",
+    "net wt", "net weight", "food", "sauce", "extract", "syrup", "halal",
+    "kosher", "manufactured by", "produced by", "best before", "expiry", "exp date",
+    "protein", "carbohydrate", "allergen", "vitamins", "calcium", "energy",
+    "cocoa", "soy", "lecithin", "starch", "powder", "cheese", "cream", "yeast"
+]
+
+
+def is_food_label_content(text: str, flagged_items: list, logo_detected: bool) -> bool:
+    """Verifies whether an image actually contains food packaging content (ingredients or logo)."""
+    if logo_detected:
+        return True
+    if flagged_items and len(flagged_items) > 0:
+        return True
+    if not text or not text.strip():
+        return False
+    lower = text.lower()
+    if "ingredient" in lower or "nutrition" in lower:
+        return True
+    keyword_matches = sum(1 for kw in FOOD_LABEL_KEYWORDS if kw in lower)
+    return keyword_matches >= 2
+
+
 def explain_label_verdict(flagged_items, extracted_text: str, logo_result: dict = None):
     if not logo_result:
         logo_result = {}
-    has_text = bool(extracted_text and extracted_text.strip())
     logo_detected = logo_result.get("logoDetected", False)
     is_invalid_logo = logo_result.get("isInvalidLogo", False)
     logo_body = logo_result.get("logoBody", "Unknown Logo")
     logo_confidence = logo_result.get("logoConfidence", 0.0)
 
-    # 1. Critical Counterfeit / Invalid Mark Alert
+    # 1. Critical Counterfeit / Fake Logo Alert -> Red
     if is_invalid_logo:
         return {
             "verdict": "Red",
-            "riskLevel": "High Risk (Suspected Invalid / Counterfeit Mark)",
+            "riskLevel": "Suspected Fake Logo",
             "analysisSummary": (
                 "Warning: A suspected unauthorized, altered, or unverified halal certification logo "
                 "was detected on this packaging. Do not rely on this mark."
@@ -206,22 +231,6 @@ def explain_label_verdict(flagged_items, extracted_text: str, logo_result: dict 
                 "Do not purchase or consume without independent halal authority verification.",
                 "Report this suspected counterfeit mark to Philippine Halal authorities (NCMF / accredited HCBs).",
                 "Cross-check manufacturer in the HalalVerify Product Catalog.",
-            ],
-        }
-
-    # 2. Case where OCR could not read text and no logo was found
-    if not has_text and not logo_detected:
-        return {
-            "verdict": "Yellow",
-            "riskLevel": "Unverified",
-            "analysisSummary": (
-                "Neither ingredient text nor an accredited halal certification logo could be "
-                "clearly identified from the image. The product cannot be verified."
-            ),
-            "recommendations": [
-                "Upload a clearer, well-lit photo focusing on the ingredient label and certification seal.",
-                "Ensure the packaging is flat and glare-free.",
-                "Manually verify the product in the HalalVerify Product Catalog.",
             ],
         }
 
@@ -237,15 +246,15 @@ def explain_label_verdict(flagged_items, extracted_text: str, logo_result: dict 
         + statuses.count("needs_review")
     )
 
-    # 3. Prohibited Additives Detected -> Always Red
+    # 2. Prohibited Additives Detected -> Red
     if haram_count:
-        summary_msg = f"OCR detected ingredient text and found {haram_count} prohibited (haram) additive(s)."
+        summary_msg = f"Found {haram_count} prohibited (haram) ingredient(s) on the label. Avoid consuming this product."
         if logo_detected:
-            summary_msg += f" Note: Despite an apparent {logo_body} logo, prohibited ingredients were flagged."
+            summary_msg += f" Note: Despite an apparent {logo_body} logo, prohibited ingredients were declared."
 
         return {
             "verdict": "Red",
-            "riskLevel": "Haram / Prohibited",
+            "riskLevel": "Prohibited (Not Halal)",
             "analysisSummary": summary_msg,
             "recommendations": [
                 "Avoid consuming this product.",
@@ -254,31 +263,47 @@ def explain_label_verdict(flagged_items, extracted_text: str, logo_result: dict 
             ],
         }
 
-    # 4. Doubtful / Unverified Additives Detected -> Yellow
+    # 3. Non-Product Guard: If no logo is detected and text lacks food label indicators (e.g. scanning a face or room)
+    if not is_food_label_content(extracted_text, flagged_items, logo_detected):
+        return {
+            "verdict": "Yellow",
+            "riskLevel": "No Product Detected",
+            "analysisSummary": (
+                "No food ingredients or Halal certification logo were detected in this image. "
+                "Please aim the camera at a packaged food product or ingredient list."
+            ),
+            "recommendations": [
+                "Point the camera directly at the product's ingredient panel.",
+                "Ensure the packaging is well-lit, flat, and in focus.",
+                "Or scan the accredited Halal certification seal on the front of the package.",
+            ],
+        }
+
+    # 4. Doubtful Additives Detected -> Yellow
     if doubtful_count:
-        summary_msg = f"OCR detected ingredient text and found {doubtful_count} doubtful (Syubhah) compound(s)."
+        summary_msg = f"Found {doubtful_count} doubtful ingredient(s) whose source (plant or animal) is not specified on the label."
         if logo_detected:
             summary_msg += f" Recognized certification: {logo_body} ({logo_confidence}% confidence)."
 
         return {
             "verdict": "Yellow",
-            "riskLevel": "Doubtful (Syubhah)",
+            "riskLevel": "Doubtful Ingredient",
             "analysisSummary": summary_msg,
             "recommendations": [
                 "Verify the specific source of the flagged additive with the manufacturer.",
-                "Check whether the product is covered by the certifying body's active manifest.",
+                "Check whether the product is covered by an accredited certifying body's active manifest.",
                 "If unsure, abstain from consumption pending clarification.",
             ],
         }
 
-    # 5. Clean Ingredients (0 Haram, 0 Doubtful)
+    # 5. Clean Ingredients + Accredited Halal Logo Verified -> Green
     if logo_detected:
         return {
             "verdict": "Green",
-            "riskLevel": "Halal Verified",
+            "riskLevel": "Verified Halal",
             "analysisSummary": (
                 f"Accredited {logo_body} logo verified ({logo_confidence}% confidence). "
-                "No prohibited or doubtful food additives matched."
+                "All declared ingredients are clean."
             ),
             "recommendations": [
                 "Product exhibits accredited certification and clean ingredient declarations.",
@@ -286,17 +311,17 @@ def explain_label_verdict(flagged_items, extracted_text: str, logo_result: dict 
             ],
         }
 
-    # Clean ingredients, but no logo detected on this photo
+    # 6. Clean Ingredients, but NO Logo Detected on this photo -> Yellow
     return {
-        "verdict": "Green",
-        "riskLevel": "No Flagged Additives (No Logo Detected)",
+        "verdict": "Yellow",
+        "riskLevel": "No Halal Logo Found",
         "analysisSummary": (
-            "OCR detected ingredient text and found no matching haram additives. "
-            "No accredited halal certification logo was recognized in this frame."
+            "Ingredients appear free of prohibited additives, but no accredited Halal certification "
+            "logo was detected on this packaging. Check the other side for a Halal seal."
         ),
         "recommendations": [
             "Ingredient list appears free of known prohibited E-codes.",
-            "Verify if a halal logo appears on other sides of the packaging.",
+            "Verify if a Halal logo appears on the front panel or other sides of the packaging.",
             "Cross-reference brand name in the HalalVerify Product Catalog.",
         ],
     }

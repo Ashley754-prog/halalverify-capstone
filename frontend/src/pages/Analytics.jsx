@@ -558,7 +558,7 @@ export default function Analytics({ onViewChange }) {
                                 <div className="flex justify-between items-center text-xs">
                                     <span className="font-semibold text-slate-800 flex items-center gap-1.5">
                                         <span className="w-2 h-2 rounded-full bg-amber-500" />
-                                        Doubtful / Mashbooh
+                                        Doubtful
                                     </span>
                                     <div className="flex items-baseline gap-1.5">
                                         <span className="font-mono font-bold text-slate-900">{doubtfulCount}</span>

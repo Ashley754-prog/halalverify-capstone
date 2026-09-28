@@ -301,7 +301,7 @@ export const Scanner = ({ isOnline, onViewChange }) => {
                         className="px-4 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-2xl flex items-center gap-2 active:scale-95 transition border border-emerald-400/40 backdrop-blur-md whitespace-nowrap"
                     >
                         <Sparkles size={14} className="text-emerald-200" />
-                        <span>View Inspection Results ({scanResult?.verdict || certResult?.status || 'Ready'})</span>
+                        <span>View Inspection Results ({scanResult?.riskLevel || scanResult?.verdict || certResult?.status || 'Ready'})</span>
                     </button>
                 </div>
             )}

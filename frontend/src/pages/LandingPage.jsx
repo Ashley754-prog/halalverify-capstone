@@ -563,7 +563,7 @@ export default function LandingPage({ onViewChange, userRole }) {
                       <ShieldCheck size={13} className="sm:h-[14px] sm:w-[14px]" />
                     </div>
                     <h4 className="font-bold text-white text-xs sm:text-sm">Ingredient & Logo Audit</h4>
-                    <p className="mt-1 text-[10px] text-slate-400 sm:text-xs leading-relaxed">Cross-referenced with haram/mashbooh additives and certifiers.</p>
+                    <p className="mt-1 text-[10px] text-slate-400 sm:text-xs leading-relaxed">Cross-referenced with prohibited and doubtful additives and certifiers.</p>
                   </div>
                   <div className="mt-3 rounded-lg bg-slate-950/80 p-2 font-mono text-[9px] text-slate-300 border border-slate-800 sm:rounded-xl sm:p-2.5 sm:text-[11px] space-y-0.5">
                     <span className="block"><span className="text-emerald-400">&gt;</span> 0 Flagged Haram Additives</span>
