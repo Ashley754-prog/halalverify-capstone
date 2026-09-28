@@ -43,7 +43,7 @@ const calculateDistanceKm = (lat1, lon1, lat2, lon2) => {
 
 const ZAMBOANGA_CENTER = { lat: 6.9214, lng: 122.0790 };
 
-export default function EstablishmentsMap({ onViewChange }) {
+export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '' }) {
     const mapContainerRef = useRef(null);
     const mapInstanceRef = useRef(null);
     const heatLayerRef = useRef(null);
@@ -52,14 +52,21 @@ export default function EstablishmentsMap({ onViewChange }) {
 
     const [establishments, setEstablishments] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [mobileTab, setMobileTab] = useState('map');
+    const [mobileTab, setMobileTab] = useState(initialSearchQuery ? 'list' : 'map');
     const [showHeatmap, setShowHeatmap] = useState(false);
     const [showMarkers, setShowMarkers] = useState(true);
 
     // Filters (Certifier filter removed per instructions)
     const [selectedStatus, setSelectedStatus] = useState('all');
     const [selectedRadius, setSelectedRadius] = useState('all');
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery, setSearchQuery] = useState(initialSearchQuery || '');
+
+    useEffect(() => {
+        if (initialSearchQuery) {
+            setSearchQuery(initialSearchQuery);
+            setMobileTab('list');
+        }
+    }, [initialSearchQuery]);
 
     // User Geolocation
     const [userLocation, setUserLocation] = useState(null);

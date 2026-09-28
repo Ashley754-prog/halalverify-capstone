@@ -261,17 +261,24 @@ export const ScanHistory = ({ userRole, onViewChange }) => {
                                     </td>
 
                                     <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-16 sm:w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full rounded-full bg-emerald-500"
-                                                    style={{ width: `${Number(item.confidence || 0) * 100}%` }}
-                                                />
-                                            </div>
-                                            <span className="text-xs font-mono text-slate-600">
-                                                {(Number(item.confidence || 0) * 100).toFixed(0)}%
-                                            </span>
-                                        </div>
+                                        {(() => {
+                                            const raw = Number(item.confidence || 0);
+                                            const pct = raw > 1 ? raw : raw * 100;
+                                            const clamped = Math.min(100, Math.max(0, pct));
+                                            return (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-16 sm:w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full rounded-full bg-emerald-500"
+                                                            style={{ width: `${clamped}%` }}
+                                                        />
+                                                    </div>
+                                                    <span className="text-xs font-mono text-slate-600">
+                                                        {clamped.toFixed(0)}%
+                                                    </span>
+                                                </div>
+                                            );
+                                        })()}
                                     </td>
                                     <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs text-slate-500 whitespace-nowrap">
                                         <span className="inline-flex items-center gap-1.5">

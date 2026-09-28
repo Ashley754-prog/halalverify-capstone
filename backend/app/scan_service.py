@@ -575,6 +575,10 @@ def analyze_label_image(image_base64: str) -> dict:
 
 def save_scan_history(mode: str, result: dict, user_id: str = None):
     try:
+        # Do not save non-product scans (faces, walls, room) to avoid polluting scan history and analytics
+        if mode == "label" and result.get("riskLevel") == "No Product Detected":
+            return
+
         if mode == "label":
             verdict = VERDICT_TO_STATUS.get(result.get("verdict"), "Unknown")
             confidence = result.get("logoConfidence", 0)

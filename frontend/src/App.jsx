@@ -249,13 +249,25 @@ export default function App() {
           />
         );
       case 'map':
-        return <EstablishmentsMap userRole={userRole} onViewChange={handleViewChange} />;
+        return (
+          <EstablishmentsMap
+            userRole={userRole}
+            onViewChange={handleViewChange}
+            initialSearchQuery={viewParams.searchQuery || ''}
+          />
+        );
       case 'registry':
         return <Registry userRole={userRole} onViewChange={handleViewChange} />;
       case 'scan-history':
         return <ScanHistory userRole={userRole} onViewChange={handleViewChange} />;
       case 'report-issue':
-        return <ReportIssue userRole={userRole} onViewChange={handleViewChange} />;
+        return (
+          <ReportIssue
+            userRole={userRole}
+            onViewChange={handleViewChange}
+            initialParams={viewParams}
+          />
+        );
       case 'verification-queue':
         return userRole === 'admin' ? (
           <VerificationQueue userRole={userRole} onViewChange={handleViewChange} />

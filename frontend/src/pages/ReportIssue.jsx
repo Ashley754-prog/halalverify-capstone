@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Flag, ScanSearch, FileText, Store, CheckCircle, Upload, X, FileImage } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import Modal from '../components/ui/Modal';
@@ -16,19 +16,32 @@ const ISSUE_TYPES = [
     'Other',
 ];
 
-export const ReportIssue = ({ userRole, onViewChange }) => {
+export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
     const [submitted, setSubmitted] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
     const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
-    const [form, setForm] = useState({
-        issueType: '',
-        relatedTo: 'product',
-        name: '',
-        description: '',
-        evidenceUrl: '',
-    });
+    const [form, setForm] = useState(() => ({
+        issueType: initialParams?.issueType || '',
+        relatedTo: initialParams?.relatedTo || 'product',
+        name: initialParams?.subjectName || initialParams?.name || '',
+        description: initialParams?.description || '',
+        evidenceUrl: initialParams?.evidenceUrl || '',
+    }));
+
+    useEffect(() => {
+        if (initialParams && Object.keys(initialParams).length > 0) {
+            setForm(prev => ({
+                ...prev,
+                issueType: initialParams.issueType || prev.issueType,
+                relatedTo: initialParams.relatedTo || prev.relatedTo,
+                name: initialParams.subjectName || initialParams.name || prev.name,
+                description: initialParams.description || prev.description,
+                evidenceUrl: initialParams.evidenceUrl || prev.evidenceUrl,
+            }));
+        }
+    }, [initialParams]);
 
     const handleChange = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
@@ -236,6 +249,12 @@ export const ReportIssue = ({ userRole, onViewChange }) => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
                 <form onSubmit={handleSubmit} className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6">
+                    {(initialParams?.subjectName || initialParams?.name) && (
+                        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center justify-between gap-2">
+                            <span>Pre-filled with details from your recent scan. You can review or adjust anything before submitting.</span>
+                            <span className="text-[10px] font-bold uppercase bg-emerald-100 px-2 py-0.5 rounded text-emerald-700 shrink-0">Auto-Linked</span>
+                        </div>
+                    )}
                     <div>
                         <label className="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-1.5 sm:mb-2">
                             Issue Type <span className="text-red-500">*</span>

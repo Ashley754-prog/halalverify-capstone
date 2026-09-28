@@ -16,7 +16,7 @@ export const Dashboard = ({ onViewChange }) => {
                 const [scansCount, prodCount, addCount, estCount, repCount] = await Promise.all([
                     supabase.from('scan_history').select('*', { count: 'exact', head: true }),
                     supabase.from('products').select('*', { count: 'exact', head: true }),
-                    supabase.from('additives').select('*', { count: 'exact', head: true }).eq('halal_status', 'haram'),
+                    supabase.from('additives').select('*', { count: 'exact', head: true }).in('status', ['Haram', 'Doubtful']),
                     supabase.from('establishments').select('*', { count: 'exact', head: true }),
                     supabase.from('issue_reports').select('*', { count: 'exact', head: true }).eq('status', 'open'),
                 ]);

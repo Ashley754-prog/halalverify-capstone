@@ -3,7 +3,8 @@ import {
     Sparkles,
     RefreshCw,
     Flag,
-    ChevronDown
+    ChevronDown,
+    MapPin
 } from 'lucide-react';
 
 export const CertResultsSheet = ({
@@ -126,6 +127,18 @@ export const CertResultsSheet = ({
                                 <p className="text-slate-300">Expiry Date: <span className="font-bold text-white">{certResult.expirationDate || 'Not detected'}</span></p>
                             </div>
 
+                            {/* Map Bridge for Certified Establishment */}
+                            {certResult.status === 'Valid' && certResult.establishmentName && (
+                                <button
+                                    type="button"
+                                    onClick={() => onViewChange?.('map', { searchQuery: certResult.establishmentName })}
+                                    className="w-full py-2.5 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-xs font-semibold text-emerald-300 flex items-center justify-center gap-2 transition active:scale-95 shadow-xs"
+                                >
+                                    <MapPin size={14} className="text-emerald-400" />
+                                    <span>Find &ldquo;{certResult.establishmentName}&rdquo; on Establishments Map</span>
+                                </button>
+                            )}
+
                             <div className="pt-2 flex flex-wrap gap-2">
                                 <button
                                     type="button"
@@ -136,7 +149,14 @@ export const CertResultsSheet = ({
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => onViewChange?.('report-issue')}
+                                    onClick={() => {
+                                        onViewChange?.('report-issue', {
+                                            relatedTo: 'establishment',
+                                            subjectName: certResult.establishmentName || 'Scanned Certificate',
+                                            issueType: certResult.status === 'Suspicious' ? 'Establishment Status Incorrect' : 'Wrong Verdict (Scanner Error)',
+                                            description: `Certificate Verification: ${certResult.status || 'N/A'}\nEstablishment: ${certResult.establishmentName || 'N/A'}\nCertifier: ${certResult.certifyingBody || 'N/A'}\nCertificate Number: ${certResult.certificateNumber || 'N/A'}\nExpiry Date: ${certResult.expirationDate || 'N/A'}`
+                                        });
+                                    }}
                                     className="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 flex items-center justify-center gap-2 active:scale-95 transition"
                                 >
                                     <Flag size={15} /> Report Discrepancy

@@ -12,7 +12,8 @@ import {
     Layers,
     PlusCircle,
     ChevronRight,
-    Cpu
+    Cpu,
+    Package
 } from 'lucide-react';
 
 export const LabelResultsSheet = ({
@@ -396,7 +397,19 @@ export const LabelResultsSheet = ({
                                 </div>
                             </details>
 
-                            {/* 7. Footer Actions */}
+                            {/* 7. Catalog Bridge (When No Logo Found) */}
+                            {scanResult.riskLevel === 'No Halal Logo Found' && (
+                                <button
+                                    type="button"
+                                    onClick={() => onViewChange?.('products')}
+                                    className="w-full py-2.5 px-3.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 font-semibold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-xs"
+                                >
+                                    <Package size={14} className="text-emerald-400 shrink-0" />
+                                    <span>Check Brand in Verified Products Catalog</span>
+                                </button>
+                            )}
+
+                            {/* 8. Footer Actions */}
                             <div className="pt-2 flex flex-wrap gap-2">
                                 <button
                                     type="button"
@@ -407,7 +420,32 @@ export const LabelResultsSheet = ({
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => onViewChange?.('report-issue')}
+                                    onClick={() => {
+                                        const issueType = scanResult.isInvalidLogo
+                                            ? 'Suspicious / Counterfeit Logo'
+                                            : scanResult.riskLevel === 'No Product Detected'
+                                            ? 'Wrong Verdict (Scanner Error)'
+                                            : scanResult.flaggedIngredients?.length > 0
+                                            ? 'Ingredient Incorrectly Flagged'
+                                            : 'Wrong Verdict (Scanner Error)';
+
+                                        const descLines = [
+                                            `Result: ${scanResult.riskLevel || scanResult.verdict}`,
+                                            scanResult.analysisSummary ? `Details: ${scanResult.analysisSummary}` : '',
+                                            scanResult.logoDetected ? `Logo: ${scanResult.logoBody} (${scanResult.logoConfidence}% match)` : 'Logo: None detected',
+                                        ];
+                                        if (scanResult.flaggedIngredients?.length > 0) {
+                                            descLines.push(`Flagged: ${scanResult.flaggedIngredients.map(f => f.ingredient).join(', ')}`);
+                                        }
+
+                                        onViewChange?.('report-issue', {
+                                            relatedTo: 'product',
+                                            subjectName: scanResult.logoDetected ? `${scanResult.logoBody} Product` : 'Scanned Food Packaging',
+                                            issueType,
+                                            description: descLines.join('\n'),
+                                            evidenceUrl: scanResult.images?.[0] || ''
+                                        });
+                                    }}
                                     className="py-2.5 px-3.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold text-xs border border-slate-700 flex items-center justify-center gap-1.5 active:scale-95 transition"
                                 >
                                     <Flag size={13} /> Report
