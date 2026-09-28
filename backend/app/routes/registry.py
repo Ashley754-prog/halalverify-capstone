@@ -352,6 +352,8 @@ def submit_establishment(
         establishment_payload["certificate_number"] = ai_eval["certificate_number"]
     if ai_eval.get("expiry_date"):
         establishment_payload["expiry_date"] = ai_eval["expiry_date"]
+    if ai_eval.get("certifying_body_id") and not establishment_payload.get("certifying_body_id"):
+        establishment_payload["certifying_body_id"] = ai_eval["certifying_body_id"]
 
     clean_payload = {k: v for k, v in establishment_payload.items() if v is not None}
 

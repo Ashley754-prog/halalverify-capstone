@@ -277,6 +277,8 @@ def submit_product(
     product_payload["verified_at"] = ai_eval["verified_at"]
     product_payload["verified_by"] = ai_eval["verified_by"]
     product_payload["admin_notes"] = ai_eval["admin_notes"]
+    if ai_eval.get("certifying_body_id") and not product_payload.get("certifying_body_id"):
+        product_payload["certifying_body_id"] = ai_eval["certifying_body_id"]
 
     clean_payload = {k: v for k, v in product_payload.items() if v is not None}
 

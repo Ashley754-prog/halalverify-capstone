@@ -15,6 +15,10 @@ from app.schemas.registry import (
     HcbRegistryUpdate,
 )
 from app.supabase_client import supabase
+from app.auto_verification_service import (
+    evaluate_establishment_submission,
+    evaluate_product_submission,
+)
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
@@ -571,4 +575,200 @@ def delete_admin_hcb_entry(hcb_id: str, user: dict = Depends(require_admin)):
         return {"success": True, "data": {"id": hcb_id, "deleted": True}}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete HCB entry: {str(e)}")
+
+
+# ---------------------------------------------------------------------------
+# Automated AI Verification Endpoints
+# ---------------------------------------------------------------------------
+
+@router.post("/establishments/{establishment_id}/auto-verify")
+def auto_verify_establishment_endpoint(
+    establishment_id: str,
+    auto_approve: bool = Query(True, description="Automatically mark as VERIFIED if score >= 70 and unexpired"),
+    user: dict = Depends(require_admin),
+):
+    """
+    Triggers the AI Automated Verification Engine for a specific establishment submission.
+    Performs OCR on the certificate image, validates against accredited HCB registries,
+    and updates or auto-approves the submission.
+    """
+    res = supabase.table("establishments").select("*, certifying_bodies(*)").eq("id", establishment_id).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Establishment not found")
+
+    est = res.data[0]
+    eval_result = evaluate_establishment_submission(est)
+
+    update_fields = {
+        "admin_notes": eval_result["admin_notes"],
+    }
+    if eval_result.get("certificate_number") and not est.get("certificate_number"):
+        update_fields["certificate_number"] = eval_result["certificate_number"]
+    if eval_result.get("expiry_date") and not est.get("expiry_date"):
+        update_fields["expiry_date"] = eval_result["expiry_date"]
+    if eval_result.get("certifying_body_id") and not est.get("certifying_body_id"):
+        update_fields["certifying_body_id"] = eval_result["certifying_body_id"]
+
+    now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+    if auto_approve and eval_result["is_auto_approved"]:
+        update_fields["halal_status"] = "verified"
+        update_fields["verified_at"] = now_iso
+        update_fields["verified_by"] = "AI_AUTOMATED_PIPELINE"
+
+        # Cascade to pending products linked to this establishment
+        try:
+            supabase.table("products").update({
+                "status": "VERIFIED",
+                "verified_at": now_iso,
+                "verified_by": "AI_AUTOMATED_PIPELINE",
+            }).eq("establishment_id", establishment_id).ilike("status", "%pending%").execute()
+        except Exception as p_err:
+            print(f"Warning: cascaded product approval: {p_err}")
+
+    supabase.table("establishments").update(update_fields).eq("id", establishment_id).execute()
+
+    updated_res = supabase.table("establishments").select("*, certifying_bodies(*)").eq("id", establishment_id).execute()
+
+    return {
+        "success": True,
+        "is_auto_approved": eval_result["is_auto_approved"],
+        "score": eval_result["score"],
+        "evaluation": eval_result,
+        "data": updated_res.data[0] if updated_res.data else est,
+    }
+
+
+@router.post("/products/{product_id}/auto-verify")
+def auto_verify_product_endpoint(
+    product_id: str,
+    auto_approve: bool = Query(True, description="Automatically mark as VERIFIED if score >= 70 and clean additives"),
+    user: dict = Depends(require_admin),
+):
+    """
+    Triggers the AI Automated Verification Engine for a specific community product submission.
+    Screens chemical additives and cross-checks certifying body credentials.
+    """
+    res = supabase.table("products").select("*, certifying_bodies(*)").eq("id", product_id).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    prod = res.data[0]
+    eval_result = evaluate_product_submission(prod)
+
+    update_fields = {
+        "admin_notes": eval_result["admin_notes"],
+    }
+    now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    if auto_approve and eval_result["is_auto_approved"]:
+        update_fields["status"] = "VERIFIED"
+        update_fields["verified_at"] = now_iso
+        update_fields["verified_by"] = "AI_AUTOMATED_PIPELINE"
+
+    supabase.table("products").update(update_fields).eq("id", product_id).execute()
+
+    updated_res = supabase.table("products").select("*, certifying_bodies(*)").eq("id", product_id).execute()
+
+    return {
+        "success": True,
+        "is_auto_approved": eval_result["is_auto_approved"],
+        "score": eval_result["score"],
+        "evaluation": eval_result,
+        "data": updated_res.data[0] if updated_res.data else prod,
+    }
+
+
+@router.post("/auto-verify-all")
+def auto_verify_all_pending(
+    auto_approve: bool = Query(True, description="Automatically approve submissions exceeding the 70% threshold"),
+    user: dict = Depends(require_admin),
+):
+    """
+    Batch administrative action: runs AI verification across all pending establishments and products.
+    Auto-approves qualifying submissions and flags dubious or expired ones for manual inspection.
+    """
+    # 1. Pending Establishments
+    est_res = (
+        supabase.table("establishments")
+        .select("*, certifying_bodies(*)")
+        .or_("halal_status.ilike.%pending%,halal_status.ilike.%review%,halal_status.ilike.%needs_review%")
+        .execute()
+    )
+    pending_establishments = est_res.data or []
+
+    approved_est_count = 0
+    audited_est_count = 0
+
+    now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+    for est in pending_establishments:
+        try:
+            eval_res = evaluate_establishment_submission(est)
+            audited_est_count += 1
+
+            update_fields = {"admin_notes": eval_res["admin_notes"]}
+            if eval_res.get("certificate_number") and not est.get("certificate_number"):
+                update_fields["certificate_number"] = eval_res["certificate_number"]
+            if eval_res.get("expiry_date") and not est.get("expiry_date"):
+                update_fields["expiry_date"] = eval_res["expiry_date"]
+            if eval_res.get("certifying_body_id") and not est.get("certifying_body_id"):
+                update_fields["certifying_body_id"] = eval_res["certifying_body_id"]
+
+            if auto_approve and eval_res["is_auto_approved"]:
+                update_fields["halal_status"] = "verified"
+                update_fields["verified_at"] = now_iso
+                update_fields["verified_by"] = "AI_AUTOMATED_PIPELINE"
+                approved_est_count += 1
+
+                try:
+                    supabase.table("products").update({
+                        "status": "VERIFIED",
+                        "verified_at": now_iso,
+                        "verified_by": "AI_AUTOMATED_PIPELINE",
+                    }).eq("establishment_id", est["id"]).ilike("status", "%pending%").execute()
+                except Exception:
+                    pass
+
+            supabase.table("establishments").update(update_fields).eq("id", est["id"]).execute()
+        except Exception as e:
+            print(f"Error auto-verifying establishment {est.get('id')}: {e}")
+
+    # 2. Pending Products
+    prod_res = (
+        supabase.table("products")
+        .select("*, certifying_bodies(*)")
+        .ilike("status", "%pending%")
+        .execute()
+    )
+    pending_products = prod_res.data or []
+
+    approved_prod_count = 0
+    audited_prod_count = 0
+
+    for prod in pending_products:
+        try:
+            eval_res = evaluate_product_submission(prod)
+            audited_prod_count += 1
+
+            update_fields = {"admin_notes": eval_res["admin_notes"]}
+            if auto_approve and eval_res["is_auto_approved"]:
+                update_fields["status"] = "VERIFIED"
+                update_fields["verified_at"] = now_iso
+                update_fields["verified_by"] = "AI_AUTOMATED_PIPELINE"
+                approved_prod_count += 1
+
+            supabase.table("products").update(update_fields).eq("id", prod["id"]).execute()
+        except Exception as e:
+            print(f"Error auto-verifying product {prod.get('id')}: {e}")
+
+    return {
+        "success": True,
+        "message": f"Processed {audited_est_count} establishments ({approved_est_count} auto-approved) and {audited_prod_count} products ({approved_prod_count} auto-approved).",
+        "summary": {
+            "establishments_audited": audited_est_count,
+            "establishments_approved": approved_est_count,
+            "products_audited": audited_prod_count,
+            "products_approved": approved_prod_count,
+        }
+    }
 

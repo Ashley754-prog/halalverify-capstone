@@ -128,13 +128,14 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
         except Exception:
             pass
 
-    # Check text/certificate number for accredited HCB acronyms
+    matched_hcb_code = None
     if not hcb_matched and cert_no:
         upper_cert = cert_no.upper()
         for code in ACCREDITED_HCB_CODES:
             if code in upper_cert:
                 hcb_matched = True
                 hcb_name = f"Accredited Body ({code})"
+                matched_hcb_code = code
                 break
 
     if not hcb_matched and ocr_text:
@@ -143,7 +144,18 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
             if code in upper_ocr:
                 hcb_matched = True
                 hcb_name = f"Accredited Body ({code})"
+                matched_hcb_code = code
                 break
+
+    # If code was matched but hcb_id not provided, resolve to database certifying_body_id
+    if not hcb_id and matched_hcb_code:
+        try:
+            db_hcb = supabase.table("certifying_bodies").select("id, name, code").ilike("code", matched_hcb_code).execute()
+            if db_hcb.data:
+                hcb_id = db_hcb.data[0]["id"]
+                hcb_name = db_hcb.data[0]["name"]
+        except Exception:
+            pass
 
     if hcb_matched:
         score += 35
@@ -223,6 +235,7 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
         "verified_by": "AI_AUTOMATED_PIPELINE" if is_auto_approved else None,
         "certificate_number": cert_no,
         "expiry_date": parsed_expiry.isoformat() if parsed_expiry else expiry_str,
+        "certifying_body_id": hcb_id,
         "admin_notes": summary_note,
         "audit_trail": {
             "score": score,
@@ -288,13 +301,24 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
         except Exception:
             pass
 
+    matched_hcb_code = None
     if not hcb_matched and cert_no:
         upper_cert = cert_no.upper()
         for code in ACCREDITED_HCB_CODES:
             if code in upper_cert:
                 hcb_matched = True
                 hcb_name = f"Accredited Body ({code})"
+                matched_hcb_code = code
                 break
+
+    if not hcb_id and matched_hcb_code:
+        try:
+            db_hcb = supabase.table("certifying_bodies").select("id, name, code").ilike("code", matched_hcb_code).execute()
+            if db_hcb.data:
+                hcb_id = db_hcb.data[0]["id"]
+                hcb_name = db_hcb.data[0]["name"]
+        except Exception:
+            pass
 
     if hcb_matched:
         score += 35
@@ -345,6 +369,7 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
         "status": final_status,
         "verified_at": now_iso if is_auto_approved else None,
         "verified_by": "AI_AUTOMATED_PIPELINE" if is_auto_approved else None,
+        "certifying_body_id": hcb_id,
         "admin_notes": summary_note,
         "audit_trail": {
             "score": score,

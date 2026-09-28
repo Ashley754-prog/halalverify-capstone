@@ -13,7 +13,9 @@ import {
     RotateCw,
     MapPin,
     RefreshCw,
-    AlertTriangle
+    AlertTriangle,
+    Sparkles,
+    Bot
 } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import Modal from '../components/ui/Modal';
@@ -26,6 +28,9 @@ export default function VerificationQueue({ onViewChange }) {
     const [activeTab, setActiveTab] = useState('establishments'); // 'establishments' | 'products' | 'reports'
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState(null);
+    const [autoVerifyingId, setAutoVerifyingId] = useState(null);
+    const [autoVerifyingAll, setAutoVerifyingAll] = useState(false);
+    const [aiEvalResult, setAiEvalResult] = useState(null);
 
     // Data lists
     const [establishments, setEstablishments] = useState([]);
@@ -118,6 +123,7 @@ export default function VerificationQueue({ onViewChange }) {
         setCertNumber(item.certificate_number || '');
         setExpiryDate(item.expiry_date || '');
         setSelectedHcbId(item.certifying_body_id || '');
+        setAiEvalResult(null);
         setZoomLevel(1);
         setRotation(0);
     };
@@ -128,6 +134,118 @@ export default function VerificationQueue({ onViewChange }) {
         setCertNumber('');
         setExpiryDate('');
         setSelectedHcbId('');
+        setAiEvalResult(null);
+    };
+
+    // Trigger AI Auto-Verify for single establishment
+    const handleAutoVerifyEstablishment = async (estId, autoApprove = true) => {
+        try {
+            setAutoVerifyingId(estId);
+            const res = await authFetch(`${API_BASE_URL}/api/v1/admin/establishments/${estId}/auto-verify?auto_approve=${autoApprove}`, {
+                method: 'POST',
+            });
+            if (res.ok) {
+                const data = await res.json();
+                const evalData = data.evaluation || {};
+
+                // If in modal, populate fields
+                if (inspectingItem && inspectingItem.id === estId) {
+                    setAiEvalResult(evalData);
+                    if (evalData.certificate_number) setCertNumber(evalData.certificate_number);
+                    if (evalData.expiry_date) setExpiryDate(evalData.expiry_date);
+                    if (evalData.certifying_body_id) setSelectedHcbId(evalData.certifying_body_id);
+                    if (evalData.admin_notes) setAdminNotes(evalData.admin_notes);
+                }
+
+                if (data.is_auto_approved && autoApprove) {
+                    setToast({
+                        visible: true,
+                        message: `AI Auto-Approved: Confidence ${data.score}%. Verified & published to map!`,
+                        type: 'success',
+                    });
+                    if (inspectingItem && inspectingItem.id === estId) {
+                        closeInspection();
+                    }
+                    fetchQueueData();
+                } else {
+                    const firstReason = evalData.audit_trail?.reasons?.[0];
+                    setToast({
+                        visible: true,
+                        message: `AI Screened (Score: ${data.score}%). ${firstReason ? firstReason : 'Form auto-filled. Please inspect.'}`,
+                        type: 'info',
+                    });
+                    fetchQueueData();
+                }
+            } else {
+                setToast({ visible: true, message: 'Automated verification service unavailable.', type: 'error' });
+            }
+        } catch (err) {
+            console.error('Auto verify failed:', err);
+            setToast({ visible: true, message: 'Could not contact automated verification service.', type: 'error' });
+        } finally {
+            setAutoVerifyingId(null);
+        }
+    };
+
+    // Trigger AI Auto-Verify for single product
+    const handleAutoVerifyProduct = async (prodId, autoApprove = true) => {
+        try {
+            setAutoVerifyingId(prodId);
+            const res = await authFetch(`${API_BASE_URL}/api/v1/admin/products/${prodId}/auto-verify?auto_approve=${autoApprove}`, {
+                method: 'POST',
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.is_auto_approved && autoApprove) {
+                    setToast({
+                        visible: true,
+                        message: `AI Auto-Approved Product: Confidence ${data.score}%. Published to catalog!`,
+                        type: 'success',
+                    });
+                    fetchQueueData();
+                } else {
+                    setToast({
+                        visible: true,
+                        message: `AI Screened: Score ${data.score}%. Manual inspection advised.`,
+                        type: 'info',
+                    });
+                    fetchQueueData();
+                }
+            } else {
+                setToast({ visible: true, message: 'Automated product check failed.', type: 'error' });
+            }
+        } catch (err) {
+            console.error('Auto verify product error:', err);
+            setToast({ visible: true, message: 'Automated product check encountered an error.', type: 'error' });
+        } finally {
+            setAutoVerifyingId(null);
+        }
+    };
+
+    // Batch Auto-Verify All Pending
+    const handleAutoVerifyAll = async () => {
+        try {
+            setAutoVerifyingAll(true);
+            const res = await authFetch(`${API_BASE_URL}/api/v1/admin/auto-verify-all?auto_approve=true`, {
+                method: 'POST',
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setToast({
+                    visible: true,
+                    message: data.message || 'Batch automated verification complete!',
+                    type: 'success',
+                });
+                fetchQueueData();
+            } else {
+                setToast({ visible: true, message: 'Batch auto-verification failed.', type: 'error' });
+            }
+        } catch (err) {
+            console.error('Batch auto-verify error:', err);
+            setToast({ visible: true, message: 'Batch auto-verification encountered an error.', type: 'error' });
+        } finally {
+            setAutoVerifyingAll(false);
+        }
     };
 
     // Verify / Reject Establishment
@@ -347,16 +465,29 @@ export default function VerificationQueue({ onViewChange }) {
                     </button>
                 </div>
 
-                <button
-                    type="button"
-                    onClick={fetchQueueData}
-                    disabled={loading}
-                    className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition flex items-center gap-1.5 text-xs font-semibold"
-                    title="Refresh Queue"
-                >
-                    <RefreshCw size={14} className={loading ? 'animate-spin text-emerald-600' : ''} />
-                    <span className="hidden sm:inline">Refresh</span>
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={handleAutoVerifyAll}
+                        disabled={autoVerifyingAll || (establishments.length === 0 && products.length === 0)}
+                        className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white transition flex items-center gap-1.5 text-xs font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Automatically run OCR & HCB validation across all pending submissions"
+                    >
+                        <Sparkles size={14} className={autoVerifyingAll ? 'animate-spin' : ''} />
+                        <span>{autoVerifyingAll ? 'Auditing All...' : 'Auto-Verify All (AI)'}</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={fetchQueueData}
+                        disabled={loading}
+                        className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition flex items-center gap-1.5 text-xs font-semibold"
+                        title="Refresh Queue"
+                    >
+                        <RefreshCw size={14} className={loading ? 'animate-spin text-emerald-600' : ''} />
+                        <span className="hidden sm:inline">Refresh</span>
+                    </button>
+                </div>
             </div>
 
             {/* Tab 1: Establishment Submissions */}
@@ -420,6 +551,25 @@ export default function VerificationQueue({ onViewChange }) {
                                             </div>
                                         </div>
 
+                                        {/* AI Pre-Check Audit Indicator */}
+                                        {est.admin_notes && est.admin_notes.includes('AI AUTO-APPROVED') && (
+                                            <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-2 text-[11px] font-bold text-emerald-800 flex items-center justify-between">
+                                                <span className="flex items-center gap-1.5">
+                                                    <Sparkles size={13} className="text-emerald-600 shrink-0" />
+                                                    AI Pre-Approved (High Match)
+                                                </span>
+                                                <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full font-bold">70%+</span>
+                                            </div>
+                                        )}
+                                        {est.admin_notes && est.admin_notes.includes('AI AUDITED') && (
+                                            <div className="rounded-lg bg-amber-50 border border-amber-200 p-2 text-[11px] font-bold text-amber-800 flex items-center justify-between">
+                                                <span className="flex items-center gap-1.5 truncate">
+                                                    <AlertTriangle size={13} className="text-amber-600 shrink-0" />
+                                                    AI Audit: Manual Review Needed
+                                                </span>
+                                            </div>
+                                        )}
+
                                         {est.certificate_url && (
                                             <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-2 text-xs flex items-center justify-between text-emerald-800">
                                                 <span className="flex items-center gap-1.5 font-semibold text-[11px]">
@@ -431,14 +581,28 @@ export default function VerificationQueue({ onViewChange }) {
                                         )}
                                     </div>
 
-                                    <button
-                                        type="button"
-                                        onClick={() => openInspection(est)}
-                                        className="w-full py-2 px-3 rounded-xl text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 transition flex items-center justify-center gap-1.5 shadow-sm"
-                                    >
-                                        <ShieldCheck size={14} />
-                                        <span>Side-by-Side Inspect & Verify</span>
-                                    </button>
+                                    <div className="flex items-center gap-2 pt-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => openInspection(est)}
+                                            className="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 transition flex items-center justify-center gap-1.5 shadow-sm"
+                                        >
+                                            <ShieldCheck size={14} />
+                                            <span>Inspect & Verify</span>
+                                        </button>
+                                        {est.certificate_url && (
+                                            <button
+                                                type="button"
+                                                disabled={autoVerifyingId === est.id}
+                                                onClick={() => handleAutoVerifyEstablishment(est.id, true)}
+                                                className="py-2 px-3 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition flex items-center justify-center gap-1 shrink-0"
+                                                title="Run instant AI OCR & Auto-Approve if valid"
+                                            >
+                                                <Sparkles size={13} className={autoVerifyingId === est.id ? 'animate-spin text-emerald-600' : ''} />
+                                                <span className="hidden sm:inline">Auto-Verify</span>
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -486,9 +650,19 @@ export default function VerificationQueue({ onViewChange }) {
                                     <div className="flex items-center gap-2 self-end sm:self-auto">
                                         <button
                                             type="button"
+                                            disabled={autoVerifyingId === prod.id}
+                                            onClick={() => handleAutoVerifyProduct(prod.id, true)}
+                                            className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition flex items-center gap-1"
+                                            title="Screen additives and certifying credentials using AI"
+                                        >
+                                            <Sparkles size={12} className={autoVerifyingId === prod.id ? 'animate-spin text-emerald-600' : ''} />
+                                            <span>AI Check</span>
+                                        </button>
+                                        <button
+                                            type="button"
                                             disabled={processingId === prod.id}
                                             onClick={() => handleVerifyProduct(prod, 'VERIFIED')}
-                                            className="px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition flex items-center gap-1"
+                                            className="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 transition flex items-center gap-1"
                                         >
                                             <CheckCircle2 size={13} />
                                             <span>Approve</span>
@@ -701,6 +875,61 @@ export default function VerificationQueue({ onViewChange }) {
 
                             {/* Right Column: Submitted Metadata Audit Form */}
                             <div className="space-y-3 text-xs">
+                                {/* AI Document Auto-Detection Panel */}
+                                {inspectingItem.certificate_url && (
+                                    <div className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50/70 to-teal-50/70 p-3 space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
+                                                <Sparkles size={13} className="text-emerald-600" />
+                                                AI Auto-Detection & OCR Assist
+                                            </span>
+                                            <button
+                                                type="button"
+                                                disabled={autoVerifyingId === inspectingItem.id}
+                                                onClick={() => handleAutoVerifyEstablishment(inspectingItem.id, false)}
+                                                className="text-[11px] font-bold text-emerald-800 bg-white hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-300 transition flex items-center gap-1 shadow-xs disabled:opacity-50"
+                                            >
+                                                <Sparkles size={11} className={autoVerifyingId === inspectingItem.id ? 'animate-spin text-emerald-600' : ''} />
+                                                <span>{autoVerifyingId === inspectingItem.id ? 'Scanning Document...' : 'Scan & Auto-Fill Form'}</span>
+                                            </button>
+                                        </div>
+                                        <p className="text-[11px] text-slate-600 leading-snug">
+                                            Run AI inspection to automatically extract the certificate number, expiration date, and certifying body from the image.
+                                        </p>
+
+                                        {aiEvalResult && (
+                                            <div className="mt-2 rounded-lg bg-white p-2.5 border border-emerald-200 text-[11px] space-y-1.5 shadow-xs">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="font-bold text-slate-700">AI Confidence:</span>
+                                                    <span className={`px-2 py-0.5 rounded-full font-black text-[10px] ${
+                                                        aiEvalResult.score >= 70 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                                    }`}>
+                                                        {aiEvalResult.score}% Match
+                                                    </span>
+                                                </div>
+                                                <div className="text-[10px]">
+                                                    {aiEvalResult.is_auto_approved ? (
+                                                        <span className="text-emerald-700 font-bold flex items-center gap-1">
+                                                            <CheckCircle2 size={12} /> High Confidence: Active & accredited certificate verified.
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-amber-700 font-bold flex items-center gap-1">
+                                                            <AlertTriangle size={12} /> Notice: {aiEvalResult.audit_trail?.reasons?.[0] || 'Manual confirmation required.'}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {aiEvalResult.audit_trail?.notes && aiEvalResult.audit_trail.notes.length > 0 && (
+                                                    <ul className="text-[10px] text-slate-500 list-disc list-inside space-y-0.5 pt-1 border-t border-slate-100">
+                                                        {aiEvalResult.audit_trail.notes.map((note, idx) => (
+                                                            <li key={idx} className="truncate">{note}</li>
+                                                        ))}
+                                                    </ul>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 space-y-2.5">
                                     <span className="font-black text-slate-700 block uppercase tracking-wider text-[10px]">
                                         Cross-Match & Assign Credentials
