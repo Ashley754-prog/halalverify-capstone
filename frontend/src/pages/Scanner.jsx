@@ -109,12 +109,14 @@ export const Scanner = ({ isOnline, onViewChange }) => {
     };
 
     /**
-     * Trigger secondary scan for multi-angle packaging fusion
+     * Trigger secondary scan for multi-angle / multi-part packaging fusion
      */
     const handleScanSecondary = (target) => {
+        const currentCount = scanResult?.images?.length || 1;
         setFusionState({
             active: true,
             target,
+            step: currentCount + 1,
             firstScan: scanResult,
             firstImage: selectedImage
         });
@@ -122,8 +124,10 @@ export const Scanner = ({ isOnline, onViewChange }) => {
         startCamera(actualFacing);
         setToast({
             visible: true,
-            message: target === 'ingredients'
-                ? 'Point camera at the ingredients panel (back or side)'
+            message: target === 'continue-ingredients'
+                ? `Part ${currentCount + 1}: Point camera at the continuing ingredients`
+                : target === 'ingredients'
+                ? 'Point camera at the ingredients panel'
                 : 'Point camera at the Halal logo seal',
             type: 'info'
         });
@@ -288,13 +292,13 @@ export const Scanner = ({ isOnline, onViewChange }) => {
                 onCancelFusion={handleCancelFusion}
             />
 
-            {/* Floating Action Button to Re-Open Results Sheet when Collapsed */}
-            {!showResultsSheet && (scanResult || certResult) && (
-                <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-30">
+            {/* Floating Action Button to Re-Open Results Sheet when Collapsed (safely positioned above shutter, hidden during active fusion capture) */}
+            {!showResultsSheet && (scanResult || certResult) && !fusionState?.active && (
+                <div className="absolute bottom-28 sm:bottom-32 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
                     <button
                         type="button"
                         onClick={() => setShowResultsSheet(true)}
-                        className="px-4 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-2xl flex items-center gap-2 active:scale-95 transition border border-emerald-400/40 backdrop-blur-sm"
+                        className="px-4 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-2xl flex items-center gap-2 active:scale-95 transition border border-emerald-400/40 backdrop-blur-md whitespace-nowrap"
                     >
                         <Sparkles size={14} className="text-emerald-200" />
                         <span>View Inspection Results ({scanResult?.verdict || certResult?.status || 'Ready'})</span>

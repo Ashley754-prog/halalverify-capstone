@@ -163,11 +163,56 @@ def nms_numpy(boxes: np.ndarray, scores: np.ndarray, iou_threshold: float = 0.45
     return keep
 
 
+def _run_yolo_onnx_pass(session, img_pil: Image.Image, offset_x: float = 0.0, offset_y: float = 0.0, conf_threshold: float = 0.20):
+    """Executes a single letterboxed YOLOv8 ONNX pass on an image/ROI preserving aspect ratio."""
+    # Read model input dimensions dynamically
+    input_shape = session.get_inputs()[0].shape
+    target_h = input_shape[2] if len(input_shape) > 2 and isinstance(input_shape[2], int) else 640
+    target_w = input_shape[3] if len(input_shape) > 3 and isinstance(input_shape[3], int) else 640
+
+    w, h = img_pil.size
+    r = min(float(target_w) / max(w, 1), float(target_h) / max(h, 1))
+    new_w = max(1, int(round(w * r)))
+    new_h = max(1, int(round(h * r)))
+    pad_w = (float(target_w) - new_w) / 2.0
+    pad_h = (float(target_h) - new_h) / 2.0
+
+    resized = img_pil.resize((new_w, new_h), Image.Resampling.BILINEAR)
+    canvas = Image.new("RGB", (target_w, target_h), (114, 114, 114))
+    canvas.paste(resized, (int(round(pad_w)), int(round(pad_h))))
+
+    arr = np.transpose(np.array(canvas, dtype=np.float32) / 255.0, (2, 0, 1))
+    input_tensor = np.expand_dims(arr, axis=0)
+
+    outputs = session.run(["output0"], {"images": input_tensor})
+    pred = outputs[0][0].T  # Shape: (8400, 23)
+
+    cx = pred[:, 0]
+    cy = pred[:, 1]
+    box_w = pred[:, 2]
+    box_h = pred[:, 3]
+
+    # Invert letterbox and add ROI crop offsets back to original coordinate space
+    x1 = (cx - box_w / 2.0 - pad_w) / r + offset_x
+    y1 = (cy - box_h / 2.0 - pad_h) / r + offset_y
+    x2 = (cx + box_w / 2.0 - pad_w) / r + offset_x
+    y2 = (cy + box_h / 2.0 - pad_h) / r + offset_y
+
+    scores = pred[:, 4:]
+    best_c = np.argmax(scores, axis=1)
+    best_s = np.max(scores, axis=1)
+
+    mask = best_s >= conf_threshold
+    boxes = np.stack([x1[mask], y1[mask], x2[mask], y2[mask]], axis=1) if np.any(mask) else np.empty((0, 4))
+    filtered_scores = best_s[mask]
+    filtered_cls = best_c[mask]
+    return boxes, filtered_scores, filtered_cls
+
+
 def detect_halal_logo(image_input) -> Dict:
     """
     Detects accredited Halal certification logos on product packaging using YOLOv8-Nano (pure ONNX Runtime).
-    Returns detected logo details, confidence score, certifying body, and counterfeit flags.
-    Executes in under 15ms with ultra-low memory footprint.
+    Uses aspect-ratio preserving letterboxing and multi-scale reticle ROI inspection.
     """
     try:
         if isinstance(image_input, str):
@@ -185,37 +230,63 @@ def detect_halal_logo(image_input) -> Dict:
         if session is None:
             return _empty_logo_result("YOLOv8 ONNX model not loaded")
 
+        image = image.convert("RGB")
         orig_w, orig_h = image.size
 
-        # Preprocess: resize to 256x256, normalize [0, 1], transpose to (1, 3, 256, 256)
-        resized = image.resize((256, 256), Image.Resampling.BILINEAR)
-        arr = np.array(resized, dtype=np.float32) / 255.0
-        arr = np.transpose(arr, (2, 0, 1))
-        input_tensor = np.expand_dims(arr, axis=0)
+        # Pass 1: Global Letterboxed Frame
+        b1, s1, c1 = _run_yolo_onnx_pass(session, image, 0.0, 0.0, conf_threshold=0.20)
+        max_conf1 = float(np.max(s1)) if len(s1) > 0 else 0.0
 
-        # Run ONNX inference
-        outputs = session.run(["output0"], {"images": input_tensor})
-        pred = outputs[0][0].T  # Shape: (1344, 23)
+        b2, s2, c2 = np.empty((0, 4)), np.empty(0), np.empty(0)
+        max_conf2 = 0.0
+        # Pass 2: Context-Padded Macro Pass (for close-up captures or cropped logos)
+        if max_conf1 < 0.75:
+            scale = min(1.0, 500.0 / max(orig_w, orig_h))
+            sw, sh = max(1, int(round(orig_w * scale))), max(1, int(round(orig_h * scale)))
+            scaled_img = image.resize((sw, sh), Image.Resampling.BILINEAR) if scale < 1.0 else image
+            pad_dim = int(max(sw, sh) * 2.2)
+            bg = Image.new("RGB", (pad_dim, pad_dim), (230, 230, 230))
+            px = (pad_dim - sw) // 2
+            py = (pad_dim - sh) // 2
+            bg.paste(scaled_img, (px, py))
+            b2_raw, s2, c2 = _run_yolo_onnx_pass(session, bg, 0.0, 0.0, conf_threshold=0.20)
+            if len(b2_raw) > 0:
+                bx1 = (b2_raw[:, 0] - px) / scale
+                by1 = (b2_raw[:, 1] - py) / scale
+                bx2 = (b2_raw[:, 2] - px) / scale
+                by2 = (b2_raw[:, 3] - py) / scale
+                b2 = np.stack([bx1, by1, bx2, by2], axis=1)
+                max_conf2 = float(np.max(s2))
 
-        # First 4 columns: cx, cy, w, h on 256x256 frame
-        cx = pred[:, 0]
-        cy = pred[:, 1]
-        w = pred[:, 2]
-        h = pred[:, 3]
+        b3, s3, c3 = np.empty((0, 4)), np.empty(0), np.empty(0)
+        # Pass 3: Center Reticle ROI (for wide packaging shots where logo is small inside reticle)
+        if max(max_conf1, max_conf2) < 0.75 and max(orig_w, orig_h) >= 400:
+            crop_dim = min(orig_w, orig_h) * 0.65
+            crop_x = (orig_w - crop_dim) / 2.0
+            crop_y = (orig_h - crop_dim) / 2.0
+            center_roi = image.crop((crop_x, crop_y, crop_x + crop_dim, crop_y + crop_dim))
+            b3, s3, c3 = _run_yolo_onnx_pass(session, center_roi, crop_x, crop_y, conf_threshold=0.20)
 
-        x1 = cx - w / 2.0
-        y1 = cy - h / 2.0
-        x2 = cx + w / 2.0
-        y2 = cy + h / 2.0
+        # Select candidate detections based on best detection context
+        if max_conf1 >= 0.75:
+            candidate_boxes = [b1]
+            candidate_scores = [s1]
+            candidate_classes = [c1]
+        elif max_conf2 >= 0.70:
+            candidate_boxes = [b2]
+            candidate_scores = [s2]
+            candidate_classes = [c2]
+        else:
+            candidate_boxes = []
+            candidate_scores = []
+            candidate_classes = []
+            for b, s, c in [(b1, s1, c1), (b2, s2, c2), (b3, s3, c3)]:
+                if len(b) > 0:
+                    candidate_boxes.append(b)
+                    candidate_scores.append(s)
+                    candidate_classes.append(c)
 
-        # Next 19 columns: class confidence scores
-        class_scores = pred[:, 4:]
-        best_class_ids = np.argmax(class_scores, axis=1)
-        best_scores = np.max(class_scores, axis=1)
-
-        # Filter by 0.25 confidence threshold
-        mask = best_scores >= 0.25
-        if not np.any(mask):
+        if not candidate_boxes:
             return {
                 "logoDetected": False,
                 "logoConfidence": 0.0,
@@ -226,26 +297,11 @@ def detect_halal_logo(image_input) -> Dict:
                 "imageHeight": orig_h,
             }
 
-        filtered_x1 = x1[mask]
-        filtered_y1 = y1[mask]
-        filtered_x2 = x2[mask]
-        filtered_y2 = y2[mask]
-        filtered_scores = best_scores[mask]
-        filtered_class_ids = best_class_ids[mask]
+        all_boxes = np.vstack(candidate_boxes)
+        all_scores = np.concatenate(candidate_scores)
+        all_class_ids = np.concatenate(candidate_classes)
 
-        # Rescale coordinates to original image dimensions
-        scale_x = orig_w / 256.0
-        scale_y = orig_h / 256.0
-
-        rescaled_boxes = np.stack([
-            filtered_x1 * scale_x,
-            filtered_y1 * scale_y,
-            filtered_x2 * scale_x,
-            filtered_y2 * scale_y
-        ], axis=1)
-
-        keep_indices = nms_numpy(rescaled_boxes, filtered_scores, iou_threshold=0.45)
-
+        keep_indices = nms_numpy(all_boxes, all_scores, iou_threshold=0.45)
         if not keep_indices:
             return {
                 "logoDetected": False,
@@ -263,9 +319,9 @@ def detect_halal_logo(image_input) -> Dict:
         has_invalid = False
 
         for idx in keep_indices:
-            box = rescaled_boxes[idx]
-            conf = float(filtered_scores[idx])
-            cls_id = int(filtered_class_ids[idx])
+            box = all_boxes[idx]
+            conf = float(all_scores[idx])
+            cls_id = int(all_class_ids[idx])
             raw_class_name = _class_names.get(cls_id, FALLBACK_CLASS_NAMES.get(cls_id, f"class_{cls_id}"))
             formatted_name = CLASS_LABEL_MAPPING.get(raw_class_name, raw_class_name)
             is_invalid = raw_class_name.lower() in ("invalid_logo", "counterfeit")

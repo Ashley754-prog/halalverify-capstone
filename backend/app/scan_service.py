@@ -341,41 +341,128 @@ def analyze_label_image(image_base64: str) -> dict:
 
     gc.collect()
 
-    # Smart Dual-Check: Detect certification seals from OCR text if visual logo was missed
-    if not logo_result.get("logoDetected") and extracted_text:
+    # Multi-Modal Consensus: Cross-reference visual detection with OCR text signatures
+    if extracted_text:
         upper_text = extracted_text.upper()
-        if "IDCP" in upper_text:
-            logo_result = {
-                "logoDetected": True,
-                "logoConfidence": 95.0,
-                "logoBody": "IDCP (Islamic Da'wah Council of the Philippines)",
-                "isInvalidLogo": False,
-                "detectedLogos": [{"label": "IDCP Halal", "confidence": 95.0, "is_invalid": False}],
-            }
-        elif "HDIP" in upper_text:
-            logo_result = {
-                "logoDetected": True,
-                "logoConfidence": 95.0,
-                "logoBody": "HDIP (Halal Development Institute of the Philippines)",
-                "isInvalidLogo": False,
-                "detectedLogos": [{"label": "HDIP Halal", "confidence": 95.0, "is_invalid": False}],
-            }
-        elif "JAKIM" in upper_text:
-            logo_result = {
-                "logoDetected": True,
-                "logoConfidence": 95.0,
-                "logoBody": "Malaysia Halal - JAKIM (Recognized Foreign Certifier)",
-                "isInvalidLogo": False,
-                "detectedLogos": [{"label": "JAKIM Halal", "confidence": 95.0, "is_invalid": False}],
-            }
-        elif "HALAL CERTIFIED" in upper_text or "CERTIFIED HALAL" in upper_text:
-            logo_result = {
-                "logoDetected": True,
-                "logoConfidence": 90.0,
-                "logoBody": "Halal Certified Packaging Seal",
-                "isInvalidLogo": False,
-                "detectedLogos": [{"label": "Halal Certified", "confidence": 90.0, "is_invalid": False}],
-            }
+
+        is_idcp_text = bool(
+            re.search(r"\bIDCP\b", upper_text)
+            or re.search(r"ISLAMIC\s+DA'?WAH\s+COUNCIL", upper_text)
+            or re.search(r"DA'?WAH\s+COUNCIL", upper_text)
+            or re.search(r"ISLAMIC\s+DAWAH", upper_text)
+            or "IDCP-HC" in upper_text
+            or "DAWAH" in upper_text
+        )
+        is_hdip_text = bool(
+            re.search(r"\bHDIP\b", upper_text)
+            or "HALAL DEVELOPMENT INSTITUTE" in upper_text
+        )
+        is_hiccip_text = bool(
+            re.search(r"\bHICCIP\b", upper_text)
+            or "HALAL INTERNATIONAL CHAMBER" in upper_text
+        )
+        is_mmhcb_text = bool(
+            re.search(r"\bMMHCB\b", upper_text)
+            or "MINDANAO MUSLIM HALAL" in upper_text
+        )
+        is_maslaha_text = bool(
+            re.search(r"\bMASLAHA\b", upper_text)
+            or "ADVOCACY FOR MUSLIM AFFAIRS" in upper_text
+        )
+        is_minha_text = bool(
+            re.search(r"\bMINHA\b", upper_text)
+            or "MINDANAO HALAL AUTHORITY" in upper_text
+        )
+        is_pucoi_text = bool(
+            re.search(r"\bPUCOI\b", upper_text)
+            or "PHILIPPINE ULAMA CONGRESS" in upper_text
+        )
+        is_ahip_text = bool(
+            re.search(r"\bAHIP\b", upper_text)
+            or "ALLIANCE FOR HALAL INTEGRITY" in upper_text
+        )
+        is_prime_text = bool(
+            re.search(r"\bPRIME\b", upper_text) and ("HALAL" in upper_text or "CERTIF" in upper_text)
+        )
+        is_fiqhi_text = bool(re.search(r"\bFIQHI\b", upper_text))
+        is_philcosed_text = bool(re.search(r"\bPHILCOSED\b", upper_text))
+        is_ncmf_text = bool(
+            re.search(r"\bNCMF\b", upper_text)
+            or "NATIONAL COMMISSION ON MUSLIM FILIPINOS" in upper_text
+        )
+        is_jakim_text = bool(re.search(r"\bJAKIM\b", upper_text) or "KEMAJUAN ISLAM MALAYSIA" in upper_text)
+        is_muis_text = bool(re.search(r"\bMUIS\b", upper_text) or "MAJLIS UGAMA ISLAM" in upper_text)
+        is_bpjph_text = bool(re.search(r"\bBPJPH\b", upper_text) or "HALAL INDONESIA" in upper_text)
+        is_cicot_text = bool(re.search(r"\bCICOT\b", upper_text) or "CENTRAL ISLAMIC COUNCIL OF THAILAND" in upper_text)
+        is_busc_text = bool(re.search(r"\bBUSC\b", upper_text) or "BANGSAMORO UNITY" in upper_text)
+        is_bpcc_text = bool(re.search(r"\bBPCC\b", upper_text) or "BANGSAMORO PROFESSIONAL" in upper_text)
+
+        # Ground truth correction: text printed on packaging takes precedence over ambiguous visual models
+        current_logos = logo_result.get("detectedLogos") or []
+        base_box = current_logos[0]["box"] if current_logos else [0, 0, 0, 0]
+        base_norm = current_logos[0]["norm_box"] if current_logos else [0.25, 0.25, 0.75, 0.75]
+
+        cert_match = None
+        if is_idcp_text:
+            cert_match = ("IDCP", 0, "IDCP (Islamic Da'wah Council of the Philippines)", 97.0)
+        elif is_hdip_text:
+            cert_match = ("HDIP", 1, "HDIP (Halal Development Institute of the Philippines)", 96.0)
+        elif is_hiccip_text:
+            cert_match = ("HICCIP", 8, "HICCIP (Halal International Chamber of Commerce and Industries Phils)", 96.0)
+        elif is_mmhcb_text:
+            cert_match = ("MMHCB", 5, "MMHCB (Mindanao Muslim Halal Certification Board)", 96.0)
+        elif is_maslaha_text:
+            cert_match = ("MASLAHA", 12, "MASLAHA Halal Certification", 96.0)
+        elif is_minha_text:
+            cert_match = ("MinHA", 9, "MinHA (Mindanao Halal Authority)", 96.0)
+        elif is_pucoi_text:
+            cert_match = ("PUCOI", 6, "PUCOI (Philippine Ulama Congress Organization)", 96.0)
+        elif is_ahip_text:
+            cert_match = ("AHIP", 7, "AHIP (Alliance for Halal Integrity in the Phils)", 96.0)
+        elif is_prime_text:
+            cert_match = ("PRIME", 10, "PRIME Certification Asia", 95.0)
+        elif is_fiqhi_text:
+            cert_match = ("FIQHI", 11, "FIQHI Islamic Certification", 95.0)
+        elif is_philcosed_text:
+            cert_match = ("Philcosed", 13, "PHILCOSED Halal Certification", 95.0)
+        elif is_ncmf_text:
+            cert_match = ("NCMF_General", 14, "NCMF Official Halal Seal (Philippines)", 96.0)
+        elif is_busc_text:
+            cert_match = ("BUSC", 3, "BUSC (Bangsamoro Unity Summit Consultative)", 95.0)
+        elif is_bpcc_text:
+            cert_match = ("BPCC", 4, "BPCC (Bangsamoro Professional Certification)", 95.0)
+        elif is_jakim_text:
+            cert_match = ("Malaysia_JAKIM", 16, "Malaysia Halal - JAKIM (Recognized Foreign Certifier)", 96.0)
+        elif is_muis_text:
+            cert_match = ("Singapore_MUIS", -1, "Singapore Halal - MUIS (Recognized Foreign Certifier)", 96.0)
+        elif is_bpjph_text:
+            cert_match = ("Indonesia_BPJPH", 17, "Indonesia Halal - BPJPH / MUI (Recognized Foreign Certifier)", 96.0)
+        elif is_cicot_text:
+            cert_match = ("Thailand_CICOT", 15, "Thailand Halal - CICOT (Recognized Foreign Certifier)", 96.0)
+
+        if cert_match:
+            c_name, c_id, c_label, c_conf = cert_match
+            logo_result["logoDetected"] = True
+            logo_result["logoConfidence"] = max(logo_result.get("logoConfidence", 0), c_conf)
+            logo_result["logoBody"] = c_label
+            logo_result["isInvalidLogo"] = False
+            logo_result["detectedLogos"] = [
+                {
+                    "label": c_label,
+                    "confidence": logo_result["logoConfidence"],
+                    "is_invalid": False,
+                    "class_name": c_name,
+                    "class_id": c_id,
+                    "box": base_box,
+                    "norm_box": base_norm,
+                }
+            ]
+        elif not logo_result.get("logoDetected") and ("HALAL CERTIFIED" in upper_text or "CERTIFIED HALAL" in upper_text or "HALAL" in upper_text):
+            logo_result["logoDetected"] = True
+            logo_result["logoConfidence"] = 90.0
+            logo_result["logoBody"] = "Halal Certified Packaging Seal"
+            logo_result["isInvalidLogo"] = False
+            logo_result["detectedLogos"] = [{"label": "Halal Certified", "confidence": 90.0, "is_invalid": False, "box": [0,0,0,0], "norm_box": [0.25, 0.25, 0.75, 0.75]}]
 
     # Stage 4: Relational Lexicon Cross-Matching against Database Additives
     t_match = time.time()

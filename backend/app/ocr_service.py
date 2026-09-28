@@ -109,44 +109,52 @@ def extract_text_with_gemini(image_base64: str) -> str:
         pil_img.save(buf, format="JPEG", quality=85)
         raw_b64 = base64.b64encode(buf.getvalue()).decode()
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
-        payload = json.dumps({
-            "contents": [{
-                "parts": [
-                    {
-                        "text": (
-                            "Extract all text from this product packaging label. "
-                            "Focus on ingredients, food additives, chemical E-numbers, brand name, and certification markings. "
-                            "Output ONLY the plain extracted text without commentary or formatting."
-                        )
-                    },
-                    {"inline_data": {"mime_type": "image/jpeg", "data": raw_b64}}
-                ]
-            }],
-            "generationConfig": {
-                "temperature": 0.1,
-                "maxOutputTokens": 600
-            }
-        }).encode()
+        # Try gemini-flash-lite-latest first, fallback to gemini-2.5-flash-lite and gemini-flash-latest
+        for model_name in ["gemini-flash-lite-latest", "gemini-2.5-flash-lite", "gemini-flash-latest"]:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+            payload = json.dumps({
+                "contents": [{
+                    "parts": [
+                        {
+                            "text": (
+                                "Extract all readable text printed on this packaging or label verbatim. "
+                                "Include brand name, ingredients, food additives, chemical E-numbers, "
+                                "and text inside certification marks or logos. "
+                                "Do NOT invent, assume, or hallucinate text not clearly visible on the image. "
+                                "Output ONLY the exact visible text."
+                            )
+                        },
+                        {"inline_data": {"mime_type": "image/jpeg", "data": raw_b64}}
+                    ]
+                }],
+                "generationConfig": {
+                    "temperature": 0.0,
+                    "maxOutputTokens": 600
+                }
+            }).encode()
 
-        req = urllib.request.Request(
-            url,
-            data=payload,
-            headers={"Content-Type": "application/json"},
-            method="POST"
-        )
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            data = json.loads(resp.read().decode())
-            candidates = data.get("candidates", [])
-            if candidates:
-                parts = candidates[0].get("content", {}).get("parts", [])
-                if parts:
-                    extracted = parts[0].get("text", "").strip()
-                    if extracted and len(extracted) > 3:
-                        logger.info("Cloud Vision OCR extraction succeeded.")
-                        return extracted
+            req = urllib.request.Request(
+                url,
+                data=payload,
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=12) as resp:
+                    data = json.loads(resp.read().decode())
+                    candidates = data.get("candidates", [])
+                    if candidates:
+                        parts = candidates[0].get("content", {}).get("parts", [])
+                        if parts:
+                            extracted = parts[0].get("text", "").strip()
+                            if extracted and len(extracted) > 3:
+                                logger.info(f"Cloud Vision OCR succeeded with {model_name}.")
+                                return extracted
+            except Exception as model_err:
+                logger.warning(f"Cloud Vision OCR attempt with {model_name} failed: {model_err}")
+                continue
     except Exception as err:
-        logger.warning(f"Cloud Vision OCR error: {err}")
+        logger.warning(f"Cloud Vision OCR general error: {err}")
 
     return ""
 
