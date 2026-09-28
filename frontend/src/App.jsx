@@ -19,7 +19,7 @@ import EstablishmentsMap from './pages/EstablishmentsMap.jsx';
 import VerificationQueue from './pages/VerificationQueue.jsx';
 import LandingPage from './pages/LandingPage.jsx';
 import { supabase } from './lib/supabaseClient';
-import { AUTH_VIEWS, fetchUserRole, signOut } from './lib/auth';
+import { AUTH_VIEWS, fetchUserRole, ensureUserProfile, signOut } from './lib/auth';
 import { API_BASE_URL } from './utils/api';
 
 const VALID_VIEWS = new Set([
@@ -152,8 +152,9 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [handleViewChange]);
 
-  const restoreAuthenticatedUser = useCallback(async (userId) => {
-    const role = await fetchUserRole(userId);
+  const restoreAuthenticatedUser = useCallback(async (userOrId) => {
+    const userObj = typeof userOrId === 'object' ? userOrId : { id: userOrId };
+    const role = await ensureUserProfile(userObj);
     if (!role) {
       setUserRole(null);
       return false;
@@ -171,7 +172,7 @@ export default function App() {
       const { data: { session } } = await supabase.auth.getSession();
 
       if (session?.user && isMounted) {
-        await restoreAuthenticatedUser(session.user.id);
+        await restoreAuthenticatedUser(session.user);
       }
 
       if (isMounted) {
@@ -198,7 +199,7 @@ export default function App() {
       }
 
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
-        await restoreAuthenticatedUser(session.user.id);
+        await restoreAuthenticatedUser(session.user);
       }
     });
 

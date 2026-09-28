@@ -52,7 +52,13 @@ export const Login = ({ onLogin, onViewChange, layout = 'login' }) => {
         try {
             await signInWithProvider(provider);
         } catch (error) {
-            setErrorMessage(error.message);
+            const providerName = provider === 'google' ? 'Google' : 'Facebook';
+            const msg = error.message || '';
+            if (msg.toLowerCase().includes('not enabled') || msg.toLowerCase().includes('unsupported')) {
+                setErrorMessage(`${providerName} authentication needs to be enabled in your Supabase Project Dashboard.`);
+            } else {
+                setErrorMessage(msg);
+            }
             setOauthLoading('');
         }
     };
