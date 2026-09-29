@@ -232,7 +232,7 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
         "score": score,
         "status": final_status,
         "verified_at": now_iso if is_auto_approved else None,
-        "verified_by": "AI_AUTOMATED_PIPELINE" if is_auto_approved else None,
+        "verified_by": None,
         "certificate_number": cert_no,
         "expiry_date": parsed_expiry.isoformat() if parsed_expiry else expiry_str,
         "certifying_body_id": hcb_id,
@@ -368,7 +368,7 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
         "score": score,
         "status": final_status,
         "verified_at": now_iso if is_auto_approved else None,
-        "verified_by": "AI_AUTOMATED_PIPELINE" if is_auto_approved else None,
+        "verified_by": None,
         "certifying_body_id": hcb_id,
         "admin_notes": summary_note,
         "audit_trail": {

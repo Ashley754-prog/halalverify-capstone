@@ -143,8 +143,20 @@ export default function ContributionModal({
           const resJson = await response.json();
           setSubmissionResult(resJson);
           success = true;
+        } else {
+          const errData = await response.json().catch(() => ({}));
+          console.warn('Backend establishment submission error:', response.status, errData);
+          if (response.status === 401) {
+            throw new Error('Your session has expired or authentication is required. Please log in again.');
+          }
+          if (errData?.detail) {
+            throw new Error(errData.detail);
+          }
         }
       } catch (apiErr) {
+        if (apiErr.message && !apiErr.message.toLowerCase().includes('fetch')) {
+          throw apiErr;
+        }
         console.warn('Backend submission endpoint unavailable, falling back to direct Supabase:', apiErr);
       }
 
@@ -218,8 +230,20 @@ export default function ContributionModal({
           const resJson = await response.json();
           setSubmissionResult(resJson);
           success = true;
+        } else {
+          const errData = await response.json().catch(() => ({}));
+          console.warn('Backend product submission error:', response.status, errData);
+          if (response.status === 401) {
+            throw new Error('Your session has expired or authentication is required. Please log in again.');
+          }
+          if (errData?.detail) {
+            throw new Error(errData.detail);
+          }
         }
       } catch (apiErr) {
+        if (apiErr.message && !apiErr.message.toLowerCase().includes('fetch')) {
+          throw apiErr;
+        }
         console.warn('Backend submission endpoint unavailable, falling back to direct Supabase:', apiErr);
       }
 

@@ -611,17 +611,20 @@ def auto_verify_establishment_endpoint(
 
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
+    user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
+    admin_uuid = str(user_id) if user_id else None
+
     if auto_approve and eval_result["is_auto_approved"]:
         update_fields["halal_status"] = "verified"
         update_fields["verified_at"] = now_iso
-        update_fields["verified_by"] = "AI_AUTOMATED_PIPELINE"
+        update_fields["verified_by"] = admin_uuid
 
         # Cascade to pending products linked to this establishment
         try:
             supabase.table("products").update({
                 "status": "VERIFIED",
                 "verified_at": now_iso,
-                "verified_by": "AI_AUTOMATED_PIPELINE",
+                "verified_by": admin_uuid,
             }).eq("establishment_id", establishment_id).ilike("status", "%pending%").execute()
         except Exception as p_err:
             print(f"Warning: cascaded product approval: {p_err}")
@@ -660,10 +663,13 @@ def auto_verify_product_endpoint(
         "admin_notes": eval_result["admin_notes"],
     }
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
+    admin_uuid = str(user_id) if user_id else None
+
     if auto_approve and eval_result["is_auto_approved"]:
         update_fields["status"] = "VERIFIED"
         update_fields["verified_at"] = now_iso
-        update_fields["verified_by"] = "AI_AUTOMATED_PIPELINE"
+        update_fields["verified_by"] = admin_uuid
 
     supabase.table("products").update(update_fields).eq("id", product_id).execute()
 
@@ -700,6 +706,8 @@ def auto_verify_all_pending(
     audited_est_count = 0
 
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
+    admin_uuid = str(user_id) if user_id else None
 
     for est in pending_establishments:
         try:
@@ -717,14 +725,14 @@ def auto_verify_all_pending(
             if auto_approve and eval_res["is_auto_approved"]:
                 update_fields["halal_status"] = "verified"
                 update_fields["verified_at"] = now_iso
-                update_fields["verified_by"] = "AI_AUTOMATED_PIPELINE"
+                update_fields["verified_by"] = admin_uuid
                 approved_est_count += 1
 
                 try:
                     supabase.table("products").update({
                         "status": "VERIFIED",
                         "verified_at": now_iso,
-                        "verified_by": "AI_AUTOMATED_PIPELINE",
+                        "verified_by": admin_uuid,
                     }).eq("establishment_id", est["id"]).ilike("status", "%pending%").execute()
                 except Exception:
                     pass
@@ -754,7 +762,7 @@ def auto_verify_all_pending(
             if auto_approve and eval_res["is_auto_approved"]:
                 update_fields["status"] = "VERIFIED"
                 update_fields["verified_at"] = now_iso
-                update_fields["verified_by"] = "AI_AUTOMATED_PIPELINE"
+                update_fields["verified_by"] = admin_uuid
                 approved_prod_count += 1
 
             supabase.table("products").update(update_fields).eq("id", prod["id"]).execute()
