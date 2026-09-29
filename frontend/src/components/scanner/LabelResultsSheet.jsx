@@ -15,6 +15,7 @@ import {
     Cpu,
     Package
 } from 'lucide-react';
+import { simplifyHalalText, simplifyStatus } from '../../utils/textFormatters';
 
 export const LabelResultsSheet = ({
     scanResult,
@@ -132,16 +133,18 @@ export const LabelResultsSheet = ({
                                         Halal Status
                                     </span>
                                     <p className="text-xl font-bold tracking-tight">
-                                        {scanResult.riskLevel || (
-                                            scanResult.verdict === 'Green'
-                                                ? 'Verified Halal'
-                                                : scanResult.verdict === 'Yellow'
-                                                ? 'Needs Review'
-                                                : 'Prohibited (Not Halal)'
+                                        {simplifyHalalText(
+                                            scanResult.riskLevel || (
+                                                scanResult.verdict === 'Green'
+                                                    ? 'Verified Halal'
+                                                    : scanResult.verdict === 'Yellow'
+                                                    ? 'Doubtful'
+                                                    : 'Prohibited (Not Halal)'
+                                            )
                                         )}
                                     </p>
                                     <p className="text-xs opacity-90 leading-snug">
-                                        {scanResult.analysisSummary || scanResult.riskLevel}
+                                        {simplifyHalalText(scanResult.analysisSummary || scanResult.riskLevel)}
                                     </p>
                                 </div>
                                 <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-black/30 border border-white/10 shrink-0">
@@ -280,7 +283,7 @@ export const LabelResultsSheet = ({
                                 {scanResult.flaggedIngredients?.length > 0 ? (
                                     <div className="space-y-2 pt-1">
                                         {scanResult.flaggedIngredients.map((flag, idx) => {
-                                            const isHaram = (flag.status || '').toLowerCase() === 'haram';
+                                            const isHaram = (flag.status || '').toLowerCase().includes('haram') || (flag.status || '').toLowerCase().includes('prohibit');
                                             return (
                                                 <div
                                                     key={idx}
@@ -291,17 +294,17 @@ export const LabelResultsSheet = ({
                                                     }`}
                                                 >
                                                     <div className="flex items-center justify-between font-bold">
-                                                        <span>{flag.ingredient}</span>
+                                                        <span>{simplifyHalalText(flag.ingredient)}</span>
                                                         <span className={`text-[10px] uppercase px-1.5 py-0.2 rounded border ${
                                                             isHaram
                                                                 ? 'bg-red-900/80 border-red-400/50 text-red-100'
                                                                 : 'bg-amber-900/80 border-amber-400/50 text-amber-100'
                                                         }`}>
-                                                            {flag.status}
+                                                            {simplifyStatus(flag.status)}
                                                         </span>
                                                     </div>
                                                     <p className="text-[11px] opacity-90 leading-relaxed">
-                                                        {flag.reason}
+                                                        {simplifyHalalText(flag.reason)}
                                                     </p>
                                                 </div>
                                             );
@@ -345,7 +348,7 @@ export const LabelResultsSheet = ({
                                         {scanResult.recommendations.map((rec, idx) => (
                                             <li key={idx} className="flex items-start gap-2">
                                                 <span className="text-emerald-400 font-bold shrink-0 mt-0.5">•</span>
-                                                <span className="leading-snug">{rec}</span>
+                                                <span className="leading-snug">{simplifyHalalText(rec)}</span>
                                             </li>
                                         ))}
                                     </ul>

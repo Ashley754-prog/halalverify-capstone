@@ -14,6 +14,7 @@ import {
     ExternalLink,
 } from 'lucide-react';
 import { getSafeUrl } from '../../utils/security';
+import { simplifyStatus } from '../../utils/textFormatters';
 
 function getProductCertifierBadge(product) {
     const raw = `${product.certifying_bodies?.code || ''} ${product.certifying_bodies?.name || ''} ${product.source || ''}`.toLowerCase();
@@ -82,7 +83,7 @@ export default function ProductCard({
                     >
                         {isHalal && <CheckCircle2 size={10} className="sm:w-3 sm:h-3" />}
                         {isDoubtful && <AlertCircle size={10} className="sm:w-3 sm:h-3" />}
-                        {product.status}
+                        {simplifyStatus(product.status)}
                     </span>
                 </div>
 

@@ -131,7 +131,7 @@ def match_additives_from_text(extracted_text: str):
         if code not in seen_codes:
             flagged_items.append({
                 "additive_id": None,
-                "ingredient": f"Unknown Compound ({code})",
+                "ingredient": f"Unknown Additive ({code})",
                 "matched_text": code,
                 "status": "Doubtful",
                 "reason": (
@@ -248,7 +248,7 @@ def explain_label_verdict(flagged_items, extracted_text: str, logo_result: dict 
 
     # 2. Prohibited Additives Detected -> Red
     if haram_count:
-        summary_msg = f"Found {haram_count} prohibited (haram) ingredient(s) on the label. Avoid consuming this product."
+        summary_msg = f"Found {haram_count} prohibited ingredient(s) on the label. Avoid consuming this product."
         if logo_detected:
             summary_msg += f" Note: Despite an apparent {logo_body} logo, prohibited ingredients were declared."
 
@@ -537,7 +537,7 @@ def analyze_label_image(image_base64: str) -> dict:
             "status": f"{len(flagged_items)} Flagged" if flagged_items else "Clean",
             "latencyMs": match_time,
             "details": (
-                f"Identified {len(flagged_items)} matching compound(s): {', '.join(f.get('ingredient', '') for f in flagged_items)}."
+                f"Identified {len(flagged_items)} matching ingredient(s): {', '.join(f.get('ingredient', '') for f in flagged_items)}."
                 if flagged_items
                 else "Screened against 135 E-numbers and chemical aliases. Zero prohibited additives matched."
             )

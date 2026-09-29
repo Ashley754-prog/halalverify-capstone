@@ -17,7 +17,7 @@ import { validateUploadFile } from '../../utils/security';
 const VIOLATION_CATEGORIES = [
   'Expired Certificate',
   'Fraudulent / Unaccredited Logo',
-  'Prohibited / Haram Ingredients Detected',
+  'Prohibited Ingredients Detected',
   'Establishment Status / Address Incorrect',
   'Wrong Verdict (Scanner Error)',
   'Suspected Cross-Contamination',

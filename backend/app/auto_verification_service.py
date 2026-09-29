@@ -281,7 +281,7 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
                     if status == "haram":
                         haram_found.append(f"{code} ({add.get('name')})")
                     elif status == "doubtful":
-                        audit_notes.append(f"Screened additive: {code} flagged as doubtful/syubhah.")
+                        audit_notes.append(f"Screened additive: {code} flagged as doubtful.")
         except Exception as add_err:
             print(f"[AutoVerify] Additive screening notice: {add_err}")
 

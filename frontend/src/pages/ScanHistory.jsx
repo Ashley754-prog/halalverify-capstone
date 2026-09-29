@@ -3,14 +3,17 @@ import { Clock, ScanSearch, FileText, CheckCircle, AlertTriangle, XCircle, Refre
 import Topbar from '../components/layouts/Topbar';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
+import { simplifyStatus, simplifyHalalText } from '../utils/textFormatters';
 
 const VerdictBadge = ({ verdict }) => {
+    const display = simplifyStatus(verdict);
     const styles = {
         Green: 'bg-green-50 text-green-700 border border-green-200',
         Yellow: 'bg-amber-50 text-amber-700 border border-amber-200',
         Red: 'bg-red-50 text-red-700 border border-red-200',
         Halal: 'bg-green-50 text-green-700 border border-green-200',
         Doubtful: 'bg-amber-50 text-amber-700 border border-amber-200',
+        Prohibited: 'bg-red-50 text-red-700 border border-red-200',
         Haram: 'bg-red-50 text-red-700 border border-red-200',
         Valid: 'bg-green-50 text-green-700 border border-green-200',
         Expired: 'bg-red-50 text-red-700 border border-red-200',
@@ -23,6 +26,7 @@ const VerdictBadge = ({ verdict }) => {
         Red: <XCircle size={12} />,
         Halal: <CheckCircle size={12} />,
         Doubtful: <AlertTriangle size={12} />,
+        Prohibited: <XCircle size={12} />,
         Haram: <XCircle size={12} />,
         Valid: <CheckCircle size={12} />,
         Expired: <XCircle size={12} />,
@@ -30,8 +34,8 @@ const VerdictBadge = ({ verdict }) => {
     };
 
     return (
-        <span className={`inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold px-2.5 sm:px-3 py-1 rounded-full uppercase tracking-wider whitespace-nowrap ${styles[verdict] || 'bg-slate-100 text-slate-600'}`}>
-            {icons[verdict] || <AlertTriangle size={12} />} {verdict || 'Unknown'}
+        <span className={`inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold px-2.5 sm:px-3 py-1 rounded-full uppercase tracking-wider whitespace-nowrap ${styles[display] || styles[verdict] || 'bg-slate-100 text-slate-600'}`}>
+            {icons[display] || icons[verdict] || <AlertTriangle size={12} />} {display || 'Unknown'}
         </span>
     );
 };

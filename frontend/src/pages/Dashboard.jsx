@@ -88,7 +88,7 @@ export const Dashboard = ({ onViewChange }) => {
                         <ul className="list-disc pl-4 text-xs sm:text-sm text-slate-600 space-y-1.5">
                             <li>EasyOCR extracts ingredient text and E-numbers from the captured photo.</li>
                             <li>Extracted codes are matched against the additive registry in Supabase.</li>
-                            <li>Result is classified Halal, Haram, or Doubtful — advisory only.</li>
+                            <li>Result is classified Halal, Prohibited, or Doubtful — advisory only.</li>
                         </ul>
                     </div>
 

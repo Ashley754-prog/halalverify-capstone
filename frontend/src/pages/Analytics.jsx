@@ -570,12 +570,12 @@ export default function Analytics({ onViewChange }) {
                                 </div>
                             </div>
 
-                            {/* Haram */}
+                            {/* Prohibited / Non-Halal */}
                             <div className="p-2.5 rounded border border-slate-200/70 bg-slate-50/50">
                                 <div className="flex justify-between items-center text-xs">
                                     <span className="font-semibold text-slate-800 flex items-center gap-1.5">
                                         <span className="w-2 h-2 rounded-full bg-red-500" />
-                                        Haram / Non-Compliant
+                                        Prohibited / Non-Halal
                                     </span>
                                     <div className="flex items-baseline gap-1.5">
                                         <span className="font-mono font-bold text-slate-900">{haramCount}</span>
@@ -596,7 +596,7 @@ export default function Analytics({ onViewChange }) {
                             City Ordinance No. 489 Alert
                         </span>
                         <p className="text-amber-800/90 leading-relaxed">
-                            Doubtful and Haram ingredient detections trigger automated flag alerts in the administrative review queue.
+                            Doubtful and prohibited ingredient detections trigger automated flag alerts in the administrative review queue.
                         </p>
                     </div>
                 </div>

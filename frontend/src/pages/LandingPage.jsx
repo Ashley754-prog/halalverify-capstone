@@ -566,7 +566,7 @@ export default function LandingPage({ onViewChange, userRole }) {
                     <p className="mt-1 text-[10px] text-slate-400 sm:text-xs leading-relaxed">Cross-referenced with prohibited and doubtful additives and certifiers.</p>
                   </div>
                   <div className="mt-3 rounded-lg bg-slate-950/80 p-2 font-mono text-[9px] text-slate-300 border border-slate-800 sm:rounded-xl sm:p-2.5 sm:text-[11px] space-y-0.5">
-                    <span className="block"><span className="text-emerald-400">&gt;</span> 0 Flagged Haram Additives</span>
+                    <span className="block"><span className="text-emerald-400">&gt;</span> 0 Flagged Prohibited Additives</span>
                     <span className="block"><span className="text-emerald-400">&gt;</span> Logo: HDIP Philippines</span>
                   </div>
                 </div>

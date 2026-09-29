@@ -74,7 +74,7 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
     } else if (haramCount > 0) {
         verdict = "Red";
         riskLevel = "Prohibited (Not Halal)";
-        analysisSummary = `Multi-panel inspection (${totalPanels} sections) screened ingredients and detected ${haramCount} prohibited (haram) compound(s).`;
+        analysisSummary = `Multi-panel inspection (${totalPanels} sections) screened ingredients and detected ${haramCount} prohibited ingredient(s).`;
         if (logoDetected) {
             analysisSummary += ` Note: Prohibited ingredients were flagged despite the presence of a ${logoBody} logo seal.`;
         }
@@ -86,7 +86,7 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
     } else if (doubtfulCount > 0) {
         verdict = "Yellow";
         riskLevel = "Doubtful Ingredient";
-        analysisSummary = `Multi-panel inspection (${totalPanels} sections) screened ingredients and flagged ${doubtfulCount} doubtful compound(s) requiring source clarification.`;
+        analysisSummary = `Multi-panel inspection (${totalPanels} sections) screened ingredients and flagged ${doubtfulCount} doubtful ingredient(s) requiring source clarification.`;
         if (logoDetected) {
             analysisSummary += ` Accredited certification: ${logoBody} (${logoConfidence}% confidence).`;
         }
@@ -165,7 +165,7 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
             module: "Supabase PostgreSQL Lexicon",
             status: mergedFlaggedIngredients.length > 0 ? "Flagged" : "Clear",
             latencyMs: 15.2,
-            details: `Cross-matched against additives database: ${mergedFlaggedIngredients.length} compound(s) flagged.`
+            details: `Cross-matched against additives database: ${mergedFlaggedIngredients.length} ingredient(s) flagged.`
         },
         {
             step: 5,
