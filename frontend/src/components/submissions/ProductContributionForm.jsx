@@ -67,6 +67,29 @@ export default function ProductContributionForm({
         </div>
       </div>
 
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block font-semibold text-slate-700 mb-1">Halal Certificate Number</label>
+          <input
+            type="text"
+            placeholder="e.g., IDCP-2024-0774"
+            value={prodForm.certificate_no}
+            onChange={(e) => setProdForm((prev) => ({ ...prev, certificate_no: e.target.value }))}
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 placeholder:text-slate-400 placeholder:opacity-100 outline-none focus:border-emerald-500 font-mono"
+          />
+        </div>
+
+        <div>
+          <label className="block font-semibold text-slate-700 mb-1">Certificate Expiry Date</label>
+          <input
+            type="date"
+            value={prodForm.expiry_date}
+            onChange={(e) => setProdForm((prev) => ({ ...prev, expiry_date: e.target.value }))}
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 outline-none focus:border-emerald-500"
+          />
+        </div>
+      </div>
+
       {/* Upload Product Package Photo */}
       <div>
         <label className="block font-semibold text-slate-700 mb-1">
