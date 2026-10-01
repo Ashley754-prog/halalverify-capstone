@@ -659,7 +659,7 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
 
                     {/* Docked Establishment Preview Card */}
                     {activePreviewEst && (
-                        <div className="absolute bottom-2.5 left-2.5 right-2.5 sm:left-auto sm:right-3 sm:bottom-3 sm:max-w-sm sm:w-96 z-[1000] bg-white/98 backdrop-blur-sm rounded-2xl border border-slate-200/90 shadow-2xl p-3 sm:p-3.5 flex flex-col gap-2.5 transition-all animate-in fade-in slide-in-from-bottom-2 duration-200">
+                        <div className="absolute bottom-2 left-2 right-2 sm:left-auto sm:right-3 sm:bottom-3 sm:max-w-sm sm:w-96 z-[1000] bg-white/98 backdrop-blur-sm rounded-2xl border border-slate-200/90 shadow-2xl p-2.5 sm:p-3.5 flex flex-col gap-2 transition-all animate-in fade-in slide-in-from-bottom-2 duration-200">
                             {/* Card Header: Status Badge, Cert & Close Button */}
                             <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-1.5 flex-wrap">

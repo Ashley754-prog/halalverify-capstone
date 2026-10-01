@@ -46,7 +46,7 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
     };
 
     return (
-        <div className="flex h-screen h-[100dvh] overflow-hidden bg-slate-50 relative">
+        <div className="flex h-full h-[100svh] h-[100dvh] max-h-[100dvh] overflow-hidden bg-slate-50 relative">
             {/* Mobile Backdrop Overlay */}
             {isOpen && (
                 <div 
@@ -237,7 +237,7 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
             </aside>
 
             {/* Main Content Viewport */}
-            <main className={`min-w-0 flex-1 flex flex-col h-screen h-[100dvh] w-full ${currentView === 'map' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+            <main className={`min-w-0 flex-1 flex flex-col h-full min-h-0 w-full ${currentView === 'map' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
                 {children}
             </main>
         </div>

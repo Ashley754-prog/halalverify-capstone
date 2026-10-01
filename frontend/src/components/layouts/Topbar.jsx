@@ -29,7 +29,7 @@ export const Topbar = ({ title, subtitle, action, onBack }) => (
 
 // App Header Banner (positioned at top of application layout)
 export const AppTopbar = ({ isSidebarOpen, onToggleSidebar, onProfileClick, userRole, onSignInClick, onLogoClick }) => (
-    <div className="sticky top-0 z-30 w-full border-b border-slate-800 bg-slate-900 px-4 py-3 sm:px-5 sm:py-4 shadow-lg shadow-slate-900/10">
+    <div className="sticky top-0 z-30 w-full border-b border-slate-800 bg-slate-900 px-4 py-3 sm:px-5 sm:py-4 shadow-lg shadow-slate-900/10 shrink-0">
         <div className="flex items-center justify-between gap-3 sm:gap-4">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 {/* Mobile Menu Toggle Button */}
