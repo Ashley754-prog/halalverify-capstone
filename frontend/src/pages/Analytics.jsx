@@ -10,12 +10,7 @@ import {
     AlertOctagon,
     PieChart,
     ExternalLink,
-    Activity,
-    FileCheck2,
-    Clock,
-    Flame,
-    ArrowUpRight,
-    TrendingUp
+    Activity
 } from 'lucide-react';
 import { API_BASE_URL, authFetch } from '../utils/api';
 

@@ -15,7 +15,8 @@ import {
     RefreshCw,
     AlertTriangle,
     Sparkles,
-    Bot
+    ChevronRight,
+    BarChart2
 } from 'lucide-react';
 import Modal from '../components/ui/Modal';
 import Toast from '../components/ui/Toast';
@@ -430,6 +431,17 @@ export default function VerificationQueue({ onViewChange }) {
                         >
                             <RefreshCw size={13} className={loading ? 'animate-spin text-emerald-600' : ''} />
                         </button>
+
+                        {onViewChange && (
+                            <button
+                                type="button"
+                                onClick={() => onViewChange('analytics')}
+                                className="p-1.5 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200/80 transition flex items-center justify-center text-xs"
+                                title="Open Analytics Dashboard"
+                            >
+                                <BarChart2 size={13} />
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -518,6 +530,17 @@ export default function VerificationQueue({ onViewChange }) {
                         <RefreshCw size={14} className={loading ? 'animate-spin text-emerald-600' : ''} />
                         <span className="hidden sm:inline">Refresh</span>
                     </button>
+
+                    {onViewChange && (
+                        <button
+                            type="button"
+                            onClick={() => onViewChange('analytics')}
+                            className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold inline-flex items-center gap-1.5 transition shadow-2xs"
+                        >
+                            <span>Analytics</span>
+                            <ChevronRight size={13} />
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -540,6 +563,15 @@ export default function VerificationQueue({ onViewChange }) {
                             <CheckCircle2 size={36} className="mx-auto text-emerald-500" />
                             <p className="text-sm font-bold text-slate-700">Verification Queue is Clean!</p>
                             <p className="text-xs">No pending establishment submissions require administrative review at this time.</p>
+                            {onViewChange && (
+                                <button
+                                    type="button"
+                                    onClick={() => onViewChange('dashboard')}
+                                    className="mt-2 text-xs font-semibold text-emerald-700 hover:text-emerald-800 underline inline-flex items-center gap-1"
+                                >
+                                    Return to Dashboard
+                                </button>
+                            )}
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
@@ -660,6 +692,15 @@ export default function VerificationQueue({ onViewChange }) {
                             <CheckCircle2 size={36} className="mx-auto text-emerald-500" />
                             <p className="text-sm font-bold text-slate-700">All Products Verified!</p>
                             <p className="text-xs">No pending community products awaiting approval.</p>
+                            {onViewChange && (
+                                <button
+                                    type="button"
+                                    onClick={() => onViewChange('dashboard')}
+                                    className="mt-2 text-xs font-semibold text-emerald-700 hover:text-emerald-800 underline inline-flex items-center gap-1"
+                                >
+                                    Return to Dashboard
+                                </button>
+                            )}
                         </div>
                     ) : (
                         <div className="divide-y divide-slate-100">
@@ -734,6 +775,15 @@ export default function VerificationQueue({ onViewChange }) {
                             <CheckCircle2 size={36} className="mx-auto text-emerald-500" />
                             <p className="text-sm font-bold text-slate-700">No Open Reports!</p>
                             <p className="text-xs">The community flag queue is completely resolved.</p>
+                            {onViewChange && (
+                                <button
+                                    type="button"
+                                    onClick={() => onViewChange('dashboard')}
+                                    className="mt-2 text-xs font-semibold text-emerald-700 hover:text-emerald-800 underline inline-flex items-center gap-1"
+                                >
+                                    Return to Dashboard
+                                </button>
+                            )}
                         </div>
                     ) : (
                         <div className="space-y-3">
