@@ -46,18 +46,23 @@ select option {
 }
 
 /* Leaflet map hover preview card styling */
+.leaflet-tooltip.custom-map-tooltip,
+.leaflet-tooltip.custom-map-tooltip * {
+    pointer-events: none !important;
+    user-select: none !important;
+}
+
 .leaflet-tooltip.custom-map-tooltip {
     background: #ffffff !important;
     border: 1px solid #cbd5e1 !important;
     border-radius: 14px !important;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.08) !important;
-    padding: 10px 12px !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.18), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+    padding: 10px 14px !important;
     color: #0f172a !important;
     font-family: inherit !important;
-    pointer-events: none !important;
     white-space: normal !important;
 }
 
 .leaflet-tooltip-top.custom-map-tooltip::before {
-    border-top-color: #cbd5e1 !important;
+    display: none !important;
 }

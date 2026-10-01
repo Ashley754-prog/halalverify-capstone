@@ -13,7 +13,6 @@ import {
     ChevronDown,
     ChevronUp,
 } from 'lucide-react';
-import Topbar from '../components/layouts/Topbar';
 import Toast from '../components/ui/Toast';
 import AuthPromptModal from '../components/submissions/AuthPromptModal';
 import ReportIssueModal from '../components/reports/ReportIssueModal';
@@ -372,9 +371,10 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
 
                         marker.bindTooltip(tooltipContent, {
                             direction: 'top',
-                            offset: [0, -10],
+                            offset: [0, -14],
                             opacity: 1,
                             sticky: false,
+                            interactive: false,
                             className: 'custom-map-tooltip',
                         });
 
@@ -476,16 +476,14 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
     };
 
     return (
-        <div className="p-3 sm:p-5 md:p-6 space-y-4 sm:space-y-5 flex-1 flex flex-col h-full bg-slate-50">
-            <Topbar
-                title="Interactive Spatial Map & Establishment Directory"
-                subtitle="Locate verified Halal and Muslim-owned restaurants, eateries, and food establishments across Zamboanga City."
-                onBack={() => onViewChange?.('back')}
-            />
-
-            {/* Compact Filter & Search Toolbar */}
+        <div className="p-3 sm:p-5 md:p-6 space-y-3 sm:space-y-4 flex-1 flex flex-col h-full bg-slate-50">
+            {/* Compact Filter & Search Toolbar with Integrated Module Title */}
             <div className="bg-white rounded-2xl border border-slate-200/90 p-2.5 sm:p-3 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 shrink-0">
                 <div className="flex flex-wrap items-center gap-2">
+                    <div className="hidden sm:flex items-center gap-1.5 pr-2.5 mr-0.5 border-r border-slate-200 shrink-0">
+                        <MapPin size={16} className="text-emerald-600" />
+                        <span className="font-black text-slate-800 text-sm tracking-tight">Halal Map</span>
+                    </div>
                     <button
                         type="button"
                         onClick={handleFindNearMe}
@@ -605,11 +603,15 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                 <div
                     className={`
                         ${mobileTab === 'map' ? 'flex' : 'hidden'} lg:flex
-                        lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex-col relative isolate z-0
+                        lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex-col relative
                         min-h-[420px] sm:min-h-[480px] lg:min-h-[550px]
                     `}
                 >
-                    <div className="absolute top-3 left-3 z-10 bg-white/95 backdrop-blur-sm rounded-xl border border-slate-200 p-2 shadow-md flex items-center gap-3 text-xs">
+                    {/* Map Canvas rendered FIRST in DOM */}
+                    <div ref={mapContainerRef} className="w-full h-full min-h-[420px] sm:min-h-[480px] lg:min-h-[550px] z-0" />
+
+                    {/* Top-left Pins & Heatmap toggles placed AFTER map with z-[1000] */}
+                    <div className="absolute top-3 left-3 z-[1000] bg-white/95 backdrop-blur-sm rounded-xl border border-slate-300 p-2 shadow-md flex items-center gap-3 text-xs">
                         <label className="flex items-center gap-1.5 cursor-pointer font-semibold text-slate-700">
                             <input
                                 type="checkbox"
@@ -635,18 +637,18 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                         </label>
                     </div>
 
-                    {/* Easy-to-understand Color Guide */}
-                    <div className="absolute bottom-3 left-3 z-20 bg-white rounded-2xl border border-slate-300 p-3 shadow-xl max-w-[270px] sm:max-w-[295px] text-xs transition-all">
+                    {/* Professional Status Guide placed AFTER map with z-[1000] */}
+                    <div className="absolute bottom-3 left-3 z-[1000] bg-white rounded-2xl border border-slate-300 p-3 shadow-xl max-w-[270px] sm:max-w-[295px] text-xs transition-all">
                         <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-200">
                             <div className="flex items-center gap-1.5 font-bold text-slate-900 text-xs">
-                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shrink-0" />
-                                <span>What the Colors Mean</span>
+                                <Info size={14} className="text-emerald-600 shrink-0" />
+                                <span>Status Guide</span>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setIsColorGuideOpen(!isColorGuideOpen)}
                                 className="text-slate-500 hover:text-slate-800 p-1 rounded hover:bg-slate-100 transition"
-                                title={isColorGuideOpen ? "Hide color guide" : "Show color guide"}
+                                title={isColorGuideOpen ? "Hide guide" : "Show guide"}
                             >
                                 {isColorGuideOpen ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
                             </button>
@@ -660,24 +662,24 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                                         <div className="flex items-start gap-2">
                                             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 mt-1" />
                                             <div className="text-[11px] leading-snug">
-                                                <strong className="text-slate-900">Green: Verified Halal</strong>
-                                                <p className="text-slate-600 text-[10px]">Official halal certificate is active and approved</p>
+                                                <strong className="text-slate-900">Verified Halal</strong>
+                                                <p className="text-slate-600 text-[10px]">Active and accredited Halal certification</p>
                                             </div>
                                         </div>
 
                                         <div className="flex items-start gap-2">
                                             <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0 mt-1" />
                                             <div className="text-[11px] leading-snug">
-                                                <strong className="text-slate-900">Yellow: Needs Checking</strong>
-                                                <p className="text-slate-600 text-[10px]">Store says halal, waiting for official check</p>
+                                                <strong className="text-slate-900">Pending Verification</strong>
+                                                <p className="text-slate-600 text-[10px]">Muslim-owned or awaiting official certificate review</p>
                                             </div>
                                         </div>
 
                                         <div className="flex items-start gap-2">
                                             <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0 mt-1" />
                                             <div className="text-[11px] leading-snug">
-                                                <strong className="text-slate-900">Red: Expired or Reported</strong>
-                                                <p className="text-slate-600 text-[10px]">Expired permit or reported for an issue</p>
+                                                <strong className="text-slate-900">Expired / Flagged</strong>
+                                                <p className="text-slate-600 text-[10px]">Expired permit or reported for compliance check</p>
                                             </div>
                                         </div>
                                     </div>
@@ -687,15 +689,15 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                                 {showHeatmap && (
                                     <div className={showMarkers ? "pt-2 border-t border-slate-200" : ""}>
                                         <span className="text-[10px] font-bold text-slate-800 uppercase tracking-wide block mb-1">
-                                            Halal Food Areas (Heatmap)
+                                            Establishment Density
                                         </span>
                                         <div className="h-2.5 w-full rounded-full bg-gradient-to-r from-emerald-400 via-amber-400 via-orange-400 to-red-500 shadow-inner mb-1" />
                                         <div className="flex justify-between text-[10px] font-semibold text-slate-700">
-                                            <span>Few stores (Green)</span>
-                                            <span>Many stores (Red)</span>
+                                            <span>Low Density</span>
+                                            <span>High Concentration</span>
                                         </div>
                                         <p className="text-[10px] text-slate-600 mt-1 leading-snug">
-                                            Red areas have many halal food stores close together.
+                                            Warmer zones highlight clusters with multiple Halal dining options.
                                         </p>
                                     </div>
                                 )}
@@ -704,14 +706,12 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                                 {userLocation && (
                                     <div className="pt-2 border-t border-slate-200 flex items-center gap-2">
                                         <span className="w-2.5 h-2.5 rounded-full bg-blue-600 ring-2 ring-blue-300 shrink-0" />
-                                        <span className="text-blue-800 text-[11px] font-bold">You are here</span>
+                                        <span className="text-blue-800 text-[11px] font-bold">Your Location</span>
                                     </div>
                                 )}
                             </div>
                         )}
                     </div>
-
-                    <div ref={mapContainerRef} className="w-full h-full min-h-[420px] sm:min-h-[480px] lg:min-h-[550px]" />
                 </div>
 
                 <EstablishmentsSidebarList

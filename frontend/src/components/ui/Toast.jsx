@@ -25,7 +25,7 @@ export default function Toast({ message, type = 'info', visible, onClose }) {
 
     return (
         <div 
-            className={`fixed top-4 left-4 right-4 sm:top-16 sm:left-auto sm:right-5 sm:max-w-md z-50 flex items-center justify-between gap-3 rounded-2xl border px-3.5 sm:px-4 py-3 shadow-xl backdrop-blur transition-all ${styles[type]}`}
+            className={`fixed top-4 left-4 right-4 sm:top-16 sm:left-auto sm:right-5 sm:max-w-md z-[4000] flex items-center justify-between gap-3 rounded-2xl border px-3.5 sm:px-4 py-3 shadow-xl backdrop-blur transition-all ${styles[type]}`}
         >
             <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                 {icons[type]}
