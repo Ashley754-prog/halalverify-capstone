@@ -9,6 +9,9 @@ import {
     Crosshair,
     Loader2,
     X,
+    Info,
+    ChevronDown,
+    ChevronUp,
 } from 'lucide-react';
 import Topbar from '../components/layouts/Topbar';
 import Toast from '../components/ui/Toast';
@@ -77,6 +80,7 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
     const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
+    const [isLegendExpanded, setIsLegendExpanded] = useState(true);
 
     // Fetch establishments from API or fallback
     const fetchEstablishments = async () => {
@@ -347,9 +351,9 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                         });
 
                         const popupContent = `
-                            <div style="font-family: system-ui, sans-serif; font-size: 12px; line-height: 1.4; min-width: 180px;">
+                            <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 12px; line-height: 1.4; min-width: 190px; padding: 2px;">
                                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
-                                    <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 10px; background: ${statusConfig.color}20; color: ${statusConfig.color};">
+                                    <span style="display: inline-block; padding: 2px 7px; border-radius: 6px; font-weight: 700; font-size: 10px; background: ${statusConfig.color}20; color: ${statusConfig.color};">
                                         ${statusConfig.label}
                                     </span>
                                     ${distText ? `<span style="font-size:10px; color:#64748b; font-weight:600;">${distText}</span>` : ''}
@@ -360,12 +364,55 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                                     ${hcbInfo}
                                     ${est.certificate_number ? `<div>Cert: <b>${est.certificate_number}</b></div>` : ''}
                                 </div>
+                                <div style="margin-top: 6px; padding-top: 5px; border-top: 1px dashed #e2e8f0; font-size: 10px; color: #059669; font-weight: 700; text-align: center;">
+                                    Click to view full details →
+                                </div>
                             </div>
                         `;
 
-                        marker.bindPopup(popupContent);
-                        marker.on('click', () => {
+                        marker.bindPopup(popupContent, {
+                            offset: [0, -8],
+                            closeButton: true,
+                            autoPan: false,
+                        });
+
+                        let hoverTimer = null;
+
+                        marker.on('mouseover', function () {
+                            clearTimeout(hoverTimer);
+                            this.openPopup();
+                        });
+
+                        marker.on('mouseout', function () {
+                            const m = this;
+                            hoverTimer = setTimeout(() => {
+                                m.closePopup();
+                            }, 180);
+                        });
+
+                        marker.on('click', function () {
+                            clearTimeout(hoverTimer);
+                            this.closePopup();
                             setSelectedEstablishment(est);
+                        });
+
+                        marker.on('popupopen', function (e) {
+                            const popupNode = e.popup.getElement();
+                            if (popupNode) {
+                                popupNode.onmouseenter = () => {
+                                    clearTimeout(hoverTimer);
+                                };
+                                popupNode.onmouseleave = () => {
+                                    marker.closePopup();
+                                };
+                                popupNode.onclick = (evt) => {
+                                    if (evt.target.classList.contains('leaflet-popup-close-button')) {
+                                        return;
+                                    }
+                                    marker.closePopup();
+                                    setSelectedEstablishment(est);
+                                };
+                            }
                         });
 
                         markersLayerRef.current.addLayer(marker);
@@ -604,26 +651,84 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                         </label>
                     </div>
 
-                    <div className="absolute bottom-3 left-3 z-10 bg-white/95 backdrop-blur-sm rounded-xl border border-slate-200 p-2.5 shadow-md text-xs space-y-1">
-                        <span className="font-black text-slate-700 block text-[10px] uppercase tracking-wider">
-                            Classification Legend
-                        </span>
-                        <div className="flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                            <span className="text-slate-600 text-[11px] font-medium">Verified Halal</span>
+                    {/* Interactive Classification & Heatmap Legend */}
+                    <div className="absolute bottom-3 left-3 z-10 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 p-3 shadow-lg max-w-[270px] sm:max-w-[310px] text-xs transition-all">
+                        <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-100">
+                            <div className="flex items-center gap-1.5 font-bold text-slate-800 text-[11px] uppercase tracking-wider">
+                                <Info size={13} className="text-emerald-600 shrink-0" />
+                                <span>Map & Heatmap Legend</span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsLegendExpanded(!isLegendExpanded)}
+                                className="text-slate-400 hover:text-slate-700 p-0.5 rounded transition"
+                                title={isLegendExpanded ? "Collapse legend" : "Expand legend"}
+                            >
+                                {isLegendExpanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                            </button>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                            <span className="text-slate-600 text-[11px] font-medium">Self-Declared / Review</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
-                            <span className="text-slate-600 text-[11px] font-medium">Flagged / Suspended</span>
-                        </div>
-                        {userLocation && (
-                            <div className="flex items-center gap-2 pt-1 border-t border-slate-200">
-                                <span className="w-2.5 h-2.5 rounded-full bg-blue-600 ring-2 ring-blue-300" />
-                                <span className="text-blue-700 text-[11px] font-bold">Your Location</span>
+
+                        {isLegendExpanded && (
+                            <div className="space-y-2.5 pt-2">
+                                {/* 1. Marker Pins Explanation */}
+                                {showMarkers && (
+                                    <div>
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                                            Marker Pins (Classification)
+                                        </span>
+                                        <div className="space-y-1.5">
+                                            <div className="flex items-start gap-2">
+                                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 mt-0.5" />
+                                                <div className="text-[11px] leading-tight">
+                                                    <strong className="text-slate-800">Green: Verified Halal</strong>
+                                                    <p className="text-slate-500 text-[10px]">Active certificate from accredited body (HCB)</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-start gap-2">
+                                                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0 mt-0.5" />
+                                                <div className="text-[11px] leading-tight">
+                                                    <strong className="text-slate-800">Yellow: Self-Declared</strong>
+                                                    <p className="text-slate-500 text-[10px]">Merchant claim or pending verification</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-start gap-2">
+                                                <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0 mt-0.5" />
+                                                <div className="text-[11px] leading-tight">
+                                                    <strong className="text-slate-800">Red: Flagged / Suspended</strong>
+                                                    <p className="text-slate-500 text-[10px]">Expired certificate or consumer reported</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* 2. Density Heatmap Explanation */}
+                                {showHeatmap && (
+                                    <div className={showMarkers ? "pt-2 border-t border-slate-100" : ""}>
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                                            Density Heatmap Gradient
+                                        </span>
+                                        <div className="h-2 w-full rounded-full bg-gradient-to-r from-emerald-400 via-amber-400 via-orange-400 to-red-500 shadow-inner mb-1" />
+                                        <div className="flex justify-between text-[10px] font-semibold text-slate-600">
+                                            <span>Low (Green)</span>
+                                            <span>Moderate</span>
+                                            <span>High (Red)</span>
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 mt-1 leading-tight">
+                                            Shows spatial density of Halal dining across Zamboanga City.
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* User GPS Location Marker */}
+                                {userLocation && (
+                                    <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
+                                        <span className="w-2.5 h-2.5 rounded-full bg-blue-600 ring-2 ring-blue-300 shrink-0" />
+                                        <span className="text-blue-700 text-[11px] font-bold">Your GPS Location</span>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
@@ -649,7 +754,12 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
             <EstablishmentDetailModal
                 establishment={selectedEstablishment}
                 userLocation={userLocation}
-                onClose={() => setSelectedEstablishment(null)}
+                onClose={() => {
+                    setSelectedEstablishment(null);
+                    if (mapInstanceRef.current) {
+                        mapInstanceRef.current.closePopup();
+                    }
+                }}
                 onFlagEstablishment={handleFlagEstablishment}
             />
 
