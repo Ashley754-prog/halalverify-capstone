@@ -80,7 +80,7 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
     const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
-    const [isLegendExpanded, setIsLegendExpanded] = useState(true);
+    const [isColorGuideOpen, setIsColorGuideOpen] = useState(true);
 
     // Fetch establishments from API or fallback
     const fetchEstablishments = async () => {
@@ -556,10 +556,10 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                             onChange={(e) => setSelectedStatus(e.target.value)}
                             className="bg-transparent font-bold text-slate-800 focus:outline-none cursor-pointer text-xs"
                         >
-                            <option value="all">All Classifications</option>
+                            <option value="all">All Statuses</option>
                             <option value="verified">🟢 Verified Halal</option>
-                            <option value="needs_review">🟡 Self-Declared / Review</option>
-                            <option value="flagged">🔴 Flagged / Suspended</option>
+                            <option value="needs_review">🟡 Needs Checking</option>
+                            <option value="flagged">🔴 Expired or Reported</option>
                         </select>
                     </div>
                 </div>
@@ -651,82 +651,76 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                         </label>
                     </div>
 
-                    {/* Interactive Classification & Heatmap Legend */}
-                    <div className="absolute bottom-3 left-3 z-10 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 p-3 shadow-lg max-w-[270px] sm:max-w-[310px] text-xs transition-all">
-                        <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-100">
-                            <div className="flex items-center gap-1.5 font-bold text-slate-800 text-[11px] uppercase tracking-wider">
-                                <Info size={13} className="text-emerald-600 shrink-0" />
-                                <span>Map & Heatmap Legend</span>
+                    {/* Easy-to-understand Color Guide */}
+                    <div className="absolute bottom-3 left-3 z-20 bg-white rounded-2xl border border-slate-300 p-3 shadow-xl max-w-[270px] sm:max-w-[295px] text-xs transition-all">
+                        <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-200">
+                            <div className="flex items-center gap-1.5 font-bold text-slate-900 text-xs">
+                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shrink-0" />
+                                <span>What the Colors Mean</span>
                             </div>
                             <button
                                 type="button"
-                                onClick={() => setIsLegendExpanded(!isLegendExpanded)}
-                                className="text-slate-400 hover:text-slate-700 p-0.5 rounded transition"
-                                title={isLegendExpanded ? "Collapse legend" : "Expand legend"}
+                                onClick={() => setIsColorGuideOpen(!isColorGuideOpen)}
+                                className="text-slate-500 hover:text-slate-800 p-1 rounded hover:bg-slate-100 transition"
+                                title={isColorGuideOpen ? "Hide color guide" : "Show color guide"}
                             >
-                                {isLegendExpanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                                {isColorGuideOpen ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
                             </button>
                         </div>
 
-                        {isLegendExpanded && (
+                        {isColorGuideOpen && (
                             <div className="space-y-2.5 pt-2">
-                                {/* 1. Marker Pins Explanation */}
+                                {/* 1. Marker Pins */}
                                 {showMarkers && (
-                                    <div>
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                                            Marker Pins (Classification)
-                                        </span>
-                                        <div className="space-y-1.5">
-                                            <div className="flex items-start gap-2">
-                                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 mt-0.5" />
-                                                <div className="text-[11px] leading-tight">
-                                                    <strong className="text-slate-800">Green: Verified Halal</strong>
-                                                    <p className="text-slate-500 text-[10px]">Active certificate from accredited body (HCB)</p>
-                                                </div>
+                                    <div className="space-y-1.5">
+                                        <div className="flex items-start gap-2">
+                                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 mt-1" />
+                                            <div className="text-[11px] leading-snug">
+                                                <strong className="text-slate-900">Green: Verified Halal</strong>
+                                                <p className="text-slate-600 text-[10px]">Official halal certificate is active and approved</p>
                                             </div>
+                                        </div>
 
-                                            <div className="flex items-start gap-2">
-                                                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0 mt-0.5" />
-                                                <div className="text-[11px] leading-tight">
-                                                    <strong className="text-slate-800">Yellow: Self-Declared</strong>
-                                                    <p className="text-slate-500 text-[10px]">Merchant claim or pending verification</p>
-                                                </div>
+                                        <div className="flex items-start gap-2">
+                                            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0 mt-1" />
+                                            <div className="text-[11px] leading-snug">
+                                                <strong className="text-slate-900">Yellow: Needs Checking</strong>
+                                                <p className="text-slate-600 text-[10px]">Store says halal, waiting for official check</p>
                                             </div>
+                                        </div>
 
-                                            <div className="flex items-start gap-2">
-                                                <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0 mt-0.5" />
-                                                <div className="text-[11px] leading-tight">
-                                                    <strong className="text-slate-800">Red: Flagged / Suspended</strong>
-                                                    <p className="text-slate-500 text-[10px]">Expired certificate or consumer reported</p>
-                                                </div>
+                                        <div className="flex items-start gap-2">
+                                            <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0 mt-1" />
+                                            <div className="text-[11px] leading-snug">
+                                                <strong className="text-slate-900">Red: Expired or Reported</strong>
+                                                <p className="text-slate-600 text-[10px]">Expired permit or reported for an issue</p>
                                             </div>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* 2. Density Heatmap Explanation */}
+                                {/* 2. Heatmap Density */}
                                 {showHeatmap && (
-                                    <div className={showMarkers ? "pt-2 border-t border-slate-100" : ""}>
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                                            Density Heatmap Gradient
+                                    <div className={showMarkers ? "pt-2 border-t border-slate-200" : ""}>
+                                        <span className="text-[10px] font-bold text-slate-800 uppercase tracking-wide block mb-1">
+                                            Halal Food Areas (Heatmap)
                                         </span>
-                                        <div className="h-2 w-full rounded-full bg-gradient-to-r from-emerald-400 via-amber-400 via-orange-400 to-red-500 shadow-inner mb-1" />
-                                        <div className="flex justify-between text-[10px] font-semibold text-slate-600">
-                                            <span>Low (Green)</span>
-                                            <span>Moderate</span>
-                                            <span>High (Red)</span>
+                                        <div className="h-2.5 w-full rounded-full bg-gradient-to-r from-emerald-400 via-amber-400 via-orange-400 to-red-500 shadow-inner mb-1" />
+                                        <div className="flex justify-between text-[10px] font-semibold text-slate-700">
+                                            <span>Few stores (Green)</span>
+                                            <span>Many stores (Red)</span>
                                         </div>
-                                        <p className="text-[10px] text-slate-400 mt-1 leading-tight">
-                                            Shows spatial density of Halal dining across Zamboanga City.
+                                        <p className="text-[10px] text-slate-600 mt-1 leading-snug">
+                                            Red areas have many halal food stores close together.
                                         </p>
                                     </div>
                                 )}
 
-                                {/* User GPS Location Marker */}
+                                {/* User GPS Location */}
                                 {userLocation && (
-                                    <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
+                                    <div className="pt-2 border-t border-slate-200 flex items-center gap-2">
                                         <span className="w-2.5 h-2.5 rounded-full bg-blue-600 ring-2 ring-blue-300 shrink-0" />
-                                        <span className="text-blue-700 text-[11px] font-bold">Your GPS Location</span>
+                                        <span className="text-blue-800 text-[11px] font-bold">You are here</span>
                                     </div>
                                 )}
                             </div>
