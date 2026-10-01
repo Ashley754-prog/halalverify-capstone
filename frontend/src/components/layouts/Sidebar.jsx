@@ -237,7 +237,7 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
             </aside>
 
             {/* Main Content Viewport */}
-            <main className="min-w-0 flex-1 flex flex-col h-screen h-[100dvh] overflow-y-auto w-full">
+            <main className={`min-w-0 flex-1 flex flex-col h-screen h-[100dvh] w-full ${currentView === 'map' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
                 {children}
             </main>
         </div>

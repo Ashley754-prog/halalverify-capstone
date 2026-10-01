@@ -482,7 +482,7 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
     };
 
     return (
-        <div className="p-2 sm:p-4 md:p-5 flex-1 flex flex-col h-full min-h-0 bg-slate-50 gap-2 sm:gap-2.5 overflow-hidden">
+        <div className="p-2 sm:p-4 md:p-5 flex-1 flex flex-col min-h-0 bg-slate-50 gap-1.5 sm:gap-2.5 overflow-hidden">
             {/* Compact Filter & Search Toolbar with Integrated Module Title */}
             <div className="bg-white rounded-2xl border border-slate-200/90 p-2 sm:p-2.5 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-1.5 sm:gap-2 shrink-0">
                 {/* Search Bar - Row 1 on mobile, right side on desktop */}
@@ -609,7 +609,7 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
             </div>
 
             {/* Map & Directory Main Layout */}
-            <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-2.5 sm:gap-4 relative overflow-hidden">
+            <div className="flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-3 gap-2 sm:gap-4 relative overflow-hidden">
                 <div
                     className={`
                         ${mobileTab === 'map' ? 'flex' : 'hidden'} lg:flex
