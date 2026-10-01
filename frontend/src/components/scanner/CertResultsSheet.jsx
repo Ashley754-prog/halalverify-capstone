@@ -11,6 +11,7 @@ export const CertResultsSheet = ({
     certResult,
     isLoading,
     onReset,
+    onRetry,
     onClose,
     onViewChange
 }) => {
@@ -119,6 +120,29 @@ export const CertResultsSheet = ({
                                     <p className="text-xl font-black">{certResult.status}</p>
                                 </div>
                             </div>
+
+                            {/* Server Sleeping / Offline Fallback Notice */}
+                            {certResult.authenticationNote?.toLowerCase().includes('offline') && (
+                                <div className="p-3.5 rounded-2xl bg-amber-950/70 border border-amber-500/50 text-amber-100 text-xs space-y-2">
+                                    <div className="flex items-center gap-2 font-bold text-amber-300">
+                                        <Sparkles size={15} className="shrink-0 text-amber-400" />
+                                        <span>Cloud AI Server Was Asleep</span>
+                                    </div>
+                                    <p className="text-[11px] text-amber-200/90 leading-relaxed">
+                                        Render free containers take ~30s to wake up on the first scan. The server is now awake and ready!
+                                    </p>
+                                    {onRetry && (
+                                        <button
+                                            type="button"
+                                            onClick={onRetry}
+                                            className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:scale-95 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-sm"
+                                        >
+                                            <RefreshCw size={13} className="shrink-0" />
+                                            <span>Retry Scan Now (Server Awake)</span>
+                                        </button>
+                                    )}
+                                </div>
+                            )}
 
                             <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 space-y-2 text-xs">
                                 <p className="text-slate-300">Certifying Body: <span className="font-bold text-white">{certResult.certifyingBody}</span></p>

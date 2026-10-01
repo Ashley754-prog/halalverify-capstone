@@ -312,6 +312,7 @@ export const Scanner = ({ isOnline, onViewChange }) => {
                     scanResult={scanResult}
                     isLoading={isLoading}
                     onReset={resetState}
+                    onRetry={() => selectedImage && triggerAIScan(selectedImage)}
                     onClose={() => setShowResultsSheet(false)}
                     onViewChange={onViewChange}
                     onScanSecondary={handleScanSecondary}
@@ -324,6 +325,7 @@ export const Scanner = ({ isOnline, onViewChange }) => {
                     certResult={certResult}
                     isLoading={isLoading}
                     onReset={resetState}
+                    onRetry={() => selectedImage && triggerAIScan(selectedImage)}
                     onClose={() => setShowResultsSheet(false)}
                     onViewChange={onViewChange}
                 />

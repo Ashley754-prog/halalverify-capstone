@@ -7,7 +7,9 @@ if (typeof window !== 'undefined') {
         if (stored && (stored.includes('ngrok') || stored.includes('trycloudflare') || stored.includes('localhost'))) {
             localStorage.removeItem('halalverify_api_url');
         }
-    } catch (_) {}
+    } catch (e) {
+        void e;
+    }
 }
 
 function resolveApiBaseUrl() {
@@ -34,14 +36,16 @@ export const API_BASE_URL = resolveApiBaseUrl();
  * Backend write endpoints reject requests without a valid bearer token.
  */
 export async function authFetch(url, options = {}) {
-    const { timeout = 30000, signal: userSignal, ...fetchOptions } = options;
+    const { timeout = 60000, signal: userSignal, ...fetchOptions } = options;
     let session = null;
     try {
         const sessionPromise = supabase.auth.getSession();
         const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve({ data: {} }), 1500));
         const sessionRes = await Promise.race([sessionPromise, timeoutPromise]);
         session = sessionRes?.data?.session;
-    } catch (_) {}
+    } catch (e) {
+        void e;
+    }
 
     const headers = new Headers(fetchOptions.headers || {});
 
@@ -96,7 +100,7 @@ export async function analyzeImage(base64Image, mode) {
                     'ngrok-skip-browser-warning': 'true',
                 },
                 body: JSON.stringify({ imageBase64: base64Image }),
-                timeout: 45000,
+                timeout: 65000,
             });
 
             if (response.ok) {
