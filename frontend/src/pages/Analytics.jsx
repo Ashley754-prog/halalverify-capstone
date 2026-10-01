@@ -137,10 +137,11 @@ export default function Analytics({ onViewChange }) {
     return (
         <div className="p-3 sm:p-5 md:p-6 space-y-4 sm:space-y-5 flex-1 flex flex-col h-full bg-slate-50/70 overflow-y-auto text-slate-800">
             {/* Enterprise Control Toolbar */}
-            <div className="bg-white rounded-lg border border-slate-200/90 px-3.5 py-2.5 shadow-2xs flex flex-wrap items-center justify-between gap-3">
-                <div className="flex flex-wrap items-center gap-3">
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-2 sm:p-2.5 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2 shrink-0">
+                {/* Row 1 on mobile: Status on left, Actions on right */}
+                <div className="flex items-center justify-between gap-2 w-full md:w-auto">
                     {/* Live Telemetry Status Pill */}
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-100 text-slate-700 text-[11px] font-semibold tracking-wide border border-slate-200/60">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 text-[11px] font-semibold tracking-wide border border-slate-200/60 shrink-0">
                         <span className="relative flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -148,52 +149,72 @@ export default function Analytics({ onViewChange }) {
                         <span className="font-mono text-[10px] uppercase">Telemetry: Active</span>
                     </div>
 
-                    <div className="hidden sm:block h-4 w-px bg-slate-200" />
-
-                    {/* Period Segmented Control */}
-                    <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider hidden md:inline">
-                            Window:
-                        </span>
-                        <div className="inline-flex p-0.5 rounded-md bg-slate-100 border border-slate-200/80 text-xs">
-                            <button
-                                type="button"
-                                onClick={() => setInterval('daily')}
-                                className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
-                                    interval === 'daily'
-                                        ? 'bg-white text-slate-900 font-semibold shadow-2xs border border-slate-200/60'
-                                        : 'text-slate-600 hover:text-slate-900'
-                                }`}
-                            >
-                                7 Days
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setInterval('weekly')}
-                                className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
-                                    interval === 'weekly'
-                                        ? 'bg-white text-slate-900 font-semibold shadow-2xs border border-slate-200/60'
-                                        : 'text-slate-600 hover:text-slate-900'
-                                }`}
-                            >
-                                30 Days
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setInterval('monthly')}
-                                className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
-                                    interval === 'monthly'
-                                        ? 'bg-white text-slate-900 font-semibold shadow-2xs border border-slate-200/60'
-                                        : 'text-slate-600 hover:text-slate-900'
-                                }`}
-                            >
-                                All Time
-                            </button>
-                        </div>
+                    {/* Actions on mobile (right aligned) */}
+                    <div className="flex md:hidden items-center gap-1.5 shrink-0">
+                        <button
+                            type="button"
+                            onClick={loadAnalyticsData}
+                            disabled={loading}
+                            className="p-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium inline-flex items-center transition shadow-2xs disabled:opacity-50"
+                            title="Reload latest telemetry metrics"
+                        >
+                            <RefreshCw size={13} className={loading ? 'animate-spin text-emerald-600' : 'text-slate-500'} />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => onViewChange?.('verification-queue')}
+                            className="px-2.5 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-semibold inline-flex items-center gap-1 transition shadow-2xs"
+                        >
+                            <span>Audit Queue</span>
+                            <ChevronRight size={13} />
+                        </button>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                {/* Row 2 on mobile: Time Period Filter (Full width segmented control) */}
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                    <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider hidden lg:inline">
+                        Window:
+                    </span>
+                    <div className="inline-flex w-full md:w-auto p-0.5 rounded-xl bg-slate-100 border border-slate-200/80 text-xs">
+                        <button
+                            type="button"
+                            onClick={() => setInterval('daily')}
+                            className={`flex-1 md:flex-none text-center px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                                interval === 'daily'
+                                    ? 'bg-white text-slate-900 font-semibold shadow-2xs border border-slate-200/60'
+                                    : 'text-slate-600 hover:text-slate-900'
+                            }`}
+                        >
+                            7 Days
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setInterval('weekly')}
+                            className={`flex-1 md:flex-none text-center px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                                interval === 'weekly'
+                                    ? 'bg-white text-slate-900 font-semibold shadow-2xs border border-slate-200/60'
+                                    : 'text-slate-600 hover:text-slate-900'
+                            }`}
+                        >
+                            30 Days
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setInterval('monthly')}
+                            className={`flex-1 md:flex-none text-center px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                                interval === 'monthly'
+                                    ? 'bg-white text-slate-900 font-semibold shadow-2xs border border-slate-200/60'
+                                    : 'text-slate-600 hover:text-slate-900'
+                            }`}
+                        >
+                            All Time
+                        </button>
+                    </div>
+                </div>
+
+                {/* Actions on desktop (hidden on mobile, rendered inline on desktop) */}
+                <div className="hidden md:flex items-center gap-2 shrink-0">
                     {lastSync && (
                         <span className="text-[11px] text-slate-400 font-mono hidden lg:inline-block">
                             Synced: {lastSync}
@@ -204,7 +225,7 @@ export default function Analytics({ onViewChange }) {
                         type="button"
                         onClick={loadAnalyticsData}
                         disabled={loading}
-                        className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium inline-flex items-center gap-1.5 transition shadow-2xs disabled:opacity-50"
+                        className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium inline-flex items-center gap-1.5 transition shadow-2xs disabled:opacity-50"
                         title="Reload latest telemetry metrics"
                     >
                         <RefreshCw size={13} className={loading ? 'animate-spin text-emerald-600' : 'text-slate-500'} />
@@ -214,7 +235,7 @@ export default function Analytics({ onViewChange }) {
                     <button
                         type="button"
                         onClick={() => onViewChange?.('verification-queue')}
-                        className="px-3 py-1.5 rounded-md bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-medium inline-flex items-center gap-1.5 transition shadow-2xs"
+                        className="px-3 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-medium inline-flex items-center gap-1.5 transition shadow-2xs"
                     >
                         <span>Audit Queue</span>
                         <ChevronRight size={13} />

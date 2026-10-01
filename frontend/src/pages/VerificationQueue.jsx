@@ -401,18 +401,55 @@ export default function VerificationQueue({ onViewChange }) {
     return (
         <div className="p-3 sm:p-5 md:p-6 space-y-4 sm:space-y-5 flex-1 flex flex-col h-full bg-slate-50">
             {/* Navigation Tabs Bar */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-2 shadow-sm flex flex-wrap items-center justify-between gap-2">
-                <div className="flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2">
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-2 sm:p-2.5 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2 shrink-0">
+                {/* Row 1 on mobile: Module Title & Action Buttons */}
+                <div className="flex md:hidden items-center justify-between gap-2 w-full">
+                    <div className="flex items-center gap-1.5 font-black text-slate-800 text-xs tracking-tight">
+                        <ShieldCheck size={16} className="text-emerald-600" />
+                        <span>Audit Queue</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                            type="button"
+                            onClick={handleAutoVerifyAll}
+                            disabled={autoVerifyingAll || (establishments.length === 0 && products.length === 0)}
+                            className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white transition flex items-center gap-1 text-xs font-bold shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Automatically run OCR & HCB validation across all pending submissions"
+                        >
+                            <Sparkles size={13} className={autoVerifyingAll ? 'animate-spin' : ''} />
+                            <span>{autoVerifyingAll ? 'Auditing...' : 'Auto-Verify'}</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={fetchQueueData}
+                            disabled={loading}
+                            className="p-1.5 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200/80 transition flex items-center justify-center text-xs"
+                            title="Refresh Queue"
+                        >
+                            <RefreshCw size={13} className={loading ? 'animate-spin text-emerald-600' : ''} />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Tabs Row - Single horizontal row with flex-nowrap & overflow-x-auto */}
+                <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar py-0.5 min-w-0 flex-nowrap">
+                    <div className="hidden sm:flex items-center gap-1.5 pr-2.5 mr-0.5 border-r border-slate-200 shrink-0">
+                        <ShieldCheck size={16} className="text-emerald-600" />
+                        <span className="font-black text-slate-800 text-sm tracking-tight">Audit Queue</span>
+                    </div>
+
                     <button
                         type="button"
                         onClick={() => setActiveTab('establishments')}
-                        className={`min-w-0 px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition ${
+                        className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shrink-0 ${
                             activeTab === 'establishments'
-                                ? 'bg-emerald-700 text-white shadow-sm'
-                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                                ? 'bg-emerald-700 text-white shadow-xs'
+                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 bg-slate-50/80'
                         }`}
                     >
-                        <Store size={15} />
+                        <Store size={14} />
                         <span>Establishments</span>
                         <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
                             activeTab === 'establishments' ? 'bg-white text-emerald-800' : 'bg-slate-200 text-slate-700'
@@ -424,14 +461,14 @@ export default function VerificationQueue({ onViewChange }) {
                     <button
                         type="button"
                         onClick={() => setActiveTab('products')}
-                        className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition ${
+                        className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shrink-0 ${
                             activeTab === 'products'
-                                ? 'bg-emerald-700 text-white shadow-sm'
-                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                                ? 'bg-emerald-700 text-white shadow-xs'
+                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 bg-slate-50/80'
                         }`}
                     >
-                        <Package size={15} />
-                        <span className="text-center">Community Products</span>
+                        <Package size={14} />
+                        <span><span className="hidden sm:inline">Community </span>Products</span>
                         <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
                             activeTab === 'products' ? 'bg-white text-emerald-800' : 'bg-slate-200 text-slate-700'
                         }`}>
@@ -442,14 +479,14 @@ export default function VerificationQueue({ onViewChange }) {
                     <button
                         type="button"
                         onClick={() => setActiveTab('reports')}
-                        className={`min-w-0 px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition ${
+                        className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shrink-0 ${
                             activeTab === 'reports'
-                                ? 'bg-amber-600 text-white shadow-sm'
-                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                                ? 'bg-amber-600 text-white shadow-xs'
+                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 bg-slate-50/80'
                         }`}
                     >
-                        <Flag size={15} />
-                        <span className="text-center">User Flags & Reports</span>
+                        <Flag size={14} />
+                        <span><span className="hidden sm:inline">User Flags & </span>Reports</span>
                         <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
                             activeTab === 'reports' ? 'bg-white text-amber-800' : 'bg-slate-200 text-slate-700'
                         }`}>
@@ -458,12 +495,13 @@ export default function VerificationQueue({ onViewChange }) {
                     </button>
                 </div>
 
-                <div className="flex items-center gap-2">
+                {/* Actions on desktop (hidden on mobile, rendered inline on desktop) */}
+                <div className="hidden md:flex items-center gap-2 shrink-0">
                     <button
                         type="button"
                         onClick={handleAutoVerifyAll}
                         disabled={autoVerifyingAll || (establishments.length === 0 && products.length === 0)}
-                        className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white transition flex items-center gap-1.5 text-xs font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white transition flex items-center gap-1.5 text-xs font-bold shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Automatically run OCR & HCB validation across all pending submissions"
                     >
                         <Sparkles size={14} className={autoVerifyingAll ? 'animate-spin' : ''} />
