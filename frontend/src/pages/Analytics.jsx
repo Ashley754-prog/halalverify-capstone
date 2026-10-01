@@ -250,7 +250,7 @@ export default function Analytics({ onViewChange }) {
                         </div>
                     </div>
                     <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                        <span>YOLOv8 & Google OCR</span>
+                        <span>YOLOv8 & EasyOCR</span>
                         <span className="text-emerald-700 font-medium font-mono text-[10px] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">
                             PNS 101:2018
                         </span>
