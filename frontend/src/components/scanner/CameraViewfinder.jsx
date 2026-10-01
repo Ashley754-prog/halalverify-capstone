@@ -6,6 +6,8 @@ import {
     Crosshair,
     ShieldCheck,
     ShieldAlert,
+    AlertTriangle,
+    ChevronRight,
     ScanSearch,
     FileText,
     Layers
@@ -19,24 +21,72 @@ export const CameraViewfinder = ({
     canvasRef,
     selectedImage,
     scanResult,
+    certResult = null,
+    showResultsSheet = false,
+    onOpenResultsSheet = null,
     isMirrored,
-    setIsMirrored,
     zoom,
     zoomCapabilities,
     applyZoom,
-    actualFacing,
     toggleCamera,
     focusRing,
     handleTapToFocus,
     onCapture,
     onFileUpload,
     onReset,
-    setToast,
     fusionState = null,
     onCancelFusion = null,
 }) => {
     const containerRef = useRef(null);
     const galleryInputRef = useRef(null);
+
+    const getResultBadgeData = () => {
+        if (showResultsSheet || fusionState?.active) return null;
+
+        if (scannerMode === 'cert' && certResult) {
+            const isCertValid = certResult.status === 'Valid';
+            return {
+                statusLabel: isCertValid ? 'Certificate Valid' : 'Needs Review',
+                themeClasses: isCertValid
+                    ? 'bg-emerald-600/90 hover:bg-emerald-600 text-white border-emerald-400/50 shadow-emerald-950/40'
+                    : 'bg-amber-600/90 hover:bg-amber-600 text-white border-amber-400/50 shadow-amber-950/40',
+                icon: isCertValid
+                    ? <ShieldCheck size={14} className="text-emerald-200 shrink-0" />
+                    : <AlertTriangle size={14} className="text-amber-200 shrink-0" />,
+            };
+        }
+
+        if (scannerMode === 'label' && scanResult) {
+            const verdict = (scanResult.verdict || '').toLowerCase();
+            const risk = (scanResult.riskLevel || '').toLowerCase();
+            const isHaram = verdict === 'red' || risk.includes('haram') || risk.includes('prohibit');
+            const isHalal = verdict === 'green' || risk.includes('halal') || risk.includes('verified');
+
+            if (isHaram) {
+                return {
+                    statusLabel: 'Prohibited',
+                    themeClasses: 'bg-red-600/90 hover:bg-red-600 text-white border-red-400/50 shadow-red-950/40',
+                    icon: <ShieldAlert size={14} className="text-red-200 shrink-0" />,
+                };
+            }
+            if (isHalal) {
+                return {
+                    statusLabel: 'Verified Halal',
+                    themeClasses: 'bg-emerald-600/90 hover:bg-emerald-600 text-white border-emerald-400/50 shadow-emerald-950/40',
+                    icon: <ShieldCheck size={14} className="text-emerald-200 shrink-0" />,
+                };
+            }
+            return {
+                statusLabel: 'Doubtful',
+                themeClasses: 'bg-amber-600/90 hover:bg-amber-600 text-white border-amber-400/50 shadow-amber-950/40',
+                icon: <AlertTriangle size={14} className="text-amber-200 shrink-0" />,
+            };
+        }
+
+        return null;
+    };
+
+    const badgeData = getResultBadgeData();
 
     return (
         <div className="flex-1 flex flex-col min-h-0">
@@ -253,6 +303,24 @@ export const CameraViewfinder = ({
 
                 {/* 7. Bottom Shutter & Controls */}
                 <div className="relative z-20 flex flex-col items-center gap-2 p-4 pt-1 bg-gradient-to-t from-slate-950/95 via-slate-950/60 to-transparent">
+                    {/* Senior UX: Result Quick-Access Pill (Natural flex flow, dynamic verdict colors, never blocks shutter) */}
+                    {badgeData && onOpenResultsSheet && (
+                        <div className="w-full flex justify-center pb-1 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onOpenResultsSheet();
+                                }}
+                                className={`px-4 py-2 rounded-full font-bold text-xs shadow-lg flex items-center gap-2 active:scale-95 transition-all border backdrop-blur-md cursor-pointer ${badgeData.themeClasses}`}
+                            >
+                                {badgeData.icon}
+                                <span>{badgeData.statusLabel} · View Details</span>
+                                <ChevronRight size={13} className="opacity-80" />
+                            </button>
+                        </div>
+                    )}
+
                     <div className="w-full flex items-center justify-around max-w-xs">
                         {/* Gallery Upload Button */}
                         <button

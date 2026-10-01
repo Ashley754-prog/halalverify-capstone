@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Camera, AlertTriangle, Sparkles } from 'lucide-react';
+import { Camera, AlertTriangle } from 'lucide-react';
 import Toast from '../components/ui/Toast';
 import { analyzeImage, simulateFallback, API_BASE_URL } from '../utils/api';
 import { mergeLabelScans } from '../utils/scanFusion';
@@ -39,7 +39,6 @@ export const Scanner = ({ isOnline, onViewChange }) => {
         isCapturing,
         actualFacing,
         isMirrored,
-        setIsMirrored,
         zoom,
         zoomCapabilities,
         focusRing,
@@ -275,36 +274,22 @@ export const Scanner = ({ isOnline, onViewChange }) => {
                 canvasRef={canvasRef}
                 selectedImage={selectedImage}
                 scanResult={scanResult}
+                certResult={certResult}
+                showResultsSheet={showResultsSheet}
+                onOpenResultsSheet={() => setShowResultsSheet(true)}
                 isMirrored={isMirrored}
-                setIsMirrored={setIsMirrored}
                 zoom={zoom}
                 zoomCapabilities={zoomCapabilities}
                 applyZoom={applyZoom}
-                actualFacing={actualFacing}
                 toggleCamera={toggleCamera}
                 focusRing={focusRing}
                 handleTapToFocus={handleTapToFocus}
                 onCapture={handleCapture}
                 onFileUpload={handleFileUpload}
                 onReset={resetState}
-                setToast={setToast}
                 fusionState={fusionState}
                 onCancelFusion={handleCancelFusion}
             />
-
-            {/* Floating Action Button to Re-Open Results Sheet when Collapsed (safely positioned above shutter, hidden during active fusion capture) */}
-            {!showResultsSheet && (scanResult || certResult) && !fusionState?.active && (
-                <div className="absolute bottom-28 sm:bottom-32 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
-                    <button
-                        type="button"
-                        onClick={() => setShowResultsSheet(true)}
-                        className="px-4 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-2xl flex items-center gap-2 active:scale-95 transition border border-emerald-400/40 backdrop-blur-md whitespace-nowrap"
-                    >
-                        <Sparkles size={14} className="text-emerald-200" />
-                        <span>View Inspection Results ({scanResult?.riskLevel || scanResult?.verdict || certResult?.status || 'Ready'})</span>
-                    </button>
-                </div>
-            )}
 
             {/* Label Results Sheet */}
             {showResultsSheet && scannerMode === 'label' && (
