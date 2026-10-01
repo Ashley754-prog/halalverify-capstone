@@ -350,8 +350,8 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                             fillOpacity: 0.9,
                         });
 
-                        const popupContent = `
-                            <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 12px; line-height: 1.4; min-width: 190px; padding: 2px;">
+                        const tooltipContent = `
+                            <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 12px; line-height: 1.4; min-width: 190px; max-width: 240px;">
                                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
                                     <span style="display: inline-block; padding: 2px 7px; border-radius: 6px; font-weight: 700; font-size: 10px; background: ${statusConfig.color}20; color: ${statusConfig.color};">
                                         ${statusConfig.label}
@@ -370,49 +370,16 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                             </div>
                         `;
 
-                        marker.bindPopup(popupContent, {
-                            offset: [0, -8],
-                            closeButton: true,
-                            autoPan: false,
+                        marker.bindTooltip(tooltipContent, {
+                            direction: 'top',
+                            offset: [0, -10],
+                            opacity: 1,
+                            sticky: false,
+                            className: 'custom-map-tooltip',
                         });
 
-                        let hoverTimer = null;
-
-                        marker.on('mouseover', function () {
-                            clearTimeout(hoverTimer);
-                            this.openPopup();
-                        });
-
-                        marker.on('mouseout', function () {
-                            const m = this;
-                            hoverTimer = setTimeout(() => {
-                                m.closePopup();
-                            }, 180);
-                        });
-
-                        marker.on('click', function () {
-                            clearTimeout(hoverTimer);
-                            this.closePopup();
+                        marker.on('click', () => {
                             setSelectedEstablishment(est);
-                        });
-
-                        marker.on('popupopen', function (e) {
-                            const popupNode = e.popup.getElement();
-                            if (popupNode) {
-                                popupNode.onmouseenter = () => {
-                                    clearTimeout(hoverTimer);
-                                };
-                                popupNode.onmouseleave = () => {
-                                    marker.closePopup();
-                                };
-                                popupNode.onclick = (evt) => {
-                                    if (evt.target.classList.contains('leaflet-popup-close-button')) {
-                                        return;
-                                    }
-                                    marker.closePopup();
-                                    setSelectedEstablishment(est);
-                                };
-                            }
                         });
 
                         markersLayerRef.current.addLayer(marker);
@@ -438,7 +405,7 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                     });
 
                 if (heatPoints.length > 0 && L.heatLayer) {
-                    heatLayerRef.current = L.heatLayer(heatPoints, {
+                    const heat = L.heatLayer(heatPoints, {
                         radius: 35,
                         blur: 22,
                         maxZoom: 15,
@@ -449,6 +416,23 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                             1.0: '#ef4444',
                         },
                     }).addTo(map);
+
+                    heatLayerRef.current = heat;
+
+                    // Fix Leaflet.heat canvas redraw bug:
+                    // Force immediate canvas redraw so heatmap paints immediately without needing user to zoom in/out
+                    try {
+                        if (typeof heat._reset === 'function') {
+                            heat._reset();
+                        }
+                        if (typeof heat.redraw === 'function') {
+                            heat.redraw();
+                        }
+                        map.invalidateSize();
+                        map.fire('moveend');
+                    } catch (heatErr) {
+                        console.warn('Heatmap canvas redraw notice:', heatErr);
+                    }
                 }
             }
         } catch (e) {
