@@ -485,16 +485,39 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
         <div className="p-2 sm:p-4 md:p-5 flex-1 flex flex-col h-full min-h-0 bg-slate-50 gap-2 sm:gap-2.5 overflow-hidden">
             {/* Compact Filter & Search Toolbar with Integrated Module Title */}
             <div className="bg-white rounded-2xl border border-slate-200/90 p-2 sm:p-2.5 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-1.5 sm:gap-2 shrink-0">
-                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                {/* Search Bar - Row 1 on mobile, right side on desktop */}
+                <div className="relative order-1 md:order-2 w-full md:w-64 lg:w-72 shrink-0">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search name, cuisine, street..."
+                        className="w-full h-8 sm:h-8.5 pl-8 pr-7 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-emerald-500 transition"
+                    />
+                    {searchQuery && (
+                        <button
+                            type="button"
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        >
+                            <X size={12} />
+                        </button>
+                    )}
+                </div>
+
+                {/* Filter Controls - Row 2 on mobile (single horizontal row), left side on desktop */}
+                <div className="order-2 md:order-1 flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5 min-w-0">
                     <div className="hidden sm:flex items-center gap-1.5 pr-2.5 mr-0.5 border-r border-slate-200 shrink-0">
                         <MapPin size={16} className="text-emerald-600" />
                         <span className="font-black text-slate-800 text-sm tracking-tight">Halal Map</span>
                     </div>
+
                     <button
                         type="button"
                         onClick={handleFindNearMe}
                         disabled={isLocating}
-                        className={`h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm shrink-0 ${
+                        className={`h-8 sm:h-8.5 px-2.5 sm:px-3 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-xs shrink-0 ${
                             userLocation
                                 ? 'bg-blue-600 text-white hover:bg-blue-700'
                                 : 'bg-emerald-700 hover:bg-emerald-800 text-white'
@@ -506,21 +529,21 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                         ) : (
                             <Crosshair size={13} className={userLocation ? 'animate-pulse' : ''} />
                         )}
-                        <span>{userLocation ? 'Near Me (Active)' : 'Find Near Me'}</span>
+                        <span>{userLocation ? 'Near Me' : <><span className="hidden sm:inline">Find </span>Near Me</>}</span>
                     </button>
 
                     {userLocation && (
                         <button
                             type="button"
                             onClick={handleResetCenter}
-                            className="h-8 sm:h-9 px-2 sm:px-2.5 rounded-xl text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition shrink-0"
+                            className="h-8 sm:h-8.5 px-2 sm:px-2.5 rounded-xl text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition shrink-0"
                             title="Reset to City Center"
                         >
                             Reset
                         </button>
                     )}
 
-                    <div className="h-8 sm:h-9 flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100/80 px-2 sm:px-2.5 rounded-xl border border-slate-200 text-xs transition">
+                    <div className="h-8 sm:h-8.5 flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100/80 px-2 sm:px-2.5 rounded-xl border border-slate-200 text-xs transition shrink-0">
                         <Compass size={13} className="text-slate-500 shrink-0" />
                         <span className="font-semibold text-slate-500 hidden sm:inline">Radius:</span>
                         <select
@@ -537,7 +560,7 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                         </select>
                     </div>
 
-                    <div className="h-8 sm:h-9 flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100/80 px-2 sm:px-2.5 rounded-xl border border-slate-200 text-xs transition">
+                    <div className="h-8 sm:h-8.5 flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100/80 px-2 sm:px-2.5 rounded-xl border border-slate-200 text-xs transition shrink-0">
                         <Filter size={13} className="text-slate-500 shrink-0" />
                         <select
                             value={selectedStatus}
@@ -551,26 +574,6 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                             <option value="flagged">🔴 Expired / Flagged</option>
                         </select>
                     </div>
-                </div>
-
-                <div className="relative flex-1 min-w-[160px] max-w-full md:max-w-xs">
-                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search name, cuisine, street..."
-                        className="w-full h-8 sm:h-9 pl-8 pr-7 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-emerald-500 transition"
-                    />
-                    {searchQuery && (
-                        <button
-                            type="button"
-                            onClick={() => setSearchQuery('')}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                        >
-                            <X size={12} />
-                        </button>
-                    )}
                 </div>
             </div>
 
