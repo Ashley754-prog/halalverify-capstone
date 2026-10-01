@@ -20,11 +20,12 @@ export default function EstablishmentsSidebarList({
         <div
             className={`
                 ${mobileTab === 'list' ? 'flex' : 'hidden'} lg:flex
-                bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex-col justify-between space-y-3
+                bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 shadow-sm flex-col justify-between space-y-3
+                w-full h-full min-h-0 flex-1 overflow-hidden
             `}
         >
-            <div className="space-y-3 flex-1 flex flex-col overflow-hidden">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div className="space-y-3 flex-1 flex flex-col min-h-0 overflow-hidden">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100 shrink-0">
                     <div>
                         <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
                             <Store size={17} className="text-emerald-600" />
@@ -37,7 +38,7 @@ export default function EstablishmentsSidebarList({
                     {loading && <Loader2 size={16} className="animate-spin text-emerald-600" />}
                 </div>
 
-                <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 max-h-[420px]">
+                <div className="flex-1 min-h-0 overflow-y-auto space-y-2.5 pr-1">
                     {filteredList.length === 0 ? (
                         <div className="text-center py-10 px-4 text-slate-400 space-y-2">
                             <Store size={28} className="mx-auto text-slate-300" />

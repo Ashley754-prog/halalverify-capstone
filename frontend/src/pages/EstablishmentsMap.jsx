@@ -9,9 +9,7 @@ import {
     Crosshair,
     Loader2,
     X,
-    Info,
-    ChevronDown,
-    ChevronUp,
+    Navigation,
 } from 'lucide-react';
 import Toast from '../components/ui/Toast';
 import AuthPromptModal from '../components/submissions/AuthPromptModal';
@@ -74,12 +72,12 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
     const [userLocation, setUserLocation] = useState(null);
     const [isLocating, setIsLocating] = useState(false);
 
-    // Modals
+    // Modals & Previews
     const [selectedEstablishment, setSelectedEstablishment] = useState(null);
+    const [activePreviewEst, setActivePreviewEst] = useState(null);
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
     const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
-    const [isColorGuideOpen, setIsColorGuideOpen] = useState(true);
 
     // Fetch establishments from API or fallback
     const fetchEstablishments = async () => {
@@ -247,7 +245,7 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
             zoomControl: false,
         });
 
-        L.control.zoom({ position: 'bottomright' }).addTo(map);
+        L.control.zoom({ position: 'topright' }).addTo(map);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -258,6 +256,21 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
 
         markersLayerRef.current = L.layerGroup().addTo(map);
         mapInstanceRef.current = map;
+
+        map.on('click', () => {
+            setActivePreviewEst(null);
+        });
+
+        // Observe container resizes so map is never clipped on mobile viewports
+        let resizeObserver;
+        if (typeof ResizeObserver !== 'undefined' && mapContainerRef.current) {
+            resizeObserver = new ResizeObserver(() => {
+                if (mapInstanceRef.current) {
+                    mapInstanceRef.current.invalidateSize();
+                }
+            });
+            resizeObserver.observe(mapContainerRef.current);
+        }
 
         // Force Leaflet to re-calculate container dimensions after mount
         const timer1 = setTimeout(() => {
@@ -270,6 +283,7 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
         return () => {
             clearTimeout(timer1);
             clearTimeout(timer2);
+            if (resizeObserver) resizeObserver.disconnect();
             if (mapInstanceRef.current) {
                 mapInstanceRef.current.remove();
                 mapInstanceRef.current = null;
@@ -349,37 +363,29 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                             fillOpacity: 0.9,
                         });
 
-                        const tooltipContent = `
-                            <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 12px; line-height: 1.4; min-width: 190px; max-width: 240px;">
-                                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
-                                    <span style="display: inline-block; padding: 2px 7px; border-radius: 6px; font-weight: 700; font-size: 10px; background: ${statusConfig.color}20; color: ${statusConfig.color};">
-                                        ${statusConfig.label}
-                                    </span>
-                                    ${distText ? `<span style="font-size:10px; color:#64748b; font-weight:600;">${distText}</span>` : ''}
-                                </div>
-                                <strong style="font-size: 13px; color: #0f172a; display: block; margin-bottom: 2px;">${est.name}</strong>
-                                <span style="color: #64748b; font-size: 11px;">${est.type || 'Establishment'} — ${est.address || 'Zamboanga City'}</span>
-                                <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #475569;">
-                                    ${hcbInfo}
-                                    ${est.certificate_number ? `<div>Cert: <b>${est.certificate_number}</b></div>` : ''}
-                                </div>
-                                <div style="margin-top: 6px; padding-top: 5px; border-top: 1px dashed #e2e8f0; font-size: 10px; color: #059669; font-weight: 700; text-align: center;">
-                                    Click to view full details →
-                                </div>
-                            </div>
-                        `;
+                        // Compact single-line name badge on hover for pointer/mouse devices (never pop up over pins on touchscreens)
+                        const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+                        if (!isTouchDevice) {
+                            marker.bindTooltip(est.name, {
+                                direction: 'top',
+                                offset: [0, -10],
+                                opacity: 1,
+                                sticky: false,
+                                className: 'custom-map-name-tooltip',
+                            });
+                        }
 
-                        marker.bindTooltip(tooltipContent, {
-                            direction: 'top',
-                            offset: [0, -14],
-                            opacity: 1,
-                            sticky: false,
-                            interactive: false,
-                            className: 'custom-map-tooltip',
-                        });
-
-                        marker.on('click', () => {
-                            setSelectedEstablishment(est);
+                        marker.on('click', (e) => {
+                            if (e && e.originalEvent) {
+                                L.DomEvent.stopPropagation(e);
+                            }
+                            try {
+                                marker.closeTooltip();
+                            } catch (_) {}
+                            setActivePreviewEst(est);
+                            if (mapInstanceRef.current) {
+                                mapInstanceRef.current.panTo([est.latitude, est.longitude], { animate: true, duration: 0.35 });
+                            }
                         });
 
                         markersLayerRef.current.addLayer(marker);
@@ -454,7 +460,7 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
 
     const flyToEstablishment = (est) => {
         setMobileTab('map');
-        setSelectedEstablishment(est);
+        setActivePreviewEst(est);
         if (!est.latitude || !est.longitude) return;
 
         setTimeout(() => {
@@ -476,10 +482,10 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
     };
 
     return (
-        <div className="p-3 sm:p-5 md:p-6 space-y-3 sm:space-y-4 flex-1 flex flex-col h-full bg-slate-50">
+        <div className="p-2 sm:p-4 md:p-5 flex-1 flex flex-col h-full min-h-0 bg-slate-50 gap-2 sm:gap-2.5 overflow-hidden">
             {/* Compact Filter & Search Toolbar with Integrated Module Title */}
-            <div className="bg-white rounded-2xl border border-slate-200/90 p-2.5 sm:p-3 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 shrink-0">
-                <div className="flex flex-wrap items-center gap-2">
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-2 sm:p-2.5 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-1.5 sm:gap-2 shrink-0">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                     <div className="hidden sm:flex items-center gap-1.5 pr-2.5 mr-0.5 border-r border-slate-200 shrink-0">
                         <MapPin size={16} className="text-emerald-600" />
                         <span className="font-black text-slate-800 text-sm tracking-tight">Halal Map</span>
@@ -488,7 +494,7 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                         type="button"
                         onClick={handleFindNearMe}
                         disabled={isLocating}
-                        className={`h-9 px-3 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm shrink-0 ${
+                        className={`h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm shrink-0 ${
                             userLocation
                                 ? 'bg-blue-600 text-white hover:bg-blue-700'
                                 : 'bg-emerald-700 hover:bg-emerald-800 text-white'
@@ -496,9 +502,9 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                         title="Use browser GPS to locate establishments near you"
                     >
                         {isLocating ? (
-                            <Loader2 size={14} className="animate-spin text-white" />
+                            <Loader2 size={13} className="animate-spin text-white" />
                         ) : (
-                            <Crosshair size={14} className={userLocation ? 'animate-pulse' : ''} />
+                            <Crosshair size={13} className={userLocation ? 'animate-pulse' : ''} />
                         )}
                         <span>{userLocation ? 'Near Me (Active)' : 'Find Near Me'}</span>
                     </button>
@@ -507,14 +513,14 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                         <button
                             type="button"
                             onClick={handleResetCenter}
-                            className="h-9 px-2.5 rounded-xl text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition shrink-0"
+                            className="h-8 sm:h-9 px-2 sm:px-2.5 rounded-xl text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition shrink-0"
                             title="Reset to City Center"
                         >
                             Reset
                         </button>
                     )}
 
-                    <div className="h-9 flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100/80 px-2.5 rounded-xl border border-slate-200 text-xs transition">
+                    <div className="h-8 sm:h-9 flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100/80 px-2 sm:px-2.5 rounded-xl border border-slate-200 text-xs transition">
                         <Compass size={13} className="text-slate-500 shrink-0" />
                         <span className="font-semibold text-slate-500 hidden sm:inline">Radius:</span>
                         <select
@@ -531,29 +537,30 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                         </select>
                     </div>
 
-                    <div className="h-9 flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100/80 px-2.5 rounded-xl border border-slate-200 text-xs transition">
+                    <div className="h-8 sm:h-9 flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100/80 px-2 sm:px-2.5 rounded-xl border border-slate-200 text-xs transition">
                         <Filter size={13} className="text-slate-500 shrink-0" />
                         <select
                             value={selectedStatus}
                             onChange={(e) => setSelectedStatus(e.target.value)}
                             className="bg-transparent font-bold text-slate-800 focus:outline-none cursor-pointer text-xs"
+                            aria-label="Status Guide"
                         >
-                            <option value="all">All Statuses</option>
+                            <option value="all">Status Guide</option>
                             <option value="verified">🟢 Verified Halal</option>
-                            <option value="needs_review">🟡 Needs Checking</option>
-                            <option value="flagged">🔴 Expired or Reported</option>
+                            <option value="needs_review">🟡 Pending Verification</option>
+                            <option value="flagged">🔴 Expired / Flagged</option>
                         </select>
                     </div>
                 </div>
 
-                <div className="relative flex-1 min-w-[200px] max-w-full md:max-w-xs">
+                <div className="relative flex-1 min-w-[160px] max-w-full md:max-w-xs">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search name, cuisine, street..."
-                        className="w-full h-9 pl-8 pr-7 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-emerald-500 transition"
+                        className="w-full h-8 sm:h-9 pl-8 pr-7 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-emerald-500 transition"
                     />
                     {searchQuery && (
                         <button
@@ -599,119 +606,128 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
             </div>
 
             {/* Map & Directory Main Layout */}
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-[480px] lg:min-h-[550px] relative">
+            <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-2.5 sm:gap-4 relative overflow-hidden">
                 <div
                     className={`
                         ${mobileTab === 'map' ? 'flex' : 'hidden'} lg:flex
                         lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex-col relative
-                        min-h-[420px] sm:min-h-[480px] lg:min-h-[550px]
+                        w-full h-full min-h-0 flex-1
                     `}
                 >
                     {/* Map Canvas rendered FIRST in DOM */}
-                    <div ref={mapContainerRef} className="w-full h-full min-h-[420px] sm:min-h-[480px] lg:min-h-[550px] z-0" />
+                    <div ref={mapContainerRef} className="w-full h-full min-h-0 flex-1 z-0" />
 
                     {/* Top-left Pins & Heatmap toggles placed AFTER map with z-[1000] */}
-                    <div className="absolute top-3 left-3 z-[1000] bg-white/95 backdrop-blur-sm rounded-xl border border-slate-300 p-2 shadow-md flex items-center gap-3 text-xs">
-                        <label className="flex items-center gap-1.5 cursor-pointer font-semibold text-slate-700">
-                            <input
-                                type="checkbox"
-                                checked={showMarkers}
-                                onChange={(e) => setShowMarkers(e.target.checked)}
-                                className="rounded text-emerald-600 focus:ring-emerald-500"
-                            />
-                            <MapPin size={14} className="text-emerald-600" />
-                            Pins ({filteredList.length})
-                        </label>
+                    <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 z-[1000] bg-white/95 backdrop-blur-sm rounded-xl border border-slate-300 p-1.5 sm:p-2 shadow-md flex flex-col gap-1.5 text-[11px] sm:text-xs">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                            <label className="flex items-center gap-1.5 cursor-pointer font-semibold text-slate-700">
+                                <input
+                                    type="checkbox"
+                                    checked={showMarkers}
+                                    onChange={(e) => setShowMarkers(e.target.checked)}
+                                    className="rounded text-emerald-600 focus:ring-emerald-500"
+                                />
+                                <MapPin size={13} className="text-emerald-600 shrink-0" />
+                                <span>Pins ({filteredList.length})</span>
+                            </label>
 
-                        <div className="w-px h-4 bg-slate-200" />
+                            <div className="w-px h-3.5 bg-slate-200" />
 
-                        <label className="flex items-center gap-1.5 cursor-pointer font-semibold text-slate-700">
-                            <input
-                                type="checkbox"
-                                checked={showHeatmap}
-                                onChange={(e) => setShowHeatmap(e.target.checked)}
-                                className="rounded text-emerald-600 focus:ring-emerald-500"
-                            />
-                            <Flame size={14} className="text-red-500" />
-                            <span>Density Heatmap</span>
-                        </label>
-                    </div>
-
-                    {/* Professional Status Guide placed AFTER map with z-[1000] */}
-                    <div className="absolute bottom-3 left-3 z-[1000] bg-white rounded-2xl border border-slate-300 p-3 shadow-xl max-w-[270px] sm:max-w-[295px] text-xs transition-all">
-                        <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-200">
-                            <div className="flex items-center gap-1.5 font-bold text-slate-900 text-xs">
-                                <Info size={14} className="text-emerald-600 shrink-0" />
-                                <span>Status Guide</span>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setIsColorGuideOpen(!isColorGuideOpen)}
-                                className="text-slate-500 hover:text-slate-800 p-1 rounded hover:bg-slate-100 transition"
-                                title={isColorGuideOpen ? "Hide guide" : "Show guide"}
-                            >
-                                {isColorGuideOpen ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-                            </button>
+                            <label className="flex items-center gap-1.5 cursor-pointer font-semibold text-slate-700">
+                                <input
+                                    type="checkbox"
+                                    checked={showHeatmap}
+                                    onChange={(e) => setShowHeatmap(e.target.checked)}
+                                    className="rounded text-emerald-600 focus:ring-emerald-500"
+                                />
+                                <Flame size={13} className="text-red-500 shrink-0" />
+                                <span>Density Heatmap</span>
+                            </label>
                         </div>
 
-                        {isColorGuideOpen && (
-                            <div className="space-y-2.5 pt-2">
-                                {/* 1. Marker Pins */}
-                                {showMarkers && (
-                                    <div className="space-y-1.5">
-                                        <div className="flex items-start gap-2">
-                                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 mt-1" />
-                                            <div className="text-[11px] leading-snug">
-                                                <strong className="text-slate-900">Verified Halal</strong>
-                                                <p className="text-slate-600 text-[10px]">Active and accredited Halal certification</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-start gap-2">
-                                            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0 mt-1" />
-                                            <div className="text-[11px] leading-snug">
-                                                <strong className="text-slate-900">Pending Verification</strong>
-                                                <p className="text-slate-600 text-[10px]">Muslim-owned or awaiting official certificate review</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-start gap-2">
-                                            <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0 mt-1" />
-                                            <div className="text-[11px] leading-snug">
-                                                <strong className="text-slate-900">Expired / Flagged</strong>
-                                                <p className="text-slate-600 text-[10px]">Expired permit or reported for compliance check</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* 2. Heatmap Density */}
-                                {showHeatmap && (
-                                    <div className={showMarkers ? "pt-2 border-t border-slate-200" : ""}>
-                                        <span className="text-[10px] font-bold text-slate-800 uppercase tracking-wide block mb-1">
-                                            Establishment Density
-                                        </span>
-                                        <div className="h-2.5 w-full rounded-full bg-gradient-to-r from-emerald-400 via-amber-400 via-orange-400 to-red-500 shadow-inner mb-1" />
-                                        <div className="flex justify-between text-[10px] font-semibold text-slate-700">
-                                            <span>Low Density</span>
-                                            <span>High Concentration</span>
-                                        </div>
-                                        <p className="text-[10px] text-slate-600 mt-1 leading-snug">
-                                            Warmer zones highlight clusters with multiple Halal dining options.
-                                        </p>
-                                    </div>
-                                )}
-
-                                {/* User GPS Location */}
-                                {userLocation && (
-                                    <div className="pt-2 border-t border-slate-200 flex items-center gap-2">
-                                        <span className="w-2.5 h-2.5 rounded-full bg-blue-600 ring-2 ring-blue-300 shrink-0" />
-                                        <span className="text-blue-800 text-[11px] font-bold">Your Location</span>
-                                    </div>
-                                )}
+                        {showHeatmap && (
+                            <div className="flex items-center gap-2 pt-1 border-t border-slate-200 text-[10px] text-slate-600">
+                                <span className="text-[9px] uppercase font-bold text-slate-500">Density:</span>
+                                <div className="h-1.5 w-16 sm:w-20 rounded-full bg-gradient-to-r from-emerald-400 via-amber-400 to-red-500 shadow-inner" />
+                                <span className="text-[9px] text-slate-500 font-semibold">Low → High</span>
                             </div>
                         )}
                     </div>
+
+                    {/* Docked Establishment Preview Card */}
+                    {activePreviewEst && (
+                        <div className="absolute bottom-2.5 left-2.5 right-2.5 sm:left-auto sm:right-3 sm:bottom-3 sm:max-w-sm sm:w-96 z-[1000] bg-white/98 backdrop-blur-sm rounded-2xl border border-slate-200/90 shadow-2xl p-3 sm:p-3.5 flex flex-col gap-2.5 transition-all animate-in fade-in slide-in-from-bottom-2 duration-200">
+                            {/* Card Header: Status Badge, Cert & Close Button */}
+                            <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span
+                                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                                            getStatusConfig(activePreviewEst.halal_status).badgeBg
+                                        }`}
+                                    >
+                                        {getStatusConfig(activePreviewEst.halal_status).label}
+                                    </span>
+                                    {activePreviewEst.certifying_bodies?.code ? (
+                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                            {activePreviewEst.certifying_bodies.code}
+                                        </span>
+                                    ) : (
+                                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
+                                            Self-Declared
+                                        </span>
+                                    )}
+                                    {activePreviewEst.distance_km && (
+                                        <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                                            {activePreviewEst.distance_km} km away
+                                        </span>
+                                    )}
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setActivePreviewEst(null)}
+                                    className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition shrink-0"
+                                    title="Close preview"
+                                >
+                                    <X size={15} />
+                                </button>
+                            </div>
+
+                            {/* Card Body: Name & Address */}
+                            <div>
+                                <h4 className="text-sm font-bold text-slate-900 leading-snug line-clamp-1">
+                                    {activePreviewEst.name}
+                                </h4>
+                                <p className="text-xs text-slate-500 flex items-start gap-1 mt-0.5 line-clamp-1">
+                                    <MapPin size={12} className="text-slate-400 shrink-0 mt-0.5" />
+                                    <span>{activePreviewEst.address || activePreviewEst.city || 'Zamboanga City'}</span>
+                                </p>
+                            </div>
+
+                            {/* Card Actions: View Full Details & Directions */}
+                            <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedEstablishment(activePreviewEst)}
+                                    className="flex-1 py-1.5 px-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-98"
+                                >
+                                    <Store size={13} />
+                                    <span>View Full Details</span>
+                                </button>
+                                {activePreviewEst.latitude && activePreviewEst.longitude && (
+                                    <a
+                                        href={`https://www.google.com/maps/dir/?api=1&destination=${activePreviewEst.latitude},${activePreviewEst.longitude}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="py-1.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition flex items-center justify-center gap-1 shrink-0"
+                                        title="Get directions in Google Maps"
+                                    >
+                                        <Navigation size={13} className="text-blue-600" />
+                                        <span>Directions</span>
+                                    </a>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <EstablishmentsSidebarList
