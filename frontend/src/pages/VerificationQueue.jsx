@@ -17,7 +17,6 @@ import {
     Sparkles,
     Bot
 } from 'lucide-react';
-import Topbar from '../components/layouts/Topbar';
 import Modal from '../components/ui/Modal';
 import Toast from '../components/ui/Toast';
 import { API_BASE_URL, authFetch } from '../utils/api';
@@ -401,12 +400,6 @@ export default function VerificationQueue({ onViewChange }) {
 
     return (
         <div className="p-3 sm:p-5 md:p-6 space-y-4 sm:space-y-5 flex-1 flex flex-col h-full bg-slate-50">
-            <Topbar
-                title="Admin Anti-Fraud & Document Verification Queue"
-                subtitle="Review pending community submissions, audit uploaded Halal certificates, and resolve user-flagged compliance discrepancies."
-                onBack={() => onViewChange?.('back')}
-            />
-
             {/* Navigation Tabs Bar */}
             <div className="bg-white rounded-2xl border border-slate-200 p-2 shadow-sm flex flex-wrap items-center justify-between gap-2">
                 <div className="flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2">

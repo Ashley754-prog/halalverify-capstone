@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Flag, ScanSearch, FileText, Store, CheckCircle, Upload, X, FileImage } from 'lucide-react';
-import Topbar from '../components/layouts/Topbar';
 import Modal from '../components/ui/Modal';
 import Toast from '../components/ui/Toast';
 import { supabase } from '../lib/supabaseClient';
@@ -165,11 +164,6 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
     if (!userRole) {
         return (
             <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 flex-1">
-                <Topbar 
-                    title="Report an Issue" 
-                    subtitle="Help us improve HalalVerify's accuracy." 
-                    onBack={() => onViewChange?.('back')} 
-                />
                 <div className="max-w-lg mx-auto mt-6 sm:mt-12 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-10 text-center flex flex-col items-center gap-4">
                     <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-amber-100 flex items-center justify-center">
                         <Flag size={28} className="text-amber-600 sm:w-8 sm:h-8" />
@@ -200,11 +194,6 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
     if (submitted) {
         return (
             <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 flex-1">
-                <Topbar 
-                    title="Report an Issue" 
-                    subtitle="Help us improve HalalVerify's accuracy." 
-                    onBack={() => onViewChange?.('back')} 
-                />
                 <div className="max-w-lg mx-auto mt-6 sm:mt-12 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-10 text-center flex flex-col items-center gap-3 sm:gap-4">
                     <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-emerald-100 flex items-center justify-center">
                         <CheckCircle size={28} className="text-emerald-600 sm:w-8 sm:h-8" />
@@ -241,11 +230,10 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
 
     return (
         <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 flex-1">
-            <Topbar
-                title="Report an Issue"
-                subtitle="Flag incorrect scanner results, suspicious logos, or database inaccuracies."
-                onBack={() => onViewChange?.('back')}
-            />
+            <div>
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-800">Report an Issue</h1>
+                <p className="text-xs sm:text-sm text-slate-500">Flag incorrect scanner results, suspicious logos, or database inaccuracies.</p>
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
                 <form onSubmit={handleSubmit} className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6">

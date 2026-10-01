@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { User, Mail, Save, CheckCircle2, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
-import Topbar from '../components/layouts/Topbar';
 import { supabase } from '../lib/supabaseClient';
 
 const ProfilePage = ({ onViewChange }) => {
@@ -81,13 +80,6 @@ const ProfilePage = ({ onViewChange }) => {
 
     return (
         <div className="p-4 sm:p-6 md:p-8 w-full space-y-4 sm:space-y-6">
-            {/* Topbar Header */}
-            <Topbar
-                title="Profile & Account Settings"
-                subtitle="Manage your personal details and system verification preferences"
-                onBack={() => onViewChange?.('back')}
-            />
-
             {loading ? (
                 <div className="flex items-center justify-center gap-2 bg-white rounded-2xl border border-slate-200 p-10 text-sm text-slate-500 shadow-sm">
                     <Loader2 size={18} className="animate-spin text-emerald-600" />

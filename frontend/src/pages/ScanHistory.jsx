@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { RefreshCw, AlertTriangle, Layers } from 'lucide-react';
-import Topbar from '../components/layouts/Topbar';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
 import { simplifyStatus } from '../utils/textFormatters';
@@ -146,12 +145,6 @@ export const ScanHistory = ({ userRole, onViewChange }) => {
 
     return (
         <div className="p-3 sm:p-6 md:p-8 space-y-4 sm:space-y-6 flex-1 max-w-7xl mx-auto w-full">
-            <Topbar
-                title="Scan History"
-                subtitle={isAdmin ? "Full audit log of all verification events across the network." : "Your personal scan log and verification audit history."}
-                onBack={() => onViewChange?.('back')}
-            />
-
             {/* Quick KPI Summary Strip */}
             <ScanMetricsCards stats={stats} />
 

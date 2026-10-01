@@ -9,7 +9,6 @@ import {
     ChevronRight,
     X,
 } from 'lucide-react';
-import Topbar from '../components/layouts/Topbar';
 import Toast from '../components/ui/Toast';
 import ContributionModal from '../components/submissions/ContributionModal';
 import AuthPromptModal from '../components/submissions/AuthPromptModal';
@@ -415,12 +414,6 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
 
     return (
         <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 flex-1 flex flex-col h-full bg-slate-50">
-            <Topbar
-                title="Verified Halal Product Catalog"
-                subtitle="Cross-referenced food products and brands verified against accredited certifying-body published registries."
-                onBack={() => onViewChange?.('back')}
-            />
-
             {/* Actions & Filters Bar */}
             <div className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-5 shadow-sm space-y-3 sm:space-y-4">
                 <div className="flex flex-row gap-2 sm:gap-3 items-center">

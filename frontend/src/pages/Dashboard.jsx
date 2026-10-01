@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ScanSearch, ShieldAlert, Store, Flag, Package } from 'lucide-react';
 import KpiCard from '../components/ui/KpiCard';
-import Topbar from '../components/layouts/Topbar';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
 
@@ -58,12 +57,6 @@ export const Dashboard = ({ onViewChange }) => {
 
     return (
         <div className="p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8">
-            <Topbar
-                title="Live System Telemetry"
-                subtitle="Real-time registry and scan statistics from the HalalVerify database."
-                onBack={() => onViewChange?.('landing')}
-            />
-
             {loadError && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs sm:text-sm font-semibold text-amber-700">
                     Could not reach the backend server. Live statistics are unavailable right now.

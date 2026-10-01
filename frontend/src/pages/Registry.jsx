@@ -5,7 +5,6 @@ import {
     Plus, 
     Award
 } from 'lucide-react';
-import Topbar from '../components/layouts/Topbar';
 import Toast from '../components/ui/Toast';
 import ContributionModal from '../components/submissions/ContributionModal';
 import AuthPromptModal from '../components/submissions/AuthPromptModal';
@@ -456,12 +455,6 @@ export const Registry = ({ userRole, onViewChange }) => {
 
     return (
         <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 flex-1 flex flex-col h-full">
-            <Topbar
-                title="Municipal & National Compliance Directories"
-                subtitle="Philippine accredited HCBs, raw chemical E-number ledgers, and Zamboanga City Ordinance No. 489 registry."
-                onBack={() => onViewChange?.('back')}
-            />
-
             {/* Navigation Tabs and Actions */}
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex min-w-0 flex-wrap gap-2 sm:gap-3">

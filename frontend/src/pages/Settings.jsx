@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { BookOpen, Server, CheckCircle2, AlertCircle, RefreshCw, Globe, ExternalLink } from 'lucide-react';
-import Topbar from '../components/layouts/Topbar';
 import { PROPONENTS, JURISDICTION } from '../data/constants';
 import { API_BASE_URL, authFetch } from '../utils/api';
 
@@ -71,12 +70,6 @@ export const Settings = ({ onViewChange }) => {
 
     return (
         <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 flex-1">
-            <Topbar
-                title="System Settings"
-                subtitle="Application configuration, cloud backend status, and capstone details."
-                onBack={() => onViewChange?.('back')}
-            />
-
             {/* Cloud Backend Server Configuration */}
             <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-sm space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">

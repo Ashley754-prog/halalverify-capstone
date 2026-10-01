@@ -17,7 +17,6 @@ import {
     ArrowUpRight,
     TrendingUp
 } from 'lucide-react';
-import Topbar from '../components/layouts/Topbar';
 import { API_BASE_URL, authFetch } from '../utils/api';
 
 const DEFAULT_TOP_ADDITIVES = [
@@ -137,12 +136,6 @@ export default function Analytics({ onViewChange }) {
 
     return (
         <div className="p-3 sm:p-5 md:p-6 space-y-4 sm:space-y-5 flex-1 flex flex-col h-full bg-slate-50/70 overflow-y-auto text-slate-800">
-            <Topbar
-                title="System Analytics & Compliance Trend Dashboard"
-                subtitle="Administrative market compliance trends, scan frequency rankings, top questionable E-numbers, and community flag resolution."
-                onBack={() => onViewChange?.('back')}
-            />
-
             {/* Enterprise Control Toolbar */}
             <div className="bg-white rounded-lg border border-slate-200/90 px-3.5 py-2.5 shadow-2xs flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-3">
