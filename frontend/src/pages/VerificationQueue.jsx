@@ -861,266 +861,305 @@ export default function VerificationQueue({ onViewChange }) {
                 <Modal
                     isOpen={!!inspectingItem}
                     onClose={closeInspection}
-                    title=""
-                    size="xl"
-                >
-                    <div className="space-y-4">
-                        {/* Modal Header */}
-                        <div className="flex items-start justify-between pb-3 border-b border-slate-200">
-                            <div>
-                                <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200 mb-1">
-                                    DOCUMENT VERIFICATION WORKFLOW
+                    size="3xl"
+                    title={
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <span className="inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 tracking-wider uppercase">
+                                    <ShieldCheck size={12} className="text-amber-600" />
+                                    Document Verification Workflow
                                 </span>
-                                <h3 className="text-base sm:text-lg font-black text-slate-900 leading-tight">
-                                    {inspectingItem.name}
-                                </h3>
-                                <p className="text-xs text-slate-500">
-                                    Submitted by User ID: <span className="font-mono text-slate-700">{inspectingItem.submitted_by || 'Anonymous'}</span>
-                                </p>
+                                <span className="text-xs text-slate-400 font-mono">
+                                    ID: {inspectingItem.id}
+                                </span>
                             </div>
+                            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                                {inspectingItem.name}
+                            </h2>
                         </div>
-
-                        {/* Side-by-Side Layout Grid */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-[65vh] overflow-y-auto pr-1">
-                            {/* Left Column: Certificate Document Viewer */}
-                            <div className="flex flex-col space-y-2 bg-slate-900 rounded-xl p-3 text-slate-200">
-                                <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-800">
-                                    <span className="font-bold text-slate-300 flex items-center gap-1.5">
-                                        <FileText size={14} className="text-emerald-400" />
-                                        Physical Document Preview
-                                    </span>
-                                    {inspectingItem.certificate_url && (
-                                        <div className="flex items-center gap-1">
-                                            <button
-                                                type="button"
-                                                onClick={() => setZoomLevel((z) => Math.max(0.6, z - 0.2))}
-                                                className="p-1 rounded bg-slate-800 hover:bg-slate-700"
-                                                title="Zoom Out"
-                                            >
-                                                <ZoomOut size={13} />
-                                            </button>
-                                            <span className="text-[10px] font-mono px-1">{Math.round(zoomLevel * 100)}%</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => setZoomLevel((z) => Math.min(2.5, z + 0.2))}
-                                                className="p-1 rounded bg-slate-800 hover:bg-slate-700"
-                                                title="Zoom In"
-                                            >
-                                                <ZoomIn size={13} />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setRotation((r) => (r + 90) % 360)}
-                                                className="p-1 rounded bg-slate-800 hover:bg-slate-700"
-                                                title="Rotate"
-                                            >
-                                                <RotateCw size={13} />
-                                            </button>
-                                            {getSafeUrl(inspectingItem.certificate_url) && (
-                                                <a
-                                                    href={getSafeUrl(inspectingItem.certificate_url)}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="p-1 rounded bg-slate-800 hover:bg-slate-700 ml-1 text-emerald-400"
-                                                    title="Open in new tab"
-                                                >
-                                                    <ExternalLink size={13} />
-                                                </a>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="flex-1 min-h-[300px] flex items-center justify-center overflow-hidden bg-slate-950 rounded-lg relative">
-                                    {inspectingItem.certificate_url ? (
-                                        <img
-                                            src={inspectingItem.certificate_url}
-                                            alt="Submitted Certificate"
-                                            style={{
-                                                transform: `scale(${zoomLevel}) rotate(${rotation}deg)`,
-                                                transition: 'transform 0.15s ease',
-                                            }}
-                                            className="max-h-[360px] object-contain cursor-grab"
-                                        />
-                                    ) : (
-                                        <div className="text-center p-6 text-slate-500 space-y-2">
-                                            <FileText size={32} className="mx-auto text-slate-600" />
-                                            <p className="text-xs font-semibold">No uploaded document attachment.</p>
-                                            <p className="text-[11px] text-slate-600">
-                                                User submitted establishment details without a digital copy of the certificate.
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Right Column: Submitted Metadata Audit Form */}
-                            <div className="space-y-3 text-xs">
-                                {/* AI Document Auto-Detection Panel */}
-                                {inspectingItem.certificate_url && (
-                                    <div className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50/70 to-teal-50/70 p-3 space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
-                                                <Sparkles size={13} className="text-emerald-600" />
-                                                AI Auto-Detection & OCR Assist
-                                            </span>
-                                            <button
-                                                type="button"
-                                                disabled={autoVerifyingId === inspectingItem.id}
-                                                onClick={() => handleAutoVerifyEstablishment(inspectingItem.id, false)}
-                                                className="text-[11px] font-bold text-emerald-800 bg-white hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-300 transition flex items-center gap-1 shadow-xs disabled:opacity-50"
-                                            >
-                                                <Sparkles size={11} className={autoVerifyingId === inspectingItem.id ? 'animate-spin text-emerald-600' : ''} />
-                                                <span>{autoVerifyingId === inspectingItem.id ? 'Scanning Document...' : 'Scan & Auto-Fill Form'}</span>
-                                            </button>
-                                        </div>
-                                        <p className="text-[11px] text-slate-600 leading-snug">
-                                            Run AI inspection to automatically extract the certificate number, expiration date, and certifying body from the image.
-                                        </p>
-
-                                        {aiEvalResult && (
-                                            <div className="mt-2 rounded-lg bg-white p-2.5 border border-emerald-200 text-[11px] space-y-1.5 shadow-xs">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="font-bold text-slate-700">AI Confidence:</span>
-                                                    <span className={`px-2 py-0.5 rounded-full font-black text-[10px] ${
-                                                        aiEvalResult.score >= 70 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                                                    }`}>
-                                                        {aiEvalResult.score}% Match
-                                                    </span>
-                                                </div>
-                                                <div className="text-[10px]">
-                                                    {aiEvalResult.is_auto_approved ? (
-                                                        <span className="text-emerald-700 font-bold flex items-center gap-1">
-                                                            <CheckCircle2 size={12} /> High Confidence: Active & accredited certificate verified.
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-amber-700 font-bold flex items-center gap-1">
-                                                            <AlertTriangle size={12} /> Notice: {aiEvalResult.audit_trail?.reasons?.[0] || 'Manual confirmation required.'}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                {aiEvalResult.audit_trail?.notes && aiEvalResult.audit_trail.notes.length > 0 && (
-                                                    <ul className="text-[10px] text-slate-500 list-disc list-inside space-y-0.5 pt-1 border-t border-slate-100">
-                                                        {aiEvalResult.audit_trail.notes.map((note, idx) => (
-                                                            <li key={idx} className="truncate">{note}</li>
-                                                        ))}
-                                                    </ul>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 space-y-2.5">
-                                    <span className="font-black text-slate-700 block uppercase tracking-wider text-[10px]">
-                                        Cross-Match & Assign Credentials
-                                    </span>
-
-                                    <div>
-                                        <label className="block font-bold text-slate-700 mb-1">Accredited Halal Body (HCB)</label>
-                                        <select
-                                            value={selectedHcbId}
-                                            onChange={(e) => setSelectedHcbId(e.target.value)}
-                                            className="w-full rounded-lg border border-slate-300 p-2 text-xs font-semibold text-slate-800 bg-white"
-                                        >
-                                            <option value="">Select Certifying Body...</option>
-                                            {certifyingBodies.map((cb) => (
-                                                <option key={cb.id} value={cb.id}>
-                                                    {cb.code} — {cb.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <div>
-                                            <label className="block font-bold text-slate-700 mb-1">Certificate No.</label>
-                                            <input
-                                                type="text"
-                                                value={certNumber}
-                                                onChange={(e) => setCertNumber(e.target.value)}
-                                                placeholder="e.g. UCZP-ZAM-2024"
-                                                className="w-full rounded-lg border border-slate-300 p-2 text-xs font-semibold text-slate-800 bg-white"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block font-bold text-slate-700 mb-1">Expiration Date</label>
-                                            <input
-                                                type="date"
-                                                value={expiryDate}
-                                                onChange={(e) => setExpiryDate(e.target.value)}
-                                                className="w-full rounded-lg border border-slate-300 p-2 text-xs font-semibold text-slate-800 bg-white"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="block font-bold text-slate-700 mb-1">Physical Address</label>
-                                        <p className="text-slate-600 bg-white p-2 rounded-lg border border-slate-200">
-                                            {inspectingItem.address || inspectingItem.city || 'Zamboanga City'}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {inspectingItem.associated_products && inspectingItem.associated_products.length > 0 && (
-                                    <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 space-y-1.5">
-                                        <span className="font-bold text-slate-700 block text-[11px]">
-                                            Submitted Menu Items ({inspectingItem.associated_products.length}):
-                                        </span>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {inspectingItem.associated_products.map((p) => (
-                                                <span key={p.id} className="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded font-semibold text-slate-700">
-                                                    {p.name}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div>
-                                    <label className="block font-bold text-slate-700 mb-1">
-                                        Administrative Audit Notes
-                                    </label>
-                                    <textarea
-                                        rows={3}
-                                        value={adminNotes}
-                                        onChange={(e) => setAdminNotes(e.target.value)}
-                                        placeholder="Record verification rationale or notes on authenticity..."
-                                        className="w-full rounded-lg border border-slate-300 p-2 text-xs text-slate-800 bg-white focus:outline-none focus:border-emerald-500"
-                                    />
-                                </div>
-                            </div>
+                    }
+                    description={
+                        <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap pt-0.5">
+                            <span>Submitted by: <strong className="font-mono text-slate-700">{inspectingItem.submitted_by || 'Anonymous Contributor'}</strong></span>
+                            <span>•</span>
+                            <span className="inline-flex items-center gap-1 text-slate-600">
+                                <MapPin size={12} className="text-slate-400" />
+                                {inspectingItem.address || inspectingItem.city || 'Zamboanga City'}
+                            </span>
+                            {inspectingItem.created_at && (
+                                <>
+                                    <span>•</span>
+                                    <span>Received: {new Date(inspectingItem.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                </>
+                            )}
                         </div>
-
-                        {/* Modal Action Buttons */}
-                        <div className="pt-3 flex items-center justify-between border-t border-slate-200">
+                    }
+                    footer={
+                        <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-3">
                             <button
                                 type="button"
                                 onClick={closeInspection}
-                                className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition"
+                                className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition"
                             >
                                 Cancel
                             </button>
 
-                            <div className="flex items-center gap-2">
+                            <div className="w-full sm:w-auto flex items-center justify-end gap-2.5">
                                 <button
                                     type="button"
                                     disabled={processingId === inspectingItem.id}
                                     onClick={() => handleVerifyEstablishment('REJECTED')}
-                                    className="px-4 py-2 text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition flex items-center gap-1.5"
+                                    className="flex-1 sm:flex-none px-4 py-2.5 text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition flex items-center justify-center gap-1.5 disabled:opacity-50"
                                 >
-                                    <XCircle size={14} />
+                                    <XCircle size={15} />
                                     <span>Reject Submission</span>
                                 </button>
                                 <button
                                     type="button"
                                     disabled={processingId === inspectingItem.id}
                                     onClick={() => handleVerifyEstablishment('VERIFIED')}
-                                    className="px-4 py-2 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                                    className="flex-1 sm:flex-none px-5 py-2.5 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
                                 >
-                                    <CheckCircle2 size={14} />
+                                    <CheckCircle2 size={15} />
                                     <span>Approve & Publish to Registry</span>
                                 </button>
+                            </div>
+                        </div>
+                    }
+                >
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch pb-1">
+                        {/* Left Column: Certificate Document Viewer */}
+                        <div className="lg:col-span-6 xl:col-span-7 flex flex-col rounded-2xl bg-slate-900 border border-slate-800 p-4 text-slate-200 shadow-inner min-h-[420px] lg:min-h-[520px]">
+                            <div className="flex items-center justify-between text-xs pb-3 border-b border-slate-800 shrink-0">
+                                <span className="font-bold text-slate-200 flex items-center gap-2">
+                                    <FileText size={15} className="text-emerald-400" />
+                                    <span>Physical Document Preview</span>
+                                </span>
+                                {inspectingItem.certificate_url && (
+                                    <div className="flex items-center gap-1.5 bg-slate-800/80 p-1 rounded-lg border border-slate-700/60">
+                                        <button
+                                            type="button"
+                                            onClick={() => setZoomLevel((z) => Math.max(0.6, z - 0.2))}
+                                            className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-700 transition"
+                                            title="Zoom Out"
+                                        >
+                                            <ZoomOut size={13} />
+                                        </button>
+                                        <span className="text-[11px] font-mono px-1 text-slate-300">{Math.round(zoomLevel * 100)}%</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setZoomLevel((z) => Math.min(2.5, z + 0.2))}
+                                            className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-700 transition"
+                                            title="Zoom In"
+                                        >
+                                            <ZoomIn size={13} />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setRotation((r) => (r + 90) % 360)}
+                                            className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-700 transition"
+                                            title="Rotate 90°"
+                                        >
+                                            <RotateCw size={13} />
+                                        </button>
+                                        {getSafeUrl(inspectingItem.certificate_url) && (
+                                            <a
+                                                href={getSafeUrl(inspectingItem.certificate_url)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="p-1 rounded text-emerald-400 hover:text-emerald-300 hover:bg-slate-700 transition ml-0.5"
+                                                title="Open full image in new tab"
+                                            >
+                                                <ExternalLink size={13} />
+                                            </a>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex-1 mt-3 flex items-center justify-center overflow-hidden bg-slate-950/80 rounded-xl relative border border-slate-800/80">
+                                {inspectingItem.certificate_url ? (
+                                    <img
+                                        src={inspectingItem.certificate_url}
+                                        alt="Submitted Certificate"
+                                        style={{
+                                            transform: `scale(${zoomLevel}) rotate(${rotation}deg)`,
+                                            transition: 'transform 0.15s ease',
+                                        }}
+                                        className="max-h-[480px] w-full object-contain cursor-grab select-none p-2"
+                                    />
+                                ) : (
+                                    <div className="text-center p-8 max-w-sm mx-auto space-y-3">
+                                        <div className="w-14 h-14 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center mx-auto text-slate-400">
+                                            <FileText size={26} className="text-slate-400" />
+                                        </div>
+                                        <h4 className="text-sm font-bold text-slate-200">No Physical Document Attached</h4>
+                                        <p className="text-xs text-slate-400 leading-relaxed">
+                                            The contributor registered this establishment without uploading a digital scan of their halal certificate.
+                                        </p>
+                                        <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-700/50 text-[11px] text-slate-400 text-left">
+                                            💡 <strong>Tip:</strong> Cross-check the business name and address against accredited Halal Certification Bodies (HCB), or conduct an on-site audit before verification.
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Right Column: Submitted Metadata Audit Form */}
+                        <div className="lg:col-span-6 xl:col-span-5 flex flex-col space-y-4">
+                            {/* AI Document Auto-Detection Panel */}
+                            {inspectingItem.certificate_url && (
+                                <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50/80 via-teal-50/60 to-white p-3.5 space-y-2.5 shadow-xs">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="text-xs font-black uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                                            <Sparkles size={14} className="text-emerald-600" />
+                                            AI Auto-Detection & OCR Assist
+                                        </span>
+                                        <button
+                                            type="button"
+                                            disabled={autoVerifyingId === inspectingItem.id}
+                                            onClick={() => handleAutoVerifyEstablishment(inspectingItem.id, false)}
+                                            className="text-xs font-bold text-emerald-800 bg-white hover:bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-300 transition flex items-center gap-1.5 shadow-xs disabled:opacity-50"
+                                        >
+                                            <Sparkles size={13} className={autoVerifyingId === inspectingItem.id ? 'animate-spin text-emerald-600' : ''} />
+                                            <span>{autoVerifyingId === inspectingItem.id ? 'Scanning Document...' : 'Scan & Auto-Fill Form'}</span>
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-slate-600 leading-relaxed">
+                                        Run AI inspection to automatically extract the certificate number, expiration date, and certifying body from the image.
+                                    </p>
+
+                                    {aiEvalResult && (
+                                        <div className="mt-2 rounded-xl bg-white p-3 border border-emerald-200 text-xs space-y-2 shadow-xs">
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-bold text-slate-700">AI Confidence:</span>
+                                                <span className={`px-2.5 py-0.5 rounded-full font-black text-xs ${
+                                                    aiEvalResult.score >= 70 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                                }`}>
+                                                    {aiEvalResult.score}% Match
+                                                </span>
+                                            </div>
+                                            <div>
+                                                {aiEvalResult.is_auto_approved ? (
+                                                    <span className="text-emerald-700 font-bold flex items-center gap-1.5">
+                                                        <CheckCircle2 size={14} /> High Confidence: Active & accredited certificate verified.
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-amber-700 font-bold flex items-center gap-1.5">
+                                                        <AlertTriangle size={14} /> Notice: {aiEvalResult.audit_trail?.reasons?.[0] || 'Manual confirmation required.'}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {aiEvalResult.audit_trail?.notes && aiEvalResult.audit_trail.notes.length > 0 && (
+                                                <ul className="text-[11px] text-slate-500 list-disc list-inside space-y-0.5 pt-1.5 border-t border-slate-100">
+                                                    {aiEvalResult.audit_trail.notes.map((note, idx) => (
+                                                        <li key={idx} className="truncate">{note}</li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Credentials Cross-Match Form Card */}
+                            <div className="rounded-2xl bg-white border border-slate-200 p-4 space-y-3.5 shadow-xs">
+                                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                                    <span className="font-black text-slate-800 uppercase tracking-wider text-xs">
+                                        Cross-Match & Assign Credentials
+                                    </span>
+                                    <span className="text-[11px] font-semibold text-slate-400">
+                                        Official Certification Data
+                                    </span>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                                        Accredited Halal Body (HCB)
+                                    </label>
+                                    <select
+                                        value={selectedHcbId}
+                                        onChange={(e) => setSelectedHcbId(e.target.value)}
+                                        className="w-full rounded-xl border border-slate-300 p-2.5 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition"
+                                    >
+                                        <option value="">Select Certifying Body...</option>
+                                        {certifyingBodies.map((cb) => (
+                                            <option key={cb.id} value={cb.id}>
+                                                {cb.code} — {cb.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                                            Certificate No.
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={certNumber}
+                                            onChange={(e) => setCertNumber(e.target.value)}
+                                            placeholder="e.g. UCZP-ZAM-2024"
+                                            className="w-full rounded-xl border border-slate-300 p-2.5 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                                            Expiration Date
+                                        </label>
+                                        <input
+                                            type="date"
+                                            value={expiryDate}
+                                            onChange={(e) => setExpiryDate(e.target.value)}
+                                            className="w-full rounded-xl border border-slate-300 p-2.5 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                                        Physical Address
+                                    </label>
+                                    <p className="text-xs text-slate-700 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                                        {inspectingItem.address || inspectingItem.city || 'Zamboanga City'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Submitted Menu Items */}
+                            {inspectingItem.associated_products && inspectingItem.associated_products.length > 0 && (
+                                <div className="rounded-2xl bg-white border border-slate-200 p-4 space-y-2 shadow-xs">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-bold text-slate-800 text-xs">
+                                            Submitted Menu Items
+                                        </span>
+                                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                                            {inspectingItem.associated_products.length} Items
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pr-1 pt-1">
+                                        {inspectingItem.associated_products.map((p) => (
+                                            <span key={p.id} className="text-[11px] bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg font-medium text-slate-700">
+                                                {p.name}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Admin Notes */}
+                            <div className="rounded-2xl bg-white border border-slate-200 p-4 space-y-2 shadow-xs">
+                                <label className="block font-bold text-slate-800 text-xs">
+                                    Administrative Audit Notes
+                                </label>
+                                <textarea
+                                    rows={3}
+                                    value={adminNotes}
+                                    onChange={(e) => setAdminNotes(e.target.value)}
+                                    placeholder="Record verification rationale or notes on authenticity..."
+                                    className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition resize-none"
+                                />
                             </div>
                         </div>
                     </div>
