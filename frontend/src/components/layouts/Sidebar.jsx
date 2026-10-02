@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react';
 import { Home, LayoutDashboard, Camera, Package, MapPin, BookOpen, Clock, Flag, BarChart2, Settings, LogOut, LogIn, Menu, ShieldCheck } from 'lucide-react';
 import NavItem from '../ui/NavItem';
 import { supabase } from '../../lib/supabaseClient';
+import { getInitials } from '../../utils/textFormatters';
 
-export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignOut, isSidebarOpen, toggleSidebar }) => {
+export const Sidebar = ({ children, currentView, onViewChange, userRole, currentUser, onSignOut, isSidebarOpen, toggleSidebar }) => {
     const isOpen = isSidebarOpen;
     const [pendingCount, setPendingCount] = useState(0);
 
@@ -201,7 +202,55 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                         )}
                     </nav>
 
-                    <div className="px-3 space-y-1 pt-4 border-t border-slate-800/60">
+                    <div className="px-3 space-y-1 pt-3 border-t border-slate-800/60">
+                        {/* Account Card (when logged in) */}
+                        {currentUser && isOpen && (
+                            <div 
+                                onClick={() => handleNavClick('profile')}
+                                className="mb-2 p-2.5 rounded-xl bg-slate-850/80 border border-slate-800 hover:border-slate-700 hover:bg-slate-800 transition cursor-pointer group flex items-center gap-2.5"
+                                title="Click to view and edit Profile"
+                            >
+                                <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 shadow-inner ${
+                                    userRole === 'admin'
+                                        ? 'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/50'
+                                        : 'bg-sky-500/20 text-sky-300 ring-1 ring-sky-500/50'
+                                }`}>
+                                    {getInitials(currentUser.full_name, currentUser.email)}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-xs font-semibold text-slate-100 truncate group-hover:text-emerald-300 transition">
+                                        {currentUser.full_name || currentUser.email?.split('@')[0] || 'User'}
+                                    </p>
+                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                        <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${
+                                            userRole === 'admin'
+                                                ? 'bg-emerald-950 text-emerald-400 border-emerald-800/60'
+                                                : 'bg-sky-950 text-sky-300 border-sky-800/60'
+                                        }`}>
+                                            {userRole === 'admin' ? 'Admin' : 'Consumer'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {currentUser && !isOpen && (
+                            <button
+                                type="button"
+                                onClick={() => handleNavClick('profile')}
+                                className="w-full flex items-center justify-center p-2 mb-1 rounded-xl hover:bg-slate-800 transition"
+                                title={`${currentUser.full_name || currentUser.email} (${userRole === 'admin' ? 'Admin' : 'Consumer'})`}
+                            >
+                                <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 shadow-inner ${
+                                    userRole === 'admin'
+                                        ? 'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/50'
+                                        : 'bg-sky-500/20 text-sky-300 ring-1 ring-sky-500/50'
+                                }`}>
+                                    {getInitials(currentUser.full_name, currentUser.email)}
+                                </div>
+                            </button>
+                        )}
+
                         <NavItem 
                             collapsed={!isOpen} 
                             active={currentView === 'settings'} 
