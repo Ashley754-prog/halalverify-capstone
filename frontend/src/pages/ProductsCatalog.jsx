@@ -32,7 +32,7 @@ const PRODUCT_CATEGORIES = [
     'Condiments & Sauces',
 ];
 
-const PRODUCT_STATUSES = ['All Statuses', 'Halal', 'Doubtful', 'Revoked'];
+const PRODUCT_STATUSES = ['All Statuses', 'Halal', 'Doubtful', 'Haram', 'Expired'];
 
 const emptyProductForm = {
     name: '',
@@ -50,7 +50,7 @@ const emptyProductForm = {
     source_url: 'https://www.idcphalal.org/certified-product-page',
 };
 
-export function getProductCertifierGroup(product) {
+function getProductCertifierGroup(product) {
     const raw = `${product.certifying_bodies?.code || ''} ${product.certifying_bodies?.name || ''} ${product.source || ''}`.toLowerCase();
 
     if (raw.includes('idcp') || raw.includes("islamic da'wah") || raw.includes("islamic dawah")) {
@@ -278,9 +278,40 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         setModalForm(emptyProductForm);
     };
 
+    const safeTrim = (v) => (typeof v === 'string' ? v.trim() : null) || null;
+
+    const parseApiError = async (response, fallbackMsg) => {
+        let errorMsg = fallbackMsg;
+        try {
+            const errJson = await response.json();
+            if (errJson?.detail) {
+                errorMsg = typeof errJson.detail === 'string'
+                    ? errJson.detail
+                    : JSON.stringify(errJson.detail);
+            } else if (errJson?.message) {
+                errorMsg = errJson.message;
+            }
+        } catch {
+            try {
+                const text = await response.text();
+                if (text) errorMsg = text;
+            } catch {
+                void 0;
+            }
+        }
+
+        if (response.status === 401) {
+            errorMsg = 'Authentication required. Please sign in with an administrator account.';
+        } else if (response.status === 403) {
+            errorMsg = 'Admin privileges required. Your account does not have permission to manage products.';
+        }
+
+        return errorMsg;
+    };
+
     const handleFormSubmit = async (e) => {
         e.preventDefault();
-        if (!modalForm.name.trim()) {
+        if (!modalForm.name || !modalForm.name.trim()) {
             showToast('Product name is required', 'error');
             return;
         }
@@ -295,18 +326,18 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
 
             const payload = {
                 name: modalForm.name.trim(),
-                brand: modalForm.brand.trim() || null,
+                brand: safeTrim(modalForm.brand),
                 category: modalForm.category || 'Food & Beverage',
-                barcode: modalForm.barcode.trim() || null,
-                manufacturer_id: modalForm.manufacturer_id || null,
-                certifying_body_id: modalForm.certifying_body_id || null,
-                certificate_no: modalForm.certificate_no.trim() || null,
-                expiry_date: modalForm.expiry_date || null,
-                status: modalForm.status,
-                halal_logo_present: modalForm.halal_logo_present,
-                ingredients_summary: modalForm.ingredients_summary.trim() || null,
-                source: modalForm.source.trim() || 'IDCP Published Registry',
-                source_url: modalForm.source_url.trim() || null,
+                barcode: safeTrim(modalForm.barcode),
+                manufacturer_id: safeTrim(modalForm.manufacturer_id),
+                certifying_body_id: safeTrim(modalForm.certifying_body_id),
+                certificate_no: safeTrim(modalForm.certificate_no),
+                expiry_date: safeTrim(modalForm.expiry_date),
+                status: modalForm.status || 'Halal',
+                halal_logo_present: Boolean(modalForm.halal_logo_present),
+                ingredients_summary: safeTrim(modalForm.ingredients_summary),
+                source: safeTrim(modalForm.source) || 'IDCP Published Registry',
+                source_url: safeTrim(modalForm.source_url),
             };
 
             const response = await authFetch(endpoint, {
@@ -316,8 +347,8 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             });
 
             if (!response.ok) {
-                const errText = await response.text();
-                throw new Error(errText || 'Failed to save product');
+                const errText = await parseApiError(response, isEdit ? 'Failed to update product' : 'Failed to add product');
+                throw new Error(errText);
             }
 
             showToast(isEdit ? 'Product updated successfully' : 'Product added successfully', 'success');
@@ -341,8 +372,8 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             });
 
             if (!response.ok) {
-                const errText = await response.text();
-                throw new Error(errText || 'Failed to delete product');
+                const errText = await parseApiError(response, 'Failed to delete product');
+                throw new Error(errText);
             }
 
             showToast('Product removed from catalog', 'success');

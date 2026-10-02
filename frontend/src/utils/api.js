@@ -40,11 +40,29 @@ export async function authFetch(url, options = {}) {
     let session = null;
     try {
         const sessionPromise = supabase.auth.getSession();
-        const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve({ data: {} }), 1500));
+        const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve({ data: {} }), 5000));
         const sessionRes = await Promise.race([sessionPromise, timeoutPromise]);
         session = sessionRes?.data?.session;
     } catch (e) {
         void e;
+    }
+
+    // Direct localStorage backup if getSession was slow or empty
+    if (!session?.access_token && typeof window !== 'undefined') {
+        try {
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+                    const parsed = JSON.parse(localStorage.getItem(key) || '{}');
+                    if (parsed?.access_token) {
+                        session = parsed;
+                        break;
+                    }
+                }
+            }
+        } catch (e) {
+            void e;
+        }
     }
 
     const headers = new Headers(fetchOptions.headers || {});
@@ -56,20 +74,51 @@ export async function authFetch(url, options = {}) {
         headers.set('Authorization', `Bearer ${session.access_token}`);
     }
 
-    if (timeout && !userSignal) {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeout);
-        try {
-            const res = await fetch(url, { ...fetchOptions, headers, signal: controller.signal });
-            clearTimeout(timeoutId);
-            return res;
-        } catch (err) {
-            clearTimeout(timeoutId);
-            throw err;
+    const executeFetch = async (targetUrl) => {
+        if (timeout && !userSignal) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+            try {
+                const res = await fetch(targetUrl, { ...fetchOptions, headers, signal: controller.signal });
+                clearTimeout(timeoutId);
+                return res;
+            } catch (err) {
+                clearTimeout(timeoutId);
+                throw err;
+            }
         }
-    }
+        return fetch(targetUrl, { ...fetchOptions, headers, signal: userSignal });
+    };
 
-    return fetch(url, { ...fetchOptions, headers, signal: userSignal });
+    try {
+        const primaryRes = await executeFetch(url);
+        // If primary call to cloud Render backend returned gateway error (502/503/504) while on localhost, fallback to localhost:8000
+        if (
+            typeof window !== 'undefined' &&
+            (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
+            [502, 503, 504].includes(primaryRes.status) &&
+            url.includes('halalverify-backend.onrender.com')
+        ) {
+            const localUrl = url.replace('https://halalverify-backend.onrender.com', 'http://localhost:8000');
+            try {
+                return await executeFetch(localUrl);
+            } catch {
+                return primaryRes;
+            }
+        }
+        return primaryRes;
+    } catch (netErr) {
+        // If network error occurred (e.g. cloud offline/timeout) while developing locally, fallback to local backend
+        if (
+            typeof window !== 'undefined' &&
+            (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
+            url.includes('halalverify-backend.onrender.com')
+        ) {
+            const localUrl = url.replace('https://halalverify-backend.onrender.com', 'http://localhost:8000');
+            return await executeFetch(localUrl);
+        }
+        throw netErr;
+    }
 }
 
 /**

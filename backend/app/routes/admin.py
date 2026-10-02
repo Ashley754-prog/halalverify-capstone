@@ -463,6 +463,14 @@ def create_admin_additive(additive: AdditiveCreate, user: dict = Depends(require
     if not payload.get("code") or not payload.get("name"):
         raise HTTPException(status_code=400, detail="Additive code and name are required")
     payload["code"] = payload["code"].strip().upper()
+    if payload.get("status"):
+        st = payload["status"].strip().lower()
+        if st in ["halal", "permissible"]:
+            payload["status"] = "Halal"
+        elif st in ["haram", "prohibited"]:
+            payload["status"] = "Haram"
+        else:
+            payload["status"] = "Doubtful"
     try:
         res = supabase.table("additives").insert(payload).execute()
         if not res.data:
@@ -481,8 +489,16 @@ def update_admin_additive(additive_id: str, additive: AdditiveUpdate, user: dict
     payload = {k: v for k, v in additive.model_dump().items() if v is not None}
     if not payload:
         raise HTTPException(status_code=400, detail="No additive fields to update")
-    if "code" in payload:
+    if "code" in payload and payload["code"]:
         payload["code"] = payload["code"].strip().upper()
+    if payload.get("status"):
+        st = payload["status"].strip().lower()
+        if st in ["halal", "permissible"]:
+            payload["status"] = "Halal"
+        elif st in ["haram", "prohibited"]:
+            payload["status"] = "Haram"
+        else:
+            payload["status"] = "Doubtful"
     try:
         res = supabase.table("additives").update(payload).eq("id", additive_id).execute()
         if not res.data:
@@ -500,6 +516,10 @@ def delete_admin_additive(additive_id: str, user: dict = Depends(require_admin))
     Deletes an additive entry from the master chemical database.
     """
     try:
+        try:
+            supabase.table("scan_flagged_items").update({"additive_id": None}).eq("additive_id", additive_id).execute()
+        except Exception as fk_err:
+            print(f"Notice: cascade scan_flagged_items on additive delete: {fk_err}")
         res = supabase.table("additives").delete().eq("id", additive_id).execute()
         return {"success": True, "data": {"id": additive_id, "deleted": True}}
     except Exception as e:
@@ -571,6 +591,11 @@ def delete_admin_hcb_entry(hcb_id: str, user: dict = Depends(require_admin)):
     Removes an HCB entry from the registry.
     """
     try:
+        try:
+            supabase.table("products").update({"certifying_body_id": None}).eq("certifying_body_id", hcb_id).execute()
+            supabase.table("establishments").update({"certifying_body_id": None}).eq("certifying_body_id", hcb_id).execute()
+        except Exception as fk_err:
+            print(f"Notice: cascade certifying_body_id on HCB delete: {fk_err}")
         res = supabase.table("certifying_bodies").delete().eq("id", hcb_id).execute()
         return {"success": True, "data": {"id": hcb_id, "deleted": True}}
     except Exception as e:

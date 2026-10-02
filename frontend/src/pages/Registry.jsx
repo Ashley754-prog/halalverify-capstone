@@ -232,6 +232,37 @@ export const Registry = ({ userRole, onViewChange }) => {
         setToast({ visible: true, message, type });
     };
 
+    const safeTrim = (v) => (typeof v === 'string' ? v.trim() : null) || null;
+
+    const parseApiError = async (response, fallbackMsg) => {
+        let errorMsg = fallbackMsg;
+        try {
+            const errJson = await response.json();
+            if (errJson?.detail) {
+                errorMsg = typeof errJson.detail === 'string'
+                    ? errJson.detail
+                    : JSON.stringify(errJson.detail);
+            } else if (errJson?.message) {
+                errorMsg = errJson.message;
+            }
+        } catch {
+            try {
+                const text = await response.text();
+                if (text) errorMsg = text;
+            } catch {
+                void 0;
+            }
+        }
+
+        if (response.status === 401) {
+            errorMsg = 'Authentication required. Please sign in with an administrator account.';
+        } else if (response.status === 403) {
+            errorMsg = 'Admin privileges required. Your account does not have permission to modify registry records.';
+        }
+
+        return errorMsg;
+    };
+
     const saveRegistryRecord = async (endpoint, method, payload) => {
         const response = await authFetch(`${API_BASE_URL}${endpoint}`, {
             method,
@@ -240,8 +271,8 @@ export const Registry = ({ userRole, onViewChange }) => {
         });
 
         if (!response.ok) {
-            const details = await response.text();
-            throw new Error(details || 'Failed to save registry record');
+            const msg = await parseApiError(response, 'Failed to save registry record');
+            throw new Error(msg);
         }
 
         const json = await response.json();
@@ -254,8 +285,8 @@ export const Registry = ({ userRole, onViewChange }) => {
         });
 
         if (!response.ok) {
-            const details = await response.text();
-            throw new Error(details || 'Failed to delete registry record');
+            const msg = await parseApiError(response, 'Failed to delete registry record');
+            throw new Error(msg);
         }
     };
 
@@ -316,28 +347,30 @@ export const Registry = ({ userRole, onViewChange }) => {
 
         try {
             if (activeModal === 'add-additive') {
+                const addStatus = modalForm.status === 'Needs Review' ? 'Doubtful' : (modalForm.status || 'Doubtful');
                 const created = await saveRegistryRecord('/api/v1/admin/additives', 'POST', {
                     code: requireText(modalForm.code, 'Code'),
                     name: requireText(modalForm.name, 'Name'),
-                    status: modalForm.status || 'Doubtful',
+                    status: addStatus,
                     origin: modalForm.origin || 'Plant',
-                    source_description: modalForm.source || null,
-                    reason: modalForm.reason || null,
+                    source_description: safeTrim(modalForm.source),
+                    reason: safeTrim(modalForm.reason),
                 });
 
                 setAdditives(prev => [created, ...prev]);
                 updateToast('New chemical additive saved.', 'success');
             } else if (activeModal === 'edit-additive') {
+                const addStatus = modalForm.status === 'Needs Review' ? 'Doubtful' : (modalForm.status || 'Doubtful');
                 const updated = await saveRegistryRecord(
                     `/api/v1/admin/additives/${selectedItem.id}`,
                     'PUT',
                     {
                         code: requireText(modalForm.code, 'Code'),
                         name: requireText(modalForm.name, 'Name'),
-                        status: modalForm.status,
-                        origin: modalForm.origin,
-                        source_description: modalForm.source,
-                        reason: modalForm.reason,
+                        status: addStatus,
+                        origin: modalForm.origin || 'Plant',
+                        source_description: safeTrim(modalForm.source),
+                        reason: safeTrim(modalForm.reason),
                     }
                 );
 
@@ -346,12 +379,13 @@ export const Registry = ({ userRole, onViewChange }) => {
                 );
                 updateToast('Additive record updated.', 'success');
             } else if (activeModal === 'flag-additive') {
+                const addStatus = modalForm.status === 'Needs Review' ? 'Doubtful' : (modalForm.status || 'Doubtful');
                 const updated = await saveRegistryRecord(
                     `/api/v1/admin/additives/${selectedItem.id}`,
                     'PATCH',
                     {
-                        status: modalForm.status,
-                        reason: modalForm.reason,
+                        status: addStatus,
+                        reason: safeTrim(modalForm.reason),
                     }
                 );
 
@@ -362,16 +396,16 @@ export const Registry = ({ userRole, onViewChange }) => {
             } else if (activeModal === 'add-hcb') {
                 const created = await saveRegistryRecord('/api/v1/admin/hcb-registry', 'POST', {
                     name: requireText(modalForm.name, 'Organization name'),
-                    code: modalForm.code || null,
-                    acronym: modalForm.acronym || modalForm.code || null,
+                    code: safeTrim(modalForm.code),
+                    acronym: safeTrim(modalForm.acronym) || safeTrim(modalForm.code),
                     category: modalForm.category || 'Accredited HCB',
                     status: modalForm.status || 'Accredited',
-                    country: modalForm.country || 'Philippines',
-                    validity_period: modalForm.validity_period || null,
-                    registry_reference: modalForm.registry_reference || null,
-                    website: modalForm.website || null,
-                    seal_url: modalForm.seal_url || null,
-                    accreditation_details: modalForm.accreditation_details || null,
+                    country: safeTrim(modalForm.country) || 'Philippines',
+                    validity_period: safeTrim(modalForm.validity_period),
+                    registry_reference: safeTrim(modalForm.registry_reference),
+                    website: safeTrim(modalForm.website),
+                    seal_url: safeTrim(modalForm.seal_url),
+                    accreditation_details: safeTrim(modalForm.accreditation_details),
                 });
 
                 setHcbs(prev => [created, ...prev]);
@@ -382,16 +416,16 @@ export const Registry = ({ userRole, onViewChange }) => {
                     'PUT',
                     {
                         name: requireText(modalForm.name, 'Organization name'),
-                        code: modalForm.code || null,
-                        acronym: modalForm.acronym || modalForm.code || null,
+                        code: safeTrim(modalForm.code),
+                        acronym: safeTrim(modalForm.acronym) || safeTrim(modalForm.code),
                         category: modalForm.category,
                         status: modalForm.status,
-                        country: modalForm.country,
-                        validity_period: modalForm.validity_period,
-                        registry_reference: modalForm.registry_reference,
-                        website: modalForm.website,
-                        seal_url: modalForm.seal_url,
-                        accreditation_details: modalForm.accreditation_details,
+                        country: safeTrim(modalForm.country),
+                        validity_period: safeTrim(modalForm.validity_period),
+                        registry_reference: safeTrim(modalForm.registry_reference),
+                        website: safeTrim(modalForm.website),
+                        seal_url: safeTrim(modalForm.seal_url),
+                        accreditation_details: safeTrim(modalForm.accreditation_details),
                     }
                 );
 
@@ -402,11 +436,11 @@ export const Registry = ({ userRole, onViewChange }) => {
             } else if (activeModal === 'add-establishment') {
                 const created = await saveRegistryRecord('/registry/establishments', 'POST', {
                     name: requireText(modalForm.name, 'Establishment name'),
-                    type: modalForm.type || null,
-                    address: modalForm.address || null,
-                    city: modalForm.city || 'Zamboanga City',
-                    certificate_number: modalForm.certNo || null,
-                    expiry_date: modalForm.expiry || null,
+                    type: safeTrim(modalForm.type),
+                    address: safeTrim(modalForm.address) || 'Zamboanga City',
+                    city: safeTrim(modalForm.city) || 'Zamboanga City',
+                    certificate_number: safeTrim(modalForm.certNo),
+                    expiry_date: safeTrim(modalForm.expiry),
                     halal_status: modalForm.status || 'needs_review',
                 });
 
@@ -418,11 +452,11 @@ export const Registry = ({ userRole, onViewChange }) => {
                     'PATCH',
                     {
                         name: requireText(modalForm.name, 'Establishment name'),
-                        type: modalForm.type || null,
-                        address: modalForm.address || null,
-                        city: modalForm.city || 'Zamboanga City',
-                        certificate_number: modalForm.certNo,
-                        expiry_date: modalForm.expiry || null,
+                        type: safeTrim(modalForm.type),
+                        address: safeTrim(modalForm.address),
+                        city: safeTrim(modalForm.city) || 'Zamboanga City',
+                        certificate_number: safeTrim(modalForm.certNo),
+                        expiry_date: safeTrim(modalForm.expiry),
                         halal_status: modalForm.status,
                     }
                 );
@@ -436,7 +470,7 @@ export const Registry = ({ userRole, onViewChange }) => {
                     `/registry/establishments/${selectedItem.id}`,
                     'PATCH',
                     {
-                        halal_status: modalForm.status,
+                        halal_status: modalForm.status || 'needs_review',
                     }
                 );
 

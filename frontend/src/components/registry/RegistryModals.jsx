@@ -1,7 +1,7 @@
 import { Save } from 'lucide-react';
 import Modal from '../ui/Modal';
 
-const ADDITIVE_STATUSES = ['Halal', 'Haram', 'Doubtful', 'Needs Review'];
+const ADDITIVE_STATUSES = ['Halal', 'Doubtful', 'Haram'];
 const ADDITIVE_ORIGINS = ['Plant', 'Animal', 'Insect', 'Synthetic / Mineral', 'Multiple / Unknown'];
 const ESTABLISHMENT_STATUSES = ['verified', 'needs_review'];
 const HCB_CATEGORIES = ['Accredited HCB', 'Government Oversight', 'International Authority'];
@@ -250,7 +250,6 @@ export default function RegistryModals({
                                 <option value="Halal">Halal</option>
                                 <option value="Doubtful">Doubtful</option>
                                 <option value="Haram">Haram</option>
-                                <option value="Needs Review">Needs Review</option>
                             </select>
                         </div>
                         <div>

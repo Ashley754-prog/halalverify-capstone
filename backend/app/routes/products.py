@@ -88,11 +88,18 @@ def get_product(product_id: str):
 
 
 @router.post("/products")
+@router.post("/api/v1/products")
 def create_product(product: ProductCreate, user: dict = Depends(require_admin)):
+    payload = model_dump_without_none(product)
+    # Ensure empty string foreign keys are converted to None
+    for k in ["manufacturer_id", "certifying_body_id", "establishment_id"]:
+        if k in payload and not payload[k]:
+            payload[k] = None
+
     response = (
         supabase
         .table("products")
-        .insert(model_dump_without_none(product))
+        .insert(payload)
         .execute()
     )
 
@@ -103,11 +110,18 @@ def create_product(product: ProductCreate, user: dict = Depends(require_admin)):
 
 
 @router.patch("/products/{product_id}")
+@router.patch("/api/v1/products/{product_id}")
+@router.put("/products/{product_id}")
+@router.put("/api/v1/products/{product_id}")
 def update_product(product_id: str, product: ProductUpdate, user: dict = Depends(require_admin)):
     payload = model_dump_without_none(product)
 
     if not payload:
         raise HTTPException(status_code=400, detail="No product fields to update")
+
+    for k in ["manufacturer_id", "certifying_body_id", "establishment_id"]:
+        if k in payload and not payload[k]:
+            payload[k] = None
 
     response = (
         supabase
@@ -121,7 +135,14 @@ def update_product(product_id: str, product: ProductUpdate, user: dict = Depends
 
 
 @router.delete("/products/{product_id}")
+@router.delete("/api/v1/products/{product_id}")
 def delete_product(product_id: str, user: dict = Depends(require_admin)):
+    # Decouple foreign keys before deleting
+    try:
+        supabase.table("issue_reports").update({"product_id": None}).eq("product_id", product_id).execute()
+    except Exception as fk_err:
+        print(f"Notice: cascade issue_reports on product delete: {fk_err}")
+
     response = (
         supabase
         .table("products")

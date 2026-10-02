@@ -33,11 +33,22 @@ def get_additives():
 
 
 @router.post("/registry/additives")
+@router.post("/api/v1/registry/additives")
 def create_additive(additive: AdditiveCreate, user: dict = Depends(require_admin)):
+    payload = model_dump_without_none(additive)
+    if payload.get("status"):
+        st = payload["status"].strip().lower()
+        if st in ["halal", "permissible"]:
+            payload["status"] = "Halal"
+        elif st in ["haram", "prohibited"]:
+            payload["status"] = "Haram"
+        else:
+            payload["status"] = "Doubtful"
+
     response = (
         supabase
         .table("additives")
-        .insert(model_dump_without_none(additive))
+        .insert(payload)
         .execute()
     )
 
@@ -48,11 +59,23 @@ def create_additive(additive: AdditiveCreate, user: dict = Depends(require_admin
 
 
 @router.patch("/registry/additives/{additive_id}")
+@router.patch("/api/v1/registry/additives/{additive_id}")
+@router.put("/registry/additives/{additive_id}")
+@router.put("/api/v1/registry/additives/{additive_id}")
 def update_additive(additive_id: str, additive: AdditiveUpdate, user: dict = Depends(require_admin)):
     payload = model_dump_without_none(additive)
 
     if not payload:
         raise HTTPException(status_code=400, detail="No additive fields to update")
+
+    if payload.get("status"):
+        st = payload["status"].strip().lower()
+        if st in ["halal", "permissible"]:
+            payload["status"] = "Halal"
+        elif st in ["haram", "prohibited"]:
+            payload["status"] = "Haram"
+        else:
+            payload["status"] = "Doubtful"
 
     response = (
         supabase
@@ -66,7 +89,13 @@ def update_additive(additive_id: str, additive: AdditiveUpdate, user: dict = Dep
 
 
 @router.delete("/registry/additives/{additive_id}")
+@router.delete("/api/v1/registry/additives/{additive_id}")
 def delete_additive(additive_id: str, user: dict = Depends(require_admin)):
+    try:
+        supabase.table("scan_flagged_items").update({"additive_id": None}).eq("additive_id", additive_id).execute()
+    except Exception as fk_err:
+        print(f"Notice: cascade scan_flagged_items on additive delete: {fk_err}")
+
     response = (
         supabase
         .table("additives")
@@ -265,11 +294,34 @@ def get_establishments():
 
 
 @router.post("/registry/establishments")
+@router.post("/api/v1/registry/establishments")
+@router.post("/establishments")
 def create_establishment(establishment: EstablishmentCreate, user: dict = Depends(require_admin)):
+    payload = model_dump_without_none(establishment)
+    if "certifying_body_id" in payload and not payload["certifying_body_id"]:
+        payload["certifying_body_id"] = None
+
+    if payload.get("halal_status"):
+        st = payload["halal_status"].strip().lower()
+        if st in ["verified", "halal", "approved"]:
+            payload["halal_status"] = "verified"
+        elif st in ["needs_review", "pending", "review", "doubtful"]:
+            payload["halal_status"] = "needs_review"
+        elif st in ["flagged", "warning"]:
+            payload["halal_status"] = "flagged"
+        elif st in ["suspended", "revoked"]:
+            payload["halal_status"] = "suspended"
+        elif st in ["rejected", "denied", "haram"]:
+            payload["halal_status"] = "rejected"
+        elif st in ["expired"]:
+            payload["halal_status"] = "expired"
+        else:
+            payload["halal_status"] = "needs_review"
+
     response = (
         supabase
         .table("establishments")
-        .insert(model_dump_without_none(establishment))
+        .insert(payload)
         .execute()
     )
 
@@ -280,11 +332,36 @@ def create_establishment(establishment: EstablishmentCreate, user: dict = Depend
 
 
 @router.patch("/registry/establishments/{establishment_id}")
+@router.patch("/api/v1/registry/establishments/{establishment_id}")
+@router.put("/registry/establishments/{establishment_id}")
+@router.put("/api/v1/registry/establishments/{establishment_id}")
+@router.patch("/establishments/{establishment_id}")
+@router.put("/establishments/{establishment_id}")
 def update_establishment(establishment_id: str, establishment: EstablishmentUpdate, user: dict = Depends(require_admin)):
     payload = model_dump_without_none(establishment)
 
     if not payload:
         raise HTTPException(status_code=400, detail="No establishment fields to update")
+
+    if "certifying_body_id" in payload and not payload["certifying_body_id"]:
+        payload["certifying_body_id"] = None
+
+    if payload.get("halal_status"):
+        st = payload["halal_status"].strip().lower()
+        if st in ["verified", "halal", "approved"]:
+            payload["halal_status"] = "verified"
+        elif st in ["needs_review", "pending", "review", "doubtful"]:
+            payload["halal_status"] = "needs_review"
+        elif st in ["flagged", "warning"]:
+            payload["halal_status"] = "flagged"
+        elif st in ["suspended", "revoked"]:
+            payload["halal_status"] = "suspended"
+        elif st in ["rejected", "denied", "haram"]:
+            payload["halal_status"] = "rejected"
+        elif st in ["expired"]:
+            payload["halal_status"] = "expired"
+        else:
+            payload["halal_status"] = "needs_review"
 
     response = (
         supabase
@@ -298,7 +375,15 @@ def update_establishment(establishment_id: str, establishment: EstablishmentUpda
 
 
 @router.delete("/registry/establishments/{establishment_id}")
+@router.delete("/api/v1/registry/establishments/{establishment_id}")
+@router.delete("/establishments/{establishment_id}")
 def delete_establishment(establishment_id: str, user: dict = Depends(require_admin)):
+    try:
+        supabase.table("products").update({"establishment_id": None}).eq("establishment_id", establishment_id).execute()
+        supabase.table("issue_reports").update({"establishment_id": None}).eq("establishment_id", establishment_id).execute()
+    except Exception as fk_err:
+        print(f"Notice: cascade references on establishment delete: {fk_err}")
+
     response = (
         supabase
         .table("establishments")
