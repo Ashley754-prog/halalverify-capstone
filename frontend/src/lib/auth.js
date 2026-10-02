@@ -9,23 +9,22 @@ export const AUTH_VIEWS = new Set([
 
 export async function fetchUserRole(userId) {
     if (!userId) return null;
-    const profile = await getUserProfile({ id: userId });
-    return profile?.role || null;
+    return await ensureUserProfile({ id: userId });
 }
 
-export async function getUserProfile(user) {
+export async function ensureUserProfile(user) {
     if (!user) return null;
     const userId = user.id || user;
 
     try {
         const { data, error } = await supabase
             .from('profiles')
-            .select('id, full_name, email, role')
+            .select('role')
             .eq('id', userId)
             .single();
 
-        if (data && !error) {
-            return data;
+        if (data?.role) {
+            return data.role;
         }
 
         // Auto-provision profile record for first-time Google / Facebook OAuth sign-in
@@ -43,23 +42,18 @@ export async function getUserProfile(user) {
                 full_name: fullName,
                 role: 'user',
             }, { onConflict: 'id' })
-            .select('id, full_name, email, role')
+            .select('role')
             .single();
 
-        if (!upsertError && newProfile) {
-            return newProfile;
+        if (!upsertError && newProfile?.role) {
+            return newProfile.role;
         }
 
-        return { id: userId, email: email, full_name: fullName, role: 'user' };
+        return 'user';
     } catch (err) {
         console.warn('Profile sync fallback:', err);
-        return { id: userId, email: user.email || null, full_name: 'User', role: 'user' };
+        return 'user';
     }
-}
-
-export async function ensureUserProfile(user) {
-    const profile = await getUserProfile(user);
-    return profile?.role || 'user';
 }
 
 export async function signOut() {

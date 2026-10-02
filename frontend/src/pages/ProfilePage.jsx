@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { User, Mail, Save, CheckCircle2, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
-const ProfilePage = ({ onViewChange, onProfileUpdated }) => {
+const ProfilePage = ({ onViewChange }) => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [savedSuccess, setSavedSuccess] = useState(false);
@@ -73,9 +73,6 @@ const ProfilePage = ({ onViewChange, onProfileUpdated }) => {
         }
 
         setSavedSuccess(true);
-        if (onProfileUpdated) {
-            onProfileUpdated({ full_name: name.trim(), email, role });
-        }
         setTimeout(() => setSavedSuccess(false), 3000);
     };
 

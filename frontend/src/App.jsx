@@ -19,7 +19,7 @@ import EstablishmentsMap from './pages/EstablishmentsMap.jsx';
 import VerificationQueue from './pages/VerificationQueue.jsx';
 import LandingPage from './pages/LandingPage.jsx';
 import { supabase } from './lib/supabaseClient';
-import { AUTH_VIEWS, fetchUserRole, ensureUserProfile, getUserProfile, signOut } from './lib/auth';
+import { AUTH_VIEWS, fetchUserRole, ensureUserProfile, signOut } from './lib/auth';
 import { API_BASE_URL } from './utils/api';
 
 const VALID_VIEWS = new Set([
@@ -63,7 +63,6 @@ export default function App() {
   const [currentView, setCurrentView] = useState(getInitialView);
   const [viewParams, setViewParams] = useState({});
   const [userRole, setUserRole] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [authLoading, setAuthLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => (typeof window !== 'undefined' ? window.innerWidth >= 768 : true));
@@ -155,15 +154,13 @@ export default function App() {
 
   const restoreAuthenticatedUser = useCallback(async (userOrId) => {
     const userObj = typeof userOrId === 'object' ? userOrId : { id: userOrId };
-    const profile = await getUserProfile(userObj);
-    if (!profile) {
+    const role = await ensureUserProfile(userObj);
+    if (!role) {
       setUserRole(null);
-      setCurrentUser(null);
       return false;
     }
 
-    setUserRole(profile.role);
-    setCurrentUser(profile);
+    setUserRole(role);
     setCurrentView((prev) => (AUTH_VIEWS.has(prev) ? 'dashboard' : prev));
     return true;
   }, []);
@@ -197,7 +194,6 @@ export default function App() {
 
       if (event === 'SIGNED_OUT') {
         setUserRole(null);
-        setCurrentUser(null);
         handleViewChange('landing', {}, true);
         return;
       }
@@ -216,13 +212,6 @@ export default function App() {
   const handleLogin = (view, role) => {
     if (role !== null) {
       setUserRole(role);
-      supabase.auth.getUser().then(({ data: { user } }) => {
-        if (user) {
-          getUserProfile(user).then((prof) => {
-            if (prof) setCurrentUser(prof);
-          });
-        }
-      });
     }
     handleViewChange(view, {}, true);
   };
@@ -234,7 +223,6 @@ export default function App() {
       // Clear local state even if the remote sign-out request fails.
     } finally {
       setUserRole(null);
-      setCurrentUser(null);
       handleViewChange('landing', {}, true);
     }
   };
@@ -248,12 +236,7 @@ export default function App() {
       case 'landing':
         return <LandingPage onViewChange={handleViewChange} userRole={userRole} />;
       case 'profile':
-        return (
-          <ProfilePage
-            onViewChange={handleViewChange}
-            onProfileUpdated={(updated) => setCurrentUser((prev) => ({ ...prev, ...updated }))}
-          />
-        );
+        return <ProfilePage onViewChange={handleViewChange} />;
       case 'dashboard':
         return <Dashboard userRole={userRole} onViewChange={handleViewChange} />;
       case 'scanner':
@@ -340,7 +323,6 @@ export default function App() {
       currentView={currentView}
       onViewChange={handleViewChange}
       userRole={userRole}
-      currentUser={currentUser}
       onSignOut={handleSignOut}
       isSidebarOpen={isSidebarOpen}
       toggleSidebar={toggleSidebar}
@@ -350,10 +332,6 @@ export default function App() {
         onToggleSidebar={toggleSidebar}
         onProfileClick={() => handleViewChange('profile')}
         userRole={userRole}
-        currentUser={currentUser}
-        currentView={currentView}
-        onViewChange={handleViewChange}
-        onSignOut={handleSignOut}
         onSignInClick={() => handleViewChange('login')}
         onLogoClick={() => handleViewChange('landing')}
       />
