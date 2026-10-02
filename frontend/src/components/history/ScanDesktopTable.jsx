@@ -76,10 +76,10 @@ export const ScanDesktopTable = ({ items, onSelectItem, onClearFilters }) => {
                                         <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg ${
                                             item.mode === 'label'
                                                 ? 'bg-blue-50 text-blue-700'
-                                                : 'bg-purple-50 text-purple-700'
+                                                : 'bg-emerald-50 text-emerald-800 border border-emerald-200/80'
                                         }`}>
                                             {item.mode === 'label' ? <ScanSearch size={12} /> : <FileText size={12} />}
-                                            {item.mode === 'label' ? 'Label' : 'Logo'}
+                                            {item.mode === 'label' ? 'Product Label' : 'Certificate'}
                                         </span>
                                     </td>
 

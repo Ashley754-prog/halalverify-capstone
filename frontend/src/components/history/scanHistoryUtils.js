@@ -90,9 +90,9 @@ export const calculateScanStats = (scans) => {
 };
 
 export const MODE_FILTERS = [
-    { id: 'all', label: 'All Modes' },
-    { id: 'label', label: 'Label OCR' },
-    { id: 'certificate', label: 'Logo Scan' },
+    { id: 'all', label: 'All Scans' },
+    { id: 'label', label: 'Product Labels' },
+    { id: 'certificate', label: 'Certificates' },
 ];
 
 export const VERDICT_FILTERS = [

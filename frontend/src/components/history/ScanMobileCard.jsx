@@ -19,10 +19,10 @@ export const ScanMobileCard = ({ item, onClick }) => {
                     <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg shrink-0 ${
                         item.mode === 'label'
                             ? 'bg-blue-50 text-blue-700'
-                            : 'bg-purple-50 text-purple-700'
+                            : 'bg-emerald-50 text-emerald-800 border border-emerald-200/80'
                     }`}>
                         {item.mode === 'label' ? <ScanSearch size={11} /> : <FileText size={11} />}
-                        {item.mode === 'label' ? 'Label' : 'Logo'}
+                        {item.mode === 'label' ? 'Label' : 'Certificate'}
                     </span>
                     <span className="text-[10px] font-mono text-slate-400 truncate">
                         #{String(item.id).slice(0, 8)}

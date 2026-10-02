@@ -104,8 +104,8 @@ export const ScanDetailModal = ({ scan, onClose }) => {
                     <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
                         <span className="font-semibold text-slate-400 block mb-1">Scan Mode</span>
                         <span className="font-bold text-slate-800 flex items-center gap-1.5">
-                            {scan.mode === 'label' ? <ScanSearch size={14} className="text-blue-600" /> : <FileText size={14} className="text-purple-600" />}
-                            {scan.mode === 'label' ? 'Packaging Label OCR' : 'Logo / Certificate Scan'}
+                            {scan.mode === 'label' ? <ScanSearch size={14} className="text-blue-600" /> : <FileText size={14} className="text-emerald-600" />}
+                            {scan.mode === 'label' ? 'Packaging Label OCR' : 'Establishment Certificate Scan'}
                         </span>
                     </div>
 
