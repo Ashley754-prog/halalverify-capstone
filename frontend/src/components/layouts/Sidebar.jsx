@@ -157,13 +157,15 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                                 label="Scan History" 
                                 onClick={() => handleNavClick('scan-history')} 
                             />
-                            <NavItem 
-                                collapsed={!isOpen} 
-                                active={currentView === 'report-issue'} 
-                                icon={<Flag size={18} />} 
-                                label="Report Issue" 
-                                onClick={() => handleNavClick('report-issue')} 
-                            />
+                            {userRole !== 'admin' && (
+                                <NavItem 
+                                    collapsed={!isOpen} 
+                                    active={currentView === 'report-issue'} 
+                                    icon={<Flag size={18} />} 
+                                    label="Report Issue" 
+                                    onClick={() => handleNavClick('report-issue')} 
+                                />
+                            )}
                         </div>
 
                         {/* Section 3: Management (Admin Only) */}
