@@ -44,13 +44,22 @@ const VALID_VIEWS = new Set([
 const getInitialView = () => {
   if (typeof window === 'undefined') return 'landing';
 
-  // 1. Check clean HTML5 pathname (e.g. /products, /scanner, /map, /registry)
+  // 1. If returning from OAuth callback (access token hash or auth code in query)
+  if (
+    window.location.hash.includes('access_token') ||
+    window.location.hash.includes('id_token') ||
+    window.location.search.includes('code=')
+  ) {
+    return 'dashboard';
+  }
+
+  // 2. Check clean HTML5 pathname (e.g. /products, /scanner, /map, /registry)
   const path = window.location.pathname.replace(/^\/+|\/+$/g, '').trim();
   if (path && VALID_VIEWS.has(path)) {
     return path;
   }
 
-  // 2. Fallback to hash navigation for backward compatibility (e.g. /#products)
+  // 3. Fallback to hash navigation for backward compatibility (e.g. /#products)
   const hash = window.location.hash.replace('#', '').trim();
   if (hash && VALID_VIEWS.has(hash)) {
     return hash;
@@ -161,7 +170,20 @@ export default function App() {
     }
 
     setUserRole(role);
-    setCurrentView((prev) => (AUTH_VIEWS.has(prev) ? 'dashboard' : prev));
+    setCurrentView((prev) => {
+      const isOAuthRedirect = typeof window !== 'undefined' && (
+        window.location.hash.includes('access_token') ||
+        window.location.hash.includes('id_token') ||
+        window.location.search.includes('code=')
+      );
+      if (AUTH_VIEWS.has(prev) || isOAuthRedirect) {
+        if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
+          window.history.replaceState({ view: 'dashboard', params: {} }, '', '/dashboard');
+        }
+        return 'dashboard';
+      }
+      return prev;
+    });
     return true;
   }, []);
 
