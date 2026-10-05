@@ -247,12 +247,19 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
 
         L.control.zoom({ position: 'topright' }).addTo(map);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
             maxZoom: 19,
             subdomains: ['a', 'b', 'c'],
             crossOrigin: true,
         }).addTo(map);
+
+        tileLayer.on('tileload', (e) => {
+            if (e.tile) {
+                e.tile.setAttribute('alt', '');
+                e.tile.setAttribute('role', 'presentation');
+            }
+        });
 
         markersLayerRef.current = L.layerGroup().addTo(map);
         mapInstanceRef.current = map;

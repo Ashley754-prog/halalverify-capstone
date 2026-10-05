@@ -40,16 +40,26 @@ export const ScanHistory = ({ userRole, onViewChange }) => {
             // 1. Direct Supabase Query (Fast ~100ms response)
             try {
                 const { data: { session } } = await supabase.auth.getSession();
-                let query = supabase
-                    .from('scan_history')
-                    .select('*, scan_flagged_items(*)')
-                    .order('created_at', { ascending: false });
+                const buildQuery = (columns) => {
+                    let q = supabase
+                        .from('scan_history')
+                        .select(columns)
+                        .order('created_at', { ascending: false });
+                    if (!isAdmin && session?.user?.id) {
+                        q = q.eq('user_id', session.user.id);
+                    }
+                    return q;
+                };
 
-                if (!isAdmin && session?.user?.id) {
-                    query = query.eq('user_id', session.user.id);
+                let { data: sbData, error: sbErr } = await buildQuery('*, scan_flagged_items(*)');
+
+                // The joined table may be locked by database permissions. Retry without the join
+                // so the history list still loads instead of failing completely.
+                if (sbErr) {
+                    console.warn('Scan history join failed, retrying without flagged items:', sbErr.message);
+                    ({ data: sbData, error: sbErr } = await buildQuery('*'));
                 }
 
-                const { data: sbData, error: sbErr } = await query;
                 if (!sbErr && sbData) {
                     setScanHistory(sbData);
                     return;

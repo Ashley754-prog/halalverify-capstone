@@ -313,9 +313,11 @@ export default function Analytics({ onViewChange }) {
                                 {topAdditives[0]?.code || 'E120'}
                             </span>
                             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase ${
-                                (topAdditives[0]?.status || '').toLowerCase() === 'haram'
+                                (topAdditives[0]?.status || '').toLowerCase() === 'haram' || (topAdditives[0]?.status || '').toLowerCase() === 'prohibited'
                                     ? 'bg-red-50 text-red-700 border-red-200'
-                                    : 'bg-amber-50 text-amber-800 border-amber-200'
+                                    : (topAdditives[0]?.status || '').toLowerCase() === 'halal'
+                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                        : 'bg-amber-50 text-amber-800 border-amber-200'
                             }`}>
                                 {topAdditives[0]?.status || 'Doubtful'}
                             </span>
@@ -381,20 +383,33 @@ export default function Analytics({ onViewChange }) {
                         </span>
                     </div>
 
-                    <div className="grid grid-cols-7 sm:grid-cols-7 lg:grid-cols-14 gap-1.5 sm:gap-2 items-end h-20 pt-2 border-t border-slate-100">
+                    <div className="grid grid-cols-7 sm:grid-cols-7 lg:grid-cols-14 gap-1.5 sm:gap-2 items-end h-24 pt-4 border-t border-slate-100">
                         {timeline.slice(-14).map((pt, idx) => {
-                            const heightPct = Math.max(14, Math.round((pt.scans / maxTimelineScans) * 100));
+                            const hasScans = (pt.scans || 0) > 0;
+                            const heightPct = hasScans
+                                ? Math.max(20, Math.round((pt.scans / maxTimelineScans) * 100))
+                                : 10;
                             return (
                                 <div key={idx} className="flex-1 flex flex-col items-center justify-end h-full group relative">
+                                    {/* Scan count label on bar when active */}
+                                    {hasScans && (
+                                        <span className="text-[10px] font-mono font-bold text-emerald-700 mb-1 group-hover:scale-110 transition-transform">
+                                            {pt.scans}
+                                        </span>
+                                    )}
                                     {/* Tooltip on Hover */}
-                                    <div className="absolute -top-7 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-[10px] font-mono px-1.5 py-0.5 rounded pointer-events-none whitespace-nowrap z-10">
-                                        {pt.date}: {pt.scans} scans
+                                    <div className="absolute -top-6 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-[10px] font-mono px-2 py-0.5 rounded shadow-md pointer-events-none whitespace-nowrap z-20">
+                                        {pt.date}: {pt.scans} {pt.scans === 1 ? 'scan' : 'scans'}
                                     </div>
                                     <div
-                                        className="w-full bg-slate-200 group-hover:bg-emerald-600 transition-all rounded-xs"
+                                        className={`w-full transition-all rounded-xs ${
+                                            hasScans
+                                                ? 'bg-gradient-to-t from-emerald-600 to-teal-500 group-hover:from-emerald-500 group-hover:to-teal-400 shadow-2xs'
+                                                : 'bg-slate-100 group-hover:bg-slate-200'
+                                        }`}
                                         style={{ height: `${heightPct}%` }}
                                     />
-                                    <span className="text-[9px] font-mono text-slate-400 mt-1 truncate max-w-full">
+                                    <span className="text-[9px] font-mono text-slate-500 mt-1 truncate max-w-full font-medium">
                                         {pt.date.length > 5 ? pt.date.slice(-5) : pt.date}
                                     </span>
                                 </div>
@@ -440,7 +455,9 @@ export default function Analytics({ onViewChange }) {
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 text-slate-700">
                                     {topAdditives.slice(0, 5).map((add, idx) => {
-                                        const isHaram = (add.status || '').toLowerCase() === 'haram';
+                                        const rawStatus = (add.status || '').toLowerCase();
+                                        const isHaram = rawStatus === 'haram' || rawStatus === 'prohibited';
+                                        const isHalal = rawStatus === 'halal';
                                         return (
                                             <tr key={add.code} className="hover:bg-slate-50/70 transition-colors">
                                                 <td className="py-2.5 px-3 text-center font-mono text-[11px] text-slate-400">
@@ -463,9 +480,13 @@ export default function Analytics({ onViewChange }) {
                                                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider ${
                                                         isHaram
                                                             ? 'bg-red-50 text-red-700 border-red-200'
-                                                            : 'bg-amber-50 text-amber-800 border-amber-200'
+                                                            : isHalal
+                                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                                : 'bg-amber-50 text-amber-800 border-amber-200'
                                                     }`}>
-                                                        <span className={`w-1.5 h-1.5 rounded-full ${isHaram ? 'bg-red-500' : 'bg-amber-500'}`} />
+                                                        <span className={`w-1.5 h-1.5 rounded-full ${
+                                                            isHaram ? 'bg-red-500' : isHalal ? 'bg-emerald-500' : 'bg-amber-500'
+                                                        }`} />
                                                         {add.status || 'Doubtful'}
                                                     </span>
                                                 </td>
@@ -481,7 +502,9 @@ export default function Analytics({ onViewChange }) {
                                                     {/* Relative micro bar */}
                                                     <div className="w-14 h-1 bg-slate-100 rounded-full ml-auto mt-1 overflow-hidden">
                                                         <div
-                                                            className={`h-full rounded-full ${isHaram ? 'bg-red-500' : 'bg-amber-500'}`}
+                                                            className={`h-full rounded-full ${
+                                                                isHaram ? 'bg-red-500' : isHalal ? 'bg-emerald-500' : 'bg-amber-500'
+                                                            }`}
                                                             style={{ width: `${Math.round(((add.detection_count || 0) / maxAdditiveCount) * 100)}%` }}
                                                         />
                                                     </div>
