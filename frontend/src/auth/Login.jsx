@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { User, Lock, Eye, EyeOff, Compass, ChevronRight, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { fetchUserRole, signInWithProvider } from '../lib/auth';
@@ -11,10 +11,41 @@ export const Login = ({ onLogin, onViewChange, layout = 'login' }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [oauthLoading, setOauthLoading] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
+    const oauthTimerRef = useRef(null);
 
     useEffect(() => {
         const t = setTimeout(() => setMounted(true), 20);
         return () => clearTimeout(t);
+    }, []);
+
+    // Reset OAuth loading state when returning from OAuth popup/tab or on page focus/restore
+    useEffect(() => {
+        const handleWindowActive = () => {
+            setOauthLoading('');
+            if (oauthTimerRef.current) {
+                clearTimeout(oauthTimerRef.current);
+                oauthTimerRef.current = null;
+            }
+        };
+
+        window.addEventListener('pageshow', handleWindowActive);
+        window.addEventListener('focus', handleWindowActive);
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                handleWindowActive();
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            window.removeEventListener('pageshow', handleWindowActive);
+            window.removeEventListener('focus', handleWindowActive);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            if (oauthTimerRef.current) {
+                clearTimeout(oauthTimerRef.current);
+            }
+        };
     }, []);
 
     const handleSignIn = async (event) => {
@@ -46,12 +77,24 @@ export const Login = ({ onLogin, onViewChange, layout = 'login' }) => {
     };
 
     const handleProviderSignIn = async (provider) => {
+        if (oauthTimerRef.current) {
+            clearTimeout(oauthTimerRef.current);
+        }
         setOauthLoading(provider);
         setErrorMessage('');
+
+        // Fallback auto-reset timer in case redirect is delayed, blocked, or cancelled by the user
+        oauthTimerRef.current = setTimeout(() => {
+            setOauthLoading('');
+        }, 4000);
 
         try {
             await signInWithProvider(provider);
         } catch (error) {
+            if (oauthTimerRef.current) {
+                clearTimeout(oauthTimerRef.current);
+                oauthTimerRef.current = null;
+            }
             const providerName = provider === 'google' ? 'Google' : 'Facebook';
             const msg = error.message || '';
             if (msg.toLowerCase().includes('not enabled') || msg.toLowerCase().includes('unsupported')) {

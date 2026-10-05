@@ -64,7 +64,7 @@ export async function signOut() {
 }
 
 export async function signInWithProvider(provider) {
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
             redirectTo: getAuthRedirectUrl(),
@@ -74,6 +74,12 @@ export async function signInWithProvider(provider) {
     if (error) {
         throw error;
     }
+
+    if (data?.url && typeof window !== 'undefined' && window.location.href !== data.url) {
+        window.location.assign(data.url);
+    }
+
+    return data;
 }
 
 export function getAuthRedirectUrl() {
