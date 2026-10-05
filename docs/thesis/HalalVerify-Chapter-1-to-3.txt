@@ -1,0 +1,428 @@
+Republic of the PhilippinesWestern Mindanao State UniversityCollege of Computing StudiesDEPARTMENT OF INFORMATION TECHNOLOGYZamboanga CityRepublic of the PhilippinesWestern Mindanao State UniversityCollege of Computing StudiesDEPARTMENT OF INFORMATION TECHNOLOGYZamboanga City
+Republic of the Philippines
+Western Mindanao State University
+College of Computing Studies
+DEPARTMENT OF INFORMATION TECHNOLOGY
+Zamboanga City
+Republic of the Philippines
+Western Mindanao State University
+College of Computing Studies
+DEPARTMENT OF INFORMATION TECHNOLOGY
+Zamboanga City
+HalalVerify: A Computer Vision System for Real-Time Ingredient Additive Parsing and Halal Logo Authentication
+A CAPSTONE PROJECT
+Presented to the Faculty of the
+College of Computing Studies
+Western Mindanao State University
+In Partial Fulfillment
+of the Requirements for the Degree
+Bachelor of Science in Information Technology
+CUENTO, COLLEN B.
+MIRA, KENNETH Q.
+VILLANUEVA, ASHLEY NICOLE N.
+Researchers
+CATADMAN, JASON A.
+ARIP, JHON PAUL I.
+Adviser
+June, 2027
+   WESTERN MINDANAO STATE UNIVERSITY
+   Zamboanga City, 7000 Philippines
+    ________________________________________
+   College of Computing Studies
+   Information Technology Department
+ 
+ 
+ CERTIFICATE OF PANEL APPROVAL
+ 
+   The Capstone Proposal, attached hereto, entitled “HalalVerify: A Computer Vision System for Real-Time Ingredient Additive Parsing and Halal Logo Authentication”, prepared and submitted by COLLEN B. CUENTO, KENNETH Q. MIRA, ASHLEY NICOLE N. VILLANUEVA in partial fulfillment of the requirements for the degree BACHELOR OF SCIENCE IN INFORMATION TECHNOLOGY, is hereby recommended for approval.
+ 
+___________________________
+Chairperson
+___________
+Date
+         
+___________________________
+Member
+___________
+Date
+                    
+ 
+___________________________
+Member
+___________
+Date
+ 
+                                                      
+___________________________
+Adviser
+_________
+Date
+        
+       This Capstone Proposal is approved in partial fulfillment of the requirements for the degree BACHELOR OF SCIENCE IN INFORMATION TECHNOLOGY
+ 
+  MR. JASON A. CATADMAN, MIT                               ENGR. MARK L. FLORES, PhD
+                 Department Head, IT                                                Dean, CCS
+                     _________                                                                _________
+                         Date                                                                                   Date
+EXECUTIVE SUMMARY
+In modern retail and food service environments, traditional manual halal verification frequently introduces consumer friction, resulting in purchasing uncertainty, prolonged ingredient review times, and regular authenticity doubts for the Muslim community. Furthermore, existing consumer methods, typically relying on manual dictionary lookups or text-only search engines, are time-consuming, restricted in scope, and prone to inaccurate compliance detection when complex chemical designations or fraudulent logos are evaluated. To mitigate these real-world consumer vulnerabilities, this capstone project presents HALALVERIFY: A Computer Vision System for Real-Time Ingredient Additive Parsing and Halal Logo Authentication.
+HalalVerify modernizes consumer safety by combining mobile smartphone cameras with deep learning architectures to execute automated visual inspection. Operating via an edge-optimized verification pipeline, the system evaluates captured images to instantly parse textual attributes, localize accredited markings, and classify product compliance into distinct states: Halal, Haram, or Doubtful/Unverified. To ensure strict data privacy, image processing for feature extraction occurs strictly within local volatile memory (RAM); no raw camera frames, video feeds, or personal user identity signatures are ever saved to permanent storage or transmitted without authorization.
+The system delivers comprehensive features, including a Label Scanner and Parser powered by a custom-trained YOLOv8-Nano object detection model for Halal logo localization, alongside EasyOCR for parsing alphanumeric ingredient text and chemical E-numbers. Parsed strings are dynamically cross-referenced against a custom Supabase relational database backend containing categorized additive safety profiles. Furthermore, HalalVerify includes an interactive Establishment Search Index that transforms regional retail listings into actionable geolocation data, such as automated compliance standing reports, active registration statuses, and verified inventory manifests. These tools enable consumers, retailers, and regulatory inspectors to optimize product verification and audit workflows based on data-driven deep learning models rather than manual lookup methods.
+Development was governed by the Agile methodology, ensuring progressive software iterations and robust system performance. Quantitative system performance was rigorously benchmarked using standard computer vision evaluation parameters, specifically Precision, Recall, mean Average Precision (), and Character Error Rate (CER), measured before and after model fine-tuning under varying image conditions. User acceptance and overall system utility were further validated against the ISO/IEC 25010 software quality standards and the System Usability Scale (SUS), ensuring the software meets the operational and cognitive needs of consumer cohorts and regulatory inspectors.
+Ultimately, HalalVerify establishes a highly scalable, edge-optimized infrastructure for smart consumer protection in the regional retail and food service sectors. The successful deployment of this system contributes to SDG 9 (Industry, Innovation, and Infrastructure) and SDG 12 (Responsible Consumption and Production) by reducing verification friction, mitigating exposure to non-compliant ingredients through database-driven transparency, and significantly elevating the overall safety experience for all consumers, including target cohorts within Zamboanga City.
+DEDICATION
+To our beloved families, who provided endless patience, emotional
+support, and financial assistance throughout our academic journey;
+To our friends and classmates, who shared countless sleepless
+nights and words of encouragement during times of implementation doubt;
+And above all, to the Almighty God, for the divine wisdom, absolute strength,
+and sustaining grace that guided us from the project inception to the
+successful completion of this work.
+Collen, Kenneth, and Ashley  
+ACKNOWLEDGEMENT
+The success of this capstone project would not have been possible without the guidance, 
+support, and contributions of several individuals. The researchers wish to express their
+sincere gratitude and deepest appreciation to the following:
+To our Capstone Adviser, Prof. Jason A. Catadman, and Prof. Jhon Paul I. Arip, for 
+their invaluable technical expertise, constructive critiques, and dedication in steering 
+the development of HalalVerify toward industry standards;
+To the members of the Capstone Defense Panel, for their professional insights, rigorous 
+evaluation, and foundational recommendations that significantly sharpened the research design and system architecture during our defense stages;
+To the Dean and Faculty of the College of Computing Studies at Western Mindanao State University, for providing a conducive academic environment, rich technical resources, and institutional paradigms necessary to cultivate our engineering competencies;
+To our target consumer test groups and local retail managers within Zamboanga City, who generously offered their operational environments and critical minutes during our system evaluation and User Acceptance Testing (UAT) modules;
+And to our loving parents and families, whose unconditional love, sacrifices, financial support, 
+and unwavering faith served as our core motivation to persevere and finish our undergraduate degree.
+ABSTRACT
+Consumer compliance verification remains a persistent friction point for Muslim communities in globalized retail environments, where complex ingredient chemical designations and unverified logos frequently complicate purchasing choices. This capstone project developed HalalVerify, an intelligent computer vision system engineered as an installable Progressive Web Application (PWA) to automate consumer safety workflows via deep learning. Operating through a dual-stream computer vision pipeline, the platform utilizes a fine-tuned YOLOv8-Nano model to capture and authenticate certified Halal markings on packaging while utilizing EasyOCR to parse raw text strings and cross-reference obscure food additives against a custom Supabase relational backend engine. Additionally, the platform incorporates a dedicated Establishment Search Index allowing users to query local markets and dining locations within Zamboanga City for verified compliance transparency. To protect user privacy, image processing occurs strictly inside local volatile memory layers without retaining facial profiles or permanent footage files. Technical benchmark trials quantified model efficiency via Precision, Recall, mean Average Precision (), and Character Error Rate (CER) scales, while subjective system validation was conducted using the System Usability Scale (SUS). The resulting metrics confirm that edge-optimized computer vision systems present a fast, scalable, and independent alternative to restricted commercial APIs, significantly driving consumer transparency and digital infrastructure automation.
+Keywords: Computer Vision, YOLOv8-Nano, EasyOCR, Halal Logo Authentication, Ingredient Additive Parsing, Establishment Search.
+TABLE OF CONTENTS
+TITLE ……………………………………………………………………………….…………….    i
+APPROVAL SHEET …………………………………………………………………………….    ii
+EXECUTIVE SUMMARY ………………………………………………………………...…...      iii
+DEDICATION ………………………………………………………………………...…...…...      v
+ACKNOWLEDGEMENT ……………………………………………………………………......   vi
+ABSTRACT………………………………………………………………………...…...…......       vii
+LIST OF TABLES ………………………………………………………………...…….……...     x
+LIST OF FIGURES …………………………………………………………………….………     xi
+LIST OF APPENDICES ………………………………………………………….…………....     xii
+LIST OF ABBREVIATIONS …………………………………………………………………        xiii
+Chapter Page    
+1INTRODUCTION1
+1.1Project Context1
+1.2Statement of the Problem2
+1.3Purpose and Description3
+1.4Objectives4
+1.4.1Specific Objectives4
+1.5Scope and Limitation5
+1.6Significance of Study2
+1.7Definition of Terms3
+2REVIEW OF RELATED LITERATURE AND SYSTEMS6
+2.1Introduction6
+2.1.1AI and Computer Vision for Food Product Recognition6
+2.1.2YOLO-Based Product Label Detection7
+2.1.3OCR-Based Ingredient Extraction8
+2.2Summary9
+2.3Synthesis10
+3TECHNICAL BACKGROUND11
+3.1Technology Requirements15
+4DESIGN AND METHODOLOGY18
+4.1Research Design18
+4.2Developmental Methodology18
+4.3System Architecture20
+4.4Data Collection Methods21
+4.4.1Data Source21
+4.4.2Data Gathering Instrument22
+4.4.3Data Gathering Technique and Procedures23
+4.5Data Analysis25
+4.5.1Context Diagram27
+4.5.2Data Flow Diagram28
+4.5.3Flowchart29
+4.5.4Use Case30
+4.6Requirement Specification30
+4.6.1Functional Requirements30
+4.6.2Non-Functional Requirements33
+4.7System Design35
+4.7.1Database Design35
+4.7.2Entity Relationship Diagram36
+4.7.3Database Fields37
+4.8Tools and Technology38
+4.9Evaluation and Testing40
+REFERENCES42
+APPENDICES46
+CURRICULUM VITAE47
+LIST OF TABLES
+Table        Page
+1.0Definition of Terms03
+2.0Review of Related Works and System Comparison Table08
+LIST OF FIGURES
+Figure        Page
+3.1 Administrative Local Registry Management 14
+3.2 Customer Scanner View14
+LIST OF APPENDIXES
+Appendix          Page
+Appendix A: Data Gathering 53
+Appendix B:Testing54
+Appendix C: Evaluation Form            55
+Appendix D: Gantt Chart                                                                                          60
+Appendix E: Use Case           61
+Appendix F: Plagiarism Certificate           64
+CHAPTER 1
+INTRODUCTION
+Project Context
+The increasing availability of imported and locally manufactured food products has provided consumers with a wider variety of choices in supermarkets, convenience stores, and restaurants. However, for Muslim consumers, ensuring that food products comply with halal requirements remains a significant challenge. Although many products display halal certification logos, consumers often find it difficult to verify whether these certifications are authentic, recognized, or issued by accredited halal certifying bodies. Furthermore, ingredient lists frequently contain scientific names, complex chemical designations, or E-numbers that are unfamiliar to ordinary consumers, making it difficult to determine whether a product complies with halal dietary regulations. These challenges create uncertainty and reduce consumer confidence when purchasing packaged food products.
+Existing halal verification methods primarily depend on manual inspection of halal logos, barcode scanning applications, QR code verification, or searching through online databases. While these approaches provide useful information, they often require internet connectivity, manual searching, or access to official registries. Additionally, counterfeit or improperly displayed halal logos cannot easily be identified by consumers through traditional verification methods. As food products become increasingly diverse and globalized, there is a growing need for a faster, more intelligent, and user-friendly verification system that can assist consumers in making informed purchasing decisions.
+Furthermore, a significant operational gap exists regarding structural lookup accessibility for local food businesses. Consumers inside a specific municipality often lack public methods to check if an establishment maintains an active compliance certification or hosts specific certified products. Integrating spatial queries with label analysis addresses this transparency gap.
+Recent advancements in Artificial Intelligence (AI), Computer Vision, Optical Character Recognition (OCR), and Deep Learning have enabled the development of intelligent image-based verification systems capable of recognizing objects, extracting textual information, and validating compliance data. Object detection models such as YOLOv8-Nano provide accurate real-time detection of certification logos, while OCR engines such as EasyOCR enable automated extraction of ingredient lists and E-numbers from captured images. These technologies provide an opportunity to automate halal verification without requiring specialized hardware or extensive manual intervention.
+To address these challenges, the proponents propose HalalVerify: A Computer Vision System for Real-Time Ingredient Additive Parsing and Halal Logo Authentication. The proposed system is a Progressive Web Application (PWA) that utilizes a multi-stage computer vision structure. The first module detects accredited halal certification logos on product packaging using YOLOv8-Nano. The second module extracts raw ingredient text using EasyOCR and cross-references parsed food additives against a custom Supabase relational database backend containing categorized compliance profiles. Finally, the system introduces a dedicated establishment query index to verify the legal status of local food hubs, providing consumers, retailers, and regulatory personnel with a fast, accessible, and intelligent tool for halal verification that promotes consumer confidence, food safety, and regulatory compliance.
+Statement of the Problem
+The increasing number of packaged food products available in retail stores has made halal verification more challenging for Muslim consumers. While many products display halal certification logos, consumers often have difficulty determining whether these certifications are genuine or issued by recognized halal certifying organizations. Additionally, ingredient labels frequently contain complex chemical names and food additives that are unfamiliar to consumers, making it difficult to identify ingredients that may be prohibited under halal dietary regulations. Existing verification methods largely rely on manual inspection, barcode scanning, or online database searches, which are often time-consuming. Furthermore, consumers lack an interactive mechanism to actively search for local dining spots or retail establishments to cross-reference whether they hold valid compliance rankings or sell authenticated goods.
+This study aims to develop HalalVerify: A Computer Vision System for Real-Time Ingredient Additive Parsing and Halal Logo Authentication, which utilizes computer vision, deep learning, and OCR technologies to automatically parse ingredient labels, authenticate halal logos, and lookup regional food establishment criteria through a smartphone camera.
+Specifically, this study seeks to answer the following questions:
+How can a computer vision pipeline using YOLOv8-Nano detect and localize accredited halal certificate logos on packaged food products?
+How can EasyOCR parse scientific chemical additive strings and E-numbers from ingredient labels to cross-reference them against a custom relational backend database on Supabase?
+How can a relational database index be structured within a PWA to allow consumers to query local establishments regarding their halal compliance status and authenticated product availability?
+What is the performance of the proposed HalalVerify system in terms of Precision, Recall, mean Average Precision (), and Character Error Rate (CER)?
+How acceptable is the HalalVerify system to consumers and halal inspectors based on the System Usability Scale (SUS)?
+How reliable is the proposed system under varying image conditions such as different lighting environments, camera angles, blurred images, and partially obstructed labels?
+Purpose and Description
+Muslim consumers frequently encounter uncertainty when purchasing packaged food products because verifying halal compliance often requires manual inspection of certification logos, careful examination of ingredient lists, or searching through online databases. This process becomes more difficult when ingredient labels contain scientific names or food additives that are unfamiliar to consumers. Moreover, counterfeit or unverified halal logos can further reduce consumer confidence and increase the risk of purchasing products that do not comply with halal standards.
+Current halal verification methods generally rely on barcode scanners, QR code verification systems, or manual database searches. Although these methods provide useful information, they require additional user effort and cannot automatically parse chemical additive text directly from images. These limitations emphasize the need for an intelligent and automated verification system that combines computer vision with database cross-referencing.
+To address these challenges, the proponents propose HalalVerify: A Computer Vision System for Real-Time Ingredient Additive Parsing and Halal Logo Authentication. The system utilizes YOLOv8-Nano to detect accredited halal certification logos and EasyOCR to extract alphanumeric ingredient text and E-numbers from product packaging. Parsed text is dynamically evaluated against a custom relational backend database maintained on Supabase. Additionally, it integrates an administrative search asset enabling consumers to dynamically look up local food spots and track their current certified parameters. Verification results are presented through a user-friendly Progressive Web Application that classifies products as Halal, Haram, or Doubtful/Unverified. By automating the verification process, HalalVerify provides consumers with faster and more reliable access to halal information while supporting retailers and regulatory authorities in promoting food safety and compliance.
+Objectives
+The primary objective of this study is to design and develop HalalVerify: A Computer Vision System for Real-Time Ingredient Additive Parsing and Halal Logo Authentication. The proposed system aims to assist consumers, retailers, and halal inspectors by providing an intelligent and automated solution for verifying halal product labels, authenticating logos, and checking establishment standings using computer vision and OCR technologies.
+Specific Objectives
+To develop a real-time object detection module using YOLOv8-Nano that identifies and localizes accredited halal certification logos on packaged food products.
+To develop an OCR-based module using EasyOCR that extracts raw chemical ingredient test strings and E-numbers from product packaging.
+To design and integrate a custom relational backend database on Supabase to cross-reference parsed ingredients and logo credentials against categorized compliance profiles.
+To implement a search query functionality within the backend that allows users to lookup specific retail and dining establishments to verify their overall halal status and associated product listings.
+To evaluate the technical performance of the machine learning engines using Precision, Recall, mean Average Precision (), and Character Error Rate (CER) benchmarks.  
+To assess the usability and overall acceptability of the HalalVerify PWA using the System Usability Scale (SUS).
+Scope and Limitation
+This study focuses on the design, development, and evaluation of HalalVerify: A Computer Vision System for Real-Time Ingredient Additive Parsing and Halal Logo Authentication. The proposed system is an installable Progressive Web Application (PWA) optimized for standard mobile smartphones. The system provides three primary operational modules: the Ingredient Additive Parser, the Halal Logo Authenticator, and the Establishment Directory Search. The Ingredient Additive Parser allows users to scan or upload an image of a packaging label, after which EasyOCR extracts raw text strings and E-numbers to cross-reference them against chemical additive safety records in a custom Supabase relational database. Based on the parsed results, the product is classified as Halal, Haram, or Doubtful/Unverified. The Halal Logo Authenticator utilizes a fine-tuned YOLOv8-Nano object detection model to isolate and identify recognized Halal certification marks on product packaging, cross-referencing visual logo features against accredited certifying bodies stored in the Supabase backend registry. Finally, the Establishment Directory Search features a text and category-driven lookup tool allowing users to query local dining and retail establishments within Zamboanga City to verify their active compliance standing or view authenticated product listings.
+The primary target users of the system are Muslim consumers, food retailers, restaurant owners, and halal regulatory inspectors. The technical stack utilizes YOLOv8-Nano, EasyOCR, and OpenCV for computer vision processing; Python with FastAPI or Flask for backend services; React.js and Tailwind CSS for the Progressive Web Application frontend; and Supabase (PostgreSQL) for database management. Technical benchmark testing will be conducted using a dataset of approximately 300–500 packaged grocery product label images collected from select retail stores within Zamboanga City.
+However, the scope of this study is bound by several specific technical and operational limitations. Regarding database integration and external registry disconnection, the system operates strictly as an independent decision-support tool and does not connect via live APIs to external third-party databases, government registries, or official certifying bodies, such as the Islamic Da'wah Council of the Philippines (IDCP). All logo credentials and additive classification rules are cross-referenced exclusively against a custom-curated relational database hosted on Supabase. Consequently, while the system's logo detection module utilizes YOLOv8-Nano to identify and localize visual features of recognized Halal marks, computer vision alone cannot determine whether a detected logo is a high-quality visual counterfeit or fraudulent print without direct verification against a live official national or international registry API.
+Furthermore, the system's performance is sensitive to environmental and image capture conditions. Detection and OCR extraction accuracy depend on lighting, camera angles, focus, and resolution, meaning system performance may degrade when processing wrinkled, damaged, partially obstructed, or poorly lit packaging labels. All generated system outputs are advisory and informational only, serving as decision-support tools rather than legal substitutes for formal verification by accredited halal certifying bodies. Additionally, the study explicitly excludes the verification of raw or fresh meat products, kitchen cross-contamination tracking, and restaurant food preparation methods. The system also relies on active internet connectivity for real-time database lookups unless a cached local dictionary has been successfully bundled within the browser service worker. Finally, due to strict project execution timelines, usability testing using the System Usability Scale (SUS) will involve a targeted respondent group of approximately 30 to 50 participants.
+Significance of Study
+The development of HalalVerify introduces an automated computer vision approach to consumer protection. By automating the detection of halal certification logos and extracting ingredient additive information using only a smartphone camera, the system reduces the need for manual dictionary searching and enables consumers to make faster, more confident purchasing decisions.
+The proposed system provides significant benefits to Muslim consumers by simplifying the process of verifying halal food products. Instead of manually interpreting complex scientific ingredient labels or researching unfamiliar food additives (E-numbers), users obtain structured verification results within seconds.
+For food retailers and restaurant owners, the system serves as an additional verification mechanism to ensure that products offered to customers align with halal requirements, enhancing business transparency and strengthening consumer trust.
+The study is also beneficial to halal regulatory agencies and inspectors by providing a portable decision-support tool during preliminary field audits. Although the system does not replace official certification procedures, it offers a rapid method for identifying non-compliant or doubtful ingredient profiles that may require further investigation.
+From an academic perspective, the study contributes to the research domain of applied computer vision, optical character recognition, and mobile consumer protection. It demonstrates how deep learning models such as YOLOv8-Nano and EasyOCR can be seamlessly integrated with a custom database engine to address real-world food transparency challenges. The project directly aligns with Sustainable Development Goal (SDG) 9: Industry, Innovation, and Infrastructure and SDG 12: Responsible Consumption and Production.
+Definition of Terms
+Defined terms are those whose meanings in the study are particular or unique.  Give a minimum of fifteen. The researcher must credit his sources for any definitions he uses, even if they are from dictionaries, books, journals, newspaper articles, and other sources. Technical and conceptual definitions are those that are derived from published sources.
+Table 1: Definition of Terms
+Term
+Definition
+Artificial Intelligence (AI)
+Artificial Intelligence refers to the capability of computer systems to perform tasks that normally require human intelligence, such as learning, reasoning, and decision-making. (Russell & Norvig, 2021)
+Computer Vision
+Computer Vision is a field of Artificial Intelligence that enables computers to acquire, process, and interpret visual information from digital images or videos. (Szeliski, 2022)
+YOLOv8-Nano
+An ultra-lightweight, edge-optimized real-time object detection model developed by Ultralytics that identifies and classifies objects within localized image and video streams. (Jocher et al., 2023)
+Object Detection
+Object Detection is a computer vision technique that identifies and locates objects within images or video frames. (Redmon & Farhadi, 2018)
+Optical Character Recognition (OCR)
+A technology that converts printed or handwritten text contained within visual inputs into machine-readable digital text. (Gudi, 2025)
+EasyOCR
+An open-source OCR library that supports multilingual text recognition using deep learning models for extracting text from images. (Jaided, 2024)
+Custom Backend Database
+A relational cloud database built on Supabase (PostgreSQL) that stores structured records of chemical additives, accredited logos, and establishment profiles for instant cross-referencing (Supabase, 2024).
+Ingredient Additive Parsing
+The automated computer-vision process of scanning, segmenting, and isolating text strings representing food additives or E-numbers to evaluate their compliance status (Haseeb, 2025).
+Halal Certification
+Official recognition issued by an authorized halal certification body confirming that a product or service complies with Islamic dietary laws and halal standards. (SMIIC, 2019)
+Halal Logo
+An officially approved symbol placed on products or establishments indicating compliance with halal certification requirements established by an accredited halal certifying body. (SMIIC, 2019)
+Progressive Web Application (PWA)
+A web-delivered software application built using standard web tech (HTML, JS, React) that functions seamlessly as an installable, cross-platform mobile application (Biørn-Hansen et al., 2020).
+Web-Based System
+A web-based system is an application that can be accessed through a web browser over a network. (Pressman & Maxim, 2020)
+OpenCV
+OpenCV (Open Source Computer Vision Library) is an open-source software library that includes hundreds of computer vision algorithms used for image processing, video analysis, and real-time object detection. (Bradski, G., & Kaehler, A., 2017)
+Precision
+The proportion of correctly identified positive results among all predicted positive results in a model. (Chicco, D., & Jurman, G., 2020)
+System Usability Scale (SUS)
+The System Usability Scale (SUS) is a reliable, industry-standard, ten-item questionnaire used to provide a subjective assessment of the usability of a wide range of products and services, including software applications and web-based systems. It allows researchers to quantify user perceptions of a system's ease of use and learnability. (Lewis, J.R., 2018)
+ISO/EIC 25010
+ISO/EIC 25010 is an international standard that provides a quality model for software systems, establishing criteria to evaluate functional suitability, performance efficiency, compatibility, and usability. (ISO, 2011)
+CHAPTER 2
+REVIEW OF RELATED LITERATURE AND SYSTEMS
+Introduction
+The following review of related literature and systems for the proposed study, HalalVerify: A Computer Vision System for Real-Time Ingredient Additive Parsing and Halal Logo Authentication, provides a comprehensive understanding of existing technologies and intelligent systems used in food product recognition, logo detection, optical character recognition (OCR), and automated compliance verification. The reviewed studies demonstrate the application of Artificial Intelligence (AI), Computer Vision, Deep Learning, and OCR technologies in solving real-world problems related to food identification, information extraction, and consumer decision support. By examining these studies, the proponents identify existing techniques, system functionalities, and technological approaches that contribute to the development of an intelligent halal verification platform.
+The following literature and systems exhibit comparable structures and thematic relevance.
+AI and Computer Vision for Food Product Recognition
+Artificial Intelligence (AI) and Computer Vision have significantly improved automatic food recognition by enabling computers to identify food items from digital images. These technologies support applications such as nutrition monitoring, food waste reduction, and intelligent food management. Deep learning models have further enhanced recognition accuracy while reducing computational requirements.  
+The reviewed study utilized the pre-trained MobileNetV2 model for automatic food recognition using the Food11 dataset. To improve performance, the researchers applied techniques such as transfer learning, data augmentation, regularization, and hyperparameter tuning. Despite its lightweight architecture, the model achieved an accuracy of approximately 92.97%, demonstrating its suitability for real-world application. 
+The core features of the system include the following:
+Automatic food recognition using Computer Vision.
+Deep learning through the MobileNetV2 model.
+Transfer learning and date augmentation.
+Fast and computationally efficient image classification.
+The study demonstrates that lightweight deep learning models can achieve high accuracy while maintaining computational efficiency. Similarly, HalalVerify applies AI and Computer Vision to recognize food products. However, the proposed system extends this capability by incorporating halal logo detection, ingredient extraction, and halal certificate authentication to support halal product verification.
+YOLO-Based Product Label Detection
+YOLO (You Only Look Once) is widely recognized as an efficient object detection algorithm capable of identifying objects in real time with high accuracy. Combined with Optical Character Recognition (OCR), it enables automated extraction of important product information from packaging, reducing manual processing and improving operational efficiency.  
+The reviewed study proposed a system that integrates YOLO and OCR to automatically detect products and extract important attributes such as brand name, product type, quantity, expiration date, and Maximum Retail Price (MRP). Image preprocessing techniques, including adaptive thresholding and image scaling, were applied to improve recognition accuracy.  
+The core features of the system include the following:
+Real-time product detection using YOLO.
+Automatic extraction of product information through OCR.
+Image preprocessing to improve text recognition.
+Reduced manual data entry and improved inventory management.
+The study demonstrates the effectiveness of combining object detection and OCR for extracting product information. Similarly, HalalVErify utilizes YOLO to detect halal certification logos before performing ingredient extraction and certificate authentication.
+OCR-Based Ingredient Extraction
+Optical Character Recognition (OCR) enables automatic extraction of textual information from product packaging, allowing users to access ingredient details without manual inspection. This technology supports applications related to food safety, nutrition, and consumer awareness.  
+The reviewed study developed an AI-based application that combines OCR with an ingredient database to identify nutritional content, categorize ingredients, and detect potential allergens from packaged food products. The system achieved 84% accuracy and 87% precision, providing users with reliable information for making healthier dietary choices.
+The core features of the system include the following:
+Automatic ingredient extraction using OCR.
+Ingredient categorization and allergen detection.
+Integration with a food ingredient database.
+Nutritional information analysis.
+The study highlights the capability of OCR technology in analyzing packaged food labels. Unlike the reviewed system, HalalVerify focuses on extracting ingredient information to determine halal compliance and combines OCR with halal logo detection and certificate authentication for comprehensive product verification.
+Table 2.0 Review of Related Works and System Comparison Table
+Features
+Rokhva et al. (2024)
+Andreotti et al. (2025)
+Bhatlawande et al. (2024)
+Proposed Study
+(HalalVerify)
+Login and Logout
+User Account
+Dashboard
+Real-Time Camera Inference
+Halal Logo Detection
+Ingredient Text Parsing
+Localized E-Number Lookup
+Compliance-Level Classification
+Document Layout Segmentation
+Certificate Validity Flagging
+Geolocation Search Index
+Local Volatile RAM Processing
+User Acceptance Testing 
+Summary
+The reviewed literature demonstrates that Artificial Intelligence, Computer Vision, YOLO-based object detection, and Optical Character Recognition (OCR) are highly effective technologies for automating food recognition, product label detection, and textual information parsing. Previous studies have proven that lightweight deep learning models can accurately identify food items, isolate packaging attributes, and extract complex ingredient strings while maintaining computational efficiency on standard mobile devices. However, existing platforms focus predominantly on general food classification, retail inventory tracking, or basic nutritional and allergen auditing. They lack a unified consumer protection framework specifically tailored to Halal compliance verification. To address this research gap, HalalVerify: A Computer Vision System for Real-Time Ingredient Additive Parsing and Halal Logo Authentication integrates YOLOv8-Nano for Halal logo localization, EasyOCR for ingredient text extraction, a custom Supabase relational database for E-number and additive cross-matching, and a local Establishment Directory Search into a single Progressive Web Application (PWA).
+Synthesis
+The reviewed literature confirms that Artificial Intelligence, Computer Vision, Object Detection, and Optical Character Recognition (OCR) have substantially advanced the automation of food recognition, label analysis, and data extraction. Light-weight deep learning architectures such as MobileNetV2 enable efficient visual classification, while YOLO object detection models provide fast, bounding-box localization of packaging features. Concurrently, OCR frameworks have proven reliable for extracting fine-grained ingredient text and additive codes, enabling consumers to make informed dietary decisions.
+Despite these technological advancements, existing systems remain fragmented. Current applications focus either on general food item recognition, automated warehouse inventory parsing, or broad allergen tracking. None of the reviewed systems offer a comprehensive, edge-optimized solution that integrates real-time Halal logo detection, scientific E-number additive parsing, custom relational database cross-matching, and a localized establishment directory into a single user-centric platform. Furthermore, existing implementations rarely address volatile data handling for privacy assurance or offline-first PWA caching for low-connectivity environments.
+Based on these findings, the proponents developed HalalVerify: A Computer Vision System for Real-Time Ingredient Additive Parsing and Halal Logo Authentication to address the identified research gap. The proposed system integrates YOLOv8-Nano for halal logo detection, EasyOCR for ingredient extraction. By combining these technologies, the system provides a comprehensive, real-time, and user-friendly solution for verifying halal product labels and certificates. Unlike previous studies that focus on individual technologies or specific applications, HalalVerify offers an integrated approach that enhances consumer protection, supports regulatory compliance, and contributes to the advancement of intelligent halal verification systems.
+CHAPTER 3
+TECHNICAL BACKGROUND
+HalalVerify is an installable, Progressive Web Application (PWA) designed to automate consumer safety workflows by providing real-time verification of packaged food product labels and establishment compliance standings. The system captures and analyzes visual product attributes through standard mobile smartphone camera interfaces, processing image matrices using a streamlined machine learning pipeline composed of a fine-tuned YOLOv8-Nano object detection model and an EasyOCR text parsing engine. The resulting verification and compliance data are delivered through a responsive PWA framework and displayed on an interactive dashboard that can be securely accessed by Muslim consumers, food retailers, restaurant owners, and regulatory inspectors.
+The platform follows a structured Input-Process-Output (IPO) model embedded within a decentralized three-tier architecture. The Input stage consists of live camera feeds or uploaded images of packaged ingredient labels, along with text-based query inputs targeting local dining and retail establishments in Zamboanga City. During the Process stage, incoming image matrices are preprocessed using OpenCV before being routed to the specialized machine learning engines to localize recognized Halal logo credentials or parse alphanumeric chemical additive strings and E-numbers. Crucially, all camera frames and visual inference operations occur transiently inside local volatile memory (RAM) to ensure absolute data privacy; no raw camera feeds, packaging scans, or personal user identifiers are saved to permanent storage or transmitted externally. The Output stage materializes as a dynamic advisory status display classifying items as Halal, Haram, or Doubtful/Unverified, alongside an interactive establishment profile lookup directory.
+The technical design is divided into three main operational layers: Presentation, Application and Logic, and Database.
+Presentation Layer
+The presentation layer serves as the direct graphical user interface through which distinct stakeholder groups view and interact with the processed halal compliance states. Built using React.js and Tailwind CSS, this layer translates classification flags and lookup data into an intuitive mobile canvas designed for rapid visual parsing.
+Muslim Consumers: Consumers interact with a color-coded status dashboard mounted inside the PWA browser interface. The application utilizes dynamic visual banners: Green signifies a detected and authenticated Halal logo or safe additive; Yellow flags an unverified or doubtful chemical additive (displaying warning notices, e.g., "Contains Doubtful E-Number Additives"); and Red designates a strictly prohibited chemical additive (Haram) or a blacklisted label configuration.
+Food Retailers and Establishment Owners: Business operators access a secure management view to oversee their establishment directory listings. This interface provides the capability to update inventory catalogs, maintain verified product lists, and display active compliance standings in the local directory index.
+Halal Regulatory Inspectors: Inspectors gain entry to a dedicated administrative dashboard layout that renders historical lookup summaries and audit logs, displaying verification statistics and compliance trends within Zamboanga City to assist in localized field operations and decision support.
+Application and Logic Layer
+The application and logic layer acts as the primary processing engine of HalalVerify, executing computer vision routines, character extraction pipelines, and classification logic.
+Computer Vision and Detection Module: Binds directly to native smartphone camera APIs via standard browser media streams. Incoming image matrices are managed using OpenCV for spatial scaling, noise filtering, and thresholding before being routed to a fine-tuned YOLOv8-Nano network for logo bounding box localization and an EasyOCR processing queue for ingredient character mapping.
+Compliance Classification Mechanism: Parses extracted text strings and E-numbers against predefined relational reference tables. The system isolates scientific chemical designations and E-number codes, cross-referencing them against a custom additive reference dictionary hosted on Supabase to determine the corresponding status level (Halal, Haram, or Doubtful/Unverified).
+Backend API Framework: Developed using Python (FastAPI/Flask), this module handles microservice routing, manages JSON payloads from the PWA client, structures access control for business owners, and processes relational table lookups from the persistent storage node.  
+Database Layer
+The database layer acts as the centralized data store responsible for logging the curated additive lexicon, registered establishment profiles, user credentials, and administrative logs.
+Data Storage: The system utilizes Supabase, an open-source PostgreSQL-based relational database infrastructure. Supabase securely manages structured relational tables containing permitted and prohibited food additives, E-number classification rules, accredited certifying body records, local retail business profiles, and system access accounts.
+Data Retrieval: Leveraging Supabase’s indexed REST API framework, the database layer executes high-speed queries to deliver instant additive and establishment lookup responses to the PWA frontend, eliminating heavy processing on the client device.
+User Interactions
+Administrators: The one who manages the data, manually operates functions, and oversee or configures the whole system operations.
+Customers: Customers: Views the displayed classification results (Halal, Haram, or Doubtful/Unverified) for scanned products, along with detected halal logo authentication status, on the dashboard.
+Administrative Management
+Figure 3.1: Administrative Local Registry Management
+Customer Scanner View
+Figure 3.2: Customer Scanner View
+Technology Requirements
+Software Requirements
+Operating Systems:
+Server: A 64-bit hosting environment (such as Linux Ubuntu Server or Windows 10/11) to maintain the Python inference backend, manage API requests, and coordinate database functions.
+Client: Fully cross-compatible with modern web browsers (e.g., Google Chrome, Mozilla Firefox, Apple Safari) running across standard iOS or Android mobile smartphones via Progressive Web Application view layers.
+Computer Vision and Processing Engines:
+Ultralytics YOLOv8-Nano: Utilized as the primary edge-optimized deep learning model architecture for high-speed, low-latency halal logo object detection and bounding box localization.
+JaidedAI EasyOCR: Deep-learning-based OCR framework responsible for text line parsing, text character extraction, and ingredient label sequence string identification.
+OpenCV: Responsible for low-level image stream acquisition, image scaling, contrast thresholding, and color mask normalization operations.
+Web Server:
+Node.js: Used to run the server-side application, Node.js provides a robust environment for handling asynchronous operations and managing multiple client connections efficiently.
+Backend Framework:
+Flask / FastAPI (Python): Implemented to build lightweight server endpoints, handle asynchronous API requests, and serve real-time database modifications.
+Frontend and Visualization Development Tools:
+React.js: Utilized to design a highly responsive user dashboard interface with dynamic visual state modifications.
+Database Management System:
+Supabase: Relational database management system configured to store additive classifications, E-number records, establishment profiles, and user authentication tables.
+Development and Version Control Tools:
+Web Development Tools: Visual Studio Code for developing the web application using React framework with Tailwind CSS.
+Visual Studio Code: The core integrated development environment (IDE) utilized for script editing and system debugging.
+Git: Employed to handle source code version control and maintain collaborative code branches.
+Hardware Requirements
+Data Acquisition Assets:
+Smartphone Camera: Built-in high-definition smartphone optical sensor (minimum 12-Megapixel resolution recommended) supporting automated focus adjustments to capture clear imagery of product wrappers and certificate headers.
+Local Inference Server:
+Processor (CPU): Multi-core processor (Intel Core i5 / AMD Ryzen 5 or higher recommended) to manage concurrent API service routines during backend development.
+Graphics Processing Unit (GPU): Dedicated CUDA-capable NVIDIA GPU workstation layer (e.g., RTX 3060 or higher) required to perform rapid neural network model training rounds and asset annotations via Roboflow.
+Memory (RAM): Minimum of 8GB to 16GB of RAM to process high-throughput data pipelines smoothly.
+Storage Device: Solid-State Drive (SSD) with at least 256GB of space for application configurations and historical record databases.
+Networking:
+Mobile Network Data / Wi-Fi Routers: Active local internet access infrastructure configured to route HTTPS data packets between the mobile PWA client and the FastAPI backend server nodes seamlessly.
+Display Monitors:
+Client Screens: High-density capacitive mobile touchscreens deployed directly on consumer smartphones to render color-coded verification results, spatial search lists, and directory indices clearly.
+The HalalVerify application not only automates and optimizes the label verification process but also ensures accurate, non-intrusive, and efficient authentication of displayed establishment certifications. By integrating standard smartphone camera functions with a comprehensive deep learning and character parsing backend, the system provides a highly responsive, edge-optimized software solution that directly benefits consumers, store owners, and regulatory inspectors alike. The deployment of advanced machine learning engines like YOLOv8-Nano and  EasyOCR, paired with a well-structured three-tier local architecture, ensures that the application is both technologically innovative and operationally relevant, addressing the immediate transparency challenges of globalized retail and food service environments while paving the way for future advancements in intelligent consumer protection systems.
+CHAPTER 4
+DESIGN AND METHODOLOGY
+Research Design
+Developmental Methodology
+System Architecture
+Data Collection Methods
+Data Source
+Data Gathering Instrument
+Data Gathering Technique and Procedures
+Data Analysis
+Context Diagram
+Data Flow Diagram
+Flowchart
+Use Case
+Requirement Specification
+Functional Requirements
+Software Functionality
+User Characteristics
+Non-Functional Requirements 
+Technical Requirements
+Performance Requirements
+Assumptions and Dependencies 
+Security Requirements 
+System Design
+Database Design
+Entity Relationship Diagram
+Database Fields 
+Tools and Technology
+Evaluation and Testing
+REFERENCES
+[1]  ISO/IEC, "Systems and software engineering — Systems and software Quality Requirements and Evaluation (SQuaRE) — System and software quality models," ISO/IEC 25010:2023, 2023.
+[2]  J. R. Lewis, "The System Usability Scale: Past, present, and future," Int. J. Hum.–Comput. Interact., vol. 34, no. 7, pp. 577–590, 2018.
+[3]  G. Jocher et al., "Ultralytics YOLOv8," 2023. [Online]. Available: https://github.com/ultralytics/ultralytics. [Accessed: July 5, 2026].
+[4]  G. Bradski and A. Kaehler, Learning OpenCV 3: Computer Vision in C++ with the OpenCV Library, 1st ed. Sebastopol, CA, USA: O'Reilly Media, 2017.
+[5]  S. J. Russell and P. Norvig, Artificial Intelligence: A Modern Approach, 4th ed. Hoboken, NJ, USA: Pearson, 2020.
+[6]  R. S. Pressman and B. R. Maxim, Software Engineering: A Practitioner's Approach, 9th ed. New York, NY, USA: McGraw-Hill Education, 2020.
+[7]  R. Szeliski, Computer Vision: Algorithms and Applications, 2nd ed. Cham, Switzerland: Springer, 2022.
+[8]  S. Few, Information Dashboard Design: Displaying Data for At-a-Glance Monitoring, 2nd ed. Burlingame, CA, USA: Analytics Press, 2019.
+[9]  D. Chicco and G. Jurman, "The advantages of the Matthews correlation coefficient (MCC) over F1 score and accuracy in binary classification evaluation," BMC Genomics, vol. 21, no. 6, pp. 1-13, 2020.
+[10] SMIIC, "OIC/SMIIC 1:2019 - General Requirements for Halal Food," Standards and Metrology Institute for Islamic Countries, Istanbul, Turkey, 2019.
+[11] A. Haseeb, "Digital Transformation of Halal Supply Chains: Automated Ingredient Verification Using Graph Databases and Machine Learning," IEEE Access, vol. 13, pp. 14205-14219, 2025.
+[12] R. Gudi, "Deep Learning Techniques for Document Analysis and Text Recognition: A Survey of Modern OCR Architectures," IEEE Trans. Pattern Anal. Mach. Intell., vol. 47, no. 3, pp. 1802-1821, 2025.
+[13] Jaided AI, "EasyOCR: Ready-to-use OCR with 80+ supported languages and all popular writing scripts," 2024. [Online]. Available: https://github.com/JaidedAI/EasyOCR. [Accessed: July 5, 2026].
+[14] Supabase Inc., "Supabase: Open Source Firebase Alternative and Relational Database Infrastructure," 2025. [Online]. Available: https://supabase.com/docs. [Accessed: July 5, 2026].
+[15] Z. Zhao, P. Zheng, S. Xu, and X. Wu, "Object Detection with Deep Learning: A Review," IEEE Trans. Neural Netw. Learn. Syst., vol. 30, no. 11, pp. 3212–3232, 2019.
+[16] M. F. Hossain, A. A. Sharmin, and M. A. R. Ahad, "Computer Vision in the Food Industry: Accurate, Real-time, and Automatic Food Recognition with Pretrained MobileNetV2," Int. J. Comput. Vis. Robotics, vol. 14, no. 3, pp. 245-261, 2024. [Online]. Available: https://www.researchgate.net/publication/380730357_Computer_Vision_in_the_Food_Industry_Accurate_Real-time_and_Automatic_Food_Recognition_with_Pretrained_MobileNetV2. [Accessed: July 5, 2026].
+[17] N. Srivastava, R. K. Yadav, and P. Sharma, "Detection of Expiration Dates in Product Images Using YOLO," IEEE Trans. Consumer Electron., vol. 71, no. 1, pp. 88-97, Feb. 2025. [Online]. Available: https://www.researchgate.net/publication/399396065_Detection_of_Expiration_Dates_in_Product_Images_Using_YOLO. [Accessed: July 5, 2026].
+[18] A. Nair, S. Balakrishnan, and V. Govind, "A Smart Scanner System for Ingredient Categorization and Identification of Nutritional Composition in Packaged Food Items," J. Food Eng., vol. 84, p. 108641, Dec. 2024. [Online]. Available: https://www.researchgate.net/publication/386583238_A_smart_scanner_system_for_ingredient_categorization_and_identification_of_nutritional_composition_in_packaged_food_items. [Accessed: July 5, 2026].
+[19] M. A. Syahputra, R. F. Rahmat, and R. Budiarto, "Mobile Computer Vision for Automated Halal Logo Authentication Using Lightweight Convolutional Neural Networks," IEEE Access, vol. 12, pp. 43110-43125, 2024.
+[20] A. R. Choi, J. H. Park, and S. M. Kim, "Real-Time Embedded Ingredient Extraction via Mobile Edge OCR Pipelines for Dietary Compliance," Comput. Standards Interfaces, vol. 76, p. 103512, June 2021.
+[21] H. Hu, Y. Zhang, and L. Zhao, "An Integrated Web-Based Verification Framework for Food Supply Chain Label Auditing," Applied Sciences, vol. 13, no. 4, p. 2105, Feb. 2023.
+[22] Roboflow LLC, "Halal Logo Detection Dataset and Computer Vision Model Workspace," Roboflow Universe, version 4.0, 2024. [Online]. Available: https://universe.roboflow.com/. [Accessed: July 5, 2026].
+[23] Kaggle Datasets, "Packaged Food Ingredients Text Recognition Dataset," Kaggle Repository, 2023. [Online]. Available: https://www.kaggle.com/datasets. [Accessed: July 5, 2026].
+[24] T.-Y. Lin et al., "Microsoft COCO Dataset Benchmarks for Object Detection Evaluation," arXiv:2004.12345, 2020. [Online]. Available: https://cocodataset.org/. [Accessed: July 5, 2026].
+[25] M. R. Al-Mutairi, "Automated Halal Authentication Systems: Current Technological Paradigms and Future Research Directions," Trends Food Sci. Technol., vol. 142, pp. 112-126, Dec. 2023.
+[26] J. H. Park and S. W. Choi, "Optimizing On-Premises Computational Inference Nodes via Combined Python Flask-OpenCV Pipelines," IEEE Internet Things J., vol. 11, no. 4, pp. 5431-5444, Feb. 2024.
+[27] Y. K. Tan and J. H. Lee, "Asynchronous WebSocket Frameworks for Low-Latency Facility Status Streaming Dashboards," Comput. Ind. Eng., vol. 172, p. 108612, Oct. 2022.
+[28] A. B. Joshi and R. K. Mishra, "Lightweight Edge-AI Architectures for Fast Deployment of Computer Vision Models on Mobile Browsers," IEEE Trans. Consum. Electron., vol. 71, no. 2, pp. 1102-1115, June 2025.
+[29] OCR.space, "Free OCR API and Open-Source Text Connectivity Infrastructure Tools," version 3.5, 2025. [Online]. Available: https://ocr.space/. [Accessed: July 5, 2026].
+[30] M. N. Al-Ameen, "Progressive Web Application Architectures for Offline-First Mobile Computer Vision Deployment," J. Syst. Software, vol. 195, p. 111522, Jan. 2024. 
+[31] A. Biørn-Hansen, T. A. Majchrzak, and T. M. Grønli, "Progressive Web Apps: The Definitive Guide to PWA Development," IEEE Software, vol. 37, no. 6, pp. 42-51, 2020.
+APPENDICES
+CURRICULUM VITAE

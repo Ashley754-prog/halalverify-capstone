@@ -19,7 +19,7 @@ import EstablishmentsMap from './pages/EstablishmentsMap.jsx';
 import VerificationQueue from './pages/VerificationQueue.jsx';
 import LandingPage from './pages/LandingPage.jsx';
 import { supabase } from './lib/supabaseClient';
-import { AUTH_VIEWS, fetchUserRole, ensureUserProfile, signOut } from './lib/auth';
+import { AUTH_VIEWS, ensureUserProfile, signOut } from './lib/auth';
 import { API_BASE_URL } from './utils/api';
 
 const VALID_VIEWS = new Set([

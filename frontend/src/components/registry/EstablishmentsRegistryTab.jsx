@@ -1,5 +1,5 @@
 
-import { Database, Search, AlertOctagon, Pencil, Trash2, Flag } from 'lucide-react';
+import { Database, Search, Pencil, Trash2, Flag } from 'lucide-react';
 
 export default function EstablishmentsRegistryTab({
     establishments,

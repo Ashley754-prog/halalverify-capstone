@@ -129,8 +129,8 @@ export default function ProductCard({
                     )}
                 </div>
 
-                {/* Ingredients Summary */}
-                {product.ingredients_summary && (
+                {/* Ingredients Summary (only shown when actual ingredients exist, not generic registry imports) */}
+                {product.ingredients_summary && !product.ingredients_summary.toLowerCase().startsWith('verified product certified under') && (
                     <div className="text-xs text-slate-600">
                         <p className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
                             Ingredients:
@@ -142,39 +142,42 @@ export default function ProductCard({
                 )}
             </div>
 
-            {/* Footer: Provenance & Admin Actions */}
-            <div className="pt-2 sm:pt-3 border-t border-slate-100 flex items-center justify-between text-[9px] sm:text-xs gap-1">
-                <span className="text-[10px] sm:text-[10px] text-slate-400 flex items-center gap-1 min-w-0" title={product.source_url || product.source}>
-                    <FileText size={10} className="shrink-0 sm:w-[11px] sm:h-[11px]" />
-                    {product.source || 'IDCP Registry'}
+            {/* Footer: Provenance & Actions */}
+            <div className="pt-2 sm:pt-3 border-t border-slate-100 flex items-center justify-between text-[10px] sm:text-xs gap-1">
+                <span className="text-slate-400 flex items-center gap-1 min-w-0" title={product.source_url || product.source}>
+                    <FileText size={11} className="shrink-0 text-slate-400" />
+                    <span className="truncate">{product.source || 'IDCP Registry'}</span>
                 </span>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                     <button
                         type="button"
                         onClick={() => onReport(product)}
-                        className="text-[10px] sm:text-[11px] font-semibold text-slate-400 hover:text-amber-600 flex items-center gap-1 transition px-1 sm:px-1.5 py-0.5 rounded hover:bg-amber-50"
+                        className="min-h-[32px] text-[11px] font-semibold text-slate-500 hover:text-amber-700 flex items-center gap-1 transition px-2 py-1 rounded-lg hover:bg-amber-50 active:scale-95"
                         title="Flag issue or report non-compliance"
+                        aria-label={`Flag issue with ${product.name}`}
                     >
-                        <Flag size={10} className="sm:w-[11px] sm:h-[11px]" />
+                        <Flag size={12} className="shrink-0 text-slate-400 hover:text-amber-600" />
                         <span>Flag</span>
                     </button>
 
                     {isAdmin ? (
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1">
                             <button
                                 type="button"
                                 onClick={() => onEdit(product)}
-                                className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-slate-100 rounded-lg transition"
+                                className="min-h-[32px] min-w-[32px] p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-slate-100 rounded-lg transition flex items-center justify-center"
                                 title="Edit Product"
+                                aria-label={`Edit ${product.name}`}
                             >
                                 <Pencil size={14} />
                             </button>
                             <button
                                 type="button"
                                 onClick={() => onDelete(product)}
-                                className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                                className="min-h-[32px] min-w-[32px] p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition flex items-center justify-center"
                                 title="Delete Product"
+                                aria-label={`Delete ${product.name}`}
                             >
                                 <Trash2 size={14} />
                             </button>
@@ -185,9 +188,12 @@ export default function ProductCard({
                                 href={getSafeUrl(product.source_url)}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5"
+                                className="min-h-[32px] text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 transition px-2 py-1 rounded-lg hover:bg-emerald-50 active:scale-95"
+                                title="Open external registry verification source"
+                                aria-label={`View source registry for ${product.name}`}
                             >
-                                Source <ExternalLink size={10} />
+                                <span>Source</span>
+                                <ExternalLink size={11} />
                             </a>
                         )
                     )}

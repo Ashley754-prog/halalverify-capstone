@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { BookOpen, Server, CheckCircle2, AlertCircle, RefreshCw, Globe, ExternalLink } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { BookOpen, Server, CheckCircle2, AlertCircle, RefreshCw, Globe, ChevronLeft } from 'lucide-react';
 import { PROPONENTS, JURISDICTION } from '../data/constants';
 import { API_BASE_URL, authFetch } from '../utils/api';
 
@@ -11,7 +11,7 @@ export const Settings = ({ onViewChange }) => {
     const [pingStatus, setPingStatus] = useState({ state: 'idle', latency: null, message: '' });
     const [savedMessage, setSavedMessage] = useState('');
 
-    const testConnection = async (urlToTest) => {
+    const testConnection = useCallback(async (urlToTest) => {
         const target = (urlToTest || activeUrl).replace(/\/+$/, '');
         setPingStatus({ state: 'testing', latency: null, message: 'Testing connection...' });
         const start = Date.now();
@@ -39,11 +39,11 @@ export const Settings = ({ onViewChange }) => {
                 message: err.name === 'AbortError' ? 'Connection timed out (10s)' : (err.message || 'Cannot reach server'),
             });
         }
-    };
+    }, [activeUrl]);
 
     useEffect(() => {
         testConnection(activeUrl);
-    }, []);
+    }, [testConnection, activeUrl]);
 
     const handleSaveCustomUrl = (e) => {
         e.preventDefault();
@@ -70,6 +70,18 @@ export const Settings = ({ onViewChange }) => {
 
     return (
         <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 flex-1">
+            {onViewChange && (
+                <div className="flex items-center justify-between pb-1">
+                    <button
+                        type="button"
+                        onClick={() => onViewChange('dashboard')}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-emerald-700 bg-white hover:bg-emerald-50 rounded-xl border border-slate-200 transition shadow-sm active:scale-95"
+                    >
+                        <ChevronLeft size={14} /> Back to Dashboard
+                    </button>
+                    <span className="text-xs text-slate-400 font-medium">System Settings & Node Status</span>
+                </div>
+            )}
             {/* Cloud Backend Server Configuration */}
             <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-sm space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">

@@ -152,7 +152,7 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
         {
             step: 3,
             name: "Ingredient Text Extraction",
-            module: "EasyOCR / Google Vision OCR",
+            module: "RapidOCR / Google Vision OCR",
             status: combinedOcrText.length > 0 ? "Success" : "None",
             latencyMs: Math.round(((firstScan.pipelineStages?.[2]?.latencyMs || 100) + (secondScan.pipelineStages?.[2]?.latencyMs || 100)) / 2),
             details: combinedOcrText.length > 0

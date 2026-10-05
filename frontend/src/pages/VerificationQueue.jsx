@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     ShieldCheck,
     Store,
@@ -54,28 +54,7 @@ export default function VerificationQueue({ onViewChange }) {
     // Accredited HCBs list for assignment
     const [certifyingBodies, setCertifyingBodies] = useState([]);
 
-    const fetchQueueData = async () => {
-        try {
-            setLoading(true);
-            const res = await authFetch(`${API_BASE_URL}/api/v1/admin/pending-approvals`);
-            if (res.ok) {
-                const json = await res.json();
-                setEstablishments(json.data?.establishments || []);
-                setProducts(json.data?.products || []);
-                setReports(json.data?.reports || []);
-            } else {
-                // Fallback direct Supabase query
-                await fetchSupabaseDirect();
-            }
-        } catch (err) {
-            console.warn('Backend pending approvals error, fallback to Supabase:', err);
-            await fetchSupabaseDirect();
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchSupabaseDirect = async () => {
+    const fetchSupabaseDirect = useCallback(async () => {
         try {
             const { data: estData } = await supabase
                 .from('establishments')
@@ -101,21 +80,42 @@ export default function VerificationQueue({ onViewChange }) {
         } catch (sbErr) {
             console.error('Direct Supabase fetch failed:', sbErr);
         }
-    };
+    }, []);
 
-    const fetchCertifyingBodies = async () => {
+    const fetchQueueData = useCallback(async () => {
+        try {
+            setLoading(true);
+            const res = await authFetch(`${API_BASE_URL}/api/v1/admin/pending-approvals`);
+            if (res.ok) {
+                const json = await res.json();
+                setEstablishments(json.data?.establishments || []);
+                setProducts(json.data?.products || []);
+                setReports(json.data?.reports || []);
+            } else {
+                // Fallback direct Supabase query
+                await fetchSupabaseDirect();
+            }
+        } catch (err) {
+            console.warn('Backend pending approvals error, fallback to Supabase:', err);
+            await fetchSupabaseDirect();
+        } finally {
+            setLoading(false);
+        }
+    }, [fetchSupabaseDirect]);
+
+    const fetchCertifyingBodies = useCallback(async () => {
         try {
             const { data } = await supabase.from('certifying_bodies').select('id, name, code');
             setCertifyingBodies(data || []);
         } catch (e) {
             console.warn('Could not load HCB list:', e);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchQueueData();
         fetchCertifyingBodies();
-    }, []);
+    }, [fetchQueueData, fetchCertifyingBodies]);
 
     const openInspection = (item) => {
         setInspectingItem(item);

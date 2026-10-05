@@ -122,7 +122,7 @@ export async function authFetch(url, options = {}) {
 }
 
 /**
- * HalalVerify backend analysis: FastAPI + EasyOCR + Supabase.
+ * HalalVerify backend analysis: FastAPI + RapidOCR + Supabase.
  * Tries the primary API endpoint first; if unreachable, falls back to the secure permanent domain.
  */
 export async function analyzeImage(base64Image, mode) {
@@ -191,7 +191,7 @@ export function simulateFallback(mode) {
             pipelineStages: [
                 { step: 1, name: "Image Acquisition & Preprocessing", module: "OpenCV / Volatile Memory", status: "Success", latencyMs: 25.4, details: "Frame captured and scaled in volatile memory." },
                 { step: 2, name: "Halal Logo Localization", module: "Ultralytics YOLOv8-Nano (CNN)", status: "None", latencyMs: 45.1, details: "Offline fallback state: no server inference available." },
-                { step: 3, name: "Ingredient Label Text Extraction", module: "EasyOCR (CRAFT + CRNN)", status: "Offline", latencyMs: 0, details: "Optical recognition offline." },
+                { step: 3, name: "Ingredient Label Text Extraction", module: "RapidOCR (ONNX Runtime)", status: "Offline", latencyMs: 0, details: "Optical recognition offline." },
                 { step: 4, name: "Chemical Additive Lexicon Screening", module: "Supabase PostgreSQL Lexicon", status: "Pending", latencyMs: 0, details: "135-additive database not queried." },
                 { step: 5, name: "Decision-Tree Compliance Classification", module: "Hierarchical Rule Engine", status: "Yellow", latencyMs: 1.2, details: "Defaulted to Yellow (Unverified) due to offline state." }
             ],

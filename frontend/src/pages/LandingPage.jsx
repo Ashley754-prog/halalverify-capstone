@@ -535,7 +535,7 @@ export default function LandingPage({ onViewChange, userRole }) {
                   <span className="ml-0.5 truncate text-[8px] sm:ml-1.5 sm:text-xs font-mono text-slate-400">HalalVerify Inspection Engine</span>
                 </div>
                 <span className="shrink-0 rounded-md bg-emerald-950 px-1.5 py-0.5 text-[8px] font-semibold text-emerald-400 border border-emerald-800 sm:px-2 sm:text-[11px]">
-                  EasyOCR Active
+                  RapidOCR Active
                 </span>
               </div>
 
@@ -621,7 +621,7 @@ export default function LandingPage({ onViewChange, userRole }) {
                 Halal Scanner & OCR
               </h3>
               <p className="mt-1 text-xs sm:mt-1.5 sm:text-sm text-slate-400 leading-relaxed">
-                Scan packaged goods using EasyOCR to analyze ingredient lists for doubtful additives and verify certifying logos.
+                Scan packaged goods using RapidOCR to analyze ingredient lists for doubtful additives and verify certifying logos.
               </p>
               <div className="mt-3 sm:mt-4 flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
                 <span>Try Scanner</span>
@@ -727,7 +727,7 @@ export default function LandingPage({ onViewChange, userRole }) {
               </div>
               <h3 className="mb-2 text-sm font-bold text-white sm:text-lg">OCR Parsing & Match</h3>
               <p className="text-[10px] leading-relaxed text-slate-400 sm:text-sm">
-                EasyOCR extracts textual content and tests each word against verified halal listings and prohibited additives.
+                RapidOCR extracts textual content and tests each word against verified halal listings and prohibited additives.
               </p>
             </div>
 

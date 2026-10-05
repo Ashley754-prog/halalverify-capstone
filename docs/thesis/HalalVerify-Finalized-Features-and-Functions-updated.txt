@@ -1,0 +1,131 @@
+HalalVerify Finalized Features and FunctionsUsers Side
+Guest Access and Landing Page Navigation
+Users can immediately access core features upon opening the application without encountering a forced login or account creation screen. The default view is the search interface.
+Functional Logic:
+Users will open the application and it will navigate directly to the main landing page, which contains the search bar (can scan products names or halal verified establishments), camera scanning options (upload or camera buttons), informational references about accredited Halal certifying bodies. Guest users are permitted to search products, scan packaging labels, and view establishment profiles without inputting login credentials. The system prompts user authentication strictly when a user attempts to submit a localized report or flag an entry.
+Allow unauthenticated guest users to search products, scan labels, and view establishments profiles without credentials.
+Only prompt authentication when a user attempts to submit a report or flag an item/establishment.
+APIs or Endpoints to Use:
+GET /api/v1/products/search?q={query} – Public query endpoint to search product names or barcodes.
+GET /api/v1/establishments/search?q={query} – Public query endpoint to retrieve registered establishment profiles.
+Visual Product Scan Fallback Engine
+Provides a direct fallback scanner for users when a searched product is not available in the existing database.
+Functional Logic:
+If the product or establishment in the search query is not found or returns zero results, display an immediate prompt:“Product or Establishment not found. Scan package to verify.”
+Tapping this button activates the smartphone camera stream within the Progressive Web Application (PWA) client. The image matrix is held temporarily in local volatile RAM for privacy assurance. The multi-stage computer vision pipeline is then triggered to extract labels and markings.
+Trigger the native device camera using the browser stream to capture product packaging.
+Execute YOLOv8-Nano to detect halal logos and EasyOCR to parse chemical additives/E-numbers directly from volatile RAM.
+APIs or Endpoints to Use:
+POST /api/v1/scan/analyze – Accepts the base64 image frame payload, executes OpenCV preprocessing, coordinates localized YOLOv8-Nano logo matching and EasyOCR text extraction, and returns structured advisory classification states (Halal, Haram, or Doubtful/Unverified).
+User-Submitted Establishment and Product Navigation
+Allows registered users (users should create an account first or logged in before adding or submitting their own added food products or establishment so that admin will have a clear record of the user) to contribute missing establishments/retail locations, dining spots, logos, or packaging details for system inclusion to expand localized application coverage.
+Functional Logic:
+To maintain strict accountability and avoid spam database entries, users must authenticate via Google OAuth before accessing submission forms. Forms require essential metadata: Establishment Name, Halal Certification Document Upload, Logo Image, Product Names, and Location/Address details.
+Submissions default to a PENDING_VERIFICATION state in the Supabase database and do not appear in public search results until admin validates them.
+APIs or Endpoints to Use:
+POST /api/v1/establishments/submit (Auth Required) – Submits new establishment details and certificate uploads.
+POST /api/v1/products/submit (Auth Required) – Submits new product listings associated with an establishment.
+Authenticated Issue and Flag Reporting System
+Enables the community to report certification discrepancies, expired labels, or fraudulent markings while securing endpoints against systemic database exploitation.
+Functional Logic:
+Unauthenticated users can view product and establishment details freely.
+Clicking "Report Issue" or "Flag Establishment" the application evaluates the user's active session token. If no valid JSON Web Token (JWT) is found, a secure Google OAuth login modal is rendered.
+Once authenticated, users select predefined violation categories (e.g., Expired Certificate, Fraudulent/Unaccredited Logo, Prohibited Ingredients Detected) and submit their text description along with camera photo proof.
+APIs or Endpoints to Use:
+POST /api/v1/reports/submit (Auth Required) – Logs user reports tied to specific establishment or product IDs.
+POST /api/v1/auth/login & POST /api/v1/auth/signup – Security endpoints handling user session routing and OAuth handshakes.
+Interactive Spatial Map and Establishment Directory (chene ya ta este na diatom system akel na map pone lang yo aki kay finalized ya man kel pero el akin na finalized chene el ekonting adjustments need umenta alya na diaton)
+Provides a map-based visual index allowing users to locate nearby Halal-verified establishments, dining spots, and retail stores across the entire Philippines based on geolocation, region, city, or specific filtering parameters.
+Functional Logic:
+The system requests browser-level HTML5 geolocation coordinates (GPS) or permits users to manually filter coordinates by Province, City, or Barangay. 
+The map module uses Leaflet.js mapped with open-access OpenStreetMap (OSM) tiles to render interactive pin markers across regional nodes. Markers are color-coded based on active regulatory classifications: Green pins for VERIFIED, Yellow pins for PENDING REVIEW, and Red pins for FLAGGED.
+Users can toggle filters based on specific accredited Halal Certification Bodies (HCBs) recognized by the National Commission on Muslim Filipinos (NCMF) and the Department of Trade and Industry (DTI), such as the IDCP, HDIP, or the local Zamboanga Peninsula Halal Certification Body (ZPHCB).
+Tapping on any marker opens a detail card displaying the establishment's physical address in the Philippines, contact details, active HCB certificate number and validity, and a list of verified compliant product inventory or menu items.
+APIs or Endpoints to Use:
+GET /api/v1/establishments/map?lat={lat}&lng={lng}&radius={km}&region={region_code}&city={city_name}&status={status}&hcb={hcb_id} – Executes high-speed proximity queries using Supabase PostGIS spatial extensions (ST_DWithin) to retrieve nearby verified location entries.
+Admin Side
+Admin Anti-Fraud and Document Verification Workflow
+Provides an administrative module to audit and verify uploaded halal certificates and user-flagged entries before publishing them; these will all be in the Supabase based on the halal certification bodies (HCBs) like the government regulatory bodies such as DTI (Department of Trade and Industry) and NCMF (National Commission on Muslim Filipinos). Accredited Halal Certification Bodies (HCBs) such as IDCP (Islamic Da’wah Council of the Philippines) and UCZP (United Cultural Communities of Zamboanga Peninsula).
+Functional Logic:
+Admin dashboard queues pending establishment entries and submitted halal certificates.
+It displays a side-by-side inspection layout matching the raw uploaded certificate image next to text fields extracted via the automated YOLOv8-Nano structural segmentation and EasyOCR text extraction framework.
+System administrators verify the document's validity against recognized NCMF and DTI Halal Board guidelines, checking the issuer's active standing before toggling the profile state from PENDING VERIFICATION to VERIFIED or REJECTED.
+APIs or Endpoints to Use:
+GET /api/v1/admin/pending-approvals (Admin Auth) – Fetches unverified listings, flag queues, and pending files.
+PATCH /api/v1/admin/establishments/{id}/verify (Admin Auth) – Updates establishment status (PENDING VERIFICATIN to APPROVED or REJECTED) with administrative notes; Atomically modifies an establishment's legal status code with appended administrative audit logs.
+System Analytics and Compliance Trend Dashboard
+Provides administrative oversight by aggregating real-time data on scan activity, detected non-compliant additives, and regional establishment standings across the entire Philippines.
+Functional Logic:
+Generate aggregate visual analytics on total product scans, total approved establishments, pending user flags, and overall system usage filtered by daily, weekly, monthly, or nationwide regional intervals (Luzon, Visayas, Mindanao).
+Track and display the top 5 most frequently scanned non-compliant or questionable E-numbers (e.g., E120 Carmine, E441 Gelatin, E471 Mono- and di-glycerides) to detect Philippine market non-compliance trends.
+It also utilizes Supabase PostGIS data arrays to project a geographic heat map showing regional densities of compliant food hubs relative to high concentration areas for reported violations.
+APIs or Endpoints to Use:
+GET /api/v1/admin/analytics/trends?region={region_code} (Admin Auth) – Fetches system-wide usage metrics, most-scanned E-numbers, and verification statistics across the Philippines.
+GET /api/v1/admin/analytics/reports-summary (Admin Auth) – Returns summaries of pending vs. resolved flags and user reports nationwide.
+Master Additives and HCB Registry Management
+Empowers system administrators to dynamically manage the E-number chemical reference database and keep track of accredited Halal Certification Bodies (HCBs) operating within the Philippines.
+Functional Logic:
+Provide CRUD (Create, Read, Update, Delete) interfaces for the E-number lookup engine hosted on Supabase. Admins can add new chemical names, update existing compliance statuses (Halal, Haram, Doubtful/Unverified), or add source descriptions (e.g., specifying plant vs animal origins).
+Provide an HCB Management module to maintain records of accredited certifying bodies nationwide (e.g., IDCP, HDIP, HICCIP) and local regional groups like the United Cultural Communities of Zamboanga Peninsula (UCZP) under government oversight entities such as the Department of Trade and Industry (DTI) Halal Board and the National Commission on Muslim Filipinos (NCMF).
+Admins can update official HCB seal formats, accreditation validity periods, and official registry reference anchors used by the YOLOv8-Nano and EasyOCR data processing engine when validating submitted certificate documents.
+APIs or Endpoints to Use:
+POST /api/v1/admin/additives (Admin Auth) – Adds or updates chemical additive records, scientific names, and E-number compliance statuses.
+PUT /api/v1/admin/additives/{id} (Admin Auth) – Edits an existing additive entry in the database.
+Main Features based on Title:
+Halal Logo Scan and Authentication Module
+Target: Visual Halal Seals or Logos on the product packaging
+Core Technical Stack/Tools to use: YOLOv8-Nano + EasyOCR + OpenCV + Supabase Relational Tables.
+Operational Execution/Function: OpenCV initializes frame acquisition from the camera and adjusts contrast levels. YOLOv8-Nano functions as the visual localization tool, identifying the presence of a halal emblem and outputting a precise bounding box coordinate to crop the Region of Interest (ROI). Immediately following localization, EasyOCR sweeps the cropped box region to read the alphanumeric certificate or license registration tracking code. The system then queries this extracted string against the hcb_registry database table in Supabase. If a matching code is found linked to an accredited body (like IDCP or ZPHCB) and is within its expiration boundary, the system yields a verified AUTHENTICATED output state; otherwise, it warns of an UNVERIFIED/DOUBTFUL label configuration.
+Ingredient Scanning and Additive Parsing Module
+Target: Printed Text Blocks (E-Numbers) / Ingredients Listed; Block arrays of text specifying ingredients and scientific names on product wrappers.
+Tools to use: EasyOCR + OpenCV + Supabase Reference Tables.
+Action or Function: OpenCV applies adaptive grayscale thresholding and noise filtering to clean up wrinkled or skewed text lines on product packages. EasyOCR parses the entire character row array to extract text strings, specifically isolating numeric E-number expressions (e.g., "E120", "E471"). The application extracts these isolated text blocks and checks them against the master additives reference dictionary on Supabase via high-speed API lookups. The screen instantly reflects the calculated product status banner based on database matching rules.
+Label Configuration
+HALAL: purely plant-based, synthetic, or mineral-derived additives that are strictly permissible.
+HARAM: additives that are derived from strictly prohibited sources like swine/pork products or non-dhabihah animals.
+DOUBTFUL/UNVERIFIED: additives whose halal status depends entirely on the raw material source origin (animal fat vs. vegetable fat), and cannot be determined by text extraction alone.
+Other Finalized Features:
+Halal Certification Document Verification Module
+Target: Uploaded physical paper certificates or license sheets (PDF/PNG/JPEG) submitted by establishments.
+Tools to use: YOLOv8-Nano + EasyOCR + OpenCV + Supabase Storage Engine.
+Action or Function: Instead of relying on a mismatched, third-party framework dependency like PaddleOCR, this module shares our core lightweight architecture. When an establishment certificate image is uploaded, YOLOv8-Nano performs structural layout segmentation, locating and cropping the bounding box areas containing the Certifying Authority Header, the Business Name Row, the Accreditation Number Box, and the Official Verification Seal. EasyOCR is then targeted at these specific cropped box matrices to extract the data text strings without needing to process irrelevant sections of the page. The system cross-references these extracted names and license numbers against the backend hcb_registry records to assist administrators during the validation phase.
+Match: Cross-references extracted accreditation numbers and business names against the hcb_registry table in Supabase. Before the admin will filter, it will be labeled PENDING VERIFICATION and then will be flagged as VERIFIED or REJECTED based on credential match and validity period.
+Establishment Search and Profile Lookup
+Target: Search queries typed by the user (Establishment Name, Restaurant Name, or Brand).
+Tools to use: React.js and Supabase PostgREST API.
+Action or Function: Executes indexed full-text search against establishment profiles.
+Match: Queries the establishments and establishment_products tables in Supabase. Returns certification standing (VERIFIED, PENDING_VERIFICATION, or SUSPENDED), active issuing HCB, physical address, and approved product inventory.
+Interactive Spatial Map and Location Discovery
+Target: Geographic coordinates (Latitude/Longitude) or selected Philippine region/city.
+Tools to use: Leaflet.js Client + OpenStreetMap Tiles + Supabase PostGIS Spatial Extensions.
+Action or Function: Plots color-coded markers (Green = Verified, Yellow = Pending Review, Red = Flagged) on a visual map of the Philippines. Filters pins by proximity radius, barangay, or specific certifying body (e.g., IDCP, UCZP).
+To fully eliminate costly, proprietary external map components like Google Maps API or Mapbox, the application uses Leaflet.js integrated with OpenStreetMap to handle open-source map rendering. User coordinate parameters are processed inside the PostgreSQL database layer via Supabase PostGIS. Proximity execution is performed using spatial index functions, running ST_DWithin calculations to calculate distance radii against coordinates stored in the establishments table, returning nearby compliant food spots instantly.
+User-Submitted Establishment and Product Registration
+Target: User-contributed data forms (Establishment Name, Address, Certificate Upload, Packaging Logos).
+Tools to use: React.js Frontend and Supabase Storage & Row Level Security (RLS).
+Action or Function: Accepts file uploads and structured text forms. Binds submission metadata to the submitting user's account session (JWT token).
+Match: Inserts a new record into Supabase initialized with status PENDING_VERIFICATION. Image assets are uploaded to Supabase Storage buckets, generating public/signed URLs for admin side review.
+Authenticated Issue and Flag Reporting System
+Target: User-flagged non-compliance issues (e.g., Expired Certificate, Fraudulent Logo, Haram Ingredient Detected).
+Tools to use: Supabase Auth (JWT Tokens) and REST API.
+Action or Function: Opens an authentication modal if user is unauthenticated. Validates active session and submits issue details with image evidence uploads.
+Match: Creates an entry in the reports table in Supabase, establishing a relational foreign key link between user_id, product_id/establishment_id, and administrative audit queues.
+System Analytics and Compliance Trend Dashboard (Admin Side)
+Target: Operational statistics, scan frequencies, and regional compliance levels.
+Tools to use: Recharts / Chart.js and Supabase Aggregate SQL Queries & PostGIS.
+Action or Function: Computes real-time totals for active product scans, approved establishments, and pending flags. Generates geographic heat maps and top 5 non-compliant additive rankings.
+Match: Aggregates time-series data and spatial records from Supabase tables (scan_logs, additives, reports, establishments).
+Master Additive and HCB Registry Management (Admin Side)
+Target: Database entries for chemical additive codes and accredited Halal certifying bodies.
+Tools to use: React Admin Dashboard and Supabase CRUD REST APIs.
+Action or Function: Allows administrators to insert, edit, or remove E-number records, scientific names, animal/plant origins, and compliance categories (Halal, Haram, Doubtful). Manages official HCB logos and accreditation validity rules.
+Match: Direct administrative read/write access to Supabase master reference tables (additives and hcb_registry).
+Google OAuth Authentication Integration/Social Identity Security Module
+Target: User credentials (Google Email, Profile Picture, Full Name) via Google OAuth 2.0 Identity Provider.
+Tools to use: Google Cloud Console (OAuth Client) + Supabase Auth SDK (@supabase/supabase-js) + React.js Frontend.
+Action or Function: 
+Initiates social sign-in trigger (supabase.auth.signInWithOAuth({ provider: 'google' })).
+Opens Google OAuth consent screen to authenticate the user securely without raw password entry.
+Captures the authorization code and exchanges it for a Supabase JWT (JSON Web Token) session.
+Automatically populates the user’s session profile details (email, full_name, avatar_url).
+Match: Creates or links an account record inside the auth.users schema in Supabase and issue active session tokens to unlock restricted endpoints (e.g., submitting reports or registering establishments).

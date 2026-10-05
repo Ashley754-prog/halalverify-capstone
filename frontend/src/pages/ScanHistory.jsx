@@ -187,16 +187,30 @@ export const ScanHistory = ({ userRole, onViewChange }) => {
                     ))}
 
                     {filtered.length === 0 && (
-                        <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-400 space-y-2">
+                        <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-400 space-y-3">
                             <Layers size={28} className="mx-auto text-slate-300" />
                             <p className="text-xs sm:text-sm font-semibold text-slate-600">No scan records match your criteria.</p>
-                            <button
-                                type="button"
-                                onClick={handleClearFilters}
-                                className="text-xs font-bold text-emerald-600 hover:text-emerald-700 underline"
-                            >
-                                Clear search & filters
-                            </button>
+                            <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                                <button
+                                    type="button"
+                                    onClick={handleClearFilters}
+                                    className="text-xs font-bold text-emerald-600 hover:text-emerald-700 underline"
+                                >
+                                    Clear search & filters
+                                </button>
+                                {onViewChange && (
+                                    <>
+                                        <span className="text-slate-300">&bull;</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => onViewChange('scanner')}
+                                            className="text-xs font-bold text-emerald-600 hover:text-emerald-700 underline"
+                                        >
+                                            Launch Scanner
+                                        </button>
+                                    </>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>

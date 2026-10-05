@@ -87,6 +87,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
     const [selectedStatus, setSelectedStatus] = useState('All Statuses');
     const [selectedCertifier, setSelectedCertifier] = useState('All Certifiers / Origins');
     const [currentPage, setCurrentPage] = useState(1);
+    const [totalServerCount, setTotalServerCount] = useState(13239);
     const itemsPerPage = 24;
 
     const [activeModal, setActiveModal] = useState(null); // 'add-product', 'edit-product', 'delete-product', 'view-product'
@@ -101,15 +102,13 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
     const isAdmin = userRole === 'admin';
 
     const availableCategories = useMemo(() => {
-        const cats = new Set();
+        const cats = new Set(PRODUCT_CATEGORIES);
         products.forEach((p) => {
             if (p.category && p.category.trim()) {
                 cats.add(p.category.trim());
             }
         });
-        return cats.size > 0
-            ? ['All Categories', ...Array.from(cats).sort()]
-            : PRODUCT_CATEGORIES;
+        return Array.from(cats);
     }, [products]);
 
     const availableCertifiers = useMemo(() => {
@@ -145,7 +144,12 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
 
     const searchDebounceRef = useRef(null);
 
-    const loadData = useCallback(async (queryParam) => {
+    const loadData = useCallback(async (
+        targetPage = currentPage,
+        queryParam = searchQuery,
+        categoryParam = selectedCategory,
+        statusParam = selectedStatus
+    ) => {
         try {
             setLoading(true);
             setError('');
@@ -154,21 +158,38 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             let loadedMfg = null;
 
             const q = (queryParam !== undefined ? queryParam : searchQuery).trim();
+            const cat = categoryParam !== undefined ? categoryParam : selectedCategory;
+            const st = statusParam !== undefined ? statusParam : selectedStatus;
+            const from = (targetPage - 1) * itemsPerPage;
+            const to = from + itemsPerPage - 1;
 
-            // 1. Direct Supabase Query (Instant ~150ms response, zero cold start)
+            // 1. Direct Supabase Query with true count & range (Instant ~120ms response)
             try {
                 let pBuilder = supabase
                     .from('products')
-                    .select('*, manufacturers(*), certifying_bodies(*)')
-                    .order('name');
+                    .select('*, manufacturers(*), certifying_bodies(*)', { count: 'exact' });
 
                 if (q) {
-                    pBuilder = pBuilder
-                        .or(`name.ilike.%${q}%,brand.ilike.%${q}%,barcode.ilike.%${q}%,certificate_no.ilike.%${q}%`)
-                        .limit(500);
-                } else {
-                    pBuilder = pBuilder.limit(1000);
+                    pBuilder = pBuilder.or(`name.ilike.%${q}%,brand.ilike.%${q}%,barcode.ilike.%${q}%,certificate_no.ilike.%${q}%`);
                 }
+
+                if (cat && cat !== 'All Categories') {
+                    pBuilder = pBuilder.ilike('category', `%${cat}%`);
+                }
+
+                if (st && st !== 'All Statuses') {
+                    if (st === 'Halal') {
+                        pBuilder = pBuilder.in('status', ['Halal', 'VERIFIED', 'Verified']);
+                    } else {
+                        pBuilder = pBuilder.eq('status', st);
+                    }
+                }
+
+                // Prioritize active Verified & Halal food items over expired items
+                pBuilder = pBuilder
+                    .order('status', { ascending: false })
+                    .order('name', { ascending: true })
+                    .range(from, to);
 
                 const [productsRes, mfgRes] = await Promise.all([
                     pBuilder,
@@ -176,11 +197,14 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                         .from('manufacturers')
                         .select('*')
                         .order('name')
-                        .limit(500),
+                        .limit(200),
                 ]);
 
                 if (!productsRes.error && productsRes.data) {
                     loadedProducts = productsRes.data;
+                    if (typeof productsRes.count === 'number') {
+                        setTotalServerCount(productsRes.count);
+                    }
                     if (mfgRes.data) loadedMfg = mfgRes.data;
                 }
             } catch (sbErr) {
@@ -188,17 +212,20 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             }
 
             // 2. Fallback to Backend API with a 3.5s timeout if direct Supabase didn't return items
-            if (!loadedProducts || (q && loadedProducts.length === 0)) {
+            if (!loadedProducts) {
                 try {
                     const searchArg = q ? `&query=${encodeURIComponent(q)}` : '';
                     const [productsRes, mfgRes] = await Promise.all([
-                        authFetch(`${API_BASE_URL}/products?limit=200${searchArg}`, { timeout: 3500 }),
+                        authFetch(`${API_BASE_URL}/products?limit=24&page=${targetPage}${searchArg}`, { timeout: 3500 }),
                         authFetch(`${API_BASE_URL}/manufacturers?limit=200`, { timeout: 3500 }),
                     ]);
 
                     if (productsRes.ok) {
                         const productsJson = await productsRes.json();
                         loadedProducts = productsJson.data || [];
+                        if (typeof productsJson.total === 'number') {
+                            setTotalServerCount(productsJson.total);
+                        }
                     }
                     if (mfgRes && mfgRes.ok) {
                         const mfgJson = await mfgRes.json();
@@ -217,30 +244,32 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         } finally {
             setLoading(false);
         }
-    }, [searchQuery]);
+    }, [currentPage, searchQuery, selectedCategory, selectedStatus, itemsPerPage]);
 
     // Synchronize initialSearchQuery if passed dynamically, or load default items
     useEffect(() => {
         if (initialSearchQuery) {
             setSearchQuery(initialSearchQuery);
-            loadData(initialSearchQuery);
+            loadData(1, initialSearchQuery);
         } else {
-            loadData('');
+            loadData(1, '');
         }
-    }, [initialSearchQuery]);
+    }, [initialSearchQuery, loadData]);
 
     const handleSearchChange = (val) => {
         setSearchQuery(val);
+        setCurrentPage(1);
         if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
         searchDebounceRef.current = setTimeout(() => {
-            loadData(val);
+            loadData(1, val, selectedCategory, selectedStatus);
         }, 350);
     };
 
     const handleClearSearch = () => {
         setSearchQuery('');
+        setCurrentPage(1);
         if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-        loadData('');
+        loadData(1, '', selectedCategory, selectedStatus);
     };
 
     const showToast = (message, type = 'success') => {
@@ -387,43 +416,16 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         }
     };
 
-    const filteredProducts = products.filter((item) => {
-        const matchesQuery =
-            !searchQuery ||
-            item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.barcode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.manufacturers?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.certifying_bodies?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.certifying_bodies?.code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.source?.toLowerCase().includes(searchQuery.toLowerCase());
-
-        const matchesCategory =
-            selectedCategory === 'All Categories' || item.category === selectedCategory;
-
-        const matchesStatus =
-            selectedStatus === 'All Statuses' || item.status === selectedStatus;
-
-        const matchesCertifier =
-            selectedCertifier === 'All Certifiers / Origins' ||
-            getProductCertifierGroup(item) === selectedCertifier;
-
-        return matchesQuery && matchesCategory && matchesStatus && matchesCertifier;
-    });
-
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchQuery, selectedCategory, selectedStatus, selectedCertifier]);
-
-    const totalItems = filteredProducts.length;
+    const totalItems = totalServerCount;
     const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-    const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+    const endIndex = Math.min(startIndex + products.length, totalItems);
+    const paginatedProducts = products;
 
     const handlePageChange = (newPage) => {
         if (newPage < 1 || newPage > totalPages || newPage === currentPage) return;
         setCurrentPage(newPage);
+        loadData(newPage, searchQuery, selectedCategory, selectedStatus);
         window.scrollTo({ top: 120, behavior: 'smooth' });
     };
 
@@ -501,7 +503,12 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                     {/* Category Selector */}
                     <select
                         value={selectedCategory}
-                        onChange={(e) => setSelectedCategory(e.target.value)}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            setSelectedCategory(val);
+                            setCurrentPage(1);
+                            loadData(1, searchQuery, val, selectedStatus);
+                        }}
                         className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500"
                     >
                         {availableCategories.map((cat) => (
@@ -514,7 +521,12 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                     {/* Status Selector */}
                     <select
                         value={selectedStatus}
-                        onChange={(e) => setSelectedStatus(e.target.value)}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            setSelectedStatus(val);
+                            setCurrentPage(1);
+                            loadData(1, searchQuery, selectedCategory, val);
+                        }}
                         className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500"
                     >
                         {PRODUCT_STATUSES.map((st) => (
@@ -561,7 +573,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                 <div className="flex-1 flex items-center justify-center p-12 bg-white rounded-2xl border border-slate-200 shadow-sm text-sm text-slate-500">
                     Loading verified product directory...
                 </div>
-            ) : filteredProducts.length === 0 ? (
+            ) : products.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center p-8 sm:p-12 bg-white rounded-2xl border border-slate-200 shadow-sm text-center space-y-4">
                     <div className="w-14 h-14 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
                         <Camera size={26} />
@@ -607,7 +619,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             )}
 
             {/* Pagination Controls */}
-            {!loading && filteredProducts.length > 0 && totalPages > 1 && (
+            {!loading && products.length > 0 && totalPages > 1 && (
                 <div className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
                     <div className="flex items-center gap-2 text-slate-500 text-xs">
                         <span>

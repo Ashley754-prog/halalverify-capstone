@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
     BarChart2,
     ShieldAlert,
@@ -28,44 +28,6 @@ export default function Analytics({ onViewChange }) {
     const [trendsData, setTrendsData] = useState(null);
     const [reportsSummary, setReportsSummary] = useState(null);
     const [lastSync, setLastSync] = useState(null);
-
-    const loadAnalyticsData = async () => {
-        try {
-            setLoading(true);
-
-            // 1. Fetch Trends & Top Non-Compliant Additives
-            try {
-                const resTrends = await authFetch(`${API_BASE_URL}/api/v1/admin/analytics/trends?interval=${interval}`);
-                if (resTrends.ok) {
-                    const jsonTrends = await resTrends.json();
-                    setTrendsData(jsonTrends.data);
-                } else {
-                    applyFallbackTrends();
-                }
-            } catch (err) {
-                console.warn('Backend trends API notice, using fallback:', err);
-                applyFallbackTrends();
-            }
-
-            // 2. Fetch Reports Summary
-            try {
-                const resReports = await authFetch(`${API_BASE_URL}/api/v1/admin/analytics/reports-summary`);
-                if (resReports.ok) {
-                    const jsonReports = await resReports.json();
-                    setReportsSummary(jsonReports.data);
-                } else {
-                    applyFallbackReports();
-                }
-            } catch (err) {
-                console.warn('Backend reports summary notice, using fallback:', err);
-                applyFallbackReports();
-            }
-
-            setLastSync(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const applyFallbackTrends = () => {
         setTrendsData({
@@ -105,9 +67,47 @@ export default function Analytics({ onViewChange }) {
         });
     };
 
+    const loadAnalyticsData = useCallback(async () => {
+        try {
+            setLoading(true);
+
+            // 1. Fetch Trends & Top Non-Compliant Additives
+            try {
+                const resTrends = await authFetch(`${API_BASE_URL}/api/v1/admin/analytics/trends?interval=${interval}`);
+                if (resTrends.ok) {
+                    const jsonTrends = await resTrends.json();
+                    setTrendsData(jsonTrends.data);
+                } else {
+                    applyFallbackTrends();
+                }
+            } catch (err) {
+                console.warn('Backend trends API notice, using fallback:', err);
+                applyFallbackTrends();
+            }
+
+            // 2. Fetch Reports Summary
+            try {
+                const resReports = await authFetch(`${API_BASE_URL}/api/v1/admin/analytics/reports-summary`);
+                if (resReports.ok) {
+                    const jsonReports = await resReports.json();
+                    setReportsSummary(jsonReports.data);
+                } else {
+                    applyFallbackReports();
+                }
+            } catch (err) {
+                console.warn('Backend reports summary notice, using fallback:', err);
+                applyFallbackReports();
+            }
+
+            setLastSync(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+        } finally {
+            setLoading(false);
+        }
+    }, [interval]);
+
     useEffect(() => {
         loadAnalyticsData();
-    }, [interval]);
+    }, [loadAnalyticsData]);
 
     const totals = trendsData?.totals || { total_scans: 0, compliance_rate: 100, verdicts: {} };
     const topAdditives = trendsData?.top_non_compliant_additives || DEFAULT_TOP_ADDITIVES;
@@ -259,7 +259,7 @@ export default function Analytics({ onViewChange }) {
                         </div>
                     </div>
                     <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                        <span>YOLOv8 & EasyOCR</span>
+                        <span>YOLOv8 & RapidOCR</span>
                         <span className="text-emerald-700 font-medium font-mono text-[10px] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">
                             PNS 101:2018
                         </span>

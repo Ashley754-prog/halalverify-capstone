@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import {
     MapPin,
     Flame,
@@ -79,8 +79,33 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
     const [showReportModal, setShowReportModal] = useState(false);
     const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
 
+    const applySeedFallback = useCallback(() => {
+        let list = [...SEED_ESTABLISHMENTS];
+        if (selectedStatus !== 'all') {
+            list = list.filter((e) => {
+                const key = getStatusConfig(e.halal_status).key;
+                if (selectedStatus === 'needs_review' || selectedStatus === 'pending_review') {
+                    return key === 'needs_review' || key === 'pending_review';
+                }
+                return key === selectedStatus;
+            });
+        }
+        if (userLocation) {
+            list = list.map((e) => ({
+                ...e,
+                distance_km: calculateDistanceKm(userLocation.lat, userLocation.lng, e.latitude, e.longitude)
+            }));
+            if (selectedRadius !== 'all') {
+                const maxR = parseFloat(selectedRadius);
+                list = list.filter((e) => e.distance_km <= maxR);
+            }
+            list.sort((a, b) => (a.distance_km || 999) - (b.distance_km || 999));
+        }
+        setEstablishments(list);
+    }, [selectedStatus, userLocation, selectedRadius]);
+
     // Fetch establishments from API or fallback
-    const fetchEstablishments = async () => {
+    const fetchEstablishments = useCallback(async () => {
         try {
             setLoading(true);
             const params = new URLSearchParams();
@@ -148,36 +173,11 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
         } finally {
             setLoading(false);
         }
-    };
-
-    const applySeedFallback = () => {
-        let list = [...SEED_ESTABLISHMENTS];
-        if (selectedStatus !== 'all') {
-            list = list.filter((e) => {
-                const key = getStatusConfig(e.halal_status).key;
-                if (selectedStatus === 'needs_review' || selectedStatus === 'pending_review') {
-                    return key === 'needs_review' || key === 'pending_review';
-                }
-                return key === selectedStatus;
-            });
-        }
-        if (userLocation) {
-            list = list.map((e) => ({
-                ...e,
-                distance_km: calculateDistanceKm(userLocation.lat, userLocation.lng, e.latitude, e.longitude)
-            }));
-            if (selectedRadius !== 'all') {
-                const maxR = parseFloat(selectedRadius);
-                list = list.filter((e) => e.distance_km <= maxR);
-            }
-            list.sort((a, b) => (a.distance_km || 999) - (b.distance_km || 999));
-        }
-        setEstablishments(list);
-    };
+    }, [userLocation, selectedRadius, selectedStatus, applySeedFallback]);
 
     useEffect(() => {
         fetchEstablishments();
-    }, [userLocation, selectedRadius, selectedStatus]);
+    }, [fetchEstablishments]);
 
     const handleFindNearMe = () => {
         if (!navigator.geolocation) {
@@ -349,10 +349,6 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                         if (!est.latitude || !est.longitude) return;
 
                         const statusConfig = getStatusConfig(est.halal_status);
-                        const distText = est.distance_km ? `${est.distance_km} km away` : '';
-                        const hcbInfo = est.certifying_bodies?.code
-                            ? `<div>Accredited HCB: <b>${est.certifying_bodies.code}</b></div>`
-                            : `<div style="color: #b45309; font-weight:600;">Classification: Self-Declared</div>`;
 
                         const marker = L.circleMarker([est.latitude, est.longitude], {
                             radius: 9,
@@ -381,7 +377,9 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                             }
                             try {
                                 marker.closeTooltip();
-                            } catch (_) {}
+                            } catch {
+                                // Ignore tooltip dismiss on rapid re-click
+                            }
                             setActivePreviewEst(est);
                             if (mapInstanceRef.current) {
                                 mapInstanceRef.current.panTo([est.latitude, est.longitude], { animate: true, duration: 0.35 });
