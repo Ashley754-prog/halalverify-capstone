@@ -72,6 +72,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState(getInitialView);
   const [viewParams, setViewParams] = useState({});
   const [userRole, setUserRole] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [authLoading, setAuthLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => (typeof window !== 'undefined' ? window.innerWidth >= 768 : true));
@@ -166,10 +167,40 @@ export default function App() {
     const role = await ensureUserProfile(userObj);
     if (!role) {
       setUserRole(null);
+      setCurrentUser(null);
       return false;
     }
 
     setUserRole(role);
+
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, email, role')
+        .eq('id', userObj.id)
+        .maybeSingle();
+
+      const email = profile?.email || userObj.email || '';
+      const fullName = profile?.full_name ||
+        userObj.user_metadata?.full_name ||
+        userObj.user_metadata?.name ||
+        (email ? email.split('@')[0] : 'User');
+
+      setCurrentUser({
+        id: userObj.id,
+        email,
+        name: fullName,
+        role: profile?.role || role,
+      });
+    } catch {
+      setCurrentUser({
+        id: userObj.id,
+        email: userObj.email || '',
+        name: userObj.user_metadata?.full_name || (userObj.email ? userObj.email.split('@')[0] : 'User'),
+        role,
+      });
+    }
+
     setCurrentView((prev) => {
       const isOAuthRedirect = typeof window !== 'undefined' && (
         window.location.hash.includes('access_token') ||
@@ -216,6 +247,7 @@ export default function App() {
 
       if (event === 'SIGNED_OUT') {
         setUserRole(null);
+        setCurrentUser(null);
         handleViewChange('landing', {}, true);
         return;
       }
@@ -245,6 +277,7 @@ export default function App() {
       // Clear local state even if the remote sign-out request fails.
     } finally {
       setUserRole(null);
+      setCurrentUser(null);
       handleViewChange('landing', {}, true);
     }
   };
@@ -354,8 +387,11 @@ export default function App() {
         onToggleSidebar={toggleSidebar}
         onProfileClick={() => handleViewChange('profile')}
         userRole={userRole}
+        currentUser={currentUser}
+        onSignOut={handleSignOut}
         onSignInClick={() => handleViewChange('login')}
         onLogoClick={() => handleViewChange('landing')}
+        onViewChange={handleViewChange}
       />
       {!isOnline && (
         <div className="bg-amber-600 text-white text-center py-2 text-xs font-bold tracking-wide shadow-inner animate-pulse flex items-center justify-center gap-2">

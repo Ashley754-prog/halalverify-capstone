@@ -64,11 +64,20 @@ export async function signOut() {
 }
 
 export async function signInWithProvider(provider) {
+    const options = {
+        redirectTo: getAuthRedirectUrl(),
+    };
+
+    if (provider === 'google') {
+        options.queryParams = {
+            prompt: 'select_account',
+            access_type: 'offline',
+        };
+    }
+
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: {
-            redirectTo: getAuthRedirectUrl(),
-        },
+        options,
     });
 
     if (error) {
