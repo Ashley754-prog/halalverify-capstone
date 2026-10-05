@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ScanSearch, ShieldAlert, Store, Flag, Package, Camera, Compass, BookOpen, ArrowRight } from 'lucide-react';
+import { ScanSearch, ShieldAlert, Store, Flag, Package, ArrowRight } from 'lucide-react';
 import KpiCard from '../components/ui/KpiCard';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
@@ -57,6 +57,20 @@ export const Dashboard = ({ onViewChange }) => {
 
     return (
         <div className="p-4 sm:p-6 md:p-8 space-y-6 sm:space-y-8">
+            {/* Operations Dashboard Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-slate-100">
+                <div>
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Operations Dashboard</h2>
+                    <p className="text-xs sm:text-sm text-slate-500">Real-time inspection telemetry and regulatory registry for Zamboanga City.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        Cloud Node Online
+                    </span>
+                </div>
+            </div>
+
             {loadError && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs sm:text-sm font-semibold text-amber-700">
                     Could not reach the backend server. Live statistics are unavailable right now.
@@ -70,53 +84,6 @@ export const Dashboard = ({ onViewChange }) => {
                 <KpiCard title="Flagged Additives" value={totals ? totals.flagged_additives : '...'} icon={<ShieldAlert />} color="red" />
                 <KpiCard title="Establishments" value={totals ? totals.establishments : '...'} icon={<Store />} color="blue" />
                 <KpiCard title="Open Reports" value={totals ? totals.open_reports : '...'} icon={<Flag />} color="yellow" />
-            </div>
-
-            {/* Quick Actions Navigation Banner */}
-            <div className="bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 text-white rounded-2xl p-5 sm:p-6 shadow-md border border-emerald-700/50">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="space-y-1">
-                        <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-emerald-300">Quick Access</span>
-                        <h2 className="text-lg sm:text-xl font-black text-white">Start Verification Workflow</h2>
-                        <p className="text-xs sm:text-sm text-emerald-100/80 max-w-xl">
-                            Verify packaged product labels with dual AI OCR, browse 13,000+ verified halal items, or locate accredited dining spots in Zamboanga City.
-                        </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-                        <button
-                            type="button"
-                            onClick={() => onViewChange?.('scanner')}
-                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs sm:text-sm transition shadow-sm active:scale-95"
-                        >
-                            <Camera size={16} />
-                            <span>Launch Scanner</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => onViewChange?.('products')}
-                            className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-800/80 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm border border-emerald-600/60 transition active:scale-95"
-                        >
-                            <Package size={15} />
-                            <span>Catalog</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => onViewChange?.('map')}
-                            className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-800/80 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm border border-emerald-600/60 transition active:scale-95"
-                        >
-                            <Compass size={15} />
-                            <span>Map</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => onViewChange?.('registry')}
-                            className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-800/80 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm border border-emerald-600/60 transition active:scale-95"
-                        >
-                            <BookOpen size={15} />
-                            <span>Registry</span>
-                        </button>
-                    </div>
-                </div>
             </div>
 
             {/* Pipeline Architecture Overview */}
