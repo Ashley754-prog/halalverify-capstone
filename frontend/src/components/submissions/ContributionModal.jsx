@@ -6,6 +6,7 @@ import {
   AlertCircle,
   Sparkles,
   ShieldCheck,
+  Clock,
 } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { supabase } from '../../lib/supabaseClient';
@@ -13,6 +14,32 @@ import { API_BASE_URL, authFetch } from '../../utils/api';
 import { validateUploadFile } from '../../utils/security';
 import EstablishmentContributionForm from './EstablishmentContributionForm';
 import ProductContributionForm from './ProductContributionForm';
+
+function cleanReasonText(text) {
+  if (!text) return '';
+  return text
+    .replace(/^Needs manual review:\s*/i, '')
+    .replace(/^Potential duplicate listing detected\s*/i, 'Potential duplicate: ')
+    .replace(/^\w/, (c) => c.toUpperCase())
+    .trim();
+}
+
+function getTierBadgeInfo(tier) {
+  switch (tier) {
+    case 'halal_certified':
+      return { label: 'Halal Certified', color: 'bg-emerald-50 text-emerald-800 border-emerald-200' };
+    case 'muslim_owned':
+      return { label: 'Muslim-Owned', color: 'bg-teal-50 text-teal-800 border-teal-200' };
+    case 'muslim_friendly':
+      return { label: 'Muslim-Friendly', color: 'bg-sky-50 text-sky-800 border-sky-200' };
+    case 'vegetarian_vegan':
+      return { label: 'Vegetarian / Vegan', color: 'bg-lime-50 text-lime-800 border-lime-200' };
+    case 'pork_free_declared':
+      return { label: 'Pork-Free Declared', color: 'bg-blue-50 text-blue-800 border-blue-200' };
+    default:
+      return { label: 'Community Listing', color: 'bg-slate-50 text-slate-700 border-slate-200' };
+  }
+}
 
 export default function ContributionModal({
   isOpen,
@@ -33,6 +60,10 @@ export default function ContributionModal({
     type: 'Restaurant',
     address: '',
     city: 'Zamboanga City',
+    halal_tier: 'halal_certified',
+    contact_number: '',
+    social_media_url: '',
+    submitter_role: 'community',
     certificate_number: '',
     expiry_date: '',
     certificate_url: '',
@@ -46,6 +77,8 @@ export default function ContributionModal({
     brand: '',
     category: 'Food & Beverage',
     barcode: '',
+    halal_tier: 'halal_certified',
+    submitter_role: 'consumer',
     certificate_no: '',
     expiry_date: '',
     image_url: '',
@@ -121,7 +154,11 @@ export default function ContributionModal({
         type: estForm.type,
         address: estForm.address.trim(),
         city: estForm.city || 'Zamboanga City',
-        certificate_number: estForm.certificate_number.trim() || null,
+        halal_tier: estForm.halal_tier || 'halal_certified',
+        contact_number: estForm.contact_number?.trim() || null,
+        social_media_url: estForm.social_media_url?.trim() || null,
+        submitter_role: estForm.submitter_role || 'community',
+        certificate_number: estForm.certificate_number?.trim() || null,
         expiry_date: estForm.expiry_date || null,
         certificate_url: estForm.certificate_url || null,
         logo_url: estForm.logo_url || null,
@@ -168,18 +205,24 @@ export default function ContributionModal({
           throw new Error('You must be logged in to submit an establishment.');
         }
 
+        const fallbackStatus = payload.halal_tier === 'halal_certified' 
+          ? 'PENDING_VERIFICATION' 
+          : 'community_listed';
+
         const { error: sbErr } = await supabase.from('establishments').insert({
           name: payload.name,
           type: payload.type,
           address: payload.address,
           city: payload.city,
+          phone: payload.contact_number,
+          source_url: payload.social_media_url,
           certificate_number: payload.certificate_number,
           expiry_date: payload.expiry_date,
           certificate_url: payload.certificate_url,
           logo_url: payload.logo_url,
-          halal_status: 'PENDING_VERIFICATION',
+          halal_status: fallbackStatus,
           submitted_by: userId,
-          source: 'Community User Submission',
+          source: payload.submitter_role === 'owner' ? 'Business Owner Submission' : 'Community User Submission',
         });
 
         if (sbErr) throw sbErr;
@@ -208,13 +251,15 @@ export default function ContributionModal({
 
       const payload = {
         name: prodForm.name.trim(),
-        brand: prodForm.brand.trim() || null,
+        brand: prodForm.brand?.trim() || null,
         category: prodForm.category,
-        barcode: prodForm.barcode.trim() || null,
-        certificate_no: prodForm.certificate_no.trim() || null,
+        barcode: prodForm.barcode?.trim() || null,
+        halal_tier: prodForm.halal_tier || 'halal_certified',
+        submitter_role: prodForm.submitter_role || 'consumer',
+        certificate_no: prodForm.certificate_no?.trim() || null,
         expiry_date: prodForm.expiry_date || null,
         image_url: prodForm.image_url || null,
-        ingredients_summary: prodForm.ingredients_summary.trim() || null,
+        ingredients_summary: prodForm.ingredients_summary?.trim() || null,
       };
 
       let success = false;
@@ -255,6 +300,8 @@ export default function ContributionModal({
           throw new Error('You must be logged in to submit a product.');
         }
 
+        const fallbackStatus = payload.halal_tier === 'halal_certified' ? 'PENDING_VERIFICATION' : 'COMMUNITY_LISTED';
+
         const { error: sbErr } = await supabase.from('products').insert({
           name: payload.name,
           brand: payload.brand,
@@ -264,9 +311,9 @@ export default function ContributionModal({
           expiry_date: payload.expiry_date,
           image_url: payload.image_url,
           ingredients_summary: payload.ingredients_summary,
-          status: 'PENDING_VERIFICATION',
+          status: fallbackStatus,
           submitted_by: userId,
-          source: 'Community User Submission',
+          source: payload.submitter_role === 'brand' ? 'Brand Representative Submission' : 'Community User Submission',
         });
 
         if (sbErr) throw sbErr;
@@ -291,6 +338,10 @@ export default function ContributionModal({
       type: 'Restaurant',
       address: '',
       city: 'Zamboanga City',
+      halal_tier: 'halal_certified',
+      contact_number: '',
+      social_media_url: '',
+      submitter_role: 'community',
       certificate_number: '',
       expiry_date: '',
       certificate_url: '',
@@ -302,6 +353,8 @@ export default function ContributionModal({
       brand: '',
       category: 'Food & Beverage',
       barcode: '',
+      halal_tier: 'halal_certified',
+      submitter_role: 'consumer',
       certificate_no: '',
       expiry_date: '',
       image_url: '',
@@ -309,101 +362,149 @@ export default function ContributionModal({
     });
   };
 
+  const handleClose = () => {
+    if (isSuccess) {
+      handleReset();
+    }
+    onClose?.();
+  };
+
+  const isAutoApproved = Boolean(submissionResult?.auto_approved);
+  const submittedItemName = submissionResult?.data?.name || (activeTab === 'establishment' ? estForm.name : prodForm.name);
+  const currentTierKey = submissionResult?.audit_trail?.halal_tier || (activeTab === 'establishment' ? estForm.halal_tier : prodForm.halal_tier);
+  const tierBadge = getTierBadgeInfo(currentTierKey);
+  const score = submissionResult?.audit_trail?.score;
+  const auditNotes = submissionResult?.audit_trail?.notes || [];
+  const reviewReasons = submissionResult?.audit_trail?.reasons || [];
+
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title={isSuccess ? '' : 'Contribute to Halal Registry'}
       description={
         isSuccess
           ? ''
           : 'Submit a local Zamboanga dining spot or packaged product for administrative halal verification.'
       }
-      size="lg"
+      size={isSuccess ? 'md' : 'lg'}
     >
       {isSuccess ? (
-        <div className="py-6 text-center space-y-4">
-          {submissionResult?.auto_approved ? (
-            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm ring-4 ring-emerald-50">
-              <Sparkles size={36} />
-            </div>
-          ) : (
-            <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mx-auto shadow-sm">
-              <CheckCircle2 size={36} />
-            </div>
-          )}
+        <div className="py-2 text-center space-y-4">
+          {/* Status Icon */}
+          <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-200/60 text-emerald-600 flex items-center justify-center mx-auto shadow-xs">
+            {isAutoApproved ? (
+              <Sparkles size={28} className="text-emerald-600" />
+            ) : (
+              <CheckCircle2 size={28} className="text-emerald-600" />
+            )}
+          </div>
 
-          <div className="space-y-2">
-            <h3 className="text-xl font-bold text-slate-900">
-              {submissionResult?.auto_approved
-                ? '⚡ Instant AI Verification Complete!'
-                : 'Submission Received!'}
+          {/* Status Pill & Headings */}
+          <div className="space-y-1.5">
+            <div>
+              {isAutoApproved ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/70 shadow-2xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Instant Verified &amp; Published
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200/70 shadow-2xs">
+                  <Clock size={12} className="text-amber-600" />
+                  Queued for Auditor Review
+                </span>
+              )}
+            </div>
+
+            <h3 className="text-xl font-bold text-slate-900 tracking-tight">
+              {isAutoApproved ? 'Verified & Published Live!' : 'Submission Received!'}
             </h3>
 
-            {submissionResult?.auto_approved ? (
-              <div className="space-y-3">
-                <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
-                  The automated AI verification pipeline authenticated the credentials and published your entry{' '}
-                  <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-300">
-                    LIVE &amp; VERIFIED
-                  </span>{' '}
-                  to the official registry immediately.
-                </p>
+            <p className="text-xs sm:text-sm text-slate-500 max-w-sm mx-auto leading-relaxed">
+              {isAutoApproved
+                ? 'Your submission passed automated verification checks and has been published immediately to the public directory.'
+                : 'Thank you for contributing! Your submission has been saved and scheduled for administrative verification.'}
+            </p>
+          </div>
 
-                {submissionResult.audit_trail && (
-                  <div className="max-w-md mx-auto p-3 rounded-xl bg-slate-50 border border-slate-200 text-left text-xs space-y-1.5 shadow-inner">
-                    <div className="flex items-center justify-between text-slate-700 font-bold border-b border-slate-200 pb-1">
-                      <span className="flex items-center gap-1 text-emerald-600">
-                        <ShieldCheck size={14} /> AI Verification Score
-                      </span>
-                      <span className="font-mono bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full text-[11px]">
-                        {submissionResult.audit_trail.score}/100
-                      </span>
-                    </div>
-                    {submissionResult.audit_trail.notes?.map((n, idx) => (
-                      <p key={idx} className="text-slate-600 text-[11px] flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
-                        <span>{n}</span>
-                      </p>
+          {/* Submission Receipt Card */}
+          <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 text-left space-y-3 shadow-2xs">
+            {/* Header info */}
+            <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-200/80">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Submitted Entry</p>
+                <h4 className="font-bold text-slate-800 text-sm truncate">
+                  {submittedItemName || 'New Contribution'}
+                </h4>
+              </div>
+              {tierBadge && (
+                <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md border shrink-0 ${tierBadge.color}`}>
+                  {tierBadge.label}
+                </span>
+              )}
+            </div>
+
+            {/* Score line */}
+            {score !== undefined && (
+              <div className="flex items-center justify-between text-xs py-0.5">
+                <span className="text-slate-600 flex items-center gap-1.5 font-medium">
+                  <ShieldCheck size={14} className={isAutoApproved ? 'text-emerald-600' : 'text-slate-400'} />
+                  Verification Score
+                </span>
+                <span className="font-mono font-semibold text-slate-700 bg-white px-2 py-0.5 rounded-md border border-slate-200 text-xs">
+                  {score} / 100
+                </span>
+              </div>
+            )}
+
+            {/* Verification checklist or notes */}
+            {isAutoApproved ? (
+              auditNotes.length > 0 && (
+                <div className="space-y-1.5 pt-1 border-t border-slate-200/60">
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Verification Highlights</p>
+                  <ul className="space-y-1">
+                    {auditNotes.slice(0, 3).map((note, idx) => (
+                      <li key={idx} className="text-xs text-slate-600 flex items-start gap-2">
+                        <span className="text-emerald-500 font-bold leading-none mt-0.5">✓</span>
+                        <span>{note}</span>
+                      </li>
                     ))}
-                  </div>
-                )}
+                  </ul>
+                </div>
+              )
+            ) : reviewReasons.length > 0 ? (
+              <div className="space-y-1.5 pt-1 border-t border-slate-200/60">
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Auditor Review Checklist</p>
+                <ul className="space-y-1.5">
+                  {reviewReasons.map((reason, idx) => (
+                    <li key={idx} className="text-xs text-slate-600 flex items-start gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0" />
+                      <span className="leading-snug">{cleanReasonText(reason)}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             ) : (
-              <div className="space-y-2">
-                <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-                  Your contribution has been successfully queued in{' '}
-                  <span className="font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-                    NEEDS_REVIEW
-                  </span>{' '}
-                  status. The automated AI audit recorded your submission for auditor verification.
-                </p>
-                {submissionResult?.audit_trail?.reasons?.length > 0 && (
-                  <div className="max-w-md mx-auto p-2.5 rounded-xl bg-amber-50/80 border border-amber-200/80 text-left text-xs text-amber-900">
-                    <p className="font-semibold text-[11px] mb-1">Items for Auditor Review:</p>
-                    <ul className="list-disc pl-4 space-y-0.5 text-[10px] text-amber-800">
-                      {submissionResult.audit_trail.reasons.map((r, i) => (
-                        <li key={i}>{r}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+              <div className="pt-1 border-t border-slate-200/60 text-xs text-slate-500 flex items-center gap-2">
+                <Clock size={13} className="text-slate-400 shrink-0" />
+                <span>Auditors regularly review submissions within 24–48 hours.</span>
               </div>
             )}
           </div>
 
-          <div className="pt-4 flex items-center justify-center gap-3">
+          {/* Action Buttons */}
+          <div className="pt-2 flex items-center justify-center gap-3">
             <button
               type="button"
               onClick={handleReset}
-              className="px-5 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold transition"
+              className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold transition shadow-2xs cursor-pointer"
             >
               Submit Another
             </button>
             <button
               type="button"
-              onClick={onClose}
-              className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold shadow-md shadow-emerald-700/20 transition"
+              onClick={handleClose}
+              className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold shadow-sm shadow-emerald-700/20 transition cursor-pointer"
             >
               Done
             </button>

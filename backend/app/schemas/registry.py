@@ -86,6 +86,10 @@ class EstablishmentSubmissionRequest(BaseModel):
     type: Optional[str] = "Restaurant"
     address: str
     city: Optional[str] = "Zamboanga City"
+    halal_tier: Optional[str] = "halal_certified"  # halal_certified, muslim_owned, muslim_friendly, vegetarian_vegan
+    contact_number: Optional[str] = None
+    social_media_url: Optional[str] = None
+    submitter_role: Optional[str] = "community"  # owner, community
     certifying_body_id: Optional[str] = None
     certificate_number: Optional[str] = None
     expiry_date: Optional[str] = None

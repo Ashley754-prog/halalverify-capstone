@@ -415,13 +415,17 @@ def submit_establishment(
         "type": submission.type or "Restaurant",
         "address": submission.address.strip(),
         "city": submission.city or "Zamboanga City",
+        "halal_tier": submission.halal_tier or "halal_certified",
+        "phone": submission.contact_number.strip() if submission.contact_number else None,
+        "source_url": submission.social_media_url.strip() if submission.social_media_url else None,
+        "submitter_role": submission.submitter_role or "community",
         "certifying_body_id": submission.certifying_body_id,
         "certificate_number": submission.certificate_number,
         "expiry_date": submission.expiry_date,
         "certificate_url": submission.certificate_url,
         "logo_url": submission.logo_url,
         "submitted_by": str(user_id),
-        "source": "Community User Submission",
+        "source": "Business Owner Submission" if submission.submitter_role == "owner" else "Community User Submission",
     }
 
     # Execute Automated AI Verification Pipeline
@@ -440,7 +444,14 @@ def submit_establishment(
     if ai_eval.get("certifying_body_id") and not establishment_payload.get("certifying_body_id"):
         establishment_payload["certifying_body_id"] = ai_eval["certifying_body_id"]
 
-    clean_payload = {k: v for k, v in establishment_payload.items() if v is not None}
+    # Whitelist valid Supabase table columns only
+    valid_est_cols = {
+        "name", "type", "address", "city", "halal_status", "certifying_body_id",
+        "certificate_number", "expiry_date", "certificate_url", "logo_url",
+        "submitted_by", "source", "source_url", "phone", "admin_notes",
+        "verified_at", "verified_by"
+    }
+    clean_payload = {k: v for k, v in establishment_payload.items() if k in valid_est_cols and v is not None}
 
     response = (
         supabase

@@ -63,6 +63,8 @@ class ProductSubmissionRequest(BaseModel):
     brand: Optional[str] = None
     category: Optional[str] = "Food & Beverage"
     barcode: Optional[str] = None
+    halal_tier: Optional[str] = "halal_certified"  # halal_certified, pork_free_declared, vegetarian_vegan
+    submitter_role: Optional[str] = "consumer"  # brand, consumer
     establishment_id: Optional[str] = None
     manufacturer_id: Optional[str] = None
     certifying_body_id: Optional[str] = None

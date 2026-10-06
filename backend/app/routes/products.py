@@ -279,6 +279,8 @@ def submit_product(
         "brand": submission.brand.strip() if submission.brand else None,
         "category": submission.category or "Food & Beverage",
         "barcode": submission.barcode.strip() if submission.barcode else None,
+        "halal_tier": submission.halal_tier or "halal_certified",
+        "submitter_role": submission.submitter_role or "consumer",
         "establishment_id": submission.establishment_id,
         "manufacturer_id": submission.manufacturer_id,
         "certifying_body_id": submission.certifying_body_id,
@@ -287,7 +289,7 @@ def submit_product(
         "image_url": submission.image_url,
         "ingredients_summary": submission.ingredients_summary,
         "submitted_by": str(user_id),
-        "source": "Community User Submission",
+        "source": "Brand Representative Submission" if submission.submitter_role == "brand" else "Community User Submission",
     }
 
     # Execute Automated AI Verification Pipeline
@@ -301,7 +303,13 @@ def submit_product(
     if ai_eval.get("certifying_body_id") and not product_payload.get("certifying_body_id"):
         product_payload["certifying_body_id"] = ai_eval["certifying_body_id"]
 
-    clean_payload = {k: v for k, v in product_payload.items() if v is not None}
+    valid_prod_cols = {
+        "name", "brand", "category", "barcode", "establishment_id", "manufacturer_id",
+        "certifying_body_id", "certificate_no", "expiry_date", "image_url",
+        "ingredients_summary", "submitted_by", "source", "status", "verified_at",
+        "verified_by", "admin_notes"
+    }
+    clean_payload = {k: v for k, v in product_payload.items() if k in valid_prod_cols and v is not None}
 
     response = (
         supabase
@@ -314,11 +322,14 @@ def submit_product(
     if not created_product:
         raise HTTPException(status_code=500, detail="Failed to record product submission")
 
-    msg = (
-        "Instant AI Verification Complete! Product authenticated and published live to catalog."
-        if ai_eval["is_auto_approved"]
-        else "Product submitted successfully and queued for standard verification."
-    )
+    if ai_eval["is_auto_approved"]:
+        msg = (
+            "Instant AI Verification Complete! Formally Halal Certified product authenticated and published live to catalog."
+            if ai_eval["status"] == "VERIFIED"
+            else "Community Screening Complete! Product listed under community declared registry."
+        )
+    else:
+        msg = "Product submitted successfully and queued for standard verification."
 
     return {
         "success": True,
