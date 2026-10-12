@@ -214,8 +214,8 @@ export default function ContributionModal({
         }
 
         const fallbackStatus = payload.halal_tier === 'halal_certified' 
-          ? 'PENDING_VERIFICATION' 
-          : 'community_listed';
+          ? 'needs_review' 
+          : 'verified';
 
         const { error: sbErr } = await supabase.from('establishments').insert({
           name: payload.name,

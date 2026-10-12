@@ -399,7 +399,7 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
         )
         if is_community_approved:
             is_auto_approved = True
-            final_status = "community_listed"
+            final_status = "verified"
             summary_note = (
                 f"AI TRIAGED & PUBLISHED: Community Listed - {tier_label} (Confidence: {score}%). "
                 f"Verified local contact ({contact_phone}) with storefront photo evidence. Transparently listed without 3rd-party certificate."
