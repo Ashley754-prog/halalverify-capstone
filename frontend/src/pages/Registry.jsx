@@ -515,20 +515,20 @@ export const Registry = ({ userRole, onViewChange }) => {
                         </button>
                     )}
 
-                    {isAdmin && (
+                    {isAdmin && registryMode !== 'establishments' && (
                         <button
                             type="button"
                             onClick={() => {
                                 if (registryMode === 'additives') openModal('add-additive');
                                 else if (registryMode === 'hcb') openModal('add-hcb');
-                                else openModal('add-establishment');
                             }}
                             className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-bold text-white hover:bg-slate-800 transition shadow-sm"
                         >
                             <Plus size={14} />
-                            <span>{registryMode === 'additives' ? 'Add Additive' : registryMode === 'hcb' ? 'Register HCB' : 'Quick Add'}</span>
+                            <span>{registryMode === 'additives' ? 'Add Additive' : 'Register HCB'}</span>
                         </button>
                     )}
+
                 </div>
             </div>
 
