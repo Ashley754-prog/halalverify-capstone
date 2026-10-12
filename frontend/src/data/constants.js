@@ -83,18 +83,23 @@ export const PRODUCT_HALAL_TIERS = [
   },
 ];
 
-export const getStatusConfig = (status) => {
-    const s = (status || '').toLowerCase();
-    if (s.includes('verif') && !s.includes('pending') && !s.includes('unverif') && !s.includes('need') && !s.includes('community')) {
-        return {
-            key: 'verified',
-            label: 'Formally Certified',
-            color: '#10b981',
-            badgeBg: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-            weight: 1.0,
-        };
+export const getStatusConfig = (statusOrEst, rawNotes = '') => {
+    let status = '';
+    let notes = '';
+
+    if (statusOrEst && typeof statusOrEst === 'object') {
+        status = statusOrEst.halal_status || statusOrEst.status || '';
+        notes = statusOrEst.admin_notes || statusOrEst.notes || '';
+    } else {
+        status = statusOrEst || '';
+        notes = rawNotes || '';
     }
-    if (s.includes('muslim_owned')) {
+
+    const s = status.toLowerCase();
+    const n = notes.toLowerCase();
+
+    // Check for community tiers first (stored with halal_status='verified' but specified in admin_notes)
+    if (s.includes('muslim_owned') || n.includes('muslim-owned') || n.includes('muslim_owned')) {
         return {
             key: 'muslim_owned',
             label: 'Muslim-Owned',
@@ -103,7 +108,7 @@ export const getStatusConfig = (status) => {
             weight: 0.9,
         };
     }
-    if (s.includes('friendly')) {
+    if (s.includes('friendly') || n.includes('muslim-friendly') || n.includes('muslim_friendly')) {
         return {
             key: 'muslim_friendly',
             label: 'Muslim-Friendly',
@@ -112,7 +117,7 @@ export const getStatusConfig = (status) => {
             weight: 0.8,
         };
     }
-    if (s.includes('veg')) {
+    if (s.includes('veg') || n.includes('vegetarian') || n.includes('plant-based')) {
         return {
             key: 'vegetarian_vegan',
             label: 'Vegetarian / Vegan',
@@ -121,7 +126,7 @@ export const getStatusConfig = (status) => {
             weight: 0.8,
         };
     }
-    if (s.includes('community')) {
+    if (s.includes('community') || n.includes('community listed')) {
         return {
             key: 'community',
             label: 'Muslim-Owned / Community',
@@ -130,7 +135,16 @@ export const getStatusConfig = (status) => {
             weight: 0.8,
         };
     }
-    if (s.includes('flag') || s.includes('suspend') || s.includes('expir')) {
+    if (s.includes('verif') && !s.includes('pending') && !s.includes('unverif') && !s.includes('need')) {
+        return {
+            key: 'verified',
+            label: 'Formally Certified',
+            color: '#10b981',
+            badgeBg: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+            weight: 1.0,
+        };
+    }
+    if (s.includes('flag') || s.includes('suspend') || s.includes('expir') || s.includes('reject')) {
         return {
             key: 'flagged',
             label: 'Flagged / Suspended',

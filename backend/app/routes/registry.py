@@ -9,8 +9,10 @@ from app.schemas.registry import (
 from app.supabase_client import supabase
 from typing import Optional
 from app.auto_verification_service import evaluate_establishment_submission
+from app.utils.geocoding import geocode_zamboanga_address
 from app.utils.db_helpers import ensure_deleted, ensure_updated, model_dump_without_none, sanitize_postgrest_search
 from fastapi import APIRouter, Depends, HTTPException, Query
+
 
 router = APIRouter(tags=["registry"])
 
@@ -192,13 +194,24 @@ def get_establishments_map(
         else:
             query = supabase.table("establishments").select("*, certifying_bodies(*)")
             if status and status != "all":
-                query = query.ilike("halal_status", f"%{status}%")
+                st_lower = status.lower()
+                if "muslim_owned" in st_lower or "muslim-owned" in st_lower or "community" in st_lower:
+                    query = query.or_("halal_status.ilike.%muslim_owned%,admin_notes.ilike.%Muslim-Owned%,admin_notes.ilike.%Community Listed%")
+                elif "friendly" in st_lower:
+                    query = query.or_("halal_status.ilike.%friendly%,admin_notes.ilike.%Muslim-Friendly%")
+                elif "veg" in st_lower:
+                    query = query.or_("halal_status.ilike.%veg%,admin_notes.ilike.%Vegetarian%,admin_notes.ilike.%Plant-Based%")
+                elif "verified" in st_lower or "certified" in st_lower:
+                    query = query.eq("halal_status", "verified")
+                else:
+                    query = query.ilike("halal_status", f"%{status}%")
             if city and city != "all":
                 query = query.ilike("city", f"%{city}%")
             if category and category != "all":
                 query = query.ilike("type", f"%{category}%")
             res = query.order("name").execute()
             data = res.data or []
+
 
             if hcb and hcb != "all":
                 hcb_lower = hcb.lower()
@@ -301,6 +314,13 @@ def create_establishment(establishment: EstablishmentCreate, user: dict = Depend
     if "certifying_body_id" in payload and not payload["certifying_body_id"]:
         payload["certifying_body_id"] = None
 
+    if "address" in payload and (payload.get("latitude") is None or payload.get("longitude") is None):
+        g_lat, g_lng = geocode_zamboanga_address(payload["address"], payload.get("city", "Zamboanga City"))
+        if payload.get("latitude") is None:
+            payload["latitude"] = g_lat
+        if payload.get("longitude") is None:
+            payload["longitude"] = g_lng
+
     if payload.get("halal_status"):
         st = payload["halal_status"].strip().lower()
         if st in ["verified", "halal", "approved"]:
@@ -345,6 +365,13 @@ def update_establishment(establishment_id: str, establishment: EstablishmentUpda
 
     if "certifying_body_id" in payload and not payload["certifying_body_id"]:
         payload["certifying_body_id"] = None
+
+    if "address" in payload and (payload.get("latitude") is None or payload.get("longitude") is None):
+        g_lat, g_lng = geocode_zamboanga_address(payload["address"], payload.get("city", "Zamboanga City"))
+        if payload.get("latitude") is None:
+            payload["latitude"] = g_lat
+        if payload.get("longitude") is None:
+            payload["longitude"] = g_lng
 
     if payload.get("halal_status"):
         st = payload["halal_status"].strip().lower()
@@ -445,14 +472,24 @@ def submit_establishment(
     if ai_eval.get("certifying_body_id") and not establishment_payload.get("certifying_body_id"):
         establishment_payload["certifying_body_id"] = ai_eval["certifying_body_id"]
 
+    # Resolve GPS coordinates for interactive map pin placement
+    lat = submission.latitude
+    lng = submission.longitude
+    if lat is None or lng is None:
+        lat, lng = geocode_zamboanga_address(submission.address, submission.city or "Zamboanga City")
+
+    establishment_payload["latitude"] = lat
+    establishment_payload["longitude"] = lng
+
     # Whitelist valid Supabase table columns only
     valid_est_cols = {
         "name", "type", "address", "city", "halal_status", "certifying_body_id",
         "certificate_number", "expiry_date", "certificate_url", "logo_url",
         "submitted_by", "source", "source_url", "phone", "admin_notes",
-        "verified_at", "verified_by"
+        "verified_at", "verified_by", "latitude", "longitude"
     }
     clean_payload = {k: v for k, v in establishment_payload.items() if k in valid_est_cols and v is not None}
+
 
     response = (
         supabase

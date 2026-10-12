@@ -55,8 +55,9 @@ export default function EstablishmentsSidebarList({
                         </div>
                     ) : (
                         filteredList.map((est) => {
-                            const statusConfig = getStatusConfig(est.halal_status);
+                            const statusConfig = getStatusConfig(est);
                             const isSelected = selectedEstablishment?.id === est.id;
+
                             const isCertified = Boolean(est.certifying_bodies?.code);
                             const productsCount = est.products?.length || 0;
 

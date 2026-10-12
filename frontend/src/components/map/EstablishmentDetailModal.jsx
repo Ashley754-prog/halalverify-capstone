@@ -27,7 +27,8 @@ export default function EstablishmentDetailModal({
 }) {
     if (!establishment) return null;
 
-    const statusConfig = getStatusConfig(establishment.halal_status);
+    const statusConfig = getStatusConfig(establishment);
+
 
     const hasPrayerSpace = Boolean(
         establishment.has_prayer_space ||

@@ -213,9 +213,16 @@ export default function ContributionModal({
           throw new Error('You must be logged in to submit an establishment.');
         }
 
-        const fallbackStatus = payload.halal_tier === 'halal_certified' 
-          ? 'needs_review' 
-          : 'verified';
+        const tierName = payload.halal_tier === 'muslim_owned' 
+          ? 'Muslim-Owned' 
+          : payload.halal_tier === 'muslim_friendly' 
+          ? 'Muslim-Friendly' 
+          : payload.halal_tier === 'vegetarian_vegan' 
+          ? 'Vegetarian / Vegan' 
+          : 'Self-Declared';
+        const fallbackNotes = payload.halal_tier === 'halal_certified'
+          ? 'Community User Submission: Awaiting Verification'
+          : `Community Listed - ${tierName}`;
 
         const { error: sbErr } = await supabase.from('establishments').insert({
           name: payload.name,
@@ -229,10 +236,14 @@ export default function ContributionModal({
           certificate_url: payload.certificate_url,
           logo_url: payload.logo_url,
           halal_status: fallbackStatus,
+          admin_notes: fallbackNotes,
+          latitude: 6.9142,
+          longitude: 122.0745,
           submitted_by: userId,
           description: amenities.length > 0 ? `Amenities: ${amenities.join(' • ')}` : null,
           source: payload.submitter_role === 'owner' ? 'Business Owner Submission' : 'Community User Submission',
         });
+
 
         if (sbErr) {
           console.warn('Direct Supabase insert blocked by RLS:', sbErr);

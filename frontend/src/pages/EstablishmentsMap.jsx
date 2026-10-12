@@ -83,7 +83,7 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
         let list = [...SEED_ESTABLISHMENTS];
         if (selectedStatus !== 'all') {
             list = list.filter((e) => {
-                const key = getStatusConfig(e.halal_status).key;
+                const key = getStatusConfig(e).key;
                 if (selectedStatus === 'needs_review' || selectedStatus === 'pending_review') {
                     return key === 'needs_review' || key === 'pending_review';
                 }
@@ -91,13 +91,13 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                     return key === 'verified';
                 }
                 if (selectedStatus === 'muslim_owned') {
-                    return key === 'muslim_owned' || (key === 'community' && !e.halal_status?.toLowerCase().includes('friendly') && !e.halal_status?.toLowerCase().includes('veg'));
+                    return key === 'muslim_owned' || key === 'community';
                 }
                 if (selectedStatus === 'muslim_friendly') {
-                    return key === 'muslim_friendly' || e.halal_status?.toLowerCase().includes('friendly');
+                    return key === 'muslim_friendly';
                 }
                 if (selectedStatus === 'vegetarian_vegan') {
-                    return key === 'vegetarian_vegan' || e.halal_status?.toLowerCase().includes('veg');
+                    return key === 'vegetarian_vegan';
                 }
                 return key === selectedStatus;
             });
@@ -135,24 +135,33 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
             // 1. Query Supabase directly first for instant ~150ms response (zero cold start)
             try {
                 let query = supabase.from('establishments').select('*, certifying_bodies(*)').order('name');
-                if (selectedStatus !== 'all') {
-                    if (selectedStatus === 'verified' || selectedStatus === 'halal_certified') {
-                        query = query.in('halal_status', ['verified', 'halal_certified']);
-                    } else if (selectedStatus === 'muslim_owned') {
-                        query = query.in('halal_status', ['muslim_owned', 'community_listed']);
-                    } else if (selectedStatus === 'muslim_friendly') {
-                        query = query.eq('halal_status', 'muslim_friendly');
-                    } else if (selectedStatus === 'vegetarian_vegan') {
-                        query = query.eq('halal_status', 'vegetarian_vegan');
-                    } else if (selectedStatus === 'needs_review') {
-                        query = query.in('halal_status', ['needs_review', 'PENDING_VERIFICATION']);
-                    } else {
-                        query = query.eq('halal_status', selectedStatus);
-                    }
-                }
                 const { data: sbData, error: sbErr } = await query;
                 if (!sbErr && sbData && sbData.length > 0) {
                     let withCoords = sbData.filter((e) => e.latitude && e.longitude);
+                    if (selectedStatus !== 'all') {
+                        withCoords = withCoords.filter((e) => {
+                            const cfg = getStatusConfig(e);
+                            if (selectedStatus === 'verified' || selectedStatus === 'halal_certified') {
+                                return cfg.key === 'verified';
+                            }
+                            if (selectedStatus === 'muslim_owned') {
+                                return cfg.key === 'muslim_owned' || cfg.key === 'community';
+                            }
+                            if (selectedStatus === 'muslim_friendly') {
+                                return cfg.key === 'muslim_friendly';
+                            }
+                            if (selectedStatus === 'vegetarian_vegan') {
+                                return cfg.key === 'vegetarian_vegan';
+                            }
+                            if (selectedStatus === 'needs_review' || selectedStatus === 'pending_review') {
+                                return cfg.key === 'needs_review' || cfg.key === 'pending_review';
+                            }
+                            if (selectedStatus === 'flagged') {
+                                return cfg.key === 'flagged';
+                            }
+                            return cfg.key === selectedStatus;
+                        });
+                    }
                     if (userLocation) {
                         withCoords = withCoords.map((e) => ({
                             ...e,
@@ -171,6 +180,7 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
             } catch (sbErr) {
                 console.warn('Direct Supabase fetch for map warning, trying backend:', sbErr);
             }
+
 
             // 2. Fallback to backend API with a 3s timeout
             try {
@@ -379,7 +389,7 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                     filteredList.forEach((est) => {
                         if (!est.latitude || !est.longitude) return;
 
-                        const statusConfig = getStatusConfig(est.halal_status);
+                        const statusConfig = getStatusConfig(est);
 
                         const marker = L.circleMarker([est.latitude, est.longitude], {
                             radius: 9,
@@ -435,9 +445,10 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                 const heatPoints = filteredList
                     .filter((e) => e.latitude && e.longitude)
                     .map((e) => {
-                        const weight = getStatusConfig(e.halal_status).weight;
+                        const weight = getStatusConfig(e).weight;
                         return [e.latitude, e.longitude, weight];
                     });
+
 
                 if (heatPoints.length > 0 && L.heatLayer) {
                     const heat = L.heatLayer(heatPoints, {
@@ -701,34 +712,40 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                             {/* Card Header: Status Badge, Cert & Close Button */}
                             <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span
-                                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
-                                            getStatusConfig(activePreviewEst.halal_status).badgeBg
-                                        }`}
-                                    >
-                                        {getStatusConfig(activePreviewEst.halal_status).label}
-                                    </span>
-                                    {activePreviewEst.certifying_bodies?.code ? (
-                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                            {activePreviewEst.certifying_bodies.code}
-                                        </span>
-                                    ) : getStatusConfig(activePreviewEst.halal_status).key === 'muslim_owned' ? (
-                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200">
-                                            Muslim-Owned
-                                        </span>
-                                    ) : getStatusConfig(activePreviewEst.halal_status).key === 'muslim_friendly' ? (
-                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-200">
-                                            Muslim-Friendly
-                                        </span>
-                                    ) : getStatusConfig(activePreviewEst.halal_status).key === 'vegetarian_vegan' ? (
-                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-50 text-teal-800 border border-teal-200">
-                                            Plant-Based
-                                        </span>
-                                    ) : (
-                                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
-                                            Pending Review
-                                        </span>
-                                    )}
+                                    {(() => {
+                                        const previewConfig = getStatusConfig(activePreviewEst);
+                                        return (
+                                            <>
+                                                <span
+                                                    className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${previewConfig.badgeBg}`}
+                                                >
+                                                    {previewConfig.label}
+                                                </span>
+                                                {activePreviewEst.certifying_bodies?.code ? (
+                                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                        {activePreviewEst.certifying_bodies.code}
+                                                    </span>
+                                                ) : previewConfig.key === 'muslim_owned' ? (
+                                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200">
+                                                        Muslim-Owned
+                                                    </span>
+                                                ) : previewConfig.key === 'muslim_friendly' ? (
+                                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-200">
+                                                        Muslim-Friendly
+                                                    </span>
+                                                ) : previewConfig.key === 'vegetarian_vegan' ? (
+                                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-50 text-teal-800 border border-teal-200">
+                                                        Plant-Based
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
+                                                        Pending Review
+                                                    </span>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
+
                                     {activePreviewEst.distance_km && (
                                         <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
                                             {activePreviewEst.distance_km} km away

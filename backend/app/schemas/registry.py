@@ -97,3 +97,6 @@ class EstablishmentSubmissionRequest(BaseModel):
     logo_url: Optional[str] = None
     amenities: Optional[list[str]] = None
     product_names: Optional[list[str]] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
