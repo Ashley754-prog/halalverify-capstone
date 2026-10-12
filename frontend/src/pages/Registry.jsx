@@ -15,6 +15,7 @@ import AdditivesRegistryTab from '../components/registry/AdditivesRegistryTab';
 import HcbsRegistryTab from '../components/registry/HcbsRegistryTab';
 import EstablishmentsRegistryTab from '../components/registry/EstablishmentsRegistryTab';
 import RegistryModals from '../components/registry/RegistryModals';
+import RegistryDeleteModal from '../components/registry/RegistryDeleteModal';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
 
@@ -73,6 +74,8 @@ export const Registry = ({ userRole, onViewChange }) => {
     const [selectedItem, setSelectedItem] = useState(null);
     const [modalForm, setModalForm] = useState({});
     const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
+    const [deleteTarget, setDeleteTarget] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [showContributionModal, setShowContributionModal] = useState(false);
     const [showAuthPrompt, setShowAuthPrompt] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
@@ -292,48 +295,43 @@ export const Registry = ({ userRole, onViewChange }) => {
         }
     };
 
-    const handleDeleteAdditive = async (item) => {
-        const label = item.code || item.name || 'this additive';
-        const confirmed = window.confirm(`Delete ${label}? This cannot be undone.`);
-        if (!confirmed) return;
-
-        try {
-            await deleteRegistryRecord(`/api/v1/admin/additives/${item.id}`);
-            setAdditives(prev => prev.filter(entry => entry.id !== item.id));
-            updateToast('Additive deleted from chemical database.', 'success');
-        } catch (err) {
-            console.error(err);
-            updateToast(err.message || 'Could not delete additive.', 'error');
-        }
+    const handleDeleteAdditive = (item) => {
+        setDeleteTarget({ item, type: 'additive' });
     };
 
-    const handleDeleteHcb = async (item) => {
-        const label = item.code || item.name || 'this organization';
-        const confirmed = window.confirm(`Remove ${label} from registry? This cannot be undone.`);
-        if (!confirmed) return;
-
-        try {
-            await deleteRegistryRecord(`/api/v1/admin/hcb-registry/${item.id}`);
-            setHcbs(prev => prev.filter(entry => entry.id !== item.id));
-            updateToast('Certifying body removed from registry.', 'success');
-        } catch (err) {
-            console.error(err);
-            updateToast(err.message || 'Could not remove certifying body.', 'error');
-        }
+    const handleDeleteHcb = (item) => {
+        setDeleteTarget({ item, type: 'hcb' });
     };
 
-    const handleDeleteEstablishment = async (item) => {
-        const label = item.name || 'this establishment';
-        const confirmed = window.confirm(`Delete ${label}? This cannot be undone.`);
-        if (!confirmed) return;
+    const handleDeleteEstablishment = (item) => {
+        setDeleteTarget({ item, type: 'establishment' });
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deleteTarget?.item) return;
+        const { item, type } = deleteTarget;
 
         try {
-            await deleteRegistryRecord(`/registry/establishments/${item.id}`);
-            setEstablishments(prev => prev.filter(entry => entry.id !== item.id));
-            updateToast('Establishment deleted from database.', 'success');
+            setIsDeleting(true);
+            if (type === 'additive') {
+                await deleteRegistryRecord(`/api/v1/admin/additives/${item.id}`);
+                setAdditives(prev => prev.filter(entry => entry.id !== item.id));
+                updateToast('Additive deleted from chemical database.', 'success');
+            } else if (type === 'hcb') {
+                await deleteRegistryRecord(`/api/v1/admin/hcb-registry/${item.id}`);
+                setHcbs(prev => prev.filter(entry => entry.id !== item.id));
+                updateToast('Certifying body removed from registry.', 'success');
+            } else if (type === 'establishment') {
+                await deleteRegistryRecord(`/registry/establishments/${item.id}`);
+                setEstablishments(prev => prev.filter(entry => entry.id !== item.id));
+                updateToast('Establishment deleted from database.', 'success');
+            }
+            setDeleteTarget(null);
         } catch (err) {
             console.error(err);
-            updateToast(err.message || 'Could not delete establishment.', 'error');
+            updateToast(err.message || 'Could not delete record.', 'error');
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -681,6 +679,16 @@ export const Registry = ({ userRole, onViewChange }) => {
                 onSubmitted={() => {
                     updateToast('Report submitted for administrative review.', 'success');
                 }}
+            />
+
+            {/* Delete Confirmation Modal */}
+            <RegistryDeleteModal
+                isOpen={Boolean(deleteTarget)}
+                item={deleteTarget?.item}
+                type={deleteTarget?.type}
+                isDeleting={isDeleting}
+                onClose={() => setDeleteTarget(null)}
+                onConfirm={handleConfirmDelete}
             />
 
             <Toast visible={toast.visible} message={toast.message} type={toast.type} onClose={() => setToast({ visible: false, message: '', type: 'info' })} />
