@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Trash2, X, Package, AlertTriangle, Loader2 } from 'lucide-react';
+import { X, Package, Loader2 } from 'lucide-react';
 
 export default function ProductDeleteModal({
     isOpen,
@@ -23,7 +23,7 @@ export default function ProductDeleteModal({
 
     return (
         <div
-            className="fixed inset-0 z-[10001] flex items-center justify-center p-4 sm:p-6 bg-slate-950/65 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
+            className="fixed inset-0 z-[10001] flex items-center justify-center p-4 sm:p-6 bg-slate-950/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
             onClick={(e) => {
                 if (e.target === e.currentTarget && !isSaving) {
                     onClose?.();
@@ -36,11 +36,11 @@ export default function ProductDeleteModal({
                 aria-modal="true"
                 aria-labelledby="delete-product-title"
             >
-                {/* Header Row: Danger Icon Badge and Close Button */}
-                <div className="flex items-start justify-between gap-3">
-                    <div className="flex size-11 sm:size-12 shrink-0 items-center justify-center rounded-2xl bg-red-100 text-red-600 ring-4 ring-red-50">
-                        <Trash2 className="size-5 sm:size-6" />
-                    </div>
+                {/* Header Row: Title and Close Button */}
+                <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
+                    <h3 id="delete-product-title" className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                        Delete Product
+                    </h3>
                     <button
                         type="button"
                         onClick={onClose}
@@ -52,44 +52,39 @@ export default function ProductDeleteModal({
                     </button>
                 </div>
 
-                {/* Dialog Title and Description */}
-                <div className="mt-4">
-                    <h3 id="delete-product-title" className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-                        Delete Product?
-                    </h3>
-                    <p className="mt-1.5 text-xs sm:text-sm text-slate-500 leading-relaxed">
-                        Are you sure you want to remove this product from the verified catalog? This action cannot be undone.
+                {/* Dialog Content */}
+                <div className="mt-4 space-y-3.5">
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                        Are you sure you want to delete <strong className="font-bold text-slate-900">{product.name}</strong>?
                     </p>
-                </div>
 
-                {/* Target Record Summary Card */}
-                <div className="mt-4 rounded-xl bg-slate-50 border border-slate-200/80 p-3 flex items-center gap-3 text-left">
-                    <div className="size-10 rounded-lg bg-white border border-slate-200/80 flex items-center justify-center shrink-0 shadow-2xs text-emerald-700">
-                        <Package size={18} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                        <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                            {product.name}
-                        </p>
-                        <p className="text-[11px] text-slate-500 truncate mt-0.5">
-                            {product.brand ? `${product.brand} • ` : ''}{product.category || 'Food & Beverage'}
-                        </p>
-                    </div>
-                </div>
+                    <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+                        This will permanently remove the product from the verified directory. This action cannot be undone.
+                    </p>
 
-                {/* Warning note */}
-                <div className="mt-3 flex items-center gap-1.5 text-[11px] sm:text-xs text-amber-700 bg-amber-50/70 border border-amber-200/60 rounded-lg px-2.5 py-1.5 font-medium">
-                    <AlertTriangle size={13} className="shrink-0 text-amber-600" />
-                    <span>Permanent action. Data cannot be recovered.</span>
+                    {/* Subtle Preview Item Badge */}
+                    <div className="rounded-xl bg-slate-50 border border-slate-200/80 p-3 flex items-center gap-3 text-left">
+                        <div className="size-8 rounded-lg bg-white border border-slate-200/80 flex items-center justify-center shrink-0 shadow-2xs text-emerald-700">
+                            <Package size={16} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                                {product.name}
+                            </p>
+                            <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                                {product.brand ? `${product.brand} • ` : ''}{product.category || 'Food & Beverage'}
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Responsive Action Buttons */}
-                <div className="mt-5 pt-3.5 border-t border-slate-100 grid grid-cols-2 gap-2.5 sm:gap-3">
+                <div className="mt-6 pt-3.5 border-t border-slate-100 flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 sm:gap-3">
                     <button
                         type="button"
                         onClick={onClose}
                         disabled={isSaving}
-                        className="w-full inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-50 active:scale-[0.98] transition disabled:opacity-50"
+                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 active:scale-[0.98] transition disabled:opacity-50"
                     >
                         Cancel
                     </button>
@@ -97,7 +92,7 @@ export default function ProductDeleteModal({
                         type="button"
                         onClick={onDelete}
                         disabled={isSaving}
-                        className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-red-600 px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm shadow-red-600/25 hover:bg-red-500 active:scale-[0.98] transition disabled:opacity-50"
+                        className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-red-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm shadow-red-600/20 hover:bg-red-700 active:scale-[0.98] transition disabled:opacity-50"
                     >
                         {isSaving ? (
                             <>
@@ -105,10 +100,7 @@ export default function ProductDeleteModal({
                                 <span>Deleting...</span>
                             </>
                         ) : (
-                            <>
-                                <Trash2 size={14} />
-                                <span>Delete Product</span>
-                            </>
+                            <span>Delete Product</span>
                         )}
                     </button>
                 </div>

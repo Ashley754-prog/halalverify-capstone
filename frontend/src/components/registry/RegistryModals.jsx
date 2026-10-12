@@ -36,6 +36,15 @@ export default function RegistryModals({
             ? 'Manage accredited Halal certifying authorities and regulatory bodies.'
             : 'Review and manage verified registry ledger records.';
 
+    const submitButtonLabel =
+        activeModal?.startsWith('add-additive') ? 'Add Additive' :
+        activeModal?.startsWith('edit-additive') ? 'Save Changes' :
+        activeModal?.startsWith('add-hcb') ? 'Register Authority' :
+        activeModal?.startsWith('edit-hcb') ? 'Save Changes' :
+        activeModal?.startsWith('add-establishment') ? 'Save Establishment' :
+        activeModal?.startsWith('edit-establishment') ? 'Save Changes' :
+        'Save Record';
+
     return (
         <Modal
             isOpen={!!activeModal}
@@ -47,15 +56,15 @@ export default function RegistryModals({
                     key="save"
                     type="submit"
                     form="registry-modal-form"
-                    className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs sm:text-sm font-semibold text-white hover:bg-emerald-700 transition"
+                    className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white hover:bg-emerald-700 active:scale-[0.98] transition shadow-sm"
                 >
-                    <Save size={14} /> Save Record
+                    {submitButtonLabel}
                 </button>,
                 <button
                     key="cancel"
                     type="button"
                     onClick={onClose}
-                    className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+                    className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
                 >
                     Cancel
                 </button>
@@ -65,17 +74,17 @@ export default function RegistryModals({
                 {/* HCB FORM */}
                 {(activeModal === 'add-hcb' || activeModal === 'edit-hcb') && (
                     <>
+                        <div>
+                            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Organization Name *</label>
+                            <input
+                                required
+                                placeholder="e.g. Islamic Da'wah Council of the Philippines"
+                                value={modalForm.name || ''}
+                                onChange={(e) => setModalForm(prev => ({ ...prev, name: e.target.value }))}
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
+                            />
+                        </div>
                         <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
-                            <div>
-                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Organization Name *</label>
-                                <input
-                                    required
-                                    placeholder="e.g. Islamic Da'wah Council of the Philippines"
-                                    value={modalForm.name || ''}
-                                    onChange={(e) => setModalForm(prev => ({ ...prev, name: e.target.value }))}
-                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
-                                />
-                            </div>
                             <div>
                                 <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Acronym / Code</label>
                                 <input
@@ -85,21 +94,30 @@ export default function RegistryModals({
                                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
                                 />
                             </div>
+                            <div>
+                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Country / Jurisdiction</label>
+                                <input
+                                    placeholder="Philippines"
+                                    value={modalForm.country || 'Philippines'}
+                                    onChange={(e) => setModalForm(prev => ({ ...prev, country: e.target.value }))}
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                />
+                            </div>
                         </div>
 
-                        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
+                        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
                             <div>
                                 <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Category</label>
                                 <select
                                     value={modalForm.category || 'Accredited HCB'}
                                     onChange={(e) => setModalForm(prev => ({ ...prev, category: e.target.value }))}
-                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:border-emerald-500 focus:outline-none"
                                 >
                                     {HCB_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                                 </select>
                             </div>
                             <div>
-                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Status</label>
+                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Accreditation Status</label>
                                 <select
                                     value={modalForm.status || 'Accredited'}
                                     onChange={(e) => setModalForm(prev => ({ ...prev, status: e.target.value }))}
@@ -107,15 +125,6 @@ export default function RegistryModals({
                                 >
                                     {HCB_STATUSES.map(st => <option key={st} value={st}>{st}</option>)}
                                 </select>
-                            </div>
-                            <div>
-                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Country</label>
-                                <input
-                                    placeholder="Philippines"
-                                    value={modalForm.country || 'Philippines'}
-                                    onChange={(e) => setModalForm(prev => ({ ...prev, country: e.target.value }))}
-                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
-                                />
                             </div>
                         </div>
 
@@ -179,7 +188,7 @@ export default function RegistryModals({
                 {/* ADDITIVE FORM */}
                 {(activeModal === 'add-additive' || activeModal === 'edit-additive') && (
                     <>
-                        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
+                        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
                             <div>
                                 <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Code (E-Number) *</label>
                                 <input
@@ -187,18 +196,31 @@ export default function RegistryModals({
                                     placeholder="e.g. E120"
                                     value={modalForm.code || ''}
                                     onChange={(e) => setModalForm(prev => ({ ...prev, code: e.target.value }))}
-                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:border-emerald-500 focus:outline-none"
                                 />
                             </div>
                             <div>
-                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Status</label>
+                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Halal Status</label>
                                 <select
                                     value={modalForm.status || 'Doubtful'}
                                     onChange={(e) => setModalForm(prev => ({ ...prev, status: e.target.value }))}
-                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:border-emerald-500 focus:outline-none"
                                 >
                                     {ADDITIVE_STATUSES.map(status => <option key={status} value={status}>{status}</option>)}
                                 </select>
+                            </div>
+                        </div>
+
+                        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
+                            <div>
+                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Common / Scientific Name *</label>
+                                <input
+                                    required
+                                    placeholder="e.g. Cochineal / Carmine or Gelatin"
+                                    value={modalForm.name || ''}
+                                    onChange={(e) => setModalForm(prev => ({ ...prev, name: e.target.value }))}
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                />
                             </div>
                             <div>
                                 <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Origin Type</label>
@@ -213,35 +235,24 @@ export default function RegistryModals({
                         </div>
 
                         <div>
-                            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Common / Scientific Name *</label>
-                            <input
-                                required
-                                placeholder="e.g. Cochineal / Carmine or Gelatin"
-                                value={modalForm.name || ''}
-                                onChange={(e) => setModalForm(prev => ({ ...prev, name: e.target.value }))}
-                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
-                            />
-                        </div>
-
-                        <div>
                             <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Source Description (Origins)</label>
                             <textarea
                                 placeholder="e.g. Insect-derived colorant from crushed female cochineal beetles..."
                                 value={modalForm.source || ''}
                                 onChange={(e) => setModalForm(prev => ({ ...prev, source: e.target.value }))}
                                 rows={2}
-                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
                             />
                         </div>
 
                         <div>
-                            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Scholarship Reason / Ruling Notes</label>
+                            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Islamic Jurisprudence / Ruling Notes</label>
                             <textarea
                                 placeholder="Islamic jurisprudence basis for classification..."
                                 value={modalForm.reason || ''}
                                 onChange={(e) => setModalForm(prev => ({ ...prev, reason: e.target.value }))}
                                 rows={2}
-                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
                             />
                         </div>
                     </>
