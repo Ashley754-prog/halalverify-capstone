@@ -79,6 +79,8 @@ class EstablishmentUpdate(BaseModel):
     longitude: Optional[float] = None
     source: Optional[str] = None
     synced_at: Optional[str] = None
+    phone: Optional[str] = None
+    admin_notes: Optional[str] = None
 
 
 class EstablishmentSubmissionRequest(BaseModel):

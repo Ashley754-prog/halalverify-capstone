@@ -1,5 +1,6 @@
 import { Save } from 'lucide-react';
 import Modal from '../ui/Modal';
+import { ESTABLISHMENT_TYPES, ESTABLISHMENT_HALAL_TIERS } from '../../data/constants';
 
 const ADDITIVE_STATUSES = ['Halal', 'Doubtful', 'Haram'];
 const ADDITIVE_ORIGINS = ['Plant', 'Animal', 'Insect', 'Synthetic / Mineral', 'Multiple / Unknown'];
@@ -26,11 +27,20 @@ export default function RegistryModals({
         activeModal?.startsWith('edit-establishment') ? 'Edit Establishment Record' :
         'Review Registry Record';
 
+    const modalDescription =
+        activeModal?.includes('establishment')
+            ? 'Update establishment profile, verification standard, and dining clearance.'
+            : activeModal?.includes('additive')
+            ? 'Manage chemical additive classification, origins, and Halal jurisprudence.'
+            : activeModal?.includes('hcb')
+            ? 'Manage accredited Halal certifying authorities and regulatory bodies.'
+            : 'Review and manage verified registry ledger records.';
+
     return (
         <Modal
             isOpen={!!activeModal}
             title={modalTitle}
-            description="Manage chemical classifications, accredited bodies, and municipal clearance profiles."
+            description={modalDescription}
             onClose={onClose}
             footer={[
                 <button
@@ -272,29 +282,140 @@ export default function RegistryModals({
                         <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
                             <div>
                                 <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Establishment Name *</label>
-                                <input required value={modalForm.name || ''} onChange={(e) => setModalForm(prev => ({ ...prev, name: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none" />
+                                <input
+                                    required
+                                    value={modalForm.name || ''}
+                                    onChange={(e) => setModalForm(prev => ({ ...prev, name: e.target.value }))}
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                    placeholder="Business or venue name"
+                                />
                             </div>
                             <div>
-                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Status</label>
-                                <select value={modalForm.status || ''} onChange={(e) => setModalForm(prev => ({ ...prev, status: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none">
-                                    {ESTABLISHMENT_STATUSES.map(status => <option key={status} value={status}>{status}</option>)}
+                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Venue Category</label>
+                                <select
+                                    value={modalForm.type || 'Restaurant'}
+                                    onChange={(e) => setModalForm(prev => ({ ...prev, type: e.target.value }))}
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                >
+                                    {ESTABLISHMENT_TYPES.map(t => (
+                                        <option key={t} value={t}>{t}</option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
-                        <div>
-                            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Address</label>
-                            <input value={modalForm.address || ''} onChange={(e) => setModalForm(prev => ({ ...prev, address: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none" />
-                        </div>
+
                         <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
                             <div>
-                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Certificate Number</label>
-                                <input value={modalForm.certNo || ''} onChange={(e) => setModalForm(prev => ({ ...prev, certNo: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none" />
+                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Verification Standard</label>
+                                <select
+                                    value={modalForm.halal_tier || 'halal_certified'}
+                                    onChange={(e) => setModalForm(prev => ({ ...prev, halal_tier: e.target.value }))}
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                >
+                                    {ESTABLISHMENT_HALAL_TIERS.map(tier => (
+                                        <option key={tier.id} value={tier.id}>{tier.label}</option>
+                                    ))}
+                                </select>
                             </div>
                             <div>
-                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Expiry Date</label>
-                                <input type="date" value={modalForm.expiry || ''} onChange={(e) => setModalForm(prev => ({ ...prev, expiry: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none" />
+                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Registry Status</label>
+                                <select
+                                    value={modalForm.status || 'verified'}
+                                    onChange={(e) => setModalForm(prev => ({ ...prev, status: e.target.value }))}
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                >
+                                    <option value="verified">Verified / Published</option>
+                                    <option value="needs_review">Needs Review</option>
+                                    <option value="suspended">Suspended</option>
+                                </select>
                             </div>
                         </div>
+
+                        <div>
+                            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Address in Zamboanga City</label>
+                            <input
+                                value={modalForm.address || ''}
+                                onChange={(e) => setModalForm(prev => ({ ...prev, address: e.target.value }))}
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                placeholder="Street, Barangay, Zamboanga City"
+                            />
+                        </div>
+
+                        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
+                            <div>
+                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Contact Number</label>
+                                <input
+                                    value={modalForm.phone || ''}
+                                    onChange={(e) => setModalForm(prev => ({ ...prev, phone: e.target.value }))}
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                    placeholder="e.g. 09178823419"
+                                />
+                            </div>
+                            <div>
+                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">City Jurisdiction</label>
+                                <input
+                                    value={modalForm.city || 'Zamboanga City'}
+                                    onChange={(e) => setModalForm(prev => ({ ...prev, city: e.target.value }))}
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Adaptive Halal Tier Box */}
+                        {modalForm.halal_tier === 'halal_certified' ? (
+                            <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-3">
+                                <p className="text-xs font-semibold text-emerald-800">
+                                    Formal Halal Certification Credentials
+                                </p>
+                                <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
+                                    <div>
+                                        <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-emerald-900">Certificate Number</label>
+                                        <input
+                                            value={modalForm.certNo || ''}
+                                            onChange={(e) => setModalForm(prev => ({ ...prev, certNo: e.target.value }))}
+                                            className="w-full rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                            placeholder="e.g. IDCP-2025-1029"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-emerald-900">Certificate Expiry Date</label>
+                                        <input
+                                            type="date"
+                                            value={modalForm.expiry || ''}
+                                            onChange={(e) => setModalForm(prev => ({ ...prev, expiry: e.target.value }))}
+                                            className="w-full rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        ) : modalForm.halal_tier === 'muslim_owned' ? (
+                            <div className="p-3.5 rounded-xl bg-sky-50 border border-sky-200">
+                                <p className="text-xs font-bold text-sky-900">
+                                    Community Standard: Muslim-Owned (Pork-Free Kitchen)
+                                </p>
+                                <p className="text-xs text-sky-700 mt-1 leading-relaxed">
+                                    This establishment operates under 100% Muslim ownership and serves strictly pork-free, alcohol-free food without requiring formal third-party certification.
+                                </p>
+                            </div>
+                        ) : modalForm.halal_tier === 'muslim_friendly' ? (
+                            <div className="p-3.5 rounded-xl bg-indigo-50 border border-indigo-200">
+                                <p className="text-xs font-bold text-indigo-900">
+                                    Community Standard: Muslim-Friendly Venue
+                                </p>
+                                <p className="text-xs text-indigo-700 mt-1 leading-relaxed">
+                                    Offers dedicated pork-free or alcohol-free preparations, or provides dedicated prayer amenities for Muslim patrons.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="p-3.5 rounded-xl bg-teal-50 border border-teal-200">
+                                <p className="text-xs font-bold text-teal-900">
+                                    Dietary Standard: Vegetarian / Vegan
+                                </p>
+                                <p className="text-xs text-teal-700 mt-1 leading-relaxed">
+                                    Plant-based menu serving zero meat or animal by-products, naturally compliant with Halal dietary requirements.
+                                </p>
+                            </div>
+                        )}
                     </>
                 )}
 

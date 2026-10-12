@@ -18,6 +18,7 @@ import RegistryModals from '../components/registry/RegistryModals';
 import RegistryDeleteModal from '../components/registry/RegistryDeleteModal';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
+import { getStatusConfig } from '../data/constants';
 
 const emptyAdditiveForm = {
     code: '',
@@ -30,10 +31,12 @@ const emptyAdditiveForm = {
 
 const emptyEstablishmentForm = {
     name: '',
-    type: '',
+    type: 'Restaurant',
     address: '',
     city: 'Zamboanga City',
-    status: 'needs_review',
+    status: 'verified',
+    halal_tier: 'halal_certified',
+    phone: '',
     certNo: '',
     expiry: '',
 };
@@ -215,14 +218,18 @@ export const Registry = ({ userRole, onViewChange }) => {
                 status: item.halal_status || item.status || 'needs_review',
             });
         } else {
+            const statusConfig = getStatusConfig(item);
             setModalForm({
                 name: item.name || '',
-                type: item.type || '',
+                type: item.type || 'Restaurant',
                 address: item.address || '',
                 city: item.city || 'Zamboanga City',
+                phone: item.phone || '',
                 certNo: item.certificate_number || item.certNo || '',
                 expiry: item.expiry_date || item.expiry || '',
-                status: item.halal_status || item.status || 'needs_review',
+                status: item.halal_status || item.status || 'verified',
+                halal_tier: statusConfig.key || 'halal_certified',
+                admin_notes: item.admin_notes || '',
             });
         }
     };
@@ -434,30 +441,60 @@ export const Registry = ({ userRole, onViewChange }) => {
                 );
                 updateToast('Certifying body updated.', 'success');
             } else if (activeModal === 'add-establishment') {
+                const tier = modalForm.halal_tier || 'halal_certified';
+                let adminNotes = '';
+
+                if (tier === 'muslim_owned') {
+                    adminNotes = 'Community Listed - Muslim-Owned (Pork-Free Kitchen)';
+                } else if (tier === 'muslim_friendly') {
+                    adminNotes = 'Community Listed - Muslim-Friendly Venue';
+                } else if (tier === 'vegetarian_vegan') {
+                    adminNotes = 'Community Listed - Vegetarian / Vegan';
+                } else if (tier === 'halal_certified') {
+                    adminNotes = 'Formally Certified Halal Establishment';
+                }
+
                 const created = await saveRegistryRecord('/registry/establishments', 'POST', {
                     name: requireText(modalForm.name, 'Establishment name'),
-                    type: safeTrim(modalForm.type),
+                    type: safeTrim(modalForm.type) || 'Restaurant',
                     address: safeTrim(modalForm.address) || 'Zamboanga City',
                     city: safeTrim(modalForm.city) || 'Zamboanga City',
-                    certificate_number: safeTrim(modalForm.certNo),
-                    expiry_date: safeTrim(modalForm.expiry),
-                    halal_status: modalForm.status || 'needs_review',
+                    certificate_number: tier === 'halal_certified' ? safeTrim(modalForm.certNo) : null,
+                    expiry_date: tier === 'halal_certified' ? safeTrim(modalForm.expiry) : null,
+                    halal_status: modalForm.status || 'verified',
+                    phone: safeTrim(modalForm.phone),
+                    admin_notes: adminNotes,
                 });
 
                 setEstablishments(prev => [created, ...prev]);
                 updateToast('New establishment saved to database.', 'success');
             } else if (activeModal === 'edit-establishment') {
+                const tier = modalForm.halal_tier || 'halal_certified';
+                let adminNotes = selectedItem.admin_notes || '';
+
+                if (tier === 'muslim_owned') {
+                    adminNotes = 'Community Listed - Muslim-Owned (Pork-Free Kitchen)';
+                } else if (tier === 'muslim_friendly') {
+                    adminNotes = 'Community Listed - Muslim-Friendly Venue';
+                } else if (tier === 'vegetarian_vegan') {
+                    adminNotes = 'Community Listed - Vegetarian / Vegan';
+                } else if (tier === 'halal_certified') {
+                    adminNotes = 'Formally Certified Halal Establishment';
+                }
+
                 const updated = await saveRegistryRecord(
                     `/registry/establishments/${selectedItem.id}`,
                     'PATCH',
                     {
                         name: requireText(modalForm.name, 'Establishment name'),
-                        type: safeTrim(modalForm.type),
+                        type: safeTrim(modalForm.type) || 'Restaurant',
                         address: safeTrim(modalForm.address),
                         city: safeTrim(modalForm.city) || 'Zamboanga City',
-                        certificate_number: safeTrim(modalForm.certNo),
-                        expiry_date: safeTrim(modalForm.expiry),
-                        halal_status: modalForm.status,
+                        certificate_number: tier === 'halal_certified' ? safeTrim(modalForm.certNo) : null,
+                        expiry_date: tier === 'halal_certified' ? safeTrim(modalForm.expiry) : null,
+                        halal_status: modalForm.status || 'verified',
+                        phone: safeTrim(modalForm.phone),
+                        admin_notes: adminNotes,
                     }
                 );
 
