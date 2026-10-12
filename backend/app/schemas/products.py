@@ -67,6 +67,7 @@ class ProductSubmissionRequest(BaseModel):
     submitter_role: Optional[str] = "consumer"  # brand, consumer
     establishment_id: Optional[str] = None
     manufacturer_id: Optional[str] = None
+    certifying_body: Optional[str] = None
     certifying_body_id: Optional[str] = None
     certificate_no: Optional[str] = None
     expiry_date: Optional[str] = None

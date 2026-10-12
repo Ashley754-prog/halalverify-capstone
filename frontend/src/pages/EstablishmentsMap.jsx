@@ -87,6 +87,18 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                 if (selectedStatus === 'needs_review' || selectedStatus === 'pending_review') {
                     return key === 'needs_review' || key === 'pending_review';
                 }
+                if (selectedStatus === 'verified' || selectedStatus === 'halal_certified') {
+                    return key === 'verified';
+                }
+                if (selectedStatus === 'muslim_owned') {
+                    return key === 'muslim_owned' || (key === 'community' && !e.halal_status?.toLowerCase().includes('friendly') && !e.halal_status?.toLowerCase().includes('veg'));
+                }
+                if (selectedStatus === 'muslim_friendly') {
+                    return key === 'muslim_friendly' || e.halal_status?.toLowerCase().includes('friendly');
+                }
+                if (selectedStatus === 'vegetarian_vegan') {
+                    return key === 'vegetarian_vegan' || e.halal_status?.toLowerCase().includes('veg');
+                }
                 return key === selectedStatus;
             });
         }
@@ -124,7 +136,19 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
             try {
                 let query = supabase.from('establishments').select('*, certifying_bodies(*)').order('name');
                 if (selectedStatus !== 'all') {
-                    query = query.eq('halal_status', selectedStatus);
+                    if (selectedStatus === 'verified' || selectedStatus === 'halal_certified') {
+                        query = query.in('halal_status', ['verified', 'halal_certified']);
+                    } else if (selectedStatus === 'muslim_owned') {
+                        query = query.in('halal_status', ['muslim_owned', 'community_listed']);
+                    } else if (selectedStatus === 'muslim_friendly') {
+                        query = query.eq('halal_status', 'muslim_friendly');
+                    } else if (selectedStatus === 'vegetarian_vegan') {
+                        query = query.eq('halal_status', 'vegetarian_vegan');
+                    } else if (selectedStatus === 'needs_review') {
+                        query = query.in('halal_status', ['needs_review', 'PENDING_VERIFICATION']);
+                    } else {
+                        query = query.eq('halal_status', selectedStatus);
+                    }
                 }
                 const { data: sbData, error: sbErr } = await query;
                 if (!sbErr && sbData && sbData.length > 0) {
@@ -341,7 +365,7 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                     color: '#ffffff',
                     weight: 3,
                 })
-                    .bindPopup('<div style="font-family:system-ui;font-size:12px;font-weight:700;color:#1e3a8a;">📍 Your Current Location</div>')
+                    .bindPopup('<div style="font-family:system-ui;font-size:12px;font-weight:700;color:#1e3a8a;">Your Current Location</div>')
                     .addTo(userPinGroup);
 
                 userPinGroup.addTo(map);
@@ -571,12 +595,21 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                             value={selectedStatus}
                             onChange={(e) => setSelectedStatus(e.target.value)}
                             className="bg-transparent font-bold text-slate-800 focus:outline-none cursor-pointer text-xs"
-                            aria-label="Status Guide"
+                            aria-label="Filter Halal Venues"
                         >
-                            <option value="all">Status Guide</option>
-                            <option value="verified">🟢 Verified Halal</option>
-                            <option value="needs_review">🟡 Pending Verification</option>
-                            <option value="flagged">🔴 Expired / Flagged</option>
+                            <option value="all">All Halal Venues</option>
+                            <optgroup label="Institutional Certification">
+                                <option value="verified">Formally Halal Certified</option>
+                            </optgroup>
+                            <optgroup label="Community & Lifestyle">
+                                <option value="muslim_owned">Muslim-Owned (Pork-Free)</option>
+                                <option value="muslim_friendly">Muslim-Friendly Venue</option>
+                                <option value="vegetarian_vegan">Vegetarian / Vegan</option>
+                            </optgroup>
+                            <optgroup label="Moderation Status">
+                                <option value="needs_review">Pending Verification</option>
+                                <option value="flagged">Expired / Flagged</option>
+                            </optgroup>
                         </select>
                     </div>
                 </div>
@@ -679,9 +712,21 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
                                             {activePreviewEst.certifying_bodies.code}
                                         </span>
+                                    ) : getStatusConfig(activePreviewEst.halal_status).key === 'muslim_owned' ? (
+                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200">
+                                            Muslim-Owned
+                                        </span>
+                                    ) : getStatusConfig(activePreviewEst.halal_status).key === 'muslim_friendly' ? (
+                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-200">
+                                            Muslim-Friendly
+                                        </span>
+                                    ) : getStatusConfig(activePreviewEst.halal_status).key === 'vegetarian_vegan' ? (
+                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-50 text-teal-800 border border-teal-200">
+                                            Plant-Based
+                                        </span>
                                     ) : (
                                         <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
-                                            Self-Declared
+                                            Pending Review
                                         </span>
                                     )}
                                     {activePreviewEst.distance_km && (

@@ -95,4 +95,5 @@ class EstablishmentSubmissionRequest(BaseModel):
     expiry_date: Optional[str] = None
     certificate_url: Optional[str] = None
     logo_url: Optional[str] = None
+    amenities: Optional[list[str]] = None
     product_names: Optional[list[str]] = None

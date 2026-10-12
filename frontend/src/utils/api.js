@@ -19,6 +19,11 @@ function resolveApiBaseUrl() {
             return customUrl.replace(/\/+$/, '');
         }
 
+        // When running in local development, route to local FastAPI server
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            return 'http://localhost:8000';
+        }
+
         const envUrl = import.meta.env.VITE_API_BASE_URL;
         if (envUrl && envUrl.startsWith('http') && !envUrl.includes('trycloudflare.com') && !envUrl.includes('ngrok')) {
             return envUrl.replace(/\/+$/, '');

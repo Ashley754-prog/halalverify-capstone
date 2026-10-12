@@ -1,4 +1,18 @@
-import { MapPin, FileText, Upload, X, Loader2, Phone, Globe, ShieldCheck, HeartHandshake } from 'lucide-react';
+import {
+  MapPin,
+  FileText,
+  Upload,
+  X,
+  Loader2,
+  Phone,
+  Globe,
+  ShieldCheck,
+  HeartHandshake,
+  BadgeCheck,
+  Store,
+  Leaf,
+  Compass,
+} from 'lucide-react';
 import { ESTABLISHMENT_TYPES, ESTABLISHMENT_HALAL_TIERS } from '../../data/constants';
 
 export default function EstablishmentContributionForm({
@@ -15,43 +29,166 @@ export default function EstablishmentContributionForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-4 text-xs sm:text-sm">
-      {/* Factor 1: Transparent Halal Classification Tier */}
-      <div>
-        <label className="block font-bold text-slate-800 mb-1.5">
-          Halal Classification Tier <span className="text-red-500">*</span>
-        </label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {ESTABLISHMENT_HALAL_TIERS.map((tier) => {
+      {/* 2-Level Conceptual Hierarchy for Halal Classification */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="block font-bold text-slate-800 text-xs sm:text-sm">
+            Halal Classification Tier <span className="text-red-500">*</span>
+          </label>
+          <span className="text-[11px] text-slate-400 font-medium">Select tier</span>
+        </div>
+
+        {/* Level 1: Institutional Certification */}
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5 text-slate-700">
+            <BadgeCheck size={15} className="text-emerald-700 shrink-0" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+              Institutional Certification
+            </span>
+            <span className="text-[11px] text-slate-500 font-normal">
+              (Third-Party Audited)
+            </span>
+          </div>
+
+          {ESTABLISHMENT_HALAL_TIERS.filter((t) => t.id === 'halal_certified').map((tier) => {
             const isSelected = currentTier === tier.id;
             return (
               <button
                 type="button"
                 key={tier.id}
                 onClick={() => setEstForm((prev) => ({ ...prev, halal_tier: tier.id }))}
-                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                className={`w-full p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between gap-3 ${
                   isSelected
-                    ? 'border-emerald-500 bg-emerald-50/70 shadow-xs ring-1 ring-emerald-500/20'
+                    ? 'border-emerald-600 bg-emerald-50/70 shadow-xs ring-1 ring-emerald-500/20'
                     : 'border-slate-200 bg-white hover:bg-slate-50'
                 }`}
               >
-                <div className="flex items-center justify-between gap-1 mb-1">
-                  <span className={`font-bold text-xs ${isSelected ? 'text-emerald-800' : 'text-slate-800'}`}>
-                    {tier.label}
-                  </span>
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${
-                    isSelected
-                      ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                      : 'bg-slate-100 text-slate-600 border-slate-200'
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                    isSelected ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 text-slate-500'
                   }`}>
-                    {tier.badge}
-                  </span>
+                    <BadgeCheck size={18} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`font-bold text-xs ${isSelected ? 'text-emerald-950' : 'text-slate-900'}`}>
+                        {tier.label}
+                      </span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${
+                        isSelected
+                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                          : 'bg-slate-100 text-slate-600 border-slate-200'
+                      }`}>
+                        {tier.badge}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
+                      {tier.description}
+                    </p>
+                  </div>
                 </div>
-                <p className="text-[11px] text-slate-500 leading-tight">
-                  {tier.description}
-                </p>
+                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                  isSelected ? 'border-emerald-600 bg-emerald-600' : 'border-slate-300'
+                }`}>
+                  {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                </div>
               </button>
             );
           })}
+        </div>
+
+        {/* Level 2: Community & Lifestyle Accommodations */}
+        <div className="space-y-1.5 pt-2 border-t border-slate-100">
+          <div>
+            <div className="flex items-center gap-1.5 text-slate-700">
+              <Store size={15} className="text-slate-600 shrink-0" />
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                Community & Dietary Accommodations
+              </span>
+              <span className="text-[11px] text-slate-500 font-normal">
+                (Self-Declared Practices)
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              For dining places without formal third-party certificates, declare their kitchen operation:
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            {ESTABLISHMENT_HALAL_TIERS.filter((t) => t.id !== 'halal_certified').map((tier) => {
+              const isSelected = currentTier === tier.id;
+              const config = {
+                muslim_owned: {
+                  icon: Store,
+                  iconActive: 'bg-sky-600 text-white',
+                  badge: isSelected ? 'bg-sky-100 text-sky-800 border-sky-300' : 'bg-sky-50 text-sky-700 border-sky-200',
+                  activeBorder: 'border-sky-600 bg-sky-50/70 ring-1 ring-sky-500/20',
+                  dotBorder: 'border-sky-600 bg-sky-600',
+                },
+                muslim_friendly: {
+                  icon: HeartHandshake,
+                  iconActive: 'bg-indigo-600 text-white',
+                  badge: isSelected ? 'bg-indigo-100 text-indigo-800 border-indigo-300' : 'bg-indigo-50 text-indigo-700 border-indigo-200',
+                  activeBorder: 'border-indigo-600 bg-indigo-50/70 ring-1 ring-indigo-500/20',
+                  dotBorder: 'border-indigo-600 bg-indigo-600',
+                },
+                vegetarian_vegan: {
+                  icon: Leaf,
+                  iconActive: 'bg-teal-600 text-white',
+                  badge: isSelected ? 'bg-teal-100 text-teal-800 border-teal-300' : 'bg-teal-50 text-teal-700 border-teal-200',
+                  activeBorder: 'border-teal-600 bg-teal-50/70 ring-1 ring-teal-500/20',
+                  dotBorder: 'border-teal-600 bg-teal-600',
+                },
+              }[tier.id] || {
+                icon: Store,
+                iconActive: 'bg-slate-700 text-white',
+                badge: 'bg-slate-100 text-slate-600 border-slate-200',
+                activeBorder: 'border-slate-500 bg-slate-50 ring-1 ring-slate-400',
+                dotBorder: 'border-slate-600 bg-slate-600',
+              };
+
+              const IconComponent = config.icon;
+
+              return (
+                <button
+                  type="button"
+                  key={tier.id}
+                  onClick={() => setEstForm((prev) => ({ ...prev, halal_tier: tier.id }))}
+                  className={`w-full p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                    isSelected
+                      ? `${config.activeBorder} shadow-xs`
+                      : 'border-slate-200 bg-white hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                      isSelected ? config.iconActive : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      <IconComponent size={15} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={`font-bold text-xs ${isSelected ? 'text-slate-900' : 'text-slate-800'}`}>
+                          {tier.label}
+                        </span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-md border shrink-0 ${config.badge}`}>
+                          {tier.badge}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5 leading-tight">
+                        {tier.description}
+                      </p>
+                    </div>
+                  </div>
+                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                    isSelected ? config.dotBorder : 'border-slate-300'
+                  }`}>
+                    {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -243,16 +380,91 @@ export default function EstablishmentContributionForm({
           </div>
         </div>
       ) : (
-        <div className="p-3 rounded-xl bg-sky-50 border border-sky-200 text-sky-800 text-xs">
-          <p className="font-semibold flex items-center gap-1.5">
-            <HeartHandshake size={15} className="text-sky-600 shrink-0" />
-            Community-Backed Transparency
-          </p>
-          <p className="text-[11px] text-sky-700 mt-0.5">
-            No formal certificate upload is required for Muslim-owned or friendly spots. The automated checker validates local Zamboanga address and contact availability to list it under the community directory.
-          </p>
+        <div className="space-y-3">
+          <div className="p-3 rounded-xl bg-sky-50 border border-sky-200 text-sky-800 text-xs">
+            <p className="font-semibold flex items-center gap-1.5">
+              <HeartHandshake size={15} className="text-sky-600 shrink-0" />
+              Community-Backed Transparency
+            </p>
+            <p className="text-[11px] text-sky-700 mt-0.5">
+              No formal certificate upload is required for Muslim-owned or friendly spots. The automated checker validates local Zamboanga address and contact availability to list it under the community directory.
+            </p>
+          </div>
+
+          {/* Storefront / Menu Photo Upload for Community Listings */}
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">
+              Storefront or Menu Signboard Photo <span className="text-slate-400 font-normal">(Optional, helps community verify)</span>
+            </label>
+            <div className="rounded-xl border-2 border-dashed border-slate-300 bg-white p-3 text-center hover:border-emerald-500 transition">
+              {estForm.logo_url || estForm.certificate_url ? (
+                <div className="flex items-center justify-between bg-sky-50 border border-sky-200 rounded-lg p-2">
+                  <div className="flex items-center gap-2 truncate">
+                    <FileText size={16} className="text-sky-600 shrink-0" />
+                    <span className="text-xs text-sky-900 font-medium truncate">Photo Attached</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEstForm((prev) => ({ ...prev, logo_url: '', certificate_url: '' }))}
+                    className="text-slate-400 hover:text-red-500 p-1 cursor-pointer"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+              ) : (
+                <label className="cursor-pointer flex flex-col items-center">
+                  <Upload size={20} className="text-slate-400 mb-1" />
+                  <span className="text-xs font-semibold text-sky-600 hover:underline">
+                    {uploadingImage ? 'Uploading to storage...' : 'Click to select storefront or menu photo'}
+                  </span>
+                  <span className="text-[11px] text-slate-400 mt-0.5">PNG, JPG up to 10MB</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={uploadingImage}
+                    onChange={(e) => onFileUpload(e, 'logos')}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
+          </div>
         </div>
       )}
+
+      {/* Venue Features & Amenities (Benchmark: Muslim in Manila / Zabihah) */}
+      <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+        <span className="text-xs font-semibold text-slate-700 block">
+          Dining Amenities & Facilities <span className="text-slate-400 font-normal">(Optional, helps Muslim travelers)</span>
+        </span>
+        <div className="flex flex-wrap gap-2 text-xs">
+          <button
+            type="button"
+            onClick={() => setEstForm((prev) => ({ ...prev, has_prayer_space: !prev.has_prayer_space }))}
+            className={`px-3 py-1.5 rounded-lg border font-medium flex items-center gap-1.5 transition cursor-pointer ${
+              estForm.has_prayer_space
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 shadow-xs'
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+            }`}
+          >
+            <Compass size={14} className={estForm.has_prayer_space ? 'text-emerald-600' : 'text-slate-400'} />
+            <span>Dedicated Prayer Space (Musalah)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setEstForm((prev) => ({ ...prev, is_alcohol_free: !prev.is_alcohol_free }))}
+            className={`px-3 py-1.5 rounded-lg border font-medium flex items-center gap-1.5 transition cursor-pointer ${
+              estForm.is_alcohol_free
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 shadow-xs'
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+            }`}
+          >
+            <ShieldCheck size={14} className={estForm.is_alcohol_free ? 'text-emerald-600' : 'text-slate-400'} />
+            <span>100% Alcohol-Free Premises</span>
+          </button>
+        </div>
+      </div>
 
       <div>
         <label className="block font-semibold text-slate-700 mb-1">

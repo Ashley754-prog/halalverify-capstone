@@ -283,6 +283,7 @@ def submit_product(
         "submitter_role": submission.submitter_role or "consumer",
         "establishment_id": submission.establishment_id,
         "manufacturer_id": submission.manufacturer_id,
+        "certifying_body": submission.certifying_body,
         "certifying_body_id": submission.certifying_body_id,
         "certificate_no": submission.certificate_no,
         "expiry_date": submission.expiry_date,

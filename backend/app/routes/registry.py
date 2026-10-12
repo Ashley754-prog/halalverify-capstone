@@ -425,6 +425,7 @@ def submit_establishment(
         "certificate_url": submission.certificate_url,
         "logo_url": submission.logo_url,
         "submitted_by": str(user_id),
+        "amenities": submission.amenities or [],
         "source": "Business Owner Submission" if submission.submitter_role == "owner" else "Community User Submission",
     }
 

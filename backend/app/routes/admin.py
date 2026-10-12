@@ -112,11 +112,14 @@ def verify_establishment(
     Cross-matches issuing HCB credentials and updates audit notes.
     """
     user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
-    status_clean = payload.status.strip().lower()
-    if status_clean not in ["verified", "rejected", "suspended", "flagged"]:
+    valid_est_statuses = {
+        "verified", "rejected", "suspended", "flagged",
+        "community_listed", "muslim_owned", "muslim_friendly", "vegetarian_vegan"
+    }
+    if status_clean not in valid_est_statuses:
         raise HTTPException(
             status_code=400,
-            detail="Invalid status. Must be 'VERIFIED', 'REJECTED', or 'SUSPENDED'.",
+            detail="Invalid status. Must be a valid certification, community tier, or rejection status.",
         )
 
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -173,9 +176,9 @@ def verify_product(
     Administrative audit action to approve (VERIFIED) or reject (REJECTED) a community product.
     """
     user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
-    status_clean = payload.status.strip().upper()
-    if status_clean not in ["VERIFIED", "REJECTED"]:
-        raise HTTPException(status_code=400, detail="Status must be 'VERIFIED' or 'REJECTED'")
+    valid_prod_statuses = {"VERIFIED", "REJECTED", "HALAL", "COMMUNITY_LISTED", "DOUBTFUL"}
+    if status_clean not in valid_prod_statuses:
+        raise HTTPException(status_code=400, detail="Status must be a valid verification status")
 
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
 

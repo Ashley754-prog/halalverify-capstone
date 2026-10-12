@@ -69,6 +69,8 @@ export default function ContributionModal({
     certificate_url: '',
     logo_url: '',
     product_names: '',
+    has_prayer_space: false,
+    is_alcohol_free: false,
   });
 
   // Form state for product
@@ -79,6 +81,7 @@ export default function ContributionModal({
     barcode: '',
     halal_tier: 'halal_certified',
     submitter_role: 'consumer',
+    certifying_body: '',
     certificate_no: '',
     expiry_date: '',
     image_url: '',
@@ -149,6 +152,10 @@ export default function ContributionModal({
       setSubmitting(true);
       setErrorMessage('');
 
+      const amenities = [];
+      if (estForm.has_prayer_space) amenities.push('Dedicated Prayer Space (Musalah)');
+      if (estForm.is_alcohol_free) amenities.push('100% Alcohol-Free');
+
       const payload = {
         name: estForm.name.trim(),
         type: estForm.type,
@@ -162,6 +169,7 @@ export default function ContributionModal({
         expiry_date: estForm.expiry_date || null,
         certificate_url: estForm.certificate_url || null,
         logo_url: estForm.logo_url || null,
+        amenities: amenities,
         product_names: estForm.product_names
           ? estForm.product_names.split(',').map((s) => s.trim()).filter(Boolean)
           : [],
@@ -222,10 +230,14 @@ export default function ContributionModal({
           logo_url: payload.logo_url,
           halal_status: fallbackStatus,
           submitted_by: userId,
+          description: amenities.length > 0 ? `Amenities: ${amenities.join(' • ')}` : null,
           source: payload.submitter_role === 'owner' ? 'Business Owner Submission' : 'Community User Submission',
         });
 
-        if (sbErr) throw sbErr;
+        if (sbErr) {
+          console.warn('Direct Supabase insert blocked by RLS:', sbErr);
+          throw new Error('Verification service is unreachable. Please check backend connection.');
+        }
       }
 
       setIsSuccess(true);
@@ -256,6 +268,7 @@ export default function ContributionModal({
         barcode: prodForm.barcode?.trim() || null,
         halal_tier: prodForm.halal_tier || 'halal_certified',
         submitter_role: prodForm.submitter_role || 'consumer',
+        certifying_body: prodForm.certifying_body || null,
         certificate_no: prodForm.certificate_no?.trim() || null,
         expiry_date: prodForm.expiry_date || null,
         image_url: prodForm.image_url || null,
@@ -313,10 +326,15 @@ export default function ContributionModal({
           ingredients_summary: payload.ingredients_summary,
           status: fallbackStatus,
           submitted_by: userId,
-          source: payload.submitter_role === 'brand' ? 'Brand Representative Submission' : 'Community User Submission',
+          source: prodForm.certifying_body
+            ? `Certified by ${prodForm.certifying_body}`
+            : (payload.submitter_role === 'brand' ? 'Brand Representative Submission' : 'Community User Submission'),
         });
 
-        if (sbErr) throw sbErr;
+        if (sbErr) {
+          console.warn('Direct Supabase product insert blocked by RLS:', sbErr);
+          throw new Error('Verification service is unreachable. Please check backend connection.');
+        }
       }
 
       setIsSuccess(true);
@@ -347,6 +365,8 @@ export default function ContributionModal({
       certificate_url: '',
       logo_url: '',
       product_names: '',
+      has_prayer_space: false,
+      is_alcohol_free: false,
     });
     setProdForm({
       name: '',
@@ -355,6 +375,7 @@ export default function ContributionModal({
       barcode: '',
       halal_tier: 'halal_certified',
       submitter_role: 'consumer',
+      certifying_body: '',
       certificate_no: '',
       expiry_date: '',
       image_url: '',

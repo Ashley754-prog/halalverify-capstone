@@ -4,7 +4,9 @@ import {
     Loader2,
     MapPin,
     ChevronRight,
-    Navigation
+    Navigation,
+    Compass,
+    ShieldCheck,
 } from 'lucide-react';
 import { getStatusConfig } from '../../data/constants';
 
@@ -90,9 +92,31 @@ export default function EstablishmentsSidebarList({
                                                 <span className="font-bold text-emerald-800 bg-emerald-100/70 border border-emerald-200/80 px-1.5 py-0.5 rounded">
                                                     {est.certifying_bodies.code}
                                                 </span>
+                                            ) : statusConfig.key === 'muslim_owned' ? (
+                                                <span className="font-bold text-sky-800 bg-sky-50 border border-sky-200/80 px-1.5 py-0.5 rounded">
+                                                    Muslim-Owned
+                                                </span>
+                                            ) : statusConfig.key === 'muslim_friendly' ? (
+                                                <span className="font-bold text-indigo-800 bg-indigo-50 border border-indigo-200/80 px-1.5 py-0.5 rounded">
+                                                    Muslim-Friendly
+                                                </span>
+                                            ) : statusConfig.key === 'vegetarian_vegan' ? (
+                                                <span className="font-bold text-teal-800 bg-teal-50 border border-teal-200/80 px-1.5 py-0.5 rounded">
+                                                    Plant-Based
+                                                </span>
                                             ) : (
                                                 <span className="font-medium text-amber-800 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded">
-                                                    Self-Declared
+                                                    Pending Review
+                                                </span>
+                                            )}
+                                            {(est.has_prayer_space || est.description?.toLowerCase().includes('prayer') || est.description?.toLowerCase().includes('musalah')) && (
+                                                <span title="Dedicated Prayer Space (Musalah)" className="text-emerald-700 font-semibold flex items-center gap-0.5">
+                                                    <Compass size={11} className="text-emerald-600" />
+                                                </span>
+                                            )}
+                                            {(est.is_alcohol_free || est.description?.toLowerCase().includes('alcohol-free')) && (
+                                                <span title="100% Alcohol-Free Premises" className="text-emerald-700 font-semibold flex items-center gap-0.5">
+                                                    <ShieldCheck size={11} className="text-emerald-600" />
                                                 </span>
                                             )}
                                             {est.distance_km && (

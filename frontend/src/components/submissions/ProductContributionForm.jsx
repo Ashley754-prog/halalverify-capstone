@@ -1,4 +1,14 @@
-import { FileText, Upload, X, Loader2, ShieldCheck, HeartHandshake } from 'lucide-react';
+import {
+  FileText,
+  Upload,
+  X,
+  Loader2,
+  ShieldCheck,
+  HeartHandshake,
+  BadgeCheck,
+  CheckCircle2,
+  Leaf,
+} from 'lucide-react';
 import { PRODUCT_CATEGORIES, PRODUCT_HALAL_TIERS } from '../../data/constants';
 
 export default function ProductContributionForm({
@@ -16,30 +26,88 @@ export default function ProductContributionForm({
   return (
     <form onSubmit={onSubmit} className="space-y-4 text-xs sm:text-sm">
       {/* Product Classification Tier */}
-      <div>
-        <label className="block font-bold text-slate-800 mb-1.5">
-          Product Halal Status / Tier <span className="text-red-500">*</span>
-        </label>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="block font-bold text-slate-800 text-xs sm:text-sm">
+            Product Halal Status / Tier <span className="text-red-500">*</span>
+          </label>
+          <span className="text-[11px] text-slate-400 font-medium">Select tier</span>
+        </div>
+        <p className="text-[11px] text-slate-500">
+          Select the classification that accurately describes this packaged item's ingredients and certification status.
+        </p>
+
+        <div className="space-y-1.5">
           {PRODUCT_HALAL_TIERS.map((tier) => {
             const isSelected = currentTier === tier.id;
+            const config = {
+              halal_certified: {
+                icon: BadgeCheck,
+                iconActive: 'bg-emerald-600 text-white',
+                badgeBg: isSelected ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                activeBorder: 'border-emerald-600 bg-emerald-50/70 ring-1 ring-emerald-500/20 shadow-xs',
+                dotBorder: 'border-emerald-600 bg-emerald-600',
+              },
+              pork_free_declared: {
+                icon: CheckCircle2,
+                iconActive: 'bg-sky-600 text-white',
+                badgeBg: isSelected ? 'bg-sky-100 text-sky-800 border-sky-300' : 'bg-sky-50 text-sky-700 border-sky-200',
+                activeBorder: 'border-sky-600 bg-sky-50/70 ring-1 ring-sky-500/20 shadow-xs',
+                dotBorder: 'border-sky-600 bg-sky-600',
+              },
+              vegetarian_vegan: {
+                icon: Leaf,
+                iconActive: 'bg-teal-600 text-white',
+                badgeBg: isSelected ? 'bg-teal-100 text-teal-800 border-teal-300' : 'bg-teal-50 text-teal-700 border-teal-200',
+                activeBorder: 'border-teal-600 bg-teal-50/70 ring-1 ring-teal-500/20 shadow-xs',
+                dotBorder: 'border-teal-600 bg-teal-600',
+              },
+            }[tier.id] || {
+              icon: BadgeCheck,
+              iconActive: 'bg-slate-700 text-white',
+              badgeBg: 'bg-slate-100 text-slate-600 border-slate-200',
+              activeBorder: 'border-slate-500 bg-slate-50 ring-1 ring-slate-400',
+              dotBorder: 'border-slate-600 bg-slate-600',
+            };
+
+            const IconComponent = config.icon;
+
             return (
               <button
                 type="button"
                 key={tier.id}
                 onClick={() => setProdForm((prev) => ({ ...prev, halal_tier: tier.id }))}
-                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                className={`w-full p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between gap-3 ${
                   isSelected
-                    ? 'border-emerald-500 bg-emerald-50/70 shadow-xs ring-1 ring-emerald-500/20'
+                    ? `${config.activeBorder}`
                     : 'border-slate-200 bg-white hover:bg-slate-50'
                 }`}
               >
-                <span className={`font-bold text-xs mb-1 ${isSelected ? 'text-emerald-800' : 'text-slate-800'}`}>
-                  {tier.label}
-                </span>
-                <p className="text-[11px] text-slate-500 leading-tight">
-                  {tier.description}
-                </p>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                    isSelected ? config.iconActive : 'bg-slate-100 text-slate-500'
+                  }`}>
+                    <IconComponent size={15} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`font-bold text-xs ${isSelected ? 'text-slate-900' : 'text-slate-800'}`}>
+                        {tier.label}
+                      </span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-md border shrink-0 ${config.badgeBg}`}>
+                        {tier.badge}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-0.5 leading-tight">
+                      {tier.description}
+                    </p>
+                  </div>
+                </div>
+                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                  isSelected ? config.dotBorder : 'border-slate-300'
+                }`}>
+                  {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                </div>
               </button>
             );
           })}
@@ -134,26 +202,53 @@ export default function ProductContributionForm({
       </div>
 
       {isCertified && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 rounded-xl border border-emerald-200 bg-emerald-50/40">
+        <div className="space-y-3 p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/40">
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Halal Certificate Number</label>
-            <input
-              type="text"
-              placeholder="e.g., IDCP-2024-0774"
-              value={prodForm.certificate_no}
-              onChange={(e) => setProdForm((prev) => ({ ...prev, certificate_no: e.target.value }))}
-              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 placeholder:text-slate-400 outline-none focus:border-emerald-500 font-mono"
-            />
+            <label className="block font-semibold text-slate-700 mb-1">
+              Certifying Body / Seal Issuer
+            </label>
+            <select
+              value={prodForm.certifying_body || ''}
+              onChange={(e) => setProdForm((prev) => ({ ...prev, certifying_body: e.target.value }))}
+              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 outline-none focus:border-emerald-500"
+            >
+              <option value="">Select Certifying Body (Shown on packaging)</option>
+              <option value="IDCP">IDCP (Islamic Da'wah Council of the Philippines)</option>
+              <option value="HDIP">HDIP (Halal Development Institute of the Philippines)</option>
+              <option value="MMHCB">MMHCB (Muslim Mindanao Halal Certification Board)</option>
+              <option value="HICCIP">HICCIP (Halal International Chamber of Commerce)</option>
+              <option value="JAKIM">JAKIM (Department of Islamic Development Malaysia)</option>
+              <option value="MUIS">MUIS (Majlis Ugama Islam Singapura)</option>
+              <option value="MUI">BPJPH / MUI (Indonesia)</option>
+              <option value="OTHER">Other Accredited Body</option>
+            </select>
           </div>
 
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Certificate Expiry Date</label>
-            <input
-              type="date"
-              value={prodForm.expiry_date}
-              onChange={(e) => setProdForm((prev) => ({ ...prev, expiry_date: e.target.value }))}
-              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 outline-none focus:border-emerald-500"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Halal Certificate Number <span className="text-slate-400 font-normal">(Optional if logo on packaging)</span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g., IDCP-2024-0774"
+                value={prodForm.certificate_no}
+                onChange={(e) => setProdForm((prev) => ({ ...prev, certificate_no: e.target.value }))}
+                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 placeholder:text-slate-400 outline-none focus:border-emerald-500 font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Certificate Expiry Date <span className="text-slate-400 font-normal">(Optional)</span>
+              </label>
+              <input
+                type="date"
+                value={prodForm.expiry_date}
+                onChange={(e) => setProdForm((prev) => ({ ...prev, expiry_date: e.target.value }))}
+                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 outline-none focus:border-emerald-500"
+              />
+            </div>
           </div>
         </div>
       )}

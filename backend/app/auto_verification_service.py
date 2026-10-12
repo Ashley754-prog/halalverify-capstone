@@ -53,6 +53,72 @@ def fetch_image_base64_from_url(url: str, timeout: float = 6.0) -> Optional[str]
     return None
 
 
+def is_dummy_or_sequential_phone(phone_str: str) -> bool:
+    """
+    Detects fake, repeating, or sequential dummy phone numbers (e.g. 09123456789, 09000000000, 09111111111).
+    """
+    digits = re.sub(r"\D", "", phone_str)
+    if len(digits) < 7:
+        return True
+
+    # Test for identical repeating digits in subscriber portion
+    subscriber_digits = digits[-7:]
+    if len(set(subscriber_digits)) == 1:
+        return True
+
+    # Common dummy sequences
+    dummy_patterns = [
+        "1234567", "7654321", "12345678", "87654321",
+        "123456789", "987654321", "0000000", "1111111",
+        "2222222", "3333333", "4444444", "5555555"
+    ]
+    for pattern in dummy_patterns:
+        if pattern in digits:
+            return True
+
+    return False
+
+
+def verify_url_liveness(url: str, timeout: float = 2.5) -> Tuple[bool, str]:
+    """
+    Performs a lightweight HTTP probe to verify that a web link resolves cleanly
+    and does not return 404 Not Found or a DNS resolution error.
+    """
+    if not url or not isinstance(url, str):
+        return False, "No URL provided"
+
+    trimmed = url.strip()
+    if not (trimmed.startswith("http://") or trimmed.startswith("https://")):
+        return False, "Invalid URL scheme"
+
+    try:
+        with httpx.Client(timeout=timeout, follow_redirects=True, headers={"User-Agent": "HalalVerify/1.0"}) as client:
+            try:
+                resp = client.head(trimmed)
+            except Exception:
+                resp = client.get(trimmed)
+
+            if resp.status_code in [200, 301, 302, 307, 308]:
+                return True, f"Link active (HTTP {resp.status_code})"
+            elif resp.status_code in [401, 403]:
+                # Major social platforms (Facebook, Instagram) return 403 or redirect to login when probed without session
+                domain_match = re.findall(r"https?://(?:www\.)?([^/]+)", trimmed)
+                dom = domain_match[0].lower() if domain_match else ""
+                if any(k in dom for k in ["facebook.com", "instagram.com", "google.com", "maps.app.goo.gl"]):
+                    return True, f"Platform endpoint reachable ({dom})"
+                return False, f"Server denied access (HTTP {resp.status_code})"
+            elif resp.status_code in [404, 410]:
+                return False, f"Dead link detected (HTTP {resp.status_code} Not Found)"
+            else:
+                return False, f"Unreachable endpoint (HTTP {resp.status_code})"
+    except httpx.ConnectError:
+        return False, "Domain does not exist or network connection failed"
+    except httpx.TimeoutException:
+        return False, "Connection timed out"
+    except Exception as e:
+        return False, f"URL verification failed: {str(e)[:40]}"
+
+
 def parse_date_safe(date_str: Optional[str]) -> Optional[datetime.date]:
     """
     Safely parses various date formats (YYYY-MM-DD, DD/MM/YYYY, MM/DD/YYYY).
@@ -109,20 +175,33 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
     if contact_phone:
         clean_phone = re.sub(r"[\s\-\(\)]", "", contact_phone)
         if re.match(r"^(\+639\d{9}|09\d{9}|062\d{7}|\+6362\d{7})$", clean_phone):
-            is_valid_phone = True
-            score += 15
-            audit_notes.append(f"Public contact validated: active PH format ({contact_phone}) (+15 pts)")
+            if is_dummy_or_sequential_phone(clean_phone):
+                audit_notes.append(f"Phone flagged: Sequential or dummy pattern detected ({contact_phone}) (0 pts)")
+                reasons.append("Contact phone appears to be a sequential or dummy placeholder")
+            else:
+                is_valid_phone = True
+                score += 15
+                audit_notes.append(f"Public contact validated: active PH format ({contact_phone}) (+15 pts)")
         else:
-            audit_notes.append(f"Contact phone provided ({contact_phone})")
+            audit_notes.append(f"Contact phone provided does not match valid Philippine format ({contact_phone})")
+            reasons.append("Phone number does not match valid Philippine mobile or Zamboanga landline format")
     else:
         reasons.append("No public contact phone number provided")
 
     has_social_link = False
     if social_url:
-        if re.match(r"^https?://(www\.)?(facebook\.com|fb\.com|instagram\.com|google\.com/maps|maps\.app\.goo\.gl|[\w\-\.]+\.[\w]{2,})", social_url, re.IGNORECASE):
-            has_social_link = True
-            score += 10
-            audit_notes.append("Public digital footprint confirmed: valid social or maps URL (+10 pts)")
+        is_known_platform = bool(re.match(r"^https?://(www\.)?(facebook\.com|fb\.com|instagram\.com|google\.com/maps|maps\.app\.goo\.gl|[\w\-\.]+\.[\w]{2,})", social_url, re.IGNORECASE))
+        if is_known_platform:
+            is_alive, live_note = verify_url_liveness(social_url)
+            if is_alive:
+                has_social_link = True
+                score += 10
+                audit_notes.append(f"Public digital footprint verified: {live_note} (+10 pts)")
+            else:
+                audit_notes.append(f"Digital footprint warning: {live_note} (0 pts)")
+                reasons.append(f"Social media link unverified or unreachable ({live_note})")
+        else:
+            reasons.append("Social media URL has unrecognized domain structure")
 
     # 3. Local Zamboanga Geofence Check
     is_zamboanga = bool(re.search(
@@ -255,14 +334,25 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
                 else:
                     reasons.append("Establishment name not clearly found in certificate document")
 
-        # Auto-Approval Rule for Certified Tier
-        is_auto_approved = (score >= 70) and (not is_expired) and hcb_matched and (not is_duplicate)
-        final_status = "verified" if is_auto_approved else "needs_review"
-        summary_note = (
-            f"AI AUTO-APPROVED: Halal Certified (Score: {score}%). Accredited HCB: {hcb_name}. Expiry: {parsed_expiry.isoformat() if parsed_expiry else 'N/A'}."
-            if is_auto_approved
-            else f"AI AUDITED: Certified claim needs manual review (Score: {score}%). Issues: {'; '.join(reasons)}."
-        )
+        # Strict Invariant Guardrails for Certified Tier
+        has_fatal_flaw = is_expired or (not hcb_matched) or is_duplicate
+
+        if has_fatal_flaw:
+            score = 0
+            is_auto_approved = False
+            final_status = "needs_review"
+            summary_note = (
+                f"FATAL INVARIANT FAILED: Certified claim blocked from auto-approval (Confidence: 0%). "
+                f"Issues: {'; '.join(reasons)}."
+            )
+        else:
+            is_auto_approved = score >= 70
+            final_status = "verified" if is_auto_approved else "needs_review"
+            summary_note = (
+                f"AI AUTO-APPROVED: Halal Certified (Confidence: {score}%). Accredited HCB: {hcb_name}. Expiry: {parsed_expiry.isoformat() if parsed_expiry else 'N/A'}."
+                if is_auto_approved
+                else f"AI AUDITED: Certified claim needs manual review (Confidence: {score}%). Issues: {'; '.join(reasons)}."
+            )
 
     else:
         # Non-certified community tiers: Muslim-Owned, Muslim-Friendly, Vegetarian/Vegan
@@ -275,31 +365,50 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
         )
         audit_notes.append(f"Classification Tier: {tier_label} (Not claimed as formally 3rd-party certified).")
 
-        # Completeness scoring for community listing (up to 65 pts)
+        # Completeness scoring for community listing (up to 75 pts)
         if is_zamboanga:
             score += 25
         if is_valid_phone:
             score += 20
         if has_social_link:
-            score += 15
+            score += 10
         if payload.get("product_names"):
             score += 15
             audit_notes.append("Verified dishes / menu offerings specified (+15 pts)")
+        amenities = payload.get("amenities") or []
+        if amenities:
+            score += 5
+            audit_notes.append(f"Guest amenities declared: {', '.join(amenities)} (+5 pts)")
 
-        # Community tier auto-acceptance as 'community_listed' (Never falsely marked as 'verified')
-        is_community_approved = (score >= 60) and is_zamboanga and is_valid_phone and (not is_duplicate)
+        # Mandatory Visual Evidence for Community Auto-Acceptance
+        has_photo = bool(payload.get("logo_url") or payload.get("certificate_url"))
+        if has_photo:
+            score += 15
+            audit_notes.append("Visual evidence verified: Storefront or menu photo attached (+15 pts)")
+        else:
+            reasons.append("No physical storefront or menu photo attached")
+
+        # Community tier auto-acceptance as 'community_listed'
+        # Strict Guardrails: Must be within Zamboanga, valid non-dummy phone, no duplicates, AND must have photo evidence!
+        is_community_approved = (
+            (score >= 65) and
+            is_zamboanga and
+            is_valid_phone and
+            (not is_duplicate) and
+            has_photo
+        )
         if is_community_approved:
             is_auto_approved = True
             final_status = "community_listed"
             summary_note = (
-                f"AI TRIAGED & PUBLISHED: Community Listed - {tier_label} (Score: {score}%). "
-                f"Contact verified ({contact_phone}). Transparently listed without 3rd-party certificate."
+                f"AI TRIAGED & PUBLISHED: Community Listed - {tier_label} (Confidence: {score}%). "
+                f"Verified local contact ({contact_phone}) with storefront photo evidence. Transparently listed without 3rd-party certificate."
             )
         else:
             is_auto_approved = False
             final_status = "needs_review"
             summary_note = (
-                f"AI AUDITED: Community listing incomplete, routed to review queue (Score: {score}%). "
+                f"AI AUDITED: Community listing queued for review (Confidence: {score}%). "
                 f"Issues: {'; '.join(reasons)}."
             )
 
@@ -400,6 +509,25 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
                 pass
 
         matched_hcb_code = None
+        cert_body_input = (payload.get("certifying_body") or "").strip().upper()
+
+        if not hcb_matched and cert_body_input:
+            matched_code = None
+            for code in ACCREDITED_HCB_CODES:
+                if code == cert_body_input or code in cert_body_input:
+                    matched_code = code
+                    break
+            if not matched_code and cert_body_input in ["MUI", "BPJPH"]:
+                matched_code = cert_body_input
+
+            if matched_code:
+                hcb_matched = True
+                hcb_name = f"Accredited Body ({matched_code})"
+                matched_hcb_code = matched_code
+            elif cert_body_input != "OTHER":
+                hcb_matched = True
+                hcb_name = f"Certifying Body ({payload.get('certifying_body')})"
+
         if not hcb_matched and cert_no:
             upper_cert = cert_no.upper()
             for code in ACCREDITED_HCB_CODES:
@@ -435,30 +563,56 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
         else:
             reasons.append("Expiration date not provided")
 
-        is_auto_approved = (score >= 70) and (not is_expired) and (not haram_found) and hcb_matched
-        final_status = "VERIFIED" if is_auto_approved else "PENDING_VERIFICATION"
-        summary_note = (
-            f"AI AUTO-APPROVED: Halal Certified (Score: {score}%). Accredited HCB: {hcb_name}. Active validity verified. Additives clean."
-            if is_auto_approved
-            else f"AI AUDITED: Certified claim needs manual review (Score: {score}%). Issues: {'; '.join(reasons)}"
-        )
+        has_fatal_prod_flaw = is_expired or bool(haram_found) or (not hcb_matched)
+        if has_fatal_prod_flaw:
+            score = 0
+            is_auto_approved = False
+            final_status = "PENDING_VERIFICATION"
+            summary_note = (
+                f"FATAL INVARIANT FAILED: Product blocked from auto-approval (Confidence: 0%). "
+                f"Issues: {'; '.join(reasons)}"
+            )
+        else:
+            is_auto_approved = score >= 70
+            final_status = "VERIFIED" if is_auto_approved else "PENDING_VERIFICATION"
+            summary_note = (
+                f"AI AUTO-APPROVED: Halal Certified (Confidence: {score}%). Accredited HCB: {hcb_name}. Active validity verified. Additives clean."
+                if is_auto_approved
+                else f"AI AUDITED: Certified claim needs manual review (Confidence: {score}%). Issues: {'; '.join(reasons)}"
+            )
 
     else:
         # Declared Pork-Free or Vegetarian/Vegan
         tier_label = "Pork-Free Declared" if halal_tier == "pork_free_declared" else "Vegetarian / Vegan"
         audit_notes.append(f"Classification Tier: {tier_label} (Not claimed as formally 3rd-party certified).")
 
-        if ingredients and not haram_found:
-            score += 35
-            audit_notes.append("Full ingredient declaration provided and screened clean (+35 pts)")
+        if haram_found:
+            score = 0
+            is_auto_approved = False
+            final_status = "PENDING_VERIFICATION"
+            summary_note = (
+                f"FATAL INVARIANT FAILED: Prohibited additives detected in {tier_label} (Confidence: 0%). "
+                f"Issues: {'; '.join(reasons)}"
+            )
+        else:
+            if ingredients:
+                score += 35
+                audit_notes.append("Full ingredient declaration provided and screened clean (+35 pts)")
 
-        is_auto_approved = (score >= 60) and (not haram_found) and bool(ingredients)
-        final_status = "COMMUNITY_LISTED" if is_auto_approved else "PENDING_VERIFICATION"
-        summary_note = (
-            f"AI TRIAGED & PUBLISHED: Community Listed - {tier_label} (Score: {score}%). Zero prohibited additives detected."
-            if is_auto_approved
-            else f"AI AUDITED: Needs manual review (Score: {score}%). Issues: {'; '.join(reasons)}"
-        )
+            has_prod_photo = bool(payload.get("image_url"))
+            if has_prod_photo:
+                score += 20
+                audit_notes.append("Packaging photo verified (+20 pts)")
+            else:
+                reasons.append("Packaging photo not provided")
+
+            is_auto_approved = (score >= 60) and bool(ingredients) and has_prod_photo
+            final_status = "COMMUNITY_LISTED" if is_auto_approved else "PENDING_VERIFICATION"
+            summary_note = (
+                f"AI TRIAGED & PUBLISHED: Community Listed - {tier_label} (Confidence: {score}%). Zero prohibited additives detected with packaging photo."
+                if is_auto_approved
+                else f"AI AUDITED: Community product queued for review (Confidence: {score}%). Issues: {'; '.join(reasons)}"
+            )
 
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
 

@@ -10,6 +10,10 @@ import {
     CheckCircle2,
     Flag,
     Navigation,
+    Store,
+    HeartHandshake,
+    Leaf,
+    Compass,
 } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { getSafeUrl } from '../../utils/security';
@@ -24,6 +28,17 @@ export default function EstablishmentDetailModal({
     if (!establishment) return null;
 
     const statusConfig = getStatusConfig(establishment.halal_status);
+
+    const hasPrayerSpace = Boolean(
+        establishment.has_prayer_space ||
+        (establishment.description && (establishment.description.toLowerCase().includes('prayer space') || establishment.description.toLowerCase().includes('musalah'))) ||
+        (Array.isArray(establishment.amenities) && establishment.amenities.some((a) => a.toLowerCase().includes('prayer')))
+    );
+    const isAlcoholFree = Boolean(
+        establishment.is_alcohol_free ||
+        (establishment.description && establishment.description.toLowerCase().includes('alcohol-free')) ||
+        (Array.isArray(establishment.amenities) && establishment.amenities.some((a) => a.toLowerCase().includes('alcohol')))
+    );
 
     return (
         <Modal
@@ -85,7 +100,7 @@ export default function EstablishmentDetailModal({
                     </div>
                 </div>
 
-                {/* HCB Certification Standing */}
+                {/* Classification & Certification Standing */}
                 {establishment.certifying_bodies ? (
                     <div className="rounded-xl bg-emerald-50/60 border border-emerald-200 p-3 text-xs space-y-2">
                         <div className="flex items-center justify-between">
@@ -115,20 +130,101 @@ export default function EstablishmentDetailModal({
                             </div>
                         </div>
                     </div>
+                ) : statusConfig.key === 'muslim_owned' ? (
+                    <div className="rounded-xl bg-sky-50/70 border border-sky-200 p-3 text-xs space-y-1.5">
+                        <div className="flex items-center justify-between">
+                            <span className="font-bold text-sky-900 flex items-center gap-1.5">
+                                <Store size={15} className="text-sky-600" />
+                                Muslim-Owned Kitchen
+                            </span>
+                            <span className="font-bold text-[10px] text-sky-800 bg-white px-2 py-0.5 rounded border border-sky-300">
+                                Pork-Free & Muslim Operated
+                            </span>
+                        </div>
+
+                        <p className="text-slate-600 text-[11px] leading-relaxed">
+                            Owned and operated by Muslim proprietors with all meat sourced from halal suppliers. Strictly pork-free premises with dedicated utensils.
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-sky-200/60 text-[11px]">
+                            <div>
+                                <span className="text-slate-500 block">Classification:</span>
+                                <span className="font-bold text-sky-800">Community Listed</span>
+                            </div>
+                            <div>
+                                <span className="text-slate-500 block">Kitchen Standard:</span>
+                                <span className="font-bold text-sky-700">Pork-Free Kitchen</span>
+                            </div>
+                        </div>
+                    </div>
+                ) : statusConfig.key === 'muslim_friendly' ? (
+                    <div className="rounded-xl bg-indigo-50/70 border border-indigo-200 p-3 text-xs space-y-1.5">
+                        <div className="flex items-center justify-between">
+                            <span className="font-bold text-indigo-900 flex items-center gap-1.5">
+                                <HeartHandshake size={15} className="text-indigo-600" />
+                                Muslim-Friendly Accommodations
+                            </span>
+                            <span className="font-bold text-[10px] text-indigo-800 bg-white px-2 py-0.5 rounded border border-indigo-300">
+                                Pork-Free Options
+                            </span>
+                        </div>
+
+                        <p className="text-slate-600 text-[11px] leading-relaxed">
+                            Establishment provides dedicated pork-free options and food preparation accommodations for Muslim diners. Not under formal third-party certification.
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-indigo-200/60 text-[11px]">
+                            <div>
+                                <span className="text-slate-500 block">Classification:</span>
+                                <span className="font-bold text-indigo-800">Lifestyle Accommodation</span>
+                            </div>
+                            <div>
+                                <span className="text-slate-500 block">Kitchen Standard:</span>
+                                <span className="font-bold text-indigo-700">Pork-Free Dishes</span>
+                            </div>
+                        </div>
+                    </div>
+                ) : statusConfig.key === 'vegetarian_vegan' ? (
+                    <div className="rounded-xl bg-teal-50/70 border border-teal-200 p-3 text-xs space-y-1.5">
+                        <div className="flex items-center justify-between">
+                            <span className="font-bold text-teal-900 flex items-center gap-1.5">
+                                <Leaf size={15} className="text-teal-600" />
+                                Plant-Based / Vegan Kitchen
+                            </span>
+                            <span className="font-bold text-[10px] text-teal-800 bg-white px-2 py-0.5 rounded border border-teal-300">
+                                100% Plant-Based
+                            </span>
+                        </div>
+
+                        <p className="text-slate-600 text-[11px] leading-relaxed">
+                            Vegetarian and plant-based menu with zero meat or animal-derived ingredients, eliminating halal slaughter and non-halal gelatin concerns.
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-teal-200/60 text-[11px]">
+                            <div>
+                                <span className="text-slate-500 block">Classification:</span>
+                                <span className="font-bold text-teal-800">Dietary Safe</span>
+                            </div>
+                            <div>
+                                <span className="text-slate-500 block">Kitchen Standard:</span>
+                                <span className="font-bold text-teal-700">Meat-Free Kitchen</span>
+                            </div>
+                        </div>
+                    </div>
                 ) : (
                     <div className="rounded-xl bg-amber-50/80 border border-amber-200 p-3 text-xs space-y-1.5">
                         <div className="flex items-center justify-between">
                             <span className="font-bold text-amber-900 flex items-center gap-1.5">
                                 <AlertCircle size={15} className="text-amber-600" />
-                                No Accredited HCB on Record
+                                Unverified / Under Review
                             </span>
                             <span className="font-bold text-[10px] text-amber-800 bg-white px-2 py-0.5 rounded border border-amber-300">
-                                Self-Declared / Unverified
+                                Pending Audit
                             </span>
                         </div>
 
                         <p className="text-slate-600 text-[11px] leading-relaxed">
-                            This establishment does not have an active accredited Halal Certification Body (HCB) audit record. Listed as Muslim-owned or self-declared catering.
+                            This establishment does not have an active accredited Halal Certification Body record or verified community listing. Please verify directly with restaurant management.
                         </p>
 
                         <div className="grid grid-cols-2 gap-2 pt-1 border-t border-amber-200/60 text-[11px]">
@@ -140,6 +236,29 @@ export default function EstablishmentDetailModal({
                                 <span className="text-slate-500 block">Compliance Status:</span>
                                 <span className="font-bold text-amber-700">Pending Review</span>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Dining Amenities & Facilities */}
+                {(hasPrayerSpace || isAlcoholFree) && (
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-xs space-y-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                            Dining Amenities & Facilities
+                        </span>
+                        <div className="flex flex-wrap gap-2 text-[11px]">
+                            {hasPrayerSpace && (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
+                                    <Compass size={13} className="text-emerald-600" />
+                                    Dedicated Prayer Space (Musalah)
+                                </span>
+                            )}
+                            {isAlcoholFree && (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
+                                    <ShieldCheck size={13} className="text-emerald-600" />
+                                    100% Alcohol-Free Premises
+                                </span>
+                            )}
                         </div>
                     </div>
                 )}
@@ -205,6 +324,18 @@ export default function EstablishmentDetailModal({
                         {establishment.certifying_bodies ? (
                             <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md">
                                 {establishment.certifying_bodies.code || 'Certified'} Kitchen
+                            </span>
+                        ) : statusConfig.key === 'muslim_owned' ? (
+                            <span className="text-[10px] font-bold text-sky-800 bg-sky-50 border border-sky-200/80 px-2 py-0.5 rounded-md">
+                                Muslim-Owned Kitchen
+                            </span>
+                        ) : statusConfig.key === 'muslim_friendly' ? (
+                            <span className="text-[10px] font-bold text-indigo-800 bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-md">
+                                Muslim-Friendly Menu
+                            </span>
+                        ) : statusConfig.key === 'vegetarian_vegan' ? (
+                            <span className="text-[10px] font-bold text-teal-800 bg-teal-50 border border-teal-200/80 px-2 py-0.5 rounded-md">
+                                Plant-Based Menu
                             </span>
                         ) : (
                             <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-md">

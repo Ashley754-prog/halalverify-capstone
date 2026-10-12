@@ -22,14 +22,29 @@ function getProductCertifierBadge(product) {
     if (raw.includes('idcp') || raw.includes("islamic da'wah") || raw.includes("islamic dawah")) {
         return 'IDCP';
     }
+    if (raw.includes('hdip') || raw.includes('halal development institute')) {
+        return 'HDIP';
+    }
+    if (raw.includes('jakim') || raw.includes('malaysia')) {
+        return 'JAKIM';
+    }
+    if (raw.includes('muis') || raw.includes('singapura') || raw.includes('singapore')) {
+        return 'MUIS';
+    }
+    if (raw.includes('bpjph') || raw.includes('indonesia') || raw.includes('mui')) {
+        return 'BPJPH / MUI';
+    }
+    if (raw.includes('mmhcb') || raw.includes('mindanao halal certification')) {
+        return 'MMHCB';
+    }
+    if (raw.includes('hiccip') || raw.includes('chamber of commerce')) {
+        return 'HICCIP';
+    }
     if (raw.includes('busc') || raw.includes('basilan ulama')) {
         return 'BUSC';
     }
     if (raw.includes('bpcc') || raw.includes('bangsamoro')) {
         return 'BPCC';
-    }
-    if (raw.includes('hdip') || raw.includes('halal development institute')) {
-        return 'HDIP';
     }
     if (raw.includes('zampen') || raw.includes('dti region ix')) {
         return 'DTI ZAMPEN';

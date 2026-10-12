@@ -43,6 +43,7 @@ export default function VerificationQueue({ onViewChange }) {
     const [certNumber, setCertNumber] = useState('');
     const [expiryDate, setExpiryDate] = useState('');
     const [selectedHcbId, setSelectedHcbId] = useState('');
+    const [selectedStatus, setSelectedStatus] = useState('verified');
 
     // Document Viewer state
     const [zoomLevel, setZoomLevel] = useState(1);
@@ -123,6 +124,14 @@ export default function VerificationQueue({ onViewChange }) {
         setCertNumber(item.certificate_number || '');
         setExpiryDate(item.expiry_date || '');
         setSelectedHcbId(item.certifying_body_id || '');
+        const st = (item.halal_status || '').toLowerCase();
+        if (['muslim_owned', 'muslim_friendly', 'vegetarian_vegan'].includes(st)) {
+            setSelectedStatus(st);
+        } else if (st.includes('community')) {
+            setSelectedStatus('muslim_owned');
+        } else {
+            setSelectedStatus('verified');
+        }
         setAiEvalResult(null);
         setZoomLevel(1);
         setRotation(0);
@@ -134,6 +143,7 @@ export default function VerificationQueue({ onViewChange }) {
         setCertNumber('');
         setExpiryDate('');
         setSelectedHcbId('');
+        setSelectedStatus('verified');
         setAiEvalResult(null);
     };
 
@@ -917,11 +927,21 @@ export default function VerificationQueue({ onViewChange }) {
                                 <button
                                     type="button"
                                     disabled={processingId === inspectingItem.id}
-                                    onClick={() => handleVerifyEstablishment('VERIFIED')}
+                                    onClick={() => handleVerifyEstablishment(selectedStatus)}
                                     className="flex-1 sm:flex-none px-5 py-2.5 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
                                 >
                                     <CheckCircle2 size={15} />
-                                    <span>Approve & Publish to Registry</span>
+                                    <span>
+                                        {selectedStatus === 'verified'
+                                            ? 'Approve as Certified'
+                                            : selectedStatus === 'muslim_owned'
+                                            ? 'Approve as Muslim-Owned'
+                                            : selectedStatus === 'muslim_friendly'
+                                            ? 'Approve as Muslim-Friendly'
+                                            : selectedStatus === 'vegetarian_vegan'
+                                            ? 'Approve as Plant-Based'
+                                            : 'Approve & Publish to Registry'}
+                                    </span>
                                 </button>
                             </div>
                         </div>
@@ -933,9 +953,15 @@ export default function VerificationQueue({ onViewChange }) {
                             <div className="flex items-center justify-between text-xs pb-3 border-b border-slate-800 shrink-0">
                                 <span className="font-bold text-slate-200 flex items-center gap-2">
                                     <FileText size={15} className="text-emerald-400" />
-                                    <span>Physical Document Preview</span>
+                                    <span>
+                                        {inspectingItem.certificate_url
+                                            ? 'Physical Document Preview'
+                                            : inspectingItem.logo_url
+                                            ? 'Storefront / Signboard Photo'
+                                            : 'Physical Document Preview'}
+                                    </span>
                                 </span>
-                                {inspectingItem.certificate_url && (
+                                {(inspectingItem.certificate_url || inspectingItem.logo_url) && (
                                     <div className="flex items-center gap-1.5 bg-slate-800/80 p-1 rounded-lg border border-slate-700/60">
                                         <button
                                             type="button"
@@ -962,9 +988,9 @@ export default function VerificationQueue({ onViewChange }) {
                                         >
                                             <RotateCw size={13} />
                                         </button>
-                                        {getSafeUrl(inspectingItem.certificate_url) && (
+                                        {getSafeUrl(inspectingItem.certificate_url || inspectingItem.logo_url) && (
                                             <a
-                                                href={getSafeUrl(inspectingItem.certificate_url)}
+                                                href={getSafeUrl(inspectingItem.certificate_url || inspectingItem.logo_url)}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="p-1 rounded text-emerald-400 hover:text-emerald-300 hover:bg-slate-700 transition ml-0.5"
@@ -978,10 +1004,10 @@ export default function VerificationQueue({ onViewChange }) {
                             </div>
 
                             <div className="flex-1 mt-3 flex items-center justify-center overflow-hidden bg-slate-950/80 rounded-xl relative border border-slate-800/80">
-                                {inspectingItem.certificate_url ? (
+                                {inspectingItem.certificate_url || inspectingItem.logo_url ? (
                                     <img
-                                        src={inspectingItem.certificate_url}
-                                        alt="Submitted Certificate"
+                                        src={inspectingItem.certificate_url || inspectingItem.logo_url}
+                                        alt={inspectingItem.certificate_url ? 'Submitted Certificate' : 'Storefront or Signboard Photo'}
                                         style={{
                                             transform: `scale(${zoomLevel}) rotate(${rotation}deg)`,
                                             transition: 'transform 0.15s ease',
@@ -993,9 +1019,9 @@ export default function VerificationQueue({ onViewChange }) {
                                         <div className="w-14 h-14 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center mx-auto text-slate-400">
                                             <FileText size={26} className="text-slate-400" />
                                         </div>
-                                        <h4 className="text-sm font-bold text-slate-200">No Physical Document Attached</h4>
+                                        <h4 className="text-sm font-bold text-slate-200">No Document or Photo Attached</h4>
                                         <p className="text-xs text-slate-400 leading-relaxed">
-                                            The contributor registered this establishment without uploading a digital scan of their halal certificate.
+                                            The contributor registered this establishment without uploading a digital scan of a certificate or storefront signboard.
                                         </p>
                                         <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-700/50 text-[11px] text-slate-400 text-left">
                                             💡 <strong>Tip:</strong> Cross-check the business name and address against accredited Halal Certification Bodies (HCB), or conduct an on-site audit before verification.
@@ -1075,6 +1101,27 @@ export default function VerificationQueue({ onViewChange }) {
 
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                                        Approved Halal Classification Tier
+                                    </label>
+                                    <select
+                                        value={selectedStatus}
+                                        onChange={(e) => setSelectedStatus(e.target.value)}
+                                        className="w-full rounded-xl border border-slate-300 p-2.5 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition"
+                                    >
+                                        <option value="verified">Formally Halal Certified (With Accredited HCB)</option>
+                                        <option value="muslim_owned">Muslim-Owned Kitchen (Pork-Free)</option>
+                                        <option value="muslim_friendly">Muslim-Friendly Venue (Pork-Free Selections)</option>
+                                        <option value="vegetarian_vegan">Vegetarian / Vegan Kitchen (Plant-Based)</option>
+                                    </select>
+                                    {selectedStatus !== 'verified' && (
+                                        <p className="text-[11px] text-sky-700 bg-sky-50 border border-sky-200 rounded-lg p-2 mt-1.5">
+                                            This establishment will be published under the Community & Lifestyle directory. An official certificate number is optional.
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
                                         Accredited Halal Body (HCB)
                                     </label>
                                     <select
@@ -1085,7 +1132,7 @@ export default function VerificationQueue({ onViewChange }) {
                                         <option value="">Select Certifying Body...</option>
                                         {certifyingBodies.map((cb) => (
                                             <option key={cb.id} value={cb.id}>
-                                                {cb.code} — {cb.name}
+                                                {cb.code} : {cb.name}
                                             </option>
                                         ))}
                                     </select>
@@ -1125,6 +1172,17 @@ export default function VerificationQueue({ onViewChange }) {
                                         {inspectingItem.address || inspectingItem.city || 'Zamboanga City'}
                                     </p>
                                 </div>
+
+                                {inspectingItem.description && inspectingItem.description.includes('Amenities:') && (
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                                            Declared Guest Amenities
+                                        </label>
+                                        <p className="text-xs text-emerald-800 bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 font-semibold">
+                                            {inspectingItem.description}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Submitted Menu Items */}
