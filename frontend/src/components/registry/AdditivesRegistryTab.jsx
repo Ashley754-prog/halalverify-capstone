@@ -26,55 +26,56 @@ export default function AdditivesRegistryTab({
     });
 
     return (
-        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex-1 flex flex-col">
-            <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 mb-4 sm:mb-6">
+        <div className="bg-white p-3 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex-1 flex flex-col min-h-0">
+            <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-2.5 sm:gap-3 mb-3 sm:mb-6 shrink-0">
                 <div>
-                    <h3 className="font-bold text-slate-800 text-base sm:text-lg flex items-center gap-2">
-                        <Database className="text-emerald-600 shrink-0" size={20} /> Chemical Reference Database
+                    <h3 className="font-bold text-slate-800 text-sm sm:text-lg flex items-center gap-1.5 sm:gap-2">
+                        <Database className="text-emerald-600 shrink-0" size={18} /> Chemical Reference Database
                     </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="hidden sm:block text-xs text-slate-500 mt-0.5">
                         E-numbers, scientific classifications, and scholar compliance statuses.
                     </p>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full md:w-auto">
                     {/* Status Filter */}
                     <select
                         value={additiveStatusFilter}
                         onChange={(e) => setAdditiveStatusFilter(e.target.value)}
-                        className="bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs sm:text-sm font-medium text-slate-700 focus:outline-none focus:border-emerald-500"
+                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer flex-1 sm:flex-none"
                     >
                         <option value="all">All Statuses</option>
-                        <option value="Halal">Halal Only</option>
-                        <option value="Doubtful">Doubtful Only</option>
-                        <option value="Haram">Haram Only</option>
+                        <option value="Halal">Halal</option>
+                        <option value="Doubtful">Doubtful</option>
+                        <option value="Haram">Haram</option>
                     </select>
 
                     {/* Origin Filter */}
                     <select
                         value={additiveOriginFilter}
                         onChange={(e) => setAdditiveOriginFilter(e.target.value)}
-                        className="bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs sm:text-sm font-medium text-slate-700 focus:outline-none focus:border-emerald-500"
+                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer flex-1 sm:flex-none"
                     >
                         <option value="all">All Origins</option>
-                        <option value="Plant">Plant Origin</option>
-                        <option value="Animal">Animal Origin</option>
-                        <option value="Insect">Insect Origin</option>
-                        <option value="Synthetic">Synthetic / Mineral</option>
+                        <option value="Plant">Plant</option>
+                        <option value="Animal">Animal</option>
+                        <option value="Insect">Insect</option>
+                        <option value="Synthetic">Synthetic</option>
                     </select>
 
-                    <div className="relative w-full sm:w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    <div className="relative w-full sm:w-60">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                         <input
                             type="text"
-                            placeholder="Search additives or code..."
+                            placeholder="Search code or additive..."
                             value={dictSearch}
                             onChange={(e) => setDictSearch(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-4 text-xs sm:text-sm focus:outline-none focus:border-emerald-500 transition"
+                            className="w-full h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 text-xs focus:outline-none focus:border-emerald-500 transition"
                         />
                     </div>
                 </div>
             </div>
+
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 overflow-y-auto pr-1 sm:pr-2 pb-4">
                 {filteredAdditives.map((item) => (

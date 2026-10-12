@@ -22,41 +22,43 @@ export default function HcbsRegistryTab({
     });
 
     return (
-        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex-1 flex flex-col">
-            <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 mb-4 sm:mb-6">
+
+        <div className="bg-white p-3 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex-1 flex flex-col min-h-0">
+            <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-2.5 sm:gap-3 mb-3 sm:mb-6 shrink-0">
                 <div>
-                    <h3 className="font-bold text-slate-800 text-base sm:text-lg flex items-center gap-2">
-                        <Award className="text-emerald-600 shrink-0" size={20} /> Accredited Halal Certification Bodies (HCBs) & Oversight
+                    <h3 className="font-bold text-slate-800 text-sm sm:text-lg flex items-center gap-1.5 sm:gap-2">
+                        <Award className="text-emerald-600 shrink-0" size={18} /> Accredited Halal Certifying Bodies (HCB)
                     </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="hidden sm:block text-xs text-slate-500 mt-0.5">
                         Recognized by Philippine National Standards, NCMF, DTI Halal Board, and Zamboanga City Ordinance No. 489.
                     </p>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div className="flex items-center gap-2 w-full md:w-auto">
                     <select
                         value={hcbCategoryFilter}
                         onChange={(e) => setHcbCategoryFilter(e.target.value)}
-                        className="bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs sm:text-sm font-medium text-slate-700 focus:outline-none focus:border-emerald-500"
+                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer shrink-0 max-w-[140px] sm:max-w-none"
                     >
-                        <option value="all">All Organizations</option>
+                        <option value="all">All Bodies</option>
                         <option value="Accredited HCB">Accredited HCBs</option>
-                        <option value="Government Oversight">Government Oversight</option>
-                        <option value="International Authority">International Authorities</option>
+                        <option value="Government Oversight">Government</option>
+                        <option value="International Authority">International</option>
                     </select>
 
-                    <div className="relative w-full sm:w-72">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    <div className="relative flex-1 md:w-72">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                         <input
                             type="text"
-                            placeholder="Search HCB code, name, or registry ref..."
+                            placeholder="Search code, name..."
                             value={hcbSearch}
                             onChange={(e) => setHcbSearch(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-4 text-xs sm:text-sm focus:outline-none focus:border-emerald-500 transition"
+                            className="w-full h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 text-xs focus:outline-none focus:border-emerald-500 transition"
                         />
                     </div>
                 </div>
             </div>
+
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto pr-1 pb-4">
                 {filteredHcbs.map((body) => {

@@ -31,43 +31,44 @@ export default function EstablishmentsRegistryTab({
     });
 
     return (
-        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex-1 flex flex-col min-h-0">
+        <div className="bg-white p-3 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex-1 flex flex-col min-h-0">
             {/* Header Toolbar: Ordinance Standard and Controls */}
-            <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 mb-4 sm:mb-6 shrink-0">
+            <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-2.5 sm:gap-3 mb-3 sm:mb-6 shrink-0">
                 <div>
-                    <h3 className="font-bold text-slate-900 text-base sm:text-lg flex items-center gap-2">
-                        <Database className="text-emerald-600 shrink-0" size={20} /> Zamboanga Ordinance No. 489 Registers
+                    <h3 className="font-bold text-slate-900 text-sm sm:text-lg flex items-center gap-1.5 sm:gap-2">
+                        <Database className="text-emerald-600 shrink-0" size={18} /> Zamboanga Ordinance No. 489 Registers
                     </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="hidden sm:block text-xs text-slate-500 mt-0.5">
                         Active certificates, business clearances, and inspection audits in Zamboanga City.
                     </p>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div className="flex items-center gap-2 w-full md:w-auto">
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs sm:text-sm font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer"
+                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer shrink-0 max-w-[130px] sm:max-w-none"
                         aria-label="Filter by verification standard"
                     >
                         <option value="all">All Standards ({establishments.length})</option>
-                        <option value="verified">Formally Certified</option>
-                        <option value="muslim_owned">Muslim-Owned (Pork-Free)</option>
-                        <option value="needs_review">Pending Review</option>
+                        <option value="verified">Certified</option>
+                        <option value="muslim_owned">Muslim-Owned</option>
+                        <option value="needs_review">Review</option>
                     </select>
 
-                    <div className="relative w-full sm:w-72">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    <div className="relative flex-1 md:w-72">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                         <input
                             type="text"
-                            placeholder="Search name, street, or cuisine..."
+                            placeholder="Search name, street, cuisine..."
                             value={localSearch}
                             onChange={(e) => setLocalSearch(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-4 text-xs sm:text-sm focus:outline-none focus:border-emerald-500 transition"
+                            className="w-full h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 text-xs focus:outline-none focus:border-emerald-500 transition"
                         />
                     </div>
                 </div>
             </div>
+
 
             {/* Establishments Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 overflow-y-auto pr-1 sm:pr-2 pb-4">

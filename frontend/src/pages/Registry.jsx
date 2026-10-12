@@ -490,15 +490,15 @@ export const Registry = ({ userRole, onViewChange }) => {
     };
 
     return (
-        <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 flex-1 flex flex-col h-full">
+        <div className="p-3 sm:p-6 md:p-8 space-y-3 sm:space-y-5 flex-1 flex flex-col h-full">
             {/* Module Title and Actions Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1 border-b border-slate-200/80 shrink-0">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3 pb-1 border-b border-slate-200/80 shrink-0">
                 <div>
-                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                        <Store className="text-emerald-600" size={24} />
+                    <h2 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                        <Store className="text-emerald-600" size={22} />
                         Local Halal Registry
                     </h2>
-                    <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                    <p className="hidden sm:block text-xs sm:text-sm text-slate-500 mt-0.5">
                         Verified reference ledgers for food additives, certifying authorities, and Zamboanga establishments.
                     </p>
                 </div>
@@ -508,10 +508,10 @@ export const Registry = ({ userRole, onViewChange }) => {
                         <button
                             type="button"
                             onClick={handleOpenContribution}
-                            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs sm:text-sm font-bold text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-500 transition active:scale-[0.98]"
+                            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-bold text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-500 transition active:scale-[0.98]"
                         >
-                            <Plus size={15} />
-                            Submit Establishment
+                            <Plus size={14} />
+                            <span>Submit <span className="hidden sm:inline">Establishment</span></span>
                         </button>
                     )}
 
@@ -523,29 +523,29 @@ export const Registry = ({ userRole, onViewChange }) => {
                                 else if (registryMode === 'hcb') openModal('add-hcb');
                                 else openModal('add-establishment');
                             }}
-                            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs sm:text-sm font-bold text-white hover:bg-slate-800 transition shadow-sm"
+                            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-bold text-white hover:bg-slate-800 transition shadow-sm"
                         >
-                            <Plus size={15} />
-                            {registryMode === 'additives' ? 'Add Additive' : registryMode === 'hcb' ? 'Register HCB' : 'Admin Quick Add'}
+                            <Plus size={14} />
+                            <span>{registryMode === 'additives' ? 'Add Additive' : registryMode === 'hcb' ? 'Register HCB' : 'Quick Add'}</span>
                         </button>
                     )}
                 </div>
             </div>
 
-            {/* Segmented Tab Navigation Control */}
-            <div className="bg-slate-100/90 p-1 rounded-2xl border border-slate-200/90 flex flex-wrap sm:flex-nowrap gap-1 shrink-0">
+            {/* Segmented Tab Navigation Control: Guaranteed Single Row on All Devices */}
+            <div className="bg-slate-100/90 p-1 rounded-xl sm:rounded-2xl border border-slate-200/90 grid grid-cols-3 gap-1 shrink-0">
                 <button
                     type="button"
                     onClick={() => setRegistryMode('additives')}
-                    className={`flex-1 min-w-[150px] py-2 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 ${
+                    className={`py-1.5 sm:py-2 px-1 sm:px-3 rounded-lg sm:rounded-xl font-bold text-[11px] sm:text-xs md:text-sm transition-all flex items-center justify-center gap-1 sm:gap-2 truncate ${
                         registryMode === 'additives'
                             ? 'bg-white text-emerald-800 shadow-sm border border-slate-200/80'
                             : 'text-slate-600 hover:text-slate-900'
                     }`}
                 >
-                    <ShieldCheck size={16} className={registryMode === 'additives' ? 'text-emerald-600' : 'text-slate-400'} />
-                    <span>Food Additives</span>
-                    <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
+                    <ShieldCheck size={14} className={`shrink-0 ${registryMode === 'additives' ? 'text-emerald-600' : 'text-slate-400'}`} />
+                    <span className="truncate"><span className="hidden sm:inline">Food </span>Additives</span>
+                    <span className={`text-[9px] sm:text-[10px] font-mono px-1 sm:px-1.5 py-0.2 rounded-full shrink-0 ${
                         registryMode === 'additives' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200/80 text-slate-600'
                     }`}>
                         {additives.length}
@@ -555,15 +555,15 @@ export const Registry = ({ userRole, onViewChange }) => {
                 <button
                     type="button"
                     onClick={() => setRegistryMode('hcb')}
-                    className={`flex-1 min-w-[150px] py-2 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 ${
+                    className={`py-1.5 sm:py-2 px-1 sm:px-3 rounded-lg sm:rounded-xl font-bold text-[11px] sm:text-xs md:text-sm transition-all flex items-center justify-center gap-1 sm:gap-2 truncate ${
                         registryMode === 'hcb'
                             ? 'bg-white text-emerald-800 shadow-sm border border-slate-200/80'
                             : 'text-slate-600 hover:text-slate-900'
                     }`}
                 >
-                    <Award size={16} className={registryMode === 'hcb' ? 'text-emerald-600' : 'text-slate-400'} />
-                    <span>Certifying Bodies (HCB)</span>
-                    <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
+                    <Award size={14} className={`shrink-0 ${registryMode === 'hcb' ? 'text-emerald-600' : 'text-slate-400'}`} />
+                    <span className="truncate"><span className="hidden sm:inline">Certifiers (</span>HCB<span className="hidden sm:inline">)</span></span>
+                    <span className={`text-[9px] sm:text-[10px] font-mono px-1 sm:px-1.5 py-0.2 rounded-full shrink-0 ${
                         registryMode === 'hcb' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200/80 text-slate-600'
                     }`}>
                         {hcbs.length}
@@ -573,21 +573,22 @@ export const Registry = ({ userRole, onViewChange }) => {
                 <button
                     type="button"
                     onClick={() => setRegistryMode('establishments')}
-                    className={`flex-1 min-w-[150px] py-2 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 ${
+                    className={`py-1.5 sm:py-2 px-1 sm:px-3 rounded-lg sm:rounded-xl font-bold text-[11px] sm:text-xs md:text-sm transition-all flex items-center justify-center gap-1 sm:gap-2 truncate ${
                         registryMode === 'establishments'
                             ? 'bg-white text-emerald-800 shadow-sm border border-slate-200/80'
                             : 'text-slate-600 hover:text-slate-900'
                     }`}
                 >
-                    <MapPin size={16} className={registryMode === 'establishments' ? 'text-emerald-600' : 'text-slate-400'} />
-                    <span>Establishments Directory</span>
-                    <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
+                    <MapPin size={14} className={`shrink-0 ${registryMode === 'establishments' ? 'text-emerald-600' : 'text-slate-400'}`} />
+                    <span className="truncate"><span className="hidden sm:inline">Venues & </span>Directory</span>
+                    <span className={`text-[9px] sm:text-[10px] font-mono px-1 sm:px-1.5 py-0.2 rounded-full shrink-0 ${
                         registryMode === 'establishments' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200/80 text-slate-600'
                     }`}>
                         {establishments.length}
                     </span>
                 </button>
             </div>
+
 
 
             {loading && (
