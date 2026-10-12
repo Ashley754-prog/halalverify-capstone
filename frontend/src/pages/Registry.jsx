@@ -3,8 +3,10 @@ import {
     ShieldCheck, 
     MapPin, 
     Plus, 
-    Award
+    Award,
+    Store
 } from 'lucide-react';
+
 import Toast from '../components/ui/Toast';
 import ContributionModal from '../components/submissions/ContributionModal';
 import AuthPromptModal from '../components/submissions/AuthPromptModal';
@@ -489,58 +491,27 @@ export const Registry = ({ userRole, onViewChange }) => {
 
     return (
         <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 flex-1 flex flex-col h-full">
-            {/* Navigation Tabs and Actions */}
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex min-w-0 flex-wrap gap-2 sm:gap-3">
-                    <button
-                        onClick={() => setRegistryMode('additives')}
-                        className={`w-full sm:w-auto px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all border ${
-                            registryMode === 'additives'
-                                ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm shadow-emerald-500/10'
-                                : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200'
-                        }`}
-                    >
-                        <span className="flex items-center justify-center gap-2">
-                            <ShieldCheck size={18} /> Raw Chemical Additives Ledger
-                        </span>
-                    </button>
-                    
-                    <button
-                        onClick={() => setRegistryMode('hcb')}
-                        className={`w-full sm:w-auto px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all border ${
-                            registryMode === 'hcb'
-                                ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm shadow-emerald-500/10'
-                                : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200'
-                        }`}
-                    >
-                        <span className="flex items-center justify-center gap-2">
-                            <Award size={18} /> Accredited HCB & Regulatory Bodies
-                        </span>
-                    </button>
-
-                    <button
-                        onClick={() => setRegistryMode('establishments')}
-                        className={`w-full sm:w-auto px-4 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all border ${
-                            registryMode === 'establishments'
-                                ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm shadow-emerald-500/10'
-                                : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200'
-                        }`}
-                    >
-                        <span className="flex items-center justify-center gap-2">
-                            <MapPin size={18} /> Zamboanga Clearance Registers
-                        </span>
-                    </button>
+            {/* Module Title and Actions Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1 border-b border-slate-200/80 shrink-0">
+                <div>
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                        <Store className="text-emerald-600" size={24} />
+                        Local Halal Registry
+                    </h2>
+                    <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                        Verified reference ledgers for food additives, certifying authorities, and Zamboanga establishments.
+                    </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                     {registryMode === 'establishments' && (
                         <button
                             type="button"
                             onClick={handleOpenContribution}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-500 transition active:scale-[0.98]"
+                            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs sm:text-sm font-bold text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-500 transition active:scale-[0.98]"
                         >
-                            <Plus size={16} />
-                            Submit Missing Establishment
+                            <Plus size={15} />
+                            Submit Establishment
                         </button>
                     )}
 
@@ -552,14 +523,72 @@ export const Registry = ({ userRole, onViewChange }) => {
                                 else if (registryMode === 'hcb') openModal('add-hcb');
                                 else openModal('add-establishment');
                             }}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-800 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white hover:bg-slate-700 transition shadow-sm"
+                            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs sm:text-sm font-bold text-white hover:bg-slate-800 transition shadow-sm"
                         >
-                            <Plus size={16} />
-                            {registryMode === 'additives' ? 'Add Additive' : registryMode === 'hcb' ? 'Register HCB / Agency' : 'Admin Quick Add'}
+                            <Plus size={15} />
+                            {registryMode === 'additives' ? 'Add Additive' : registryMode === 'hcb' ? 'Register HCB' : 'Admin Quick Add'}
                         </button>
                     )}
                 </div>
             </div>
+
+            {/* Segmented Tab Navigation Control */}
+            <div className="bg-slate-100/90 p-1 rounded-2xl border border-slate-200/90 flex flex-wrap sm:flex-nowrap gap-1 shrink-0">
+                <button
+                    type="button"
+                    onClick={() => setRegistryMode('additives')}
+                    className={`flex-1 min-w-[150px] py-2 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 ${
+                        registryMode === 'additives'
+                            ? 'bg-white text-emerald-800 shadow-sm border border-slate-200/80'
+                            : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                >
+                    <ShieldCheck size={16} className={registryMode === 'additives' ? 'text-emerald-600' : 'text-slate-400'} />
+                    <span>Food Additives</span>
+                    <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
+                        registryMode === 'additives' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200/80 text-slate-600'
+                    }`}>
+                        {additives.length}
+                    </span>
+                </button>
+
+                <button
+                    type="button"
+                    onClick={() => setRegistryMode('hcb')}
+                    className={`flex-1 min-w-[150px] py-2 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 ${
+                        registryMode === 'hcb'
+                            ? 'bg-white text-emerald-800 shadow-sm border border-slate-200/80'
+                            : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                >
+                    <Award size={16} className={registryMode === 'hcb' ? 'text-emerald-600' : 'text-slate-400'} />
+                    <span>Certifying Bodies (HCB)</span>
+                    <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
+                        registryMode === 'hcb' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200/80 text-slate-600'
+                    }`}>
+                        {hcbs.length}
+                    </span>
+                </button>
+
+                <button
+                    type="button"
+                    onClick={() => setRegistryMode('establishments')}
+                    className={`flex-1 min-w-[150px] py-2 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 ${
+                        registryMode === 'establishments'
+                            ? 'bg-white text-emerald-800 shadow-sm border border-slate-200/80'
+                            : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                >
+                    <MapPin size={16} className={registryMode === 'establishments' ? 'text-emerald-600' : 'text-slate-400'} />
+                    <span>Establishments Directory</span>
+                    <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
+                        registryMode === 'establishments' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200/80 text-slate-600'
+                    }`}>
+                        {establishments.length}
+                    </span>
+                </button>
+            </div>
+
 
             {loading && (
                 <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
