@@ -220,6 +220,7 @@ export default function ContributionModal({
           : payload.halal_tier === 'vegetarian_vegan' 
           ? 'Vegetarian / Vegan' 
           : 'Self-Declared';
+        const fallbackStatus = payload.halal_tier === 'halal_certified' ? 'needs_review' : 'community_listed';
         const fallbackNotes = payload.halal_tier === 'halal_certified'
           ? 'Community User Submission: Awaiting Verification'
           : `Community Listed - ${tierName}`;
