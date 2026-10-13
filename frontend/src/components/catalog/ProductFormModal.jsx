@@ -15,6 +15,8 @@ export default function ProductFormModal({
 }) {
     if (!isOpen) return null;
 
+    const isNonCertified = modalForm.status === 'Pork-Free Declared' || modalForm.status === 'Vegetarian / Vegan';
+
     return (
         <Modal
             isOpen={isOpen}
@@ -78,7 +80,15 @@ export default function ProductFormModal({
                         <label className="text-xs font-bold text-slate-700">Halal Status</label>
                         <select
                             value={modalForm.status}
-                            onChange={(e) => setModalForm((prev) => ({ ...prev, status: e.target.value }))}
+                            onChange={(e) => {
+                                const newStatus = e.target.value;
+                                const isNowNonCertified = newStatus === 'Pork-Free Declared' || newStatus === 'Vegetarian / Vegan';
+                                setModalForm((prev) => ({
+                                    ...prev,
+                                    status: newStatus,
+                                    ...(isNowNonCertified ? { certificate_no: '', expiry_date: '' } : {}),
+                                }));
+                            }}
                             className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500 bg-white"
                         >
                             {statuses.filter((s) => s !== 'All Statuses').map((st) => (
@@ -105,30 +115,30 @@ export default function ProductFormModal({
                         </select>
                     </div>
 
-                    <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-700">
-                            Certificate Number <span className="font-normal text-slate-400">(Optional for Pork-Free)</span>
-                        </label>
-                        <input
-                            type="text"
-                            value={modalForm.certificate_no}
-                            onChange={(e) => setModalForm((prev) => ({ ...prev, certificate_no: e.target.value }))}
-                            placeholder="e.g. IDCP-2024-0891"
-                            className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm font-mono focus:outline-none focus:border-emerald-500"
-                        />
-                    </div>
+                    {!isNonCertified && (
+                        <>
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-slate-700">Certificate Number</label>
+                                <input
+                                    type="text"
+                                    value={modalForm.certificate_no}
+                                    onChange={(e) => setModalForm((prev) => ({ ...prev, certificate_no: e.target.value }))}
+                                    placeholder="e.g. IDCP-2024-0891"
+                                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm font-mono focus:outline-none focus:border-emerald-500"
+                                />
+                            </div>
 
-                    <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-700">
-                            Certificate Expiry Date <span className="font-normal text-slate-400">(Optional for Pork-Free)</span>
-                        </label>
-                        <input
-                            type="date"
-                            value={modalForm.expiry_date}
-                            onChange={(e) => setModalForm((prev) => ({ ...prev, expiry_date: e.target.value }))}
-                            className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500"
-                        />
-                    </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-slate-700">Certificate Expiry Date</label>
+                                <input
+                                    type="date"
+                                    value={modalForm.expiry_date}
+                                    onChange={(e) => setModalForm((prev) => ({ ...prev, expiry_date: e.target.value }))}
+                                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500"
+                                />
+                            </div>
+                        </>
+                    )}
 
                     <div className="space-y-1">
                         <label className="text-xs font-bold text-slate-700">Data Source</label>
