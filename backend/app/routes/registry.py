@@ -165,7 +165,12 @@ def get_establishments_map(
             rpc_res = supabase.rpc("get_nearby_establishments", rpc_params).execute()
             raw_data = rpc_res.data or []
 
+            EXCLUDED_UNVERIFIED_STATUSES = {"needs_review", "pending", "pending_review", "flagged", "rejected", "suspended"}
+
             for item in raw_data:
+                item_status = (item.get("halal_status") or "").strip().lower()
+                if (not status or status == "all") and item_status in EXCLUDED_UNVERIFIED_STATUSES:
+                    continue
                 dist_m = item.get("distance_meters")
                 dist_km = round(dist_m / 1000.0, 2) if dist_m is not None else None
                 formatted_item = {
@@ -208,6 +213,10 @@ def get_establishments_map(
                     query = query.or_("halal_status.ilike.%veg%,admin_notes.ilike.%Vegetarian%,admin_notes.ilike.%Plant-Based%")
                 elif "verified" in st_lower or "certified" in st_lower:
                     query = query.eq("halal_status", "verified")
+                elif "needs_review" in st_lower or "pending" in st_lower:
+                    query = query.or_("halal_status.ilike.%needs_review%,halal_status.ilike.%pending%")
+                elif "flagged" in st_lower or "rejected" in st_lower:
+                    query = query.or_("halal_status.ilike.%flagged%,halal_status.ilike.%rejected%,halal_status.ilike.%suspended%")
                 else:
                     query = query.ilike("halal_status", f"%{status}%")
             if city and city != "all":
@@ -216,6 +225,11 @@ def get_establishments_map(
                 query = query.ilike("type", f"%{category}%")
             res = query.order("name").execute()
             data = res.data or []
+
+            # If status is default ("all" or not provided), filter out pending review and flagged/rejected items
+            if not status or status == "all":
+                EXCLUDED_UNVERIFIED_STATUSES = {"needs_review", "pending", "pending_review", "flagged", "rejected", "suspended"}
+                data = [d for d in data if (d.get("halal_status") or "").strip().lower() not in EXCLUDED_UNVERIFIED_STATUSES]
 
 
             if hcb and hcb != "all":

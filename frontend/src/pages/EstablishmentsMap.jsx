@@ -81,7 +81,12 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
 
     const applySeedFallback = useCallback(() => {
         let list = [...SEED_ESTABLISHMENTS];
-        if (selectedStatus !== 'all') {
+        if (selectedStatus === 'all') {
+            list = list.filter((e) => {
+                const key = getStatusConfig(e).key;
+                return key !== 'needs_review' && key !== 'pending_review' && key !== 'flagged' && key !== 'rejected';
+            });
+        } else {
             list = list.filter((e) => {
                 const key = getStatusConfig(e).key;
                 if (selectedStatus === 'needs_review' || selectedStatus === 'pending_review') {
@@ -98,6 +103,9 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                 }
                 if (selectedStatus === 'vegetarian_vegan') {
                     return key === 'vegetarian_vegan';
+                }
+                if (selectedStatus === 'flagged') {
+                    return key === 'flagged' || key === 'rejected';
                 }
                 return key === selectedStatus;
             });
@@ -138,7 +146,12 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                 const { data: sbData, error: sbErr } = await query;
                 if (!sbErr && sbData && sbData.length > 0) {
                     let withCoords = sbData.filter((e) => e.latitude && e.longitude);
-                    if (selectedStatus !== 'all') {
+                    if (selectedStatus === 'all') {
+                        withCoords = withCoords.filter((e) => {
+                            const cfg = getStatusConfig(e);
+                            return cfg.key !== 'needs_review' && cfg.key !== 'pending_review' && cfg.key !== 'flagged' && cfg.key !== 'rejected';
+                        });
+                    } else {
                         withCoords = withCoords.filter((e) => {
                             const cfg = getStatusConfig(e);
                             if (selectedStatus === 'verified' || selectedStatus === 'halal_certified') {
@@ -157,7 +170,7 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                                 return cfg.key === 'needs_review' || cfg.key === 'pending_review';
                             }
                             if (selectedStatus === 'flagged') {
-                                return cfg.key === 'flagged';
+                                return cfg.key === 'flagged' || cfg.key === 'rejected';
                             }
                             return cfg.key === selectedStatus;
                         });
@@ -190,7 +203,13 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                 if (response.ok) {
                     const json = await response.json();
                     const data = json.data || [];
-                    const withCoords = data.filter((e) => e.latitude && e.longitude);
+                    let withCoords = data.filter((e) => e.latitude && e.longitude);
+                    if (selectedStatus === 'all') {
+                        withCoords = withCoords.filter((e) => {
+                            const cfg = getStatusConfig(e);
+                            return cfg.key !== 'needs_review' && cfg.key !== 'pending_review' && cfg.key !== 'flagged' && cfg.key !== 'rejected';
+                        });
+                    }
                     if (withCoords.length > 0) {
                         setEstablishments(withCoords);
                         return;
