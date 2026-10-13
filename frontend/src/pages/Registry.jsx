@@ -51,7 +51,6 @@ const emptyHcbForm = {
     validity_period: '',
     registry_reference: '',
     website: '',
-    seal_url: '',
     accreditation_details: '',
 };
 
@@ -209,7 +208,6 @@ export const Registry = ({ userRole, onViewChange }) => {
                 validity_period: item.validity_period || '',
                 registry_reference: item.registry_reference || '',
                 website: item.website || '',
-                seal_url: item.seal_url || '',
                 accreditation_details: item.accreditation_details || '',
             });
         } else if (modalType === 'flag-establishment') {
@@ -413,7 +411,6 @@ export const Registry = ({ userRole, onViewChange }) => {
                     validity_period: safeTrim(modalForm.validity_period),
                     registry_reference: safeTrim(modalForm.registry_reference),
                     website: safeTrim(modalForm.website),
-                    seal_url: safeTrim(modalForm.seal_url),
                     accreditation_details: safeTrim(modalForm.accreditation_details),
                 });
 
@@ -433,7 +430,6 @@ export const Registry = ({ userRole, onViewChange }) => {
                         validity_period: safeTrim(modalForm.validity_period),
                         registry_reference: safeTrim(modalForm.registry_reference),
                         website: safeTrim(modalForm.website),
-                        seal_url: safeTrim(modalForm.seal_url),
                         accreditation_details: safeTrim(modalForm.accreditation_details),
                     }
                 );

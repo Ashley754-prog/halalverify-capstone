@@ -25,6 +25,8 @@ export default function EstablishmentsRegistryTab({
             const cfg = getStatusConfig(shop);
             if (statusFilter === 'verified') return cfg.key === 'verified';
             if (statusFilter === 'muslim_owned') return cfg.key === 'muslim_owned' || cfg.key === 'community';
+            if (statusFilter === 'muslim_friendly') return cfg.key === 'muslim_friendly';
+            if (statusFilter === 'vegetarian_vegan') return cfg.key === 'vegetarian_vegan';
             if (statusFilter === 'needs_review') return cfg.key === 'needs_review' || cfg.key === 'pending_review';
         }
         return true;
@@ -53,7 +55,9 @@ export default function EstablishmentsRegistryTab({
                         <option value="all">All Standards ({establishments.length})</option>
                         <option value="verified">Certified</option>
                         <option value="muslim_owned">Muslim-Owned</option>
-                        <option value="needs_review">Review</option>
+                        <option value="muslim_friendly">Muslim-Friendly</option>
+                        <option value="vegetarian_vegan">Plant-Based</option>
+                        <option value="needs_review">Pending Review</option>
                     </select>
 
                     <div className="relative flex-1 md:w-72">

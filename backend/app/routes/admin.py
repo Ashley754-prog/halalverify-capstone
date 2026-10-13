@@ -575,9 +575,12 @@ def update_admin_hcb_entry(hcb_id: str, hcb: HcbRegistryUpdate, user: dict = Dep
     """
     Updates an HCB entry (seal formats, validity periods, registry references).
     """
-    payload = {k: v for k, v in hcb.model_dump().items() if v is not None}
+    payload = hcb.model_dump(exclude_unset=True)
     if not payload:
         raise HTTPException(status_code=400, detail="No HCB fields to update")
+    for k, v in list(payload.items()):
+        if isinstance(v, str) and not v.strip():
+            payload[k] = None
     if payload.get("code"):
         payload["code"] = payload["code"].strip().upper()
     try:

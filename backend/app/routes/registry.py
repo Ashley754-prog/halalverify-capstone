@@ -64,8 +64,10 @@ def create_additive(additive: AdditiveCreate, user: dict = Depends(require_admin
 
 @router.patch("/registry/additives/{additive_id}")
 @router.patch("/api/v1/registry/additives/{additive_id}")
+@router.patch("/api/v1/admin/additives/{additive_id}")
 @router.put("/registry/additives/{additive_id}")
 @router.put("/api/v1/registry/additives/{additive_id}")
+@router.put("/api/v1/admin/additives/{additive_id}")
 def update_additive(additive_id: str, additive: AdditiveUpdate, user: dict = Depends(require_admin)):
     payload = model_dump_without_none(additive)
 
@@ -97,6 +99,7 @@ def update_additive(additive_id: str, additive: AdditiveUpdate, user: dict = Dep
 
 @router.delete("/registry/additives/{additive_id}")
 @router.delete("/api/v1/registry/additives/{additive_id}")
+@router.delete("/api/v1/admin/additives/{additive_id}")
 def delete_additive(additive_id: str, user: dict = Depends(require_admin)):
     try:
         supabase.table("scan_flagged_items").update({"additive_id": None}).eq("additive_id", additive_id).execute()

@@ -1,23 +1,7 @@
 
-import { useState } from 'react';
 import { Award, Search, Building2, Globe, ShieldCheck, Calendar, FileText, ExternalLink, Pencil, Trash2 } from 'lucide-react';
 
-function HcbSealIcon({ body, isGov, isIntl, isLocal }) {
-    const [imgFailed, setImgFailed] = useState(false);
-
-    if (body.seal_url && !imgFailed) {
-        return (
-            <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center p-1.5 shrink-0 shadow-2xs">
-                <img
-                    src={body.seal_url}
-                    alt={body.code || body.name}
-                    onError={() => setImgFailed(true)}
-                    className="max-h-full max-w-full object-contain"
-                />
-            </div>
-        );
-    }
-
+function HcbCategoryIcon({ isGov, isIntl, isLocal }) {
     return (
         <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
             isGov ? 'bg-blue-100 text-blue-700' : isIntl ? 'bg-purple-100 text-purple-700' : isLocal ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
@@ -100,7 +84,7 @@ export default function HcbsRegistryTab({
                         <div key={body.id || body.code} className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 flex flex-col justify-between gap-4 hover:border-slate-300 transition shadow-sm">
                             <div className="flex items-start justify-between gap-3">
                                 <div className="flex items-center gap-3">
-                                    <HcbSealIcon body={body} isGov={isGov} isIntl={isIntl} isLocal={isLocal} />
+                                    <HcbCategoryIcon isGov={isGov} isIntl={isIntl} isLocal={isLocal} />
                                     <div>
                                         <div className="flex items-center gap-2">
                                             <span className="font-mono font-bold text-xs bg-slate-200 text-slate-800 px-2 py-0.5 rounded">

@@ -15,7 +15,11 @@ def sanitize_postgrest_search(query: str, max_length: int = 100) -> str:
 
 
 def model_dump_without_none(model: BaseModel):
-    return model.model_dump(exclude_none=True)
+    data = model.model_dump(exclude_unset=True)
+    for k, v in list(data.items()):
+        if isinstance(v, str) and not v.strip():
+            data[k] = None
+    return data
 
 
 def ensure_updated(response, record_type: str):

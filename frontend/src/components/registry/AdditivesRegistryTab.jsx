@@ -29,7 +29,8 @@ export default function AdditivesRegistryTab({
             (item.name || '').toLowerCase().includes(dictSearch.toLowerCase()) ||
             (item.source_description || '').toLowerCase().includes(dictSearch.toLowerCase());
         
-        const matchesStatus = additiveStatusFilter === 'all' || item.status === additiveStatusFilter;
+        const matchesStatus = additiveStatusFilter === 'all' || 
+            (item.status || '').toLowerCase() === additiveStatusFilter.toLowerCase();
         const matchesOrigin = additiveOriginFilter === 'all' || 
             (item.origin && item.origin.toLowerCase().includes(additiveOriginFilter.toLowerCase()));
 
