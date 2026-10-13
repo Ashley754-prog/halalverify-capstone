@@ -117,12 +117,12 @@ export default function AdditivesRegistryTab({
                         <div className="pt-2 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-200/60">
                             <span className="text-slate-400 font-medium">Standard:</span>
                             <a
-                                href="https://www.fao.org/fao-who-codexalimentarius/codex-texts/dbs/ins/en/"
+                                href="https://www.fao.org/fao-who-codexalimentarius/codex-texts/dbs/gsfa/en/"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1 font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
                             >
-                                <span>Codex INS / ASEAN</span>
+                                <span>Codex GSFA Database</span>
                                 <ExternalLink size={10} />
                             </a>
                         </div>
