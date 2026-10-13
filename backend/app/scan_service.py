@@ -33,7 +33,7 @@ ADDITIVE_ALIASES = {
     "E412": ["guar gum"],
     "E415": ["xanthan gum"],
     "E422": ["glycerol", "glycerin", "glycerine", "vegetable glycerin"],
-    "E441": ["gelatin", "gelatine", "edible gelatin", "animal gelatin"],
+    "E441": ["gelatin", "gelatine", "geltin", "edible gelatin", "animal gelatin"],
     "E471": [
         "mono- and diglycerides",
         "mono and diglycerides",
@@ -86,6 +86,7 @@ PRIMARY_HARAM_INGREDIENTS = [
 PRIMARY_DOUBTFUL_INGREDIENTS = [
     {"term": "gelatin", "name": "Gelatin (Unspecified Source)", "reason": "Animal-derived gelling agent. If animal source or halal slaughter is not specified, it is classified as Doubtful (Mashbooh)."},
     {"term": "gelatine", "name": "Gelatine (Unspecified Source)", "reason": "Animal-derived gelling agent requiring halal certification verification."},
+    {"term": "geltin", "name": "Gelatin (Geltin)", "reason": "Animal-derived gelling agent requiring halal certification verification."},
     {"term": "pepsin", "name": "Pepsin", "reason": "Enzyme commonly harvested from pig stomachs. Doubtful unless certified microbial or bovine halal source."},
     {"term": "rennet", "name": "Animal Rennet", "reason": "Coagulating enzyme from animal stomachs. Doubtful unless certified microbial or halal slaughtered."},
     {"term": "animal tallow", "name": "Animal Tallow", "reason": "Rendered animal fat requiring proof of halal slaughter."},

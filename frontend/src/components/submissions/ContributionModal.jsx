@@ -504,19 +504,29 @@ export default function ContributionModal({
 
             {/* Verification checklist or notes */}
             {isAutoApproved ? (
-              auditNotes.length > 0 && (
-                <div className="space-y-1.5 pt-1 border-t border-slate-200/60">
-                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Verification Highlights</p>
-                  <ul className="space-y-1">
-                    {auditNotes.slice(0, 3).map((note, idx) => (
-                      <li key={idx} className="text-xs text-slate-600 flex items-start gap-2">
-                        <span className="text-emerald-500 font-bold leading-none mt-0.5">✓</span>
-                        <span>{note}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )
+              (() => {
+                const displayHighlights = auditNotes.filter(
+                  (note) =>
+                    !note.startsWith('Consumer Contribution:') &&
+                    !note.startsWith('Brand Declaration:') &&
+                    !note.startsWith('Ownership Declaration:') &&
+                    !note.startsWith('Classification Tier:') &&
+                    !note.startsWith('Duplicate alert:')
+                );
+                return displayHighlights.length > 0 ? (
+                  <div className="space-y-1.5 pt-1 border-t border-slate-200/60">
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Verification Highlights</p>
+                    <ul className="space-y-1">
+                      {displayHighlights.slice(0, 4).map((note, idx) => (
+                        <li key={idx} className="text-xs text-slate-600 flex items-start gap-2">
+                          <span className="text-emerald-500 font-bold leading-none mt-0.5">✓</span>
+                          <span>{note}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null;
+              })()
             ) : reviewReasons.length > 0 ? (
               <div className="space-y-1.5 pt-1 border-t border-slate-200/60">
                 <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Auditor Review Checklist</p>
