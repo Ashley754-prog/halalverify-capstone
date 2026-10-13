@@ -6,7 +6,6 @@ import {
     Award,
     Calendar,
     Tag,
-    Barcode,
     FileText,
     Flag,
     Pencil,
@@ -128,16 +127,11 @@ export default function ProductCard({
                     </span>
                 </div>
 
-                {/* Category & Barcode */}
+                {/* Category */}
                 <div className="flex flex-wrap gap-1 sm:gap-2 text-[10px] sm:text-xs text-slate-500 pt-1">
                     <span className="flex items-center gap-1 bg-slate-100 px-1.5 sm:px-2 py-0.5 rounded-md">
                         <Tag size={10} className="sm:w-3 sm:h-3" /> {product.category || 'Food'}
                     </span>
-                    {product.barcode && (
-                        <span className="flex items-center gap-1 bg-slate-100 px-1.5 sm:px-2 py-0.5 rounded-md font-mono text-[9px] sm:text-[11px]">
-                            <Barcode size={10} className="sm:w-3 sm:h-3" /> {product.barcode}
-                        </span>
-                    )}
                 </div>
 
                 {/* Manufacturer & Certification Info */}

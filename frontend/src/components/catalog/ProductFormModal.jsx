@@ -64,18 +64,6 @@ export default function ProductFormModal({
                         </select>
                     </div>
 
-                    <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-700">
-                            Barcode (GTIN / EAN) <span className="font-normal text-slate-400">(Optional)</span>
-                        </label>
-                        <input
-                            type="text"
-                            value={modalForm.barcode}
-                            onChange={(e) => setModalForm((prev) => ({ ...prev, barcode: e.target.value }))}
-                            placeholder="e.g. 4800016012345 (Optional)"
-                            className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm font-mono focus:outline-none focus:border-emerald-500"
-                        />
-                    </div>
 
                     <div className="space-y-1">
                         <label className="text-xs font-bold text-slate-700">Halal Status</label>

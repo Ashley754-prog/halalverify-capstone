@@ -14,14 +14,19 @@ export const ESTABLISHMENT_TYPES = [
 
 export const PRODUCT_CATEGORIES = [
   'Food & Beverage',
-  'Processed Meat',
-  'Poultry',
-  'Canned Seafood',
-  'Snacks',
-  'Beverages',
-  'Instant Noodles',
-  'Dairy & Bakery',
+  'Spices & Seasonings',
+  'Bakery & Biscuits',
+  'Dairy & Milk',
+  'Cooking Oils & Fats',
   'Condiments & Sauces',
+  'Canned Fish & Meat',
+  'Beverages',
+  'Instant Noodles & Pasta',
+  'Snacks & Chips',
+  'Dressings & Mayonnaise',
+  'Fresh & Farm Produce',
+  'Personal Care & Household',
+  'Restaurant & Catering Menu',
 ];
 
 export const ESTABLISHMENT_HALAL_TIERS = [

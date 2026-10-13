@@ -140,34 +140,19 @@ export default function ProductContributionForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block font-semibold text-slate-700 mb-1">Category</label>
-          <select
-            value={prodForm.category}
-            onChange={(e) => setProdForm((prev) => ({ ...prev, category: e.target.value }))}
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-emerald-500 bg-white text-slate-800"
-          >
-            {PRODUCT_CATEGORIES.map((c) => (
-              <option key={c} value={c} className="text-slate-800 bg-white">
-                {c}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block font-semibold text-slate-700 mb-1">
-            Barcode (GTIN / EAN) <span className="text-slate-400 font-normal">(Optional)</span>
-          </label>
-          <input
-            type="text"
-            placeholder="e.g., 4800016445566 (Optional)"
-            value={prodForm.barcode}
-            onChange={(e) => setProdForm((prev) => ({ ...prev, barcode: e.target.value }))}
-            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 placeholder:text-slate-400 placeholder:opacity-100 outline-none focus:border-emerald-500 font-mono"
-          />
-        </div>
+      <div>
+        <label className="block font-semibold text-slate-700 mb-1">Category</label>
+        <select
+          value={prodForm.category}
+          onChange={(e) => setProdForm((prev) => ({ ...prev, category: e.target.value }))}
+          className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-emerald-500 bg-white text-slate-800"
+        >
+          {PRODUCT_CATEGORIES.map((c) => (
+            <option key={c} value={c} className="text-slate-800 bg-white">
+              {c}
+            </option>
+          ))}
+        </select>
       </div>
 
       {isCertified && (

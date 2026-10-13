@@ -8,6 +8,7 @@ import {
     ChevronLeft,
     ChevronRight,
     X,
+    RotateCcw,
 } from 'lucide-react';
 import Toast from '../components/ui/Toast';
 import ContributionModal from '../components/submissions/ContributionModal';
@@ -22,17 +23,52 @@ import { API_BASE_URL, authFetch } from '../utils/api';
 const PRODUCT_CATEGORIES = [
     'All Categories',
     'Food & Beverage',
-    'Processed Meat',
-    'Poultry',
-    'Canned Seafood',
-    'Snacks',
-    'Beverages',
-    'Instant Noodles',
-    'Dairy & Bakery',
+    'Spices & Seasonings',
+    'Bakery & Biscuits',
+    'Dairy & Milk',
+    'Cooking Oils & Fats',
     'Condiments & Sauces',
+    'Canned Fish & Meat',
+    'Beverages',
+    'Instant Noodles & Pasta',
+    'Snacks & Chips',
+    'Dressings & Mayonnaise',
+    'Fresh & Farm Produce',
+    'Personal Care & Household',
+    'Restaurant & Catering Menu',
 ];
 
-const PRODUCT_STATUSES = ['All Statuses', 'Halal', 'Pork-Free Declared', 'Vegetarian / Vegan', 'Doubtful', 'Haram', 'Expired'];
+const PRODUCT_STATUSES = [
+    'All Statuses',
+    'Halal',
+    'Pork-Free Declared',
+    'Vegetarian / Vegan',
+    'Expired',
+    'Doubtful',
+    'Pending Verification',
+];
+
+const CERTIFIER_ORIGINS = [
+    { label: 'All Certifiers & Registries', value: 'ALL' },
+    { label: "IDCP (Islamic Da'wah Council)", value: 'IDCP' },
+    { label: 'HDIP (Halal Development Institute)', value: 'HDIP' },
+    { label: 'BPCC (Bangsamoro Consultative Council)', value: 'BPCC' },
+    { label: 'BUSC (Basilan Ulama Council)', value: 'BUSC' },
+    { label: 'DTI Region IX (ZAMPEN MSMEs)', value: 'ZAMPEN' },
+    { label: 'Muslim in Manila Directory', value: 'Muslim in Manila' },
+    { label: 'Community User Submissions', value: 'Community' },
+];
+
+const CB_UUID_MAP = {
+    IDCP: '8885f308-1697-4541-b352-bcbd76227e8b',
+    HDIP: '4ef9426c-63f7-44b7-9738-f2b3144c77a5',
+    BPCC: '1656c3e6-250c-4b70-81c0-3c084eb7ce80',
+    BUSC: '7ffdaf0a-c5a2-4c14-b9c8-3f27d9568b48',
+    MMHCB: 'e276a8c2-bbd9-438e-9ec3-30f2073a3ef3',
+    MASLAHA: 'c8db6788-4d40-4bd0-b5b9-da35ea7c175e',
+    PRIME: '99538551-f559-4ef1-b6d8-db35692200d8',
+    PUCOI: '74e41329-0872-4031-ad9b-436210534063',
+};
 
 const emptyProductForm = {
     name: '',
@@ -50,33 +86,6 @@ const emptyProductForm = {
     source_url: '',
 };
 
-function getProductCertifierGroup(product) {
-    const raw = `${product.certifying_bodies?.code || ''} ${product.certifying_bodies?.name || ''} ${product.source || ''}`.toLowerCase();
-
-    if (raw.includes('idcp') || raw.includes("islamic da'wah") || raw.includes("islamic dawah")) {
-        return "IDCP (Islamic Da'wah Council of the Philippines)";
-    }
-    if (raw.includes('busc') || raw.includes('basilan ulama')) {
-        return 'BUSC (Basilan Ulama Supreme Council)';
-    }
-    if (raw.includes('bpcc') || raw.includes('bangsamoro')) {
-        return 'BPCC (Bangsamoro Provincial Consultative Council)';
-    }
-    if (raw.includes('hdip') || raw.includes('halal development institute')) {
-        return 'HDIP (Halal Development Institute of the Philippines)';
-    }
-    if (raw.includes('zampen') || raw.includes('dti region ix')) {
-        return 'DTI Region IX (ZAMPEN MSME Catalogue)';
-    }
-    if (raw.includes('muslim in manila')) {
-        return 'Muslim in Manila Directory';
-    }
-    if (raw.includes('community')) {
-        return 'Community User Submissions';
-    }
-    return product.certifying_bodies?.name || product.source || 'Other Recognized Sources';
-}
-
 export default function ProductsCatalog({ userRole, onViewChange, initialSearchQuery = '' }) {
     const [products, setProducts] = useState([]);
     const [manufacturers, setManufacturers] = useState([]);
@@ -86,7 +95,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
     const [searchQuery, setSearchQuery] = useState(initialSearchQuery || '');
     const [selectedCategory, setSelectedCategory] = useState('All Categories');
     const [selectedStatus, setSelectedStatus] = useState('All Statuses');
-    const [selectedCertifier, setSelectedCertifier] = useState('All Certifiers / Origins');
+    const [selectedCertifier, setSelectedCertifier] = useState('ALL');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalServerCount, setTotalServerCount] = useState(13239);
     const itemsPerPage = 24;
@@ -110,17 +119,6 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             }
         });
         return Array.from(cats);
-    }, [products]);
-
-    const availableCertifiers = useMemo(() => {
-        const certs = new Set();
-        products.forEach((p) => {
-            const group = getProductCertifierGroup(p);
-            if (group) certs.add(group);
-        });
-        return certs.size > 0
-            ? ['All Certifiers / Origins', ...Array.from(certs).sort()]
-            : ['All Certifiers / Origins'];
     }, [products]);
     const handleOpenContribution = () => {
         if (!userRole) {
@@ -149,7 +147,8 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         targetPage = currentPage,
         queryParam = searchQuery,
         categoryParam = selectedCategory,
-        statusParam = selectedStatus
+        statusParam = selectedStatus,
+        certifierParam = selectedCertifier
     ) => {
         try {
             setLoading(true);
@@ -161,6 +160,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             const q = (queryParam !== undefined ? queryParam : searchQuery).trim();
             const cat = categoryParam !== undefined ? categoryParam : selectedCategory;
             const st = statusParam !== undefined ? statusParam : selectedStatus;
+            const cert = certifierParam !== undefined ? certifierParam : selectedCertifier;
             const from = (targetPage - 1) * itemsPerPage;
             const to = from + itemsPerPage - 1;
 
@@ -185,8 +185,19 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                         pBuilder = pBuilder.or('status.ilike.%pork-free%,admin_notes.ilike.%pork-free%');
                     } else if (st === 'Vegetarian / Vegan') {
                         pBuilder = pBuilder.or('status.ilike.%vegetarian%,status.ilike.%vegan%,admin_notes.ilike.%vegetarian%');
+                    } else if (st === 'Pending Verification') {
+                        pBuilder = pBuilder.in('status', ['PENDING_VERIFICATION', 'UNVERIFIED', 'COMMUNITY_LISTED']);
                     } else {
                         pBuilder = pBuilder.eq('status', st);
+                    }
+                }
+
+                if (cert && cert !== 'ALL' && cert !== 'All Certifiers / Origins') {
+                    const cbId = CB_UUID_MAP[cert] || certifyingBodies.find((c) => c.code === cert || c.id === cert)?.id;
+                    if (cbId) {
+                        pBuilder = pBuilder.or(`certifying_body_id.eq.${cbId},source.ilike.%${cert}%`);
+                    } else {
+                        pBuilder = pBuilder.ilike('source', `%${cert}%`);
                     }
                 }
 
@@ -254,15 +265,15 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         } finally {
             setLoading(false);
         }
-    }, [currentPage, searchQuery, selectedCategory, selectedStatus, itemsPerPage]);
+    }, [currentPage, searchQuery, selectedCategory, selectedStatus, selectedCertifier, itemsPerPage, certifyingBodies]);
 
     // Synchronize initialSearchQuery if passed dynamically, or load default items
     useEffect(() => {
         if (initialSearchQuery) {
             setSearchQuery(initialSearchQuery);
-            loadData(1, initialSearchQuery);
+            loadData(1, initialSearchQuery, selectedCategory, selectedStatus, selectedCertifier);
         } else {
-            loadData(1, '');
+            loadData(1, '', selectedCategory, selectedStatus, selectedCertifier);
         }
     }, [initialSearchQuery, loadData]);
 
@@ -271,7 +282,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         setCurrentPage(1);
         if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
         searchDebounceRef.current = setTimeout(() => {
-            loadData(1, val, selectedCategory, selectedStatus);
+            loadData(1, val, selectedCategory, selectedStatus, selectedCertifier);
         }, 350);
     };
 
@@ -279,7 +290,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         setSearchQuery('');
         setCurrentPage(1);
         if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-        loadData(1, '', selectedCategory, selectedStatus);
+        loadData(1, '', selectedCategory, selectedStatus, selectedCertifier);
     };
 
     const showToast = (message, type = 'success') => {
@@ -402,7 +413,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
 
             showToast(isEdit ? 'Product updated successfully' : 'Product added successfully', 'success');
             closeModal();
-            loadData();
+            loadData(currentPage, searchQuery, selectedCategory, selectedStatus, selectedCertifier);
         } catch (err) {
             console.error(err);
             showToast(err.message || 'Error saving product', 'error');
@@ -427,7 +438,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
 
             showToast('Product removed from catalog', 'success');
             closeModal();
-            loadData();
+            loadData(currentPage, searchQuery, selectedCategory, selectedStatus, selectedCertifier);
         } catch (err) {
             console.error(err);
             showToast(err.message || 'Error deleting product', 'error');
@@ -445,8 +456,25 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
     const handlePageChange = (newPage) => {
         if (newPage < 1 || newPage > totalPages || newPage === currentPage) return;
         setCurrentPage(newPage);
-        loadData(newPage, searchQuery, selectedCategory, selectedStatus);
+        loadData(newPage, searchQuery, selectedCategory, selectedStatus, selectedCertifier);
         window.scrollTo({ top: 120, behavior: 'smooth' });
+    };
+
+    const isFilterActive = Boolean(
+        (searchQuery && searchQuery.trim()) ||
+        (selectedCategory && selectedCategory !== 'All Categories') ||
+        (selectedStatus && selectedStatus !== 'All Statuses') ||
+        (selectedCertifier && selectedCertifier !== 'ALL')
+    );
+
+    const handleResetFilters = () => {
+        setSearchQuery('');
+        setSelectedCategory('All Categories');
+        setSelectedStatus('All Statuses');
+        setSelectedCertifier('ALL');
+        setCurrentPage(1);
+        if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+        loadData(1, '', 'All Categories', 'All Statuses', 'ALL');
     };
 
     const getPageNumbers = () => {
@@ -483,7 +511,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                     if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-                                    loadData(searchQuery);
+                                    loadData(1, searchQuery, selectedCategory, selectedStatus, selectedCertifier);
                                 }
                             }}
                             placeholder="Search by product name, brand, manufacturer, or certificate #..."
@@ -527,7 +555,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                             const val = e.target.value;
                             setSelectedCategory(val);
                             setCurrentPage(1);
-                            loadData(1, searchQuery, val, selectedStatus);
+                            loadData(1, searchQuery, val, selectedStatus, selectedCertifier);
                         }}
                         className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500"
                     >
@@ -545,7 +573,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                             const val = e.target.value;
                             setSelectedStatus(val);
                             setCurrentPage(1);
-                            loadData(1, searchQuery, selectedCategory, val);
+                            loadData(1, searchQuery, selectedCategory, val, selectedCertifier);
                         }}
                         className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500"
                     >
@@ -559,16 +587,34 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                     {/* Certifying Body / Origin Source Selector */}
                     <select
                         value={selectedCertifier}
-                        onChange={(e) => setSelectedCertifier(e.target.value)}
-                        className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500 max-w-[200px] truncate"
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            setSelectedCertifier(val);
+                            setCurrentPage(1);
+                            loadData(1, searchQuery, selectedCategory, selectedStatus, val);
+                        }}
+                        className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500 max-w-[210px] truncate"
                         title="Filter by certifying body or registry origin"
                     >
-                        {availableCertifiers.map((c) => (
-                            <option key={c} value={c}>
-                                {c}
+                        {CERTIFIER_ORIGINS.map((c) => (
+                            <option key={c.value} value={c.value}>
+                                {c.label}
                             </option>
                         ))}
                     </select>
+
+                    {/* Reset Filters button */}
+                    {isFilterActive && (
+                        <button
+                            type="button"
+                            onClick={handleResetFilters}
+                            className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] text-slate-600 font-semibold transition shrink-0"
+                            title="Reset all search and filter conditions"
+                        >
+                            <RotateCcw size={12} />
+                            <span>Reset Filters</span>
+                        </button>
+                    )}
 
                     <span className="text-slate-400 w-full sm:w-auto sm:ml-auto text-left sm:text-right whitespace-nowrap text-[10px] sm:text-xs pt-1 sm:pt-0">
                         Showing <strong className="text-slate-700">{totalItems === 0 ? 0 : `${startIndex + 1}–${endIndex}`}</strong> of{' '}
