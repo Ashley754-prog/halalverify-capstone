@@ -726,15 +726,15 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
         else:
             # Clean ingredients - calculate community scoring (up to 100 pts)
             if ingredients:
-                score += 50
-                audit_notes.append("Chemical screening: Zero prohibited or doubtful ingredients detected (+50 pts)")
+                score += 40
+                audit_notes.append("Chemical screening: Zero prohibited or doubtful ingredients detected (+40 pts)")
             else:
                 reasons.append("Full ingredient declaration not provided")
 
             has_prod_photo = bool(image_url)
             if has_prod_photo:
-                score += 30
-                audit_notes.append("Packaging photo verified (+30 pts)")
+                score += 40
+                audit_notes.append("Packaging photo verified (+40 pts)")
             else:
                 reasons.append("Packaging photo not provided (required for community verification)")
 
