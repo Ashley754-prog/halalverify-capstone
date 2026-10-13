@@ -1,6 +1,17 @@
 
 import { Database, Search, Pencil, Trash2, ExternalLink } from 'lucide-react';
 
+const getAuthorityInfo = (item) => {
+    const text = `${item.reason || ''} ${item.source_description || ''}`.toLowerCase();
+    if (text.includes('mui')) {
+        return { label: 'MUI Halal Portal', url: 'https://halalmui.org' };
+    }
+    if (text.includes('sanha')) {
+        return { label: 'SANHA Halal Guide', url: 'https://sanha.org.za' };
+    }
+    return { label: 'JAKIM Halal Portal', url: 'https://www.halal.gov.my' };
+};
+
 export default function AdditivesRegistryTab({
     additives,
     dictSearch,
@@ -33,7 +44,7 @@ export default function AdditivesRegistryTab({
                         <Database className="text-emerald-600 shrink-0" size={18} /> Chemical Reference Database
                     </h3>
                     <p className="hidden sm:block text-xs text-slate-500 mt-0.5">
-                        E-numbers, scientific classifications, and scholar compliance statuses benchmarked against Codex Alimentarius and ASEAN standards.
+                        E-numbers, scientific classifications, and scholar compliance statuses benchmarked against JAKIM, MUI, and ASEAN Halal standards.
                     </p>
                 </div>
 
@@ -114,18 +125,23 @@ export default function AdditivesRegistryTab({
                             )}
                         </div>
 
-                        <div className="pt-2 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-200/60">
-                            <span className="text-slate-400 font-medium">Standard:</span>
-                            <a
-                                href="https://www.fao.org/fao-who-codexalimentarius/codex-texts/dbs/gsfa/en/"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
-                            >
-                                <span>Codex GSFA Database</span>
-                                <ExternalLink size={10} />
-                            </a>
-                        </div>
+                        {(() => {
+                            const auth = getAuthorityInfo(item);
+                            return (
+                                <div className="pt-2 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-200/60">
+                                    <span className="text-slate-400 font-medium">Authority:</span>
+                                    <a
+                                        href={auth.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
+                                    >
+                                        <span>{auth.label}</span>
+                                        <ExternalLink size={10} />
+                                    </a>
+                                </div>
+                            );
+                        })()}
 
                         {isAdmin && (
                             <div className="flex gap-2 pt-2 border-t border-slate-200">
