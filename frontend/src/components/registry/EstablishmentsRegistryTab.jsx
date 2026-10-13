@@ -28,6 +28,11 @@ export default function EstablishmentsRegistryTab({
             if (statusFilter === 'muslim_friendly') return cfg.key === 'muslim_friendly';
             if (statusFilter === 'vegetarian_vegan') return cfg.key === 'vegetarian_vegan';
             if (statusFilter === 'needs_review') return cfg.key === 'needs_review' || cfg.key === 'pending_review';
+        } else {
+            const cfg = getStatusConfig(shop);
+            if (cfg.key === 'needs_review' || cfg.key === 'pending_review') return false;
+            const sLower = (shop.halal_status || '').toLowerCase();
+            if (sLower.includes('reject') || sLower.includes('flag') || sLower.includes('suspend')) return false;
         }
         return true;
     });

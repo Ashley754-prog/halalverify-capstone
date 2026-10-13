@@ -1261,10 +1261,6 @@ export default function VerificationQueue({ onViewChange }) {
                                                 <span className="font-semibold text-slate-800">{inspectingItem.category || 'Food Item'}</span>
                                             </div>
                                             <div>
-                                                <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Barcode</span>
-                                                <span className="font-mono text-slate-700">{inspectingItem.barcode || 'N/A'}</span>
-                                            </div>
-                                            <div>
                                                 <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Venue / Establishment</span>
                                                 <span className="font-semibold text-slate-800">{inspectingItem.establishments?.name || 'Standalone / Packaged'}</span>
                                             </div>

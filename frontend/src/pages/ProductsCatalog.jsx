@@ -45,7 +45,6 @@ const PRODUCT_STATUSES = [
     'Vegetarian / Vegan',
     'Expired',
     'Doubtful',
-    'Pending Verification',
 ];
 
 const CERTIFIER_ORIGINS = [
@@ -213,14 +212,17 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                     if (st === 'Halal') {
                         pBuilder = pBuilder.in('status', ['Halal', 'VERIFIED', 'Verified']);
                     } else if (st === 'Pork-Free Declared') {
-                        pBuilder = pBuilder.or('status.ilike.%pork-free%,admin_notes.ilike.%pork-free%');
+                        pBuilder = pBuilder.or('status.ilike.%pork-free%,admin_notes.ilike.%pork-free%')
+                            .not('status', 'in', '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft)');
                     } else if (st === 'Vegetarian / Vegan') {
-                        pBuilder = pBuilder.or('status.ilike.%vegetarian%,status.ilike.%vegan%,admin_notes.ilike.%vegetarian%');
-                    } else if (st === 'Pending Verification') {
-                        pBuilder = pBuilder.in('status', ['PENDING_VERIFICATION', 'UNVERIFIED', 'COMMUNITY_LISTED']);
+                        pBuilder = pBuilder.or('status.ilike.%vegetarian%,status.ilike.%vegan%,admin_notes.ilike.%vegetarian%')
+                            .not('status', 'in', '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft)');
                     } else {
-                        pBuilder = pBuilder.eq('status', st);
+                        pBuilder = pBuilder.eq('status', st)
+                            .not('status', 'in', '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft)');
                     }
+                } else {
+                    pBuilder = pBuilder.not('status', 'in', '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft)');
                 }
 
                 if (cert && cert !== 'ALL' && cert !== 'All Certifiers / Origins') {

@@ -47,8 +47,16 @@ export default function LandingPage({ onViewChange, userRole }) {
     const loadRegistryData = async () => {
       try {
         const [prodRes, estRes] = await Promise.all([
-          supabase.from('products').select('id, name, brand, category, status').neq('status', 'PENDING_VERIFICATION').limit(300),
-          supabase.from('establishments').select('id, name, address, halal_status').neq('halal_status', 'PENDING_VERIFICATION').limit(200),
+          supabase
+            .from('products')
+            .select('id, name, brand, category, status')
+            .not('status', 'in', '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft)')
+            .limit(300),
+          supabase
+            .from('establishments')
+            .select('id, name, address, halal_status')
+            .not('halal_status', 'in', '(rejected,REJECTED,needs_review,pending,pending_review,flagged,suspended)')
+            .limit(200),
         ]);
 
         if (isMounted) {
@@ -108,13 +116,13 @@ export default function LandingPage({ onViewChange, userRole }) {
             .from('products')
             .select('id, name, brand, category, status')
             .or(`name.ilike.%${q}%,brand.ilike.%${q}%,category.ilike.%${q}%`)
-            .neq('status', 'PENDING_VERIFICATION')
+            .not('status', 'in', '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft)')
             .limit(25),
           supabase
             .from('establishments')
             .select('id, name, address, halal_status')
             .or(`name.ilike.%${q}%,address.ilike.%${q}%`)
-            .neq('halal_status', 'PENDING_VERIFICATION')
+            .not('halal_status', 'in', '(rejected,REJECTED,needs_review,pending,pending_review,flagged,suspended)')
             .limit(25),
         ]);
 

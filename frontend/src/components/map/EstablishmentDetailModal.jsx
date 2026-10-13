@@ -68,7 +68,8 @@ export default function EstablishmentDetailModal({
                 const { data, error } = await supabase
                     .from('products')
                     .select('id, name, category, status')
-                    .eq('establishment_id', establishment.id);
+                    .eq('establishment_id', establishment.id)
+                    .not('status', 'in', '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft)');
 
                 if (!error && isMounted && data && data.length > 0) {
                     setMenuItems(data);

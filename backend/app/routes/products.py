@@ -47,11 +47,14 @@ def get_products(
     if category:
         builder = builder.eq("category", category)
 
+    EXCLUDED_UNVERIFIED_STATUSES = [
+        "REJECTED", "rejected", "PENDING_VERIFICATION", "pending", "needs_review", "draft"
+    ]
     if status and status != "all":
         builder = builder.eq("status", status)
-    elif status != "all":
-        # By default, exclude pending verification items from public listings
-        builder = builder.neq("status", "PENDING_VERIFICATION")
+    else:
+        # By default, exclude rejected and pending verification items from public listings
+        builder = builder.not_.in_("status", EXCLUDED_UNVERIFIED_STATUSES)
 
     if manufacturer_id:
         builder = builder.eq("manufacturer_id", manufacturer_id)
