@@ -5,7 +5,7 @@ import { ESTABLISHMENT_TYPES, ESTABLISHMENT_HALAL_TIERS } from '../../data/const
 const ADDITIVE_STATUSES = ['Halal', 'Doubtful', 'Haram'];
 const ADDITIVE_ORIGINS = ['Plant', 'Animal', 'Insect', 'Synthetic / Mineral', 'Multiple / Unknown'];
 const ESTABLISHMENT_STATUSES = ['verified', 'needs_review'];
-const HCB_CATEGORIES = ['Accredited HCB', 'Government Oversight', 'International Authority'];
+const HCB_CATEGORIES = ['Local & Regional HCB', 'National HCB', 'Government Oversight', 'International Authority'];
 const HCB_STATUSES = ['Accredited', 'Active Oversight', 'International Recognized', 'active', 'inactive', 'suspended'];
 
 export const normalizeAdditiveCode = (code) => {

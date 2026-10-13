@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Award, Search, Building2, Globe, ShieldCheck, Calendar, FileText, ExternalLink, Pencil, Trash2 } from 'lucide-react';
 
-function HcbSealIcon({ body, isGov, isIntl }) {
+function HcbSealIcon({ body, isGov, isIntl, isLocal }) {
     const [imgFailed, setImgFailed] = useState(false);
 
     if (body.seal_url && !imgFailed) {
@@ -20,9 +20,9 @@ function HcbSealIcon({ body, isGov, isIntl }) {
 
     return (
         <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
-            isGov ? 'bg-blue-100 text-blue-700' : isIntl ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700'
+            isGov ? 'bg-blue-100 text-blue-700' : isIntl ? 'bg-purple-100 text-purple-700' : isLocal ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
         }`}>
-            {isGov ? <Building2 size={22} /> : isIntl ? <Globe size={22} /> : <ShieldCheck size={22} />}
+            {isGov ? <Building2 size={22} /> : isIntl ? <Globe size={22} /> : isLocal ? <Award size={22} /> : <ShieldCheck size={22} />}
         </div>
     );
 }
@@ -41,9 +41,12 @@ export default function HcbsRegistryTab({
         const matchesSearch = (body.name || '').toLowerCase().includes(hcbSearch.toLowerCase()) ||
             (body.code || '').toLowerCase().includes(hcbSearch.toLowerCase()) ||
             (body.acronym || '').toLowerCase().includes(hcbSearch.toLowerCase()) ||
+            (body.country || '').toLowerCase().includes(hcbSearch.toLowerCase()) ||
             (body.registry_reference || '').toLowerCase().includes(hcbSearch.toLowerCase());
         
-        const matchesCategory = hcbCategoryFilter === 'all' || body.category === hcbCategoryFilter;
+        const matchesCategory = hcbCategoryFilter === 'all' || 
+            body.category === hcbCategoryFilter ||
+            (hcbCategoryFilter === 'Accredited HCB' && (body.category === 'National HCB' || body.category === 'Local & Regional HCB' || body.category === 'Accredited HCB'));
         return matchesSearch && matchesCategory;
     });
 
@@ -67,7 +70,8 @@ export default function HcbsRegistryTab({
                         className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer shrink-0 max-w-[140px] sm:max-w-none"
                     >
                         <option value="all">All Bodies</option>
-                        <option value="Accredited HCB">Accredited HCBs</option>
+                        <option value="Local & Regional HCB">Local & Regional</option>
+                        <option value="National HCB">National HCBs</option>
                         <option value="Government Oversight">Government</option>
                         <option value="International Authority">International</option>
                     </select>
@@ -90,19 +94,23 @@ export default function HcbsRegistryTab({
                 {filteredHcbs.map((body) => {
                     const isGov = body.category === 'Government Oversight';
                     const isIntl = body.category === 'International Authority';
+                    const isLocal = body.category === 'Local & Regional HCB';
 
                     return (
                         <div key={body.id || body.code} className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 flex flex-col justify-between gap-4 hover:border-slate-300 transition shadow-sm">
                             <div className="flex items-start justify-between gap-3">
                                 <div className="flex items-center gap-3">
-                                    <HcbSealIcon body={body} isGov={isGov} isIntl={isIntl} />
+                                    <HcbSealIcon body={body} isGov={isGov} isIntl={isIntl} isLocal={isLocal} />
                                     <div>
                                         <div className="flex items-center gap-2">
                                             <span className="font-mono font-bold text-xs bg-slate-200 text-slate-800 px-2 py-0.5 rounded">
                                                 {body.code || body.acronym || 'HCB'}
                                             </span>
                                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                                isGov ? 'bg-blue-50 text-blue-700 border border-blue-200' : isIntl ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                isGov ? 'bg-blue-50 text-blue-700 border border-blue-200' : 
+                                                isIntl ? 'bg-purple-50 text-purple-700 border border-purple-200' : 
+                                                isLocal ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                                                'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                             }`}>
                                                 {body.category || 'Accredited HCB'}
                                             </span>
@@ -151,7 +159,7 @@ export default function HcbsRegistryTab({
                                         <ExternalLink size={12} />
                                     </a>
                                 ) : (
-                                    <span className="text-xs text-slate-400">No portal listed</span>
+                                    <span className="text-xs text-slate-400 italic">No web portal listed</span>
                                 )}
 
                                 {isAdmin && (

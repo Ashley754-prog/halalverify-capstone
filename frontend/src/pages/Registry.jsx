@@ -45,7 +45,7 @@ const emptyHcbForm = {
     name: '',
     code: '',
     acronym: '',
-    category: 'Accredited HCB',
+    category: 'Local & Regional HCB',
     status: 'Accredited',
     country: 'Philippines',
     validity_period: '',
