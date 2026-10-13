@@ -150,8 +150,8 @@ def verify_establishment(
     if not res.data:
         raise HTTPException(status_code=404, detail="Establishment not found or update failed")
 
-    # If approved, also approve linked pending products
-    if status_clean == "verified":
+    # If approved into an active directory tier, cascade approval to linked pending products
+    if status_clean in {"verified", "muslim_owned", "muslim_friendly", "vegetarian_vegan", "community_listed"}:
         try:
             supabase.table("products").update({
                 "status": "VERIFIED",

@@ -224,7 +224,7 @@ export default function ContributionModal({
           ? 'Community User Submission: Awaiting Verification'
           : `Community Listed - ${tierName}`;
 
-        const { error: sbErr } = await supabase.from('establishments').insert({
+        const { data: insertedEst, error: sbErr } = await supabase.from('establishments').insert({
           name: payload.name,
           type: payload.type,
           address: payload.address,
@@ -242,12 +242,24 @@ export default function ContributionModal({
           submitted_by: userId,
           description: amenities.length > 0 ? `Amenities: ${amenities.join(' • ')}` : null,
           source: payload.submitter_role === 'owner' ? 'Business Owner Submission' : 'Community User Submission',
-        });
-
+        }).select();
 
         if (sbErr) {
           console.warn('Direct Supabase insert blocked by RLS:', sbErr);
           throw new Error('Verification service is unreachable. Please check backend connection.');
+        }
+
+        // Insert submitted menu items if any
+        if (insertedEst?.[0]?.id && payload.product_names?.length > 0) {
+          const prodsToInsert = payload.product_names.map((pName) => ({
+            name: pName,
+            establishment_id: insertedEst[0].id,
+            category: 'Food & Beverage',
+            status: fallbackStatus === 'verified' ? 'VERIFIED' : 'PENDING_VERIFICATION',
+            submitted_by: userId,
+            source: payload.submitter_role === 'owner' ? 'Business Owner Submission' : 'Community User Submission',
+          }));
+          await supabase.from('products').insert(prodsToInsert).catch(console.warn);
         }
       }
 

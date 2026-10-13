@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
     MapPin,
     ShieldCheck,
@@ -18,6 +19,7 @@ import {
 import Modal from '../ui/Modal';
 import { getSafeUrl } from '../../utils/security';
 import { getStatusConfig } from '../../data/constants';
+import { supabase } from '../../lib/supabaseClient';
 
 export default function EstablishmentDetailModal({
     establishment,
@@ -29,6 +31,67 @@ export default function EstablishmentDetailModal({
 
     const statusConfig = getStatusConfig(establishment);
 
+    const isFormallyCertified = Boolean(
+        statusConfig.key === 'verified' ||
+        establishment.certificate_number ||
+        establishment.certifying_bodies
+    );
+
+    const relationshipLabel = (
+        establishment.submitter_role === 'owner' ||
+        (establishment.source && establishment.source.toLowerCase().includes('owner'))
+    ) ? 'Business Owner / Staff' : (
+        establishment.submitter_role === 'community' ||
+        (establishment.source && establishment.source.toLowerCase().includes('community'))
+    ) ? 'Customer / Scout' : (
+        establishment.source || 'Official Registry Record'
+    );
+
+    const [menuItems, setMenuItems] = useState(establishment.products || []);
+    const [loadingMenu, setLoadingMenu] = useState(false);
+
+    useEffect(() => {
+        if (!establishment?.id) {
+            setMenuItems([]);
+            return;
+        }
+
+        if (establishment.products && establishment.products.length > 0) {
+            setMenuItems(establishment.products);
+            return;
+        }
+
+        let isMounted = true;
+        const fetchDishes = async () => {
+            try {
+                setLoadingMenu(true);
+                const { data, error } = await supabase
+                    .from('products')
+                    .select('id, name, category, status')
+                    .eq('establishment_id', establishment.id);
+
+                if (!error && isMounted && data && data.length > 0) {
+                    setMenuItems(data);
+                } else if (isMounted && establishment.product_names && establishment.product_names.length > 0) {
+                    setMenuItems(establishment.product_names.map((name, idx) => ({
+                        id: `p-${idx}`,
+                        name,
+                        category: 'Food Item',
+                        status: 'VERIFIED',
+                    })));
+                } else if (isMounted) {
+                    setMenuItems([]);
+                }
+            } catch (err) {
+                console.warn('Could not load dishes for establishment:', err);
+            } finally {
+                if (isMounted) setLoadingMenu(false);
+            }
+        };
+
+        fetchDishes();
+        return () => { isMounted = false; };
+    }, [establishment]);
 
     const hasPrayerSpace = Boolean(
         establishment.has_prayer_space ||
@@ -75,13 +138,19 @@ export default function EstablishmentDetailModal({
             <div className="space-y-4">
                 <div className="flex items-start justify-between gap-3 pb-3 border-b border-slate-200">
                     <div>
-                        <span
-                            className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md border mb-1.5 ${
-                                statusConfig.badgeBg
-                            }`}
-                        >
-                            {statusConfig.label}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                            <span
+                                className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                                    statusConfig.badgeBg
+                                }`}
+                            >
+                                {statusConfig.label}
+                            </span>
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                                <Store size={11} className="text-slate-500" />
+                                <span>{relationshipLabel}</span>
+                            </span>
+                        </div>
                         <h3 className="text-lg font-black text-slate-900 leading-tight">
                             {establishment.name}
                         </h3>
@@ -96,13 +165,13 @@ export default function EstablishmentDetailModal({
                         </p>
                         <div className="text-[10px] text-slate-400 flex items-center gap-1 pt-1">
                             <ShieldCheck size={11} className="text-slate-400 shrink-0" />
-                            <span>Verified listing · Source: {establishment.source || 'Official Halal Registry'}</span>
+                            <span>Verified listing · Source: {establishment.source || (establishment.submitter_role === 'owner' ? 'Business Owner Submission' : 'Official Halal Registry')}</span>
                         </div>
                     </div>
                 </div>
 
                 {/* Classification & Certification Standing */}
-                {establishment.certifying_bodies ? (
+                {isFormallyCertified ? (
                     <div className="rounded-xl bg-emerald-50/60 border border-emerald-200 p-3 text-xs space-y-2">
                         <div className="flex items-center justify-between">
                             <span className="font-bold text-emerald-900 flex items-center gap-1.5">
@@ -110,23 +179,31 @@ export default function EstablishmentDetailModal({
                                 Halal Certifying Authority (HCB)
                             </span>
                             <span className="font-black text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-300">
-                                {establishment.certifying_bodies.code || establishment.certifying_bodies.acronym || 'Accredited HCB'}
+                                {establishment.certifying_bodies?.code || establishment.certifying_bodies?.acronym || 'Accredited HCB'}
                             </span>
                         </div>
 
                         <p className="text-slate-600 text-[11px]">
-                            {establishment.certifying_bodies.name}
+                            {establishment.certifying_bodies?.name || 'Formally certified under accredited Halal standards and administrative review.'}
                         </p>
 
-                        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-emerald-200/60 text-[11px]">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1 border-t border-emerald-200/60 text-[11px]">
                             <div>
                                 <span className="text-slate-500 block">Certificate No:</span>
-                                <span className="font-bold text-slate-800">
+                                <span className="font-bold text-slate-800 font-mono">
                                     {establishment.certificate_number || 'Official Accredited Record'}
                                 </span>
                             </div>
+                            {establishment.expiry_date && (
+                                <div>
+                                    <span className="text-slate-500 block">Expiry Date:</span>
+                                    <span className="font-bold text-emerald-800 font-mono">
+                                        {establishment.expiry_date}
+                                    </span>
+                                </div>
+                            )}
                             <div>
-                                <span className="text-slate-500 block">Accreditation Standing:</span>
+                                <span className="text-slate-500 block">Accreditation:</span>
                                 <span className="font-bold text-emerald-700">Official Compliant</span>
                             </div>
                         </div>
@@ -319,12 +396,12 @@ export default function EstablishmentDetailModal({
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                            <UtensilsCrossed size={14} className={establishment.certifying_bodies ? "text-emerald-600" : "text-slate-600"} />
-                            {establishment.certifying_bodies ? "Menu Highlights & Specialties" : "Reported Menu & Specialties"}
+                            <UtensilsCrossed size={14} className={isFormallyCertified ? "text-emerald-600" : "text-slate-600"} />
+                            {isFormallyCertified ? "Menu Highlights & Specialties" : "Reported Menu & Specialties"}
                         </h4>
-                        {establishment.certifying_bodies ? (
+                        {isFormallyCertified ? (
                             <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md">
-                                {establishment.certifying_bodies.code || 'Certified'} Kitchen
+                                {establishment.certifying_bodies?.code || 'Certified'} Kitchen
                             </span>
                         ) : statusConfig.key === 'muslim_owned' ? (
                             <span className="text-[10px] font-bold text-sky-800 bg-sky-50 border border-sky-200/80 px-2 py-0.5 rounded-md">
@@ -345,17 +422,21 @@ export default function EstablishmentDetailModal({
                         )}
                     </div>
 
-                    {!establishment.certifying_bodies && establishment.products && establishment.products.length > 0 && (
+                    {!isFormallyCertified && menuItems && menuItems.length > 0 && (
                         <p className="text-[11px] text-slate-500 leading-snug">
                             Menu items below are sourced from public directory profiles. Individual dishes and kitchen inventory have not been audited or verified compliant by an accredited Halal Certification Body (HCB).
                         </p>
                     )}
 
-                    {establishment.products && establishment.products.length > 0 ? (
+                    {loadingMenu ? (
+                        <div className="p-3 rounded-xl border border-slate-200 bg-slate-50 text-center text-xs text-slate-400">
+                            Loading menu specialties...
+                        </div>
+                    ) : menuItems && menuItems.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {establishment.products.map((p) => (
+                            {menuItems.map((p) => (
                                 <div
-                                    key={p.id}
+                                    key={p.id || p.name}
                                     className="p-2.5 rounded-xl border border-slate-200 bg-slate-50/70 flex items-center justify-between text-xs"
                                 >
                                     <div className="truncate mr-2">
@@ -366,7 +447,7 @@ export default function EstablishmentDetailModal({
                                             {p.category || 'Food Item'}
                                         </span>
                                     </div>
-                                    {establishment.certifying_bodies ? (
+                                    {isFormallyCertified ? (
                                         <span className="shrink-0 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/70 px-2 py-0.5 rounded-md flex items-center gap-1">
                                             <CheckCircle2 size={10} /> Listed Dish
                                         </span>
@@ -380,7 +461,7 @@ export default function EstablishmentDetailModal({
                         </div>
                     ) : (
                         <div className="p-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 text-center text-xs text-slate-500">
-                            {establishment.certifying_bodies
+                            {isFormallyCertified
                                 ? 'No individual dishes itemized in directory record. Refer to physical establishment menu.'
                                 : 'No individual menu items reported in directory profile. Refer to physical establishment menu.'}
                         </div>

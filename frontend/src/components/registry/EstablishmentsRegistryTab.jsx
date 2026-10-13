@@ -94,7 +94,7 @@ export default function EstablishmentsRegistryTab({
                 ) : (
                     filteredEstablishments.map((shop) => {
                         const statusConfig = getStatusConfig(shop);
-                        const isFormallyCertified = Boolean(shop.certificate_number);
+                        const isFormallyCertified = Boolean(shop.certificate_number || statusConfig.key === 'verified');
 
                         return (
                             <div
@@ -103,9 +103,14 @@ export default function EstablishmentsRegistryTab({
                             >
                                 <div className="space-y-1.5">
                                     <div className="flex justify-between items-start gap-2">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                            {shop.type || 'Restaurant'}
-                                        </span>
+                                        <div className="flex flex-wrap items-center gap-1.5">
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                                {shop.type || 'Restaurant'}
+                                            </span>
+                                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200/80">
+                                                {shop.source?.includes('Owner') || shop.submitter_role === 'owner' ? 'Owner / Staff' : 'Community Scout'}
+                                            </span>
+                                        </div>
                                         <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full shrink-0 border ${statusConfig.badgeBg}`}>
                                             {statusConfig.label}
                                         </span>

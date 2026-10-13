@@ -16,7 +16,8 @@ import {
     AlertTriangle,
     Sparkles,
     ChevronRight,
-    BarChart2
+    BarChart2,
+    UtensilsCrossed,
 } from 'lucide-react';
 import Modal from '../components/ui/Modal';
 import Toast from '../components/ui/Toast';
@@ -31,6 +32,8 @@ export default function VerificationQueue({ onViewChange }) {
     const [autoVerifyingId, setAutoVerifyingId] = useState(null);
     const [autoVerifyingAll, setAutoVerifyingAll] = useState(false);
     const [aiEvalResult, setAiEvalResult] = useState(null);
+    const [newMenuItemName, setNewMenuItemName] = useState('');
+    const [addingMenuItem, setAddingMenuItem] = useState(false);
 
     // Data lists
     const [establishments, setEstablishments] = useState([]);
@@ -124,6 +127,7 @@ export default function VerificationQueue({ onViewChange }) {
         setCertNumber(item.certificate_number || '');
         setExpiryDate(item.expiry_date || '');
         setSelectedHcbId(item.certifying_body_id || '');
+        setNewMenuItemName('');
         const st = (item.halal_status || '').toLowerCase();
         if (['muslim_owned', 'muslim_friendly', 'vegetarian_vegan'].includes(st)) {
             setSelectedStatus(st);
@@ -135,6 +139,54 @@ export default function VerificationQueue({ onViewChange }) {
         setAiEvalResult(null);
         setZoomLevel(1);
         setRotation(0);
+
+        // Fetch linked products/dishes if not attached
+        if (item.id && (!item.associated_products || item.associated_products.length === 0)) {
+            supabase
+                .from('products')
+                .select('*')
+                .eq('establishment_id', item.id)
+                .then(({ data, error }) => {
+                    if (!error && data) {
+                        setInspectingItem(prev => (prev && prev.id === item.id ? { ...prev, associated_products: data } : prev));
+                    }
+                })
+                .catch(console.warn);
+        }
+    };
+
+    const handleAddMenuItem = async () => {
+        if (!newMenuItemName.trim() || !inspectingItem?.id) return;
+        try {
+            setAddingMenuItem(true);
+            const { data: sessionData } = await supabase.auth.getSession();
+            const userId = sessionData?.session?.user?.id || null;
+            const newProd = {
+                name: newMenuItemName.trim(),
+                establishment_id: inspectingItem.id,
+                category: 'Food & Beverage',
+                status: 'VERIFIED',
+                submitted_by: userId,
+                source: inspectingItem.source || 'Admin Itemized Menu Dish',
+            };
+            const { data, error } = await supabase.from('products').insert(newProd).select();
+            if (!error && data?.[0]) {
+                setInspectingItem(prev => ({
+                    ...prev,
+                    associated_products: [...(prev.associated_products || []), data[0]]
+                }));
+                setNewMenuItemName('');
+                setToast({
+                    visible: true,
+                    message: `Added "${newMenuItemName.trim()}" to establishment menu.`,
+                    type: 'success',
+                });
+            }
+        } catch (err) {
+            console.error('Failed to add menu item:', err);
+        } finally {
+            setAddingMenuItem(false);
+        }
     };
 
     const closeInspection = () => {
@@ -295,6 +347,24 @@ export default function VerificationQueue({ onViewChange }) {
                     .eq('id', estId);
 
                 if (sbErr) throw sbErr;
+            }
+
+            // Always ensure associated products are marked as VERIFIED when approved!
+            if (['verified', 'muslim_owned', 'muslim_friendly', 'vegetarian_vegan'].includes(status.toLowerCase())) {
+                try {
+                    const nowIso = new Date().toISOString();
+                    const { data: { session } } = await supabase.auth.getSession();
+                    await supabase
+                        .from('products')
+                        .update({
+                            status: 'VERIFIED',
+                            verified_at: nowIso,
+                            verified_by: session?.user?.id || null,
+                        })
+                        .eq('establishment_id', estId);
+                } catch (prodCascadeErr) {
+                    console.warn('Cascaded product verification notice:', prodCascadeErr);
+                }
             }
 
             setToast({
@@ -592,9 +662,14 @@ export default function VerificationQueue({ onViewChange }) {
                                 >
                                     <div className="space-y-2">
                                         <div className="flex items-start justify-between gap-2">
-                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
-                                                {est.halal_status?.toUpperCase() || 'PENDING'}
-                                            </span>
+                                            <div className="flex flex-wrap items-center gap-1.5">
+                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
+                                                    {est.halal_status?.toUpperCase() || 'PENDING'}
+                                                </span>
+                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                                                    {est.source?.includes('Owner') || est.submitter_role === 'owner' ? 'Owner / Staff' : 'Customer / Scout'}
+                                                </span>
+                                            </div>
                                             <span className="text-[10px] text-slate-400">
                                                 {est.created_at ? new Date(est.created_at).toLocaleDateString() : 'Recent'}
                                             </span>
@@ -890,6 +965,11 @@ export default function VerificationQueue({ onViewChange }) {
                     }
                     description={
                         <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap pt-0.5">
+                            <span className="inline-flex items-center gap-1 font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
+                                <Store size={11} className="text-slate-500" />
+                                {inspectingItem.source?.includes('Owner') || inspectingItem.submitter_role === 'owner' ? 'Business Owner / Staff' : 'Customer / Scout'}
+                            </span>
+                            <span>•</span>
                             <span>Submitted by: <strong className="font-mono text-slate-700">{inspectingItem.submitted_by || 'Anonymous Contributor'}</strong></span>
                             <span>•</span>
                             <span className="inline-flex items-center gap-1 text-slate-600">
@@ -1185,26 +1265,51 @@ export default function VerificationQueue({ onViewChange }) {
                                 )}
                             </div>
 
-                            {/* Submitted Menu Items */}
-                            {inspectingItem.associated_products && inspectingItem.associated_products.length > 0 && (
-                                <div className="rounded-2xl bg-white border border-slate-200 p-4 space-y-2 shadow-xs">
-                                    <div className="flex items-center justify-between">
-                                        <span className="font-bold text-slate-800 text-xs">
-                                            Submitted Menu Items
-                                        </span>
-                                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                                            {inspectingItem.associated_products.length} Items
-                                        </span>
-                                    </div>
+                            {/* Submitted Menu Items & Specialties */}
+                            <div className="rounded-2xl bg-white border border-slate-200 p-4 space-y-2.5 shadow-xs">
+                                <div className="flex items-center justify-between">
+                                    <span className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                                        <UtensilsCrossed size={13} className="text-emerald-600" />
+                                        Menu Highlights & Specialties
+                                    </span>
+                                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                                        {(inspectingItem.associated_products?.length || 0)} Dishes
+                                    </span>
+                                </div>
+
+                                {inspectingItem.associated_products && inspectingItem.associated_products.length > 0 ? (
                                     <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pr-1 pt-1">
                                         {inspectingItem.associated_products.map((p) => (
-                                            <span key={p.id} className="text-[11px] bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg font-medium text-slate-700">
+                                            <span key={p.id || p.name} className="text-[11px] bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg font-medium text-slate-700 flex items-center gap-1">
+                                                <CheckCircle2 size={11} className="text-emerald-600" />
                                                 {p.name}
                                             </span>
                                         ))}
                                     </div>
+                                ) : (
+                                    <p className="text-[11px] text-slate-400 italic">No menu items itemized yet.</p>
+                                )}
+
+                                {/* Admin quick-add menu item */}
+                                <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
+                                    <input
+                                        type="text"
+                                        value={newMenuItemName}
+                                        onChange={(e) => setNewMenuItemName(e.target.value)}
+                                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddMenuItem(); } }}
+                                        placeholder="Itemize dish (e.g. KangKong Chips)..."
+                                        className="flex-1 rounded-xl border border-slate-300 p-2 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                                    />
+                                    <button
+                                        type="button"
+                                        disabled={addingMenuItem || !newMenuItemName.trim()}
+                                        onClick={handleAddMenuItem}
+                                        className="px-3 py-2 rounded-xl text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition disabled:opacity-50"
+                                    >
+                                        {addingMenuItem ? 'Adding...' : '+ Add'}
+                                    </button>
                                 </div>
-                            )}
+                            </div>
 
                             {/* Admin Notes */}
                             <div className="rounded-2xl bg-white border border-slate-200 p-4 space-y-2 shadow-xs">

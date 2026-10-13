@@ -217,6 +217,11 @@ export const Registry = ({ userRole, onViewChange }) => {
             });
         } else {
             const statusConfig = getStatusConfig(item);
+            const isCert = statusConfig.key === 'verified' || Boolean(item.certificate_number);
+            const tierKey = isCert
+                ? 'halal_certified'
+                : (statusConfig.key === 'community' ? 'muslim_owned' : statusConfig.key);
+
             setModalForm({
                 name: item.name || '',
                 type: item.type || 'Restaurant',
@@ -226,8 +231,9 @@ export const Registry = ({ userRole, onViewChange }) => {
                 certNo: item.certificate_number || item.certNo || '',
                 expiry: item.expiry_date || item.expiry || '',
                 status: item.halal_status || item.status || 'verified',
-                halal_tier: statusConfig.key || 'halal_certified',
+                halal_tier: tierKey || 'halal_certified',
                 admin_notes: item.admin_notes || '',
+                source: item.source || (item.submitter_role === 'owner' ? 'Business Owner Submission' : 'Community User Submission'),
             });
         }
     };
@@ -467,7 +473,7 @@ export const Registry = ({ userRole, onViewChange }) => {
                 setEstablishments(prev => [created, ...prev]);
                 updateToast('New establishment saved to database.', 'success');
             } else if (activeModal === 'edit-establishment') {
-                const tier = modalForm.halal_tier || 'halal_certified';
+                const tier = (modalForm.halal_tier === 'verified' ? 'halal_certified' : modalForm.halal_tier) || 'halal_certified';
                 let adminNotes = selectedItem.admin_notes || '';
 
                 if (tier === 'muslim_owned') {
@@ -488,11 +494,12 @@ export const Registry = ({ userRole, onViewChange }) => {
                         type: safeTrim(modalForm.type) || 'Restaurant',
                         address: safeTrim(modalForm.address),
                         city: safeTrim(modalForm.city) || 'Zamboanga City',
-                        certificate_number: tier === 'halal_certified' ? safeTrim(modalForm.certNo) : null,
-                        expiry_date: tier === 'halal_certified' ? safeTrim(modalForm.expiry) : null,
+                        certificate_number: (tier === 'halal_certified' || tier === 'verified') ? safeTrim(modalForm.certNo) : null,
+                        expiry_date: (tier === 'halal_certified' || tier === 'verified') ? safeTrim(modalForm.expiry) : null,
                         halal_status: modalForm.status || 'verified',
                         phone: safeTrim(modalForm.phone),
                         admin_notes: adminNotes,
+                        source: modalForm.source || selectedItem.source || 'Official Halal Registry',
                     }
                 );
 

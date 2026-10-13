@@ -250,7 +250,7 @@ def get_establishments_map(
             est_ids = [d["id"] for d in data if d.get("id")]
             if est_ids:
                 try:
-                    p_res = supabase.table("products").select("id, name, category, status, establishment_id").in_("establishment_id", est_ids[:50]).execute()
+                    p_res = supabase.table("products").select("id, name, category, status, establishment_id").in_("establishment_id", est_ids).execute()
                     products_by_est = {}
                     for p in (p_res.data or []):
                         eid = p.get("establishment_id")
@@ -272,10 +272,27 @@ def get_establishments_map(
         print(f"Error in map endpoint: {e}")
         try:
             fallback_res = supabase.table("establishments").select("*, certifying_bodies(*)").execute()
+            fallback_data = fallback_res.data or []
+            if fallback_data:
+                fb_ids = [d["id"] for d in fallback_data if d.get("id")]
+                if fb_ids:
+                    try:
+                        fb_prods = supabase.table("products").select("id, name, category, status, establishment_id").in_("establishment_id", fb_ids).execute()
+                        fb_by_est = {}
+                        for p in (fb_prods.data or []):
+                            eid = p.get("establishment_id")
+                            if eid:
+                                if eid not in fb_by_est:
+                                    fb_by_est[eid] = []
+                                fb_by_est[eid].append(p)
+                        for d in fallback_data:
+                            d["products"] = fb_by_est.get(d.get("id"), [])
+                    except Exception:
+                        pass
             return {
                 "success": True,
-                "count": len(fallback_res.data or []),
-                "data": fallback_res.data or [],
+                "count": len(fallback_data),
+                "data": fallback_data,
                 "fallback": True,
             }
         except Exception:

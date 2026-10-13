@@ -370,8 +370,23 @@ export default function RegistryModals({
                             </div>
                         </div>
 
+                        <div>
+                            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Submitter Relationship</label>
+                            <select
+                                value={modalForm.source?.includes('Owner') ? 'owner' : 'community'}
+                                onChange={(e) => setModalForm(prev => ({
+                                    ...prev,
+                                    source: e.target.value === 'owner' ? 'Business Owner Submission' : 'Community User Submission'
+                                }))}
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:border-emerald-500 focus:outline-none"
+                            >
+                                <option value="owner">Business Owner / Staff (Proprietor)</option>
+                                <option value="community">Customer / Community Scout (Visitor)</option>
+                            </select>
+                        </div>
+
                         {/* Adaptive Halal Tier Box */}
-                        {modalForm.halal_tier === 'halal_certified' ? (
+                        {(modalForm.halal_tier === 'halal_certified' || modalForm.halal_tier === 'verified') ? (
                             <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-3">
                                 <p className="text-xs font-semibold text-emerald-800">
                                     Formal Halal Certification Credentials
@@ -415,13 +430,22 @@ export default function RegistryModals({
                                     Offers dedicated pork-free or alcohol-free preparations, or provides dedicated prayer amenities for Muslim patrons.
                                 </p>
                             </div>
-                        ) : (
+                        ) : modalForm.halal_tier === 'vegetarian_vegan' ? (
                             <div className="p-3.5 rounded-xl bg-teal-50 border border-teal-200">
                                 <p className="text-xs font-bold text-teal-900">
                                     Dietary Standard: Vegetarian / Vegan
                                 </p>
                                 <p className="text-xs text-teal-700 mt-1 leading-relaxed">
                                     Plant-based menu serving zero meat or animal by-products, naturally compliant with Halal dietary requirements.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200">
+                                <p className="text-xs font-bold text-amber-900">
+                                    Review Status: Standard Registry Listing
+                                </p>
+                                <p className="text-xs text-amber-700 mt-1 leading-relaxed">
+                                    General establishment entry awaiting standard compliance audit.
                                 </p>
                             </div>
                         )}
