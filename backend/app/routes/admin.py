@@ -113,6 +113,7 @@ def verify_establishment(
     Cross-matches issuing HCB credentials and updates audit notes.
     """
     user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
+    status_clean = (payload.status or "").strip().lower()
     valid_est_statuses = {
         "verified", "rejected", "suspended", "flagged",
         "community_listed", "muslim_owned", "muslim_friendly", "vegetarian_vegan"
@@ -177,6 +178,7 @@ def verify_product(
     Administrative audit action to approve (VERIFIED) or reject (REJECTED) a community product.
     """
     user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
+    status_clean = (payload.status or "").strip().upper()
     valid_prod_statuses = {"VERIFIED", "REJECTED", "HALAL", "COMMUNITY_LISTED", "DOUBTFUL"}
     if status_clean not in valid_prod_statuses:
         raise HTTPException(status_code=400, detail="Status must be a valid verification status")
