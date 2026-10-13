@@ -45,6 +45,7 @@ export default function VerificationQueue({ onViewChange }) {
 
     // Inspection Modal state
     const [inspectingItem, setInspectingItem] = useState(null);
+    const [inspectingType, setInspectingType] = useState('establishment'); // 'establishment' | 'product'
     const [adminNotes, setAdminNotes] = useState('');
     const [certNumber, setCertNumber] = useState('');
     const [expiryDate, setExpiryDate] = useState('');
@@ -124,15 +125,16 @@ export default function VerificationQueue({ onViewChange }) {
         fetchCertifyingBodies();
     }, [fetchQueueData, fetchCertifyingBodies]);
 
-    const openInspection = (item) => {
+    const openInspection = (item, type = 'establishment') => {
+        setInspectingType(type);
         setInspectingItem(item);
         setAdminNotes(item.admin_notes || '');
-        setCertNumber(item.certificate_number || '');
+        setCertNumber(item.certificate_number || item.certificate_no || '');
         setExpiryDate(item.expiry_date || '');
         setSelectedHcbId(item.certifying_body_id || '');
         setNewMenuItemName('');
-        const st = (item.halal_status || '').toLowerCase();
-        if (['muslim_owned', 'muslim_friendly', 'vegetarian_vegan'].includes(st)) {
+        const st = (item.halal_status || item.status || '').toLowerCase();
+        if (['muslim_owned', 'muslim_friendly', 'vegetarian_vegan', 'pork_free_declared'].includes(st)) {
             setSelectedStatus(st);
         } else if (st.includes('community')) {
             setSelectedStatus('muslim_owned');
@@ -144,7 +146,7 @@ export default function VerificationQueue({ onViewChange }) {
         setRotation(0);
 
         // Fetch linked products/dishes if not attached
-        if (item.id && (!item.associated_products || item.associated_products.length === 0)) {
+        if (type === 'establishment' && item.id && (!item.associated_products || item.associated_products.length === 0)) {
             supabase
                 .from('products')
                 .select('*')
@@ -194,12 +196,16 @@ export default function VerificationQueue({ onViewChange }) {
 
     const closeInspection = () => {
         setInspectingItem(null);
+        setInspectingType('establishment');
         setAdminNotes('');
         setCertNumber('');
         setExpiryDate('');
         setSelectedHcbId('');
         setSelectedStatus('verified');
         setAiEvalResult(null);
+        setZoomLevel(1);
+        setRotation(0);
+        setNewMenuItemName('');
     };
 
     // Trigger AI Auto-Verify for single establishment
@@ -261,6 +267,9 @@ export default function VerificationQueue({ onViewChange }) {
             });
             if (res.ok) {
                 const data = await res.json();
+                if (data && (!autoApprove || inspectingItem?.id === prodId)) {
+                    setAiEvalResult(data.evaluation || data);
+                }
                 if (data.is_auto_approved && autoApprove) {
                     setToast({
                         visible: true,
@@ -437,6 +446,9 @@ export default function VerificationQueue({ onViewChange }) {
                 message: `Product ${product.name} marked as ${status.toUpperCase()}.`,
                 type: status === 'VERIFIED' ? 'success' : 'info',
             });
+            if (inspectingItem && inspectingItem.id === product.id) {
+                closeInspection();
+            }
             fetchQueueData();
         } catch (err) {
             console.error('Failed to verify product:', err);
@@ -829,6 +841,15 @@ export default function VerificationQueue({ onViewChange }) {
                                     <div className="flex items-center gap-2 self-end sm:self-auto">
                                         <button
                                             type="button"
+                                            onClick={() => openInspection(prod, 'product')}
+                                            className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition flex items-center gap-1"
+                                            title="Inspect product packaging, ingredients, and certification credentials"
+                                        >
+                                            <FileText size={12} />
+                                            <span>Inspect</span>
+                                        </button>
+                                        <button
+                                            type="button"
                                             disabled={autoVerifyingId === prod.id}
                                             onClick={() => handleAutoVerifyProduct(prod.id, true)}
                                             className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition flex items-center gap-1"
@@ -974,7 +995,7 @@ export default function VerificationQueue({ onViewChange }) {
                             <div className="flex items-center gap-2 flex-wrap">
                                 <span className="inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 tracking-wider uppercase">
                                     <ShieldCheck size={12} className="text-amber-600" />
-                                    Document Verification Workflow
+                                    {inspectingType === 'product' ? 'Product Verification Workflow' : 'Document Verification Workflow'}
                                 </span>
                                 <span className="text-xs text-slate-400 font-mono">
                                     ID: {inspectingItem.id}
@@ -986,25 +1007,48 @@ export default function VerificationQueue({ onViewChange }) {
                         </div>
                     }
                     description={
-                        <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap pt-0.5">
-                            <span className="inline-flex items-center gap-1 font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
-                                <Store size={11} className="text-slate-500" />
-                                {inspectingItem.source?.includes('Owner') || inspectingItem.submitter_role === 'owner' ? 'Business Owner / Staff' : 'Customer / Scout'}
-                            </span>
-                            <span>•</span>
-                            <span>Submitted by: <strong className="font-mono text-slate-700">{inspectingItem.submitted_by || 'Anonymous Contributor'}</strong></span>
-                            <span>•</span>
-                            <span className="inline-flex items-center gap-1 text-slate-600">
-                                <MapPin size={12} className="text-slate-400" />
-                                {inspectingItem.address || inspectingItem.city || 'Zamboanga City'}
-                            </span>
-                            {inspectingItem.created_at && (
-                                <>
-                                    <span>•</span>
-                                    <span>Received: {new Date(inspectingItem.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                                </>
-                            )}
-                        </div>
+                        inspectingType === 'product' ? (
+                            <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap pt-0.5">
+                                <span className="inline-flex items-center gap-1 font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
+                                    <Package size={11} className="text-slate-500" />
+                                    {inspectingItem.category || 'Food Item'}
+                                </span>
+                                {inspectingItem.brand && (
+                                    <>
+                                        <span>•</span>
+                                        <span>Brand: <strong className="text-slate-700">{inspectingItem.brand}</strong></span>
+                                    </>
+                                )}
+                                <span>•</span>
+                                <span>Venue: <strong className="text-slate-700">{inspectingItem.establishments?.name || 'Standalone / Packaged'}</strong></span>
+                                {inspectingItem.created_at && (
+                                    <>
+                                        <span>•</span>
+                                        <span>Received: {new Date(inspectingItem.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                    </>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap pt-0.5">
+                                <span className="inline-flex items-center gap-1 font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
+                                    <Store size={11} className="text-slate-500" />
+                                    {inspectingItem.source?.includes('Owner') || inspectingItem.submitter_role === 'owner' ? 'Business Owner / Staff' : 'Customer / Scout'}
+                                </span>
+                                <span>•</span>
+                                <span>Submitted by: <strong className="font-mono text-slate-700">{inspectingItem.submitted_by || 'Anonymous Contributor'}</strong></span>
+                                <span>•</span>
+                                <span className="inline-flex items-center gap-1 text-slate-600">
+                                    <MapPin size={12} className="text-slate-400" />
+                                    {inspectingItem.address || inspectingItem.city || 'Zamboanga City'}
+                                </span>
+                                {inspectingItem.created_at && (
+                                    <>
+                                        <span>•</span>
+                                        <span>Received: {new Date(inspectingItem.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                    </>
+                                )}
+                            </div>
+                        )
                     }
                     footer={
                         <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -1020,7 +1064,7 @@ export default function VerificationQueue({ onViewChange }) {
                                 <button
                                     type="button"
                                     disabled={processingId === inspectingItem.id}
-                                    onClick={() => handleVerifyEstablishment('REJECTED')}
+                                    onClick={() => inspectingType === 'product' ? handleVerifyProduct(inspectingItem, 'REJECTED') : handleVerifyEstablishment('REJECTED')}
                                     className="flex-1 sm:flex-none px-4 py-2.5 text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition flex items-center justify-center gap-1.5 disabled:opacity-50"
                                 >
                                     <XCircle size={15} />
@@ -1029,12 +1073,14 @@ export default function VerificationQueue({ onViewChange }) {
                                 <button
                                     type="button"
                                     disabled={processingId === inspectingItem.id}
-                                    onClick={() => handleVerifyEstablishment(selectedStatus)}
+                                    onClick={() => inspectingType === 'product' ? handleVerifyProduct(inspectingItem, 'VERIFIED') : handleVerifyEstablishment(selectedStatus)}
                                     className="flex-1 sm:flex-none px-5 py-2.5 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
                                 >
                                     <CheckCircle2 size={15} />
                                     <span>
-                                        {selectedStatus === 'verified'
+                                        {inspectingType === 'product'
+                                            ? 'Approve & Publish Product'
+                                            : selectedStatus === 'verified'
                                             ? 'Approve as Certified'
                                             : selectedStatus === 'muslim_owned'
                                             ? 'Approve as Muslim-Owned'
@@ -1050,7 +1096,7 @@ export default function VerificationQueue({ onViewChange }) {
                     }
                 >
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch pb-1">
-                        {/* Left Column: Certificate Document Viewer */}
+                        {/* Left Column: Certificate / Photo Document Viewer */}
                         <div className="lg:col-span-6 xl:col-span-7 flex flex-col rounded-2xl bg-slate-900 border border-slate-800 p-4 text-slate-200 shadow-inner min-h-[420px] lg:min-h-[520px]">
                             <div className="flex items-center justify-between text-xs pb-3 border-b border-slate-800 shrink-0">
                                 <span className="font-bold text-slate-200 flex items-center gap-2">
@@ -1058,12 +1104,12 @@ export default function VerificationQueue({ onViewChange }) {
                                     <span>
                                         {inspectingItem.certificate_url
                                             ? 'Physical Document Preview'
-                                            : inspectingItem.logo_url
-                                            ? 'Storefront / Signboard Photo'
+                                            : inspectingItem.logo_url || inspectingItem.image_url
+                                            ? (inspectingType === 'product' ? 'Packaging / Label Photo' : 'Storefront / Signboard Photo')
                                             : 'Physical Document Preview'}
                                     </span>
                                 </span>
-                                {(inspectingItem.certificate_url || inspectingItem.logo_url) && (
+                                {(inspectingItem.certificate_url || inspectingItem.logo_url || inspectingItem.image_url) && (
                                     <div className="flex items-center gap-1.5 bg-slate-800/80 p-1 rounded-lg border border-slate-700/60">
                                         <button
                                             type="button"
@@ -1090,9 +1136,9 @@ export default function VerificationQueue({ onViewChange }) {
                                         >
                                             <RotateCw size={13} />
                                         </button>
-                                        {getSafeUrl(inspectingItem.certificate_url || inspectingItem.logo_url) && (
+                                        {getSafeUrl(inspectingItem.certificate_url || inspectingItem.logo_url || inspectingItem.image_url) && (
                                             <a
-                                                href={getSafeUrl(inspectingItem.certificate_url || inspectingItem.logo_url)}
+                                                href={getSafeUrl(inspectingItem.certificate_url || inspectingItem.logo_url || inspectingItem.image_url)}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="p-1 rounded text-emerald-400 hover:text-emerald-300 hover:bg-slate-700 transition ml-0.5"
@@ -1106,10 +1152,10 @@ export default function VerificationQueue({ onViewChange }) {
                             </div>
 
                             <div className="flex-1 mt-3 flex items-center justify-center overflow-hidden bg-slate-950/80 rounded-xl relative border border-slate-800/80">
-                                {inspectingItem.certificate_url || inspectingItem.logo_url ? (
+                                {(inspectingItem.certificate_url || inspectingItem.logo_url || inspectingItem.image_url) ? (
                                     <img
-                                        src={inspectingItem.certificate_url || inspectingItem.logo_url}
-                                        alt={inspectingItem.certificate_url ? 'Submitted Certificate' : 'Storefront or Signboard Photo'}
+                                        src={inspectingItem.certificate_url || inspectingItem.logo_url || inspectingItem.image_url}
+                                        alt={inspectingItem.certificate_url ? 'Submitted Certificate' : inspectingType === 'product' ? 'Product Packaging Photo' : 'Storefront or Signboard Photo'}
                                         style={{
                                             transform: `scale(${zoomLevel}) rotate(${rotation}deg)`,
                                             transition: 'transform 0.15s ease',
@@ -1123,11 +1169,10 @@ export default function VerificationQueue({ onViewChange }) {
                                         </div>
                                         <h4 className="text-sm font-bold text-slate-200">No Document or Photo Attached</h4>
                                         <p className="text-xs text-slate-400 leading-relaxed">
-                                            The contributor registered this establishment without uploading a digital scan of a certificate or storefront signboard.
+                                            {inspectingType === 'product'
+                                                ? 'The contributor registered this product without uploading a digital scan of a certificate or packaging photo.'
+                                                : 'The contributor registered this establishment without uploading a digital scan of a certificate or storefront signboard.'}
                                         </p>
-                                        <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-700/50 text-[11px] text-slate-400 text-left">
-                                            💡 <strong>Tip:</strong> Cross-check the business name and address against accredited Halal Certification Bodies (HCB), or conduct an on-site audit before verification.
-                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -1135,60 +1180,179 @@ export default function VerificationQueue({ onViewChange }) {
 
                         {/* Right Column: Submitted Metadata Audit Form */}
                         <div className="lg:col-span-6 xl:col-span-5 flex flex-col space-y-4">
-                            {/* AI Document Auto-Detection Panel */}
-                            {inspectingItem.certificate_url && (
-                                <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50/80 via-teal-50/60 to-white p-3.5 space-y-2.5 shadow-xs">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <span className="text-xs font-black uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
-                                            <Sparkles size={14} className="text-emerald-600" />
-                                            AI Auto-Detection & OCR Assist
-                                        </span>
-                                        <button
-                                            type="button"
-                                            disabled={autoVerifyingId === inspectingItem.id}
-                                            onClick={() => handleAutoVerifyEstablishment(inspectingItem.id, false)}
-                                            className="text-xs font-bold text-emerald-800 bg-white hover:bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-300 transition flex items-center gap-1.5 shadow-xs disabled:opacity-50"
-                                        >
-                                            <Sparkles size={13} className={autoVerifyingId === inspectingItem.id ? 'animate-spin text-emerald-600' : ''} />
-                                            <span>{autoVerifyingId === inspectingItem.id ? 'Scanning Document...' : 'Scan & Auto-Fill Form'}</span>
-                                        </button>
-                                    </div>
-                                    <p className="text-xs text-slate-600 leading-relaxed">
-                                        Run AI inspection to automatically extract the certificate number, expiration date, and certifying body from the image.
-                                    </p>
+                            {inspectingType === 'product' ? (
+                                <>
+                                    {/* AI Document / Additive Screening Panel */}
+                                    <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50/80 via-teal-50/60 to-white p-3.5 space-y-2.5 shadow-xs">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-xs font-black uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                                                <Sparkles size={14} className="text-emerald-600" />
+                                                AI Additive & Cert Screening
+                                            </span>
+                                            <button
+                                                type="button"
+                                                disabled={autoVerifyingId === inspectingItem.id}
+                                                onClick={() => handleAutoVerifyProduct(inspectingItem.id, false)}
+                                                className="text-xs font-bold text-emerald-800 bg-white hover:bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-300 transition flex items-center gap-1.5 shadow-xs disabled:opacity-50"
+                                            >
+                                                <Sparkles size={13} className={autoVerifyingId === inspectingItem.id ? 'animate-spin text-emerald-600' : ''} />
+                                                <span>{autoVerifyingId === inspectingItem.id ? 'Screening...' : 'Scan & Screen Product'}</span>
+                                            </button>
+                                        </div>
+                                        <p className="text-xs text-slate-600 leading-relaxed">
+                                            Screen listed ingredients against the chemical additives database and verify certifying body credentials.
+                                        </p>
 
-                                    {aiEvalResult && (
-                                        <div className="mt-2 rounded-xl bg-white p-3 border border-emerald-200 text-xs space-y-2 shadow-xs">
-                                            <div className="flex items-center justify-between">
-                                                <span className="font-bold text-slate-700">AI Confidence:</span>
-                                                <span className={`px-2.5 py-0.5 rounded-full font-black text-xs ${
-                                                    aiEvalResult.score >= 70 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                                                }`}>
-                                                    {aiEvalResult.score}% Match
-                                                </span>
-                                            </div>
-                                            <div>
-                                                {aiEvalResult.is_auto_approved ? (
-                                                    <span className="text-emerald-700 font-bold flex items-center gap-1.5">
-                                                        <CheckCircle2 size={14} /> High Confidence: Active & accredited certificate verified.
+                                        {aiEvalResult && (
+                                            <div className="mt-2 rounded-xl bg-white p-3 border border-emerald-200 text-xs space-y-2 shadow-xs">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="font-bold text-slate-700">AI Confidence:</span>
+                                                    <span className={`px-2.5 py-0.5 rounded-full font-black text-xs ${
+                                                        aiEvalResult.score >= 70 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                                    }`}>
+                                                        {aiEvalResult.score}% Match
                                                     </span>
-                                                ) : (
-                                                    <span className="text-amber-700 font-bold flex items-center gap-1.5">
-                                                        <AlertTriangle size={14} /> Notice: {aiEvalResult.audit_trail?.reasons?.[0] || 'Manual confirmation required.'}
-                                                    </span>
+                                                </div>
+                                                <div>
+                                                    {aiEvalResult.is_auto_approved ? (
+                                                        <span className="text-emerald-700 font-bold flex items-center gap-1.5">
+                                                            <CheckCircle2 size={14} /> High Confidence: Clean additive screening and valid cert.
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-amber-700 font-bold flex items-center gap-1.5">
+                                                            <AlertTriangle size={14} /> Notice: {aiEvalResult.audit_trail?.reasons?.[0] || 'Manual audit required.'}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {aiEvalResult.audit_trail?.notes && aiEvalResult.audit_trail.notes.length > 0 && (
+                                                    <ul className="text-[11px] text-slate-500 list-disc list-inside space-y-0.5 pt-1.5 border-t border-slate-100">
+                                                        {aiEvalResult.audit_trail.notes.map((note, idx) => (
+                                                            <li key={idx} className="truncate">{note}</li>
+                                                        ))}
+                                                    </ul>
                                                 )}
                                             </div>
-                                            {aiEvalResult.audit_trail?.notes && aiEvalResult.audit_trail.notes.length > 0 && (
-                                                <ul className="text-[11px] text-slate-500 list-disc list-inside space-y-0.5 pt-1.5 border-t border-slate-100">
-                                                    {aiEvalResult.audit_trail.notes.map((note, idx) => (
-                                                        <li key={idx} className="truncate">{note}</li>
-                                                    ))}
-                                                </ul>
+                                        )}
+                                    </div>
+
+                                    {/* Product Profile Card */}
+                                    <div className="rounded-2xl bg-white border border-slate-200 p-4 space-y-3 shadow-xs">
+                                        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                                            <span className="font-black text-slate-800 uppercase tracking-wider text-xs flex items-center gap-1.5">
+                                                <Package size={14} className="text-emerald-600" />
+                                                Product Specifications
+                                            </span>
+                                            <span className="text-[11px] font-semibold text-slate-400">
+                                                Contributed Details
+                                            </span>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                            <div>
+                                                <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Product Name</span>
+                                                <span className="font-bold text-slate-900">{inspectingItem.name}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Brand Name</span>
+                                                <span className="font-semibold text-slate-800">{inspectingItem.brand || 'Unbranded / N/A'}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Category</span>
+                                                <span className="font-semibold text-slate-800">{inspectingItem.category || 'Food Item'}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Barcode</span>
+                                                <span className="font-mono text-slate-700">{inspectingItem.barcode || 'N/A'}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Venue / Establishment</span>
+                                                <span className="font-semibold text-slate-800">{inspectingItem.establishments?.name || 'Standalone / Packaged'}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Submitted By</span>
+                                                <span className="font-mono text-slate-700 truncate block">{inspectingItem.submitted_by || inspectingItem.source || 'Community Contributor'}</span>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider mb-1">Ingredients Summary</span>
+                                            <p className="text-xs text-slate-800 bg-slate-50 p-2.5 rounded-xl border border-slate-200 leading-relaxed font-mono">
+                                                {inspectingItem.ingredients_summary || 'No ingredients summary provided.'}
+                                            </p>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-xs">
+                                            <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
+                                                <span className="text-[10px] font-bold uppercase text-slate-400 block">Cert Number</span>
+                                                <span className="font-mono font-bold text-slate-800 text-xs truncate block">{inspectingItem.certificate_no || inspectingItem.certificate_number || 'None'}</span>
+                                            </div>
+                                            <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
+                                                <span className="text-[10px] font-bold uppercase text-slate-400 block">Expiry Date</span>
+                                                <span className="font-mono font-bold text-slate-800 text-xs block">{inspectingItem.expiry_date || 'N/A'}</span>
+                                            </div>
+                                            <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
+                                                <span className="text-[10px] font-bold uppercase text-slate-400 block">Certifier</span>
+                                                <span className="font-bold text-slate-800 text-xs truncate block">{inspectingItem.certifying_bodies?.code || inspectingItem.source || 'N/A'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    {/* AI Document Auto-Detection Panel */}
+                                    {inspectingItem.certificate_url && (
+                                        <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50/80 via-teal-50/60 to-white p-3.5 space-y-2.5 shadow-xs">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="text-xs font-black uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                                                    <Sparkles size={14} className="text-emerald-600" />
+                                                    AI Auto-Detection & OCR Assist
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    disabled={autoVerifyingId === inspectingItem.id}
+                                                    onClick={() => handleAutoVerifyEstablishment(inspectingItem.id, false)}
+                                                    className="text-xs font-bold text-emerald-800 bg-white hover:bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-300 transition flex items-center gap-1.5 shadow-xs disabled:opacity-50"
+                                                >
+                                                    <Sparkles size={13} className={autoVerifyingId === inspectingItem.id ? 'animate-spin text-emerald-600' : ''} />
+                                                    <span>{autoVerifyingId === inspectingItem.id ? 'Scanning Document...' : 'Scan & Auto-Fill Form'}</span>
+                                                </button>
+                                            </div>
+                                            <p className="text-xs text-slate-600 leading-relaxed">
+                                                Run AI inspection to automatically extract the certificate number, expiration date, and certifying body from the image.
+                                            </p>
+
+                                            {aiEvalResult && (
+                                                <div className="mt-2 rounded-xl bg-white p-3 border border-emerald-200 text-xs space-y-2 shadow-xs">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="font-bold text-slate-700">AI Confidence:</span>
+                                                        <span className={`px-2.5 py-0.5 rounded-full font-black text-xs ${
+                                                            aiEvalResult.score >= 70 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                                        }`}>
+                                                            {aiEvalResult.score}% Match
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        {aiEvalResult.is_auto_approved ? (
+                                                            <span className="text-emerald-700 font-bold flex items-center gap-1.5">
+                                                                <CheckCircle2 size={14} /> High Confidence: Active & accredited certificate verified.
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-amber-700 font-bold flex items-center gap-1.5">
+                                                                <AlertTriangle size={14} /> Notice: {aiEvalResult.audit_trail?.reasons?.[0] || 'Manual confirmation required.'}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {aiEvalResult.audit_trail?.notes && aiEvalResult.audit_trail.notes.length > 0 && (
+                                                        <ul className="text-[11px] text-slate-500 list-disc list-inside space-y-0.5 pt-1.5 border-t border-slate-100">
+                                                            {aiEvalResult.audit_trail.notes.map((note, idx) => (
+                                                                <li key={idx} className="truncate">{note}</li>
+                                                            ))}
+                                                        </ul>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                     )}
-                                </div>
-                            )}
 
                             {/* Submitted Business Profile Card */}
                             {(() => {
@@ -1430,8 +1594,10 @@ export default function VerificationQueue({ onViewChange }) {
                                     className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition resize-none"
                                 />
                             </div>
-                        </div>
-                    </div>
+                        </>
+                    )}
+                </div>
+            </div>
                 </Modal>
             )}
 
