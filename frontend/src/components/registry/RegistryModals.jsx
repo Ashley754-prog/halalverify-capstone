@@ -200,10 +200,10 @@ export default function RegistryModals({
                     <>
                         <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
                             <div>
-                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Code (E-Number) *</label>
+                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Code / Identifier (E-Number or Code) *</label>
                                 <input
                                     required
-                                    placeholder="e.g. E120 or 120"
+                                    placeholder="e.g. E120, 120, or custom code"
                                     value={modalForm.code || ''}
                                     onChange={(e) => setModalForm(prev => ({ ...prev, code: e.target.value }))}
                                     onBlur={() => {

@@ -59,6 +59,39 @@ ADDITIVE_ALIASES = {
     "E920": ["l-cysteine", "cysteine", "l-cysteine hydrochloride"],
 }
 
+PRIMARY_HARAM_INGREDIENTS = [
+    {"term": "pork fat", "name": "Pork Fat", "reason": "Fat derived from swine is strictly prohibited (Haram)."},
+    {"term": "pork meat", "name": "Pork Meat", "reason": "Swine flesh is strictly prohibited (Haram) in Islamic dietary law."},
+    {"term": "pork belly", "name": "Pork Belly", "reason": "Swine flesh is strictly prohibited (Haram)."},
+    {"term": "pork", "name": "Pork", "reason": "Swine flesh is strictly prohibited (Haram) in Islamic dietary law (Surah Al-Baqarah 2:173)."},
+    {"term": "lard", "name": "Lard", "reason": "Rendered pig fat is strictly prohibited (Haram)."},
+    {"term": "bacon", "name": "Bacon", "reason": "Cured pork product strictly prohibited (Haram)."},
+    {"term": "ham", "name": "Ham", "reason": "Cured pork meat strictly prohibited (Haram)."},
+    {"term": "swine", "name": "Swine Derivatives", "reason": "Any ingredient sourced from swine is strictly prohibited (Haram)."},
+    {"term": "porcine gelatin", "name": "Porcine Gelatin", "reason": "Gelatin derived from pig skin or bones is strictly prohibited (Haram)."},
+    {"term": "porcine", "name": "Porcine Derivatives", "reason": "Porcine indicates pig or swine origin, strictly prohibited (Haram)."},
+    {"term": "ethyl alcohol", "name": "Ethyl Alcohol", "reason": "Added intoxicating alcohol is prohibited in food processing."},
+    {"term": "ethanol", "name": "Ethanol", "reason": "Alcoholic solvent or intoxicant prohibited in food preparations."},
+    {"term": "alcohol", "name": "Alcohol", "reason": "Intoxicants (khamr) are strictly prohibited in food preparations."},
+    {"term": "red wine", "name": "Red Wine", "reason": "Alcoholic beverage prohibited in food preparations."},
+    {"term": "white wine", "name": "White Wine", "reason": "Alcoholic beverage prohibited in food preparations."},
+    {"term": "wine", "name": "Wine", "reason": "Alcoholic beverage or derivative prohibited in food preparations."},
+    {"term": "beer", "name": "Beer Extract", "reason": "Alcoholic beverage residue prohibited in food preparations."},
+    {"term": "rum", "name": "Rum Extract", "reason": "Alcoholic spirit flavoring prohibited in food preparations."},
+    {"term": "mirin", "name": "Mirin (Cooking Wine)", "reason": "Traditional Japanese sweet rice wine containing alcohol."},
+    {"term": "sake", "name": "Sake (Rice Wine)", "reason": "Japanese fermented rice wine containing alcohol."},
+    {"term": "blood", "name": "Animal Blood", "reason": "Flowing blood is explicitly forbidden in Islamic dietary law (Surah Al-Ma'idah 5:3)."},
+]
+
+PRIMARY_DOUBTFUL_INGREDIENTS = [
+    {"term": "gelatin", "name": "Gelatin (Unspecified Source)", "reason": "Animal-derived gelling agent. If animal source or halal slaughter is not specified, it is classified as Doubtful (Mashbooh)."},
+    {"term": "gelatine", "name": "Gelatine (Unspecified Source)", "reason": "Animal-derived gelling agent requiring halal certification verification."},
+    {"term": "pepsin", "name": "Pepsin", "reason": "Enzyme commonly harvested from pig stomachs. Doubtful unless certified microbial or bovine halal source."},
+    {"term": "rennet", "name": "Animal Rennet", "reason": "Coagulating enzyme from animal stomachs. Doubtful unless certified microbial or halal slaughtered."},
+    {"term": "animal tallow", "name": "Animal Tallow", "reason": "Rendered animal fat requiring proof of halal slaughter."},
+    {"term": "animal shortening", "name": "Animal Shortening", "reason": "Fat blend that may contain non-halal animal fats."},
+    {"term": "bone char", "name": "Bone Char", "reason": "Carbonized animal bones used in sugar decoloring, doubtful unless certified plant-based or bovine halal."},
+]
 
 _cached_additives = []
 _cached_additives_ts = 0
@@ -144,7 +177,63 @@ def match_additives_from_text(extracted_text: str):
                 ),
             })
 
+    # Scan for primary non-additive Haram substances (e.g. pork, lard, alcohol, bacon)
+    matched_primary_terms = set()
+    for item in PRIMARY_HARAM_INGREDIENTS:
+        term = item["term"]
+        pattern = rf"\b{re.escape(term)}\b"
+        if re.search(pattern, normalized_text):
+            if is_ingredient_negated(term, extracted_text):
+                continue
+            if not any(term in prev for prev in matched_primary_terms):
+                matched_primary_terms.add(term)
+                flagged_items.append({
+                    "additive_id": None,
+                    "ingredient": item["name"],
+                    "matched_text": term,
+                    "status": "Haram",
+                    "reason": item["reason"],
+                })
+
+    # Scan for primary non-additive Doubtful substances (e.g. unspecified gelatin, pepsin)
+    for item in PRIMARY_DOUBTFUL_INGREDIENTS:
+        term = item["term"]
+        pattern = rf"\b{re.escape(term)}\b"
+        if re.search(pattern, normalized_text):
+            if is_ingredient_negated(term, extracted_text):
+                continue
+            if not any(term in prev for prev in matched_primary_terms) and not any(term in (f.get("matched_text") or "").lower() for f in flagged_items):
+                matched_primary_terms.add(term)
+                flagged_items.append({
+                    "additive_id": None,
+                    "ingredient": item["name"],
+                    "matched_text": term,
+                    "status": "Doubtful",
+                    "reason": item["reason"],
+                })
+
     return flagged_items
+
+
+def is_ingredient_negated(term: str, raw_text: str) -> bool:
+    """
+    Checks if a prohibited term is negated in context (e.g. 'pork-free', 'no pork', 'alcohol-free').
+    """
+    if not raw_text:
+        return False
+    negations = [
+        rf"{re.escape(term)}\s*[-]?\s*free",
+        rf"no\s+{re.escape(term)}",
+        rf"free\s+of\s+{re.escape(term)}",
+        rf"without\s+{re.escape(term)}",
+        rf"non\s*[-]?\s*{re.escape(term)}",
+        rf"zero\s+{re.escape(term)}",
+        rf"0%\s*{re.escape(term)}",
+    ]
+    for pattern in negations:
+        if re.search(r"\b" + pattern + r"\b", raw_text, re.IGNORECASE):
+            return True
+    return False
 
 
 def find_additive_alias_match(code, name: str, normalized_text: str):

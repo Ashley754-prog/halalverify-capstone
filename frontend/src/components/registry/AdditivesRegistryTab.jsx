@@ -1,5 +1,5 @@
 
-import { Database, Search, Pencil, Trash2 } from 'lucide-react';
+import { Database, Search, Pencil, Trash2, ExternalLink } from 'lucide-react';
 
 export default function AdditivesRegistryTab({
     additives,
@@ -33,7 +33,7 @@ export default function AdditivesRegistryTab({
                         <Database className="text-emerald-600 shrink-0" size={18} /> Chemical Reference Database
                     </h3>
                     <p className="hidden sm:block text-xs text-slate-500 mt-0.5">
-                        E-numbers, scientific classifications, and scholar compliance statuses.
+                        E-numbers, scientific classifications, and scholar compliance statuses benchmarked against Codex Alimentarius and ASEAN standards.
                     </p>
                 </div>
 
@@ -112,6 +112,19 @@ export default function AdditivesRegistryTab({
                                     Ruling: <span className="italic">{item.reason}</span>
                                 </p>
                             )}
+                        </div>
+
+                        <div className="pt-2 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-200/60">
+                            <span className="text-slate-400 font-medium">Standard:</span>
+                            <a
+                                href="https://www.fao.org/fao-who-codexalimentarius/codex-texts/dbs/ins/en/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
+                            >
+                                <span>Codex INS / ASEAN</span>
+                                <ExternalLink size={10} />
+                            </a>
                         </div>
 
                         {isAdmin && (
