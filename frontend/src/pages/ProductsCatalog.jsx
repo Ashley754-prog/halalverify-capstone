@@ -32,7 +32,7 @@ const PRODUCT_CATEGORIES = [
     'Condiments & Sauces',
 ];
 
-const PRODUCT_STATUSES = ['All Statuses', 'Halal', 'Pork-Free Declared', 'Vegetarian / Vegan', 'COMMUNITY_LISTED', 'Doubtful', 'Haram', 'Expired'];
+const PRODUCT_STATUSES = ['All Statuses', 'Halal', 'Pork-Free Declared', 'Vegetarian / Vegan', 'Doubtful', 'Haram', 'Expired'];
 
 const emptyProductForm = {
     name: '',
@@ -287,6 +287,16 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         if (type === 'add-product') {
             setModalForm(emptyProductForm);
         } else if (type === 'edit-product' && product) {
+            let initialStatus = product.status || 'Halal';
+            const adminNotes = (product.admin_notes || '').toLowerCase();
+            if (initialStatus === 'COMMUNITY_LISTED') {
+                if (adminNotes.includes('pork-free')) {
+                    initialStatus = 'Pork-Free Declared';
+                } else if (adminNotes.includes('vegetarian') || adminNotes.includes('vegan')) {
+                    initialStatus = 'Vegetarian / Vegan';
+                }
+            }
+
             setModalForm({
                 name: product.name || '',
                 brand: product.brand || '',
@@ -296,7 +306,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                 certifying_body_id: product.certifying_body_id || '',
                 certificate_no: product.certificate_no || '',
                 expiry_date: product.expiry_date || '',
-                status: product.status || 'Halal',
+                status: initialStatus,
                 halal_logo_present: product.halal_logo_present ?? true,
                 ingredients_summary: product.ingredients_summary || '',
                 source: product.source || 'Manual Registry Entry',

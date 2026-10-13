@@ -607,7 +607,9 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
                 reasons.append("Packaging photo not provided")
 
             is_auto_approved = (score >= 60) and bool(ingredients) and has_prod_photo
-            final_status = "COMMUNITY_LISTED" if is_auto_approved else "PENDING_VERIFICATION"
+            final_status = (
+                "Pork-Free Declared" if halal_tier == "pork_free_declared" else "Vegetarian / Vegan"
+            ) if is_auto_approved else "PENDING_VERIFICATION"
             summary_note = (
                 f"AI TRIAGED & PUBLISHED: Community Listed - {tier_label} (Confidence: {score}%). Zero prohibited additives detected with packaging photo."
                 if is_auto_approved
