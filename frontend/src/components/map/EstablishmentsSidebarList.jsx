@@ -93,25 +93,9 @@ export default function EstablishmentsSidebarList({
 
                                     <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-slate-200/50">
                                         <div className="flex flex-wrap items-center gap-1.5">
-                                            {isCertified ? (
+                                            {est.certifying_bodies?.code && (
                                                 <span className="font-bold text-emerald-800 bg-emerald-100/70 border border-emerald-200/80 px-1.5 py-0.5 rounded">
-                                                    {est.certifying_bodies?.code || 'Certified'}
-                                                </span>
-                                            ) : statusConfig.key === 'muslim_owned' ? (
-                                                <span className="font-bold text-sky-800 bg-sky-50 border border-sky-200/80 px-1.5 py-0.5 rounded">
-                                                    Muslim-Owned
-                                                </span>
-                                            ) : statusConfig.key === 'muslim_friendly' ? (
-                                                <span className="font-bold text-indigo-800 bg-indigo-50 border border-indigo-200/80 px-1.5 py-0.5 rounded">
-                                                    Muslim-Friendly
-                                                </span>
-                                            ) : statusConfig.key === 'vegetarian_vegan' ? (
-                                                <span className="font-bold text-teal-800 bg-teal-50 border border-teal-200/80 px-1.5 py-0.5 rounded">
-                                                    Plant-Based
-                                                </span>
-                                            ) : (
-                                                <span className="font-medium text-amber-800 bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded">
-                                                    Pending Review
+                                                    {est.certifying_bodies.code}
                                                 </span>
                                             )}
                                             {(est.has_prayer_space || est.description?.toLowerCase().includes('prayer') || est.description?.toLowerCase().includes('musalah')) && (

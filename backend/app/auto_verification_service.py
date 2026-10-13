@@ -68,9 +68,10 @@ def is_dummy_or_sequential_phone(phone_str: str) -> bool:
 
     # Common dummy sequences
     dummy_patterns = [
-        "1234567", "7654321", "12345678", "87654321",
-        "123456789", "987654321", "0000000", "1111111",
-        "2222222", "3333333", "4444444", "5555555"
+        "1234567", "7654321", "0123456", "6543210",
+        "12345678", "87654321", "123456789", "987654321",
+        "0000000", "1111111", "2222222", "3333333",
+        "4444444", "5555555"
     ]
     for pattern in dummy_patterns:
         if pattern in digits:
@@ -173,8 +174,8 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
     # 2. Public Contact & Transparency Validation
     is_valid_phone = False
     if contact_phone:
-        clean_phone = re.sub(r"[\s\-\(\)]", "", contact_phone)
-        if re.match(r"^(\+639\d{9}|09\d{9}|062\d{7}|\+6362\d{7})$", clean_phone):
+        clean_phone = re.sub(r"[\s\-\(\)\.]", "", contact_phone)
+        if re.match(r"^(\+?639\d{9}|09\d{9}|062\d{7}|\+?6362\d{7})$", clean_phone):
             if is_dummy_or_sequential_phone(clean_phone):
                 audit_notes.append(f"Phone flagged: Sequential or dummy pattern detected ({contact_phone}) (0 pts)")
                 reasons.append("Contact phone appears to be a sequential or dummy placeholder")
@@ -183,7 +184,7 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
                 score += 15
                 audit_notes.append(f"Public contact validated: active PH format ({contact_phone}) (+15 pts)")
         else:
-            audit_notes.append(f"Contact phone provided does not match valid Philippine format ({contact_phone})")
+            audit_notes.append(f"Contact phone provided does not match valid Philippine format ({contact_phone}) (0 pts)")
             reasons.append("Phone number does not match valid Philippine mobile or Zamboanga landline format")
     else:
         reasons.append("No public contact phone number provided")
@@ -204,15 +205,75 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
             reasons.append("Social media URL has unrecognized domain structure")
 
     # 3. Local Zamboanga Geofence Check
-    is_zamboanga = bool(re.search(
-        r"zamboanga|tetuan|canelar|pasonanca|santa maria|baliwasan|tumaga|guiwan|calarian|san roque|vitali|ayala|divisoria|recodo|sinunuc|zone\s+[i|v|x\d]+",
-        (address + " " + city).lower()
-    ))
-    if is_zamboanga:
-        score += 10
-        audit_notes.append("Jurisdiction verified: Located within Zamboanga City (+10 pts)")
+    # HalalVerify is localized to Zamboanga City. Entries located outside municipal bounds must be flagged.
+    raw_address = address.lower()
+    raw_city = (payload.get("city") or "").lower().strip()
+
+    # List of known cities, municipalities, or provinces outside Zamboanga City
+    NON_ZAMBOANGA_PATTERNS = [
+        r"\bpagadian\b",
+        r"\bdipolog\b",
+        r"\bdapitan\b",
+        r"\bipil\b",
+        r"\bisabela\s+city\b",
+        r"\bbasilan\b",
+        r"\blamitan\b",
+        r"\bjolo\b",
+        r"\bsulu\b",
+        r"\btawi[\s\-]tawi\b",
+        r"\bbongao\b",
+        r"\bcotabato\b",
+        r"\bdavao\b",
+        r"\bcebu\b",
+        r"\bmanila\b",
+        r"\bquezon\s+city\b",
+        r"\bcagayan\s+de\s+oro\b",
+        r"\bcdo\b",
+        r"\biligan\b",
+        r"\bgeneral\s+santos\b",
+        r"\bgensan\b",
+        r"\bmarawi\b",
+        r"\bzamboanga\s+del\s+sur\b",
+        r"\bzamboanga\s+del\s+norte\b",
+        r"\bzamboanga\s+sibugay\b",
+    ]
+
+    has_outside_location = any(re.search(pat, raw_address) for pat in NON_ZAMBOANGA_PATTERNS) or \
+                           any(re.search(pat, raw_city) for pat in NON_ZAMBOANGA_PATTERNS)
+
+    if has_outside_location:
+        is_zamboanga = False
+        audit_notes.append("Jurisdiction warning: Address indicates location outside Zamboanga City (e.g. Pagadian / outside province) (0 pts)")
+        reasons.append("Address is located outside Zamboanga City jurisdiction (HalalVerify is localized to Zamboanga City)")
     else:
-        audit_notes.append("Address provided outside primary Zamboanga City municipal bounds")
+        # Check if address contains Zamboanga City or recognized Zamboanga barangays/streets/landmarks
+        zambo_patterns = (
+            r"\bzamboanga\s+city\b|\bzamboanga\b|"
+            r"\btetuan\b|\bcanelar\b|\bpasonanca\b|\bsanta\s+maria\b|\bsta\.?\s*maria\b|"
+            r"\bbaliwasan\b|\btumaga\b|\bguiwan\b|\bcalarian\b|\bsan\s+roque\b|\bvitali\b|"
+            r"\bayala\b|\bdivisoria\b|\brecodo\b|\bsinunuc\b|\bsta\.?\s*catalina\b|\bsanta\s+catalina\b|"
+            r"\bsan\s+jose\b|\bmampang\b|\bputik\b|\bboalan\b|\bmercedes\b|\btalon[\-\s]talon\b|"
+            r"\bcuruan\b|\bculianan\b|\bmanicahan\b|\bcabaluay\b|\blabuan\b|\bsangali\b|"
+            r"\bbolong\b|\bbunguiao\b|\bbungiao\b|\bcampo\s+islam\b|\bkasanyangan\b|"
+            r"\bveterans\s+ave\b|\bgov\.?\s*camins\b|\bla\s+purisima\b|\bmayor\s+jaldon\b|"
+            r"\bnu[nñ]ez\b|\bzone\s+[i|v|x\d]+\b"
+        )
+        if bool(re.search(zambo_patterns, raw_address)):
+            is_zamboanga = True
+            score += 10
+            audit_notes.append("Jurisdiction verified: Located within Zamboanga City (+10 pts)")
+        elif raw_address:
+            # Address provided without any recognized Zamboanga barangay, landmark, or city name
+            is_zamboanga = False
+            audit_notes.append("Address provided does not match a recognized Zamboanga City barangay or street (0 pts)")
+            reasons.append("Address does not contain recognized Zamboanga City barangay, district, or street")
+        elif raw_city == "zamboanga city":
+            is_zamboanga = True
+            score += 10
+            audit_notes.append("Jurisdiction verified: Defaulted to Zamboanga City (+10 pts)")
+        else:
+            is_zamboanga = False
+            audit_notes.append("Address provided outside primary Zamboanga City municipal bounds (0 pts)")
 
     # 4. Duplicate Listing Prevention
     is_duplicate = False
@@ -431,6 +492,7 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
             "submitter_role": submitter_role,
             "is_duplicate": is_duplicate,
             "is_valid_phone": is_valid_phone,
+            "is_zamboanga": is_zamboanga,
             "hcb_matched": hcb_matched,
             "hcb_name": hcb_name,
             "is_expired": is_expired,

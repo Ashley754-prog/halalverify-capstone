@@ -734,11 +734,7 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                     {(() => {
                                         const previewConfig = getStatusConfig(activePreviewEst);
-                                        const isCertified = Boolean(
-                                            previewConfig.key === 'verified' ||
-                                            activePreviewEst.certificate_number ||
-                                            activePreviewEst.certifying_bodies?.code
-                                        );
+                                        const certCode = activePreviewEst.certifying_bodies?.code;
                                         return (
                                             <>
                                                 <span
@@ -746,25 +742,9 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                                                 >
                                                     {previewConfig.label}
                                                 </span>
-                                                {isCertified ? (
+                                                {certCode && (
                                                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                                        {activePreviewEst.certifying_bodies?.code || 'Certified'}
-                                                    </span>
-                                                ) : previewConfig.key === 'muslim_owned' ? (
-                                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200">
-                                                        Muslim-Owned
-                                                    </span>
-                                                ) : previewConfig.key === 'muslim_friendly' ? (
-                                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-200">
-                                                        Muslim-Friendly
-                                                    </span>
-                                                ) : previewConfig.key === 'vegetarian_vegan' ? (
-                                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-50 text-teal-800 border border-teal-200">
-                                                        Plant-Based
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
-                                                        Pending Review
+                                                        {certCode}
                                                     </span>
                                                 )}
                                             </>
