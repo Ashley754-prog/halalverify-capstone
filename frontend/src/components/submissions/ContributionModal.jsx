@@ -539,6 +539,29 @@ export default function ContributionModal({
                   ))}
                 </ul>
               </div>
+            ) : auditNotes.length > 0 ? (
+              <div className="space-y-1.5 pt-1 border-t border-slate-200/60">
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">AI Pre-Screening Highlights</p>
+                <ul className="space-y-1">
+                  {auditNotes.filter(
+                    (note) =>
+                      !note.startsWith('Consumer Contribution:') &&
+                      !note.startsWith('Brand Declaration:') &&
+                      !note.startsWith('Ownership Declaration:') &&
+                      !note.startsWith('Classification Tier:') &&
+                      !note.startsWith('Duplicate alert:')
+                  ).slice(0, 4).map((note, idx) => (
+                    <li key={idx} className="text-xs text-slate-600 flex items-start gap-2">
+                      <span className="text-emerald-500 font-bold leading-none mt-0.5">✓</span>
+                      <span>{note}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="pt-1.5 text-[11px] text-slate-500 flex items-center gap-1.5">
+                  <Clock size={12} className="text-amber-500 shrink-0" />
+                  <span>Pending official Halal Certifying Body (HCB) cross-check by Admin.</span>
+                </div>
+              </div>
             ) : (
               <div className="pt-1 border-t border-slate-200/60 text-xs text-slate-500 flex items-center gap-2">
                 <Clock size={13} className="text-slate-400 shrink-0" />

@@ -423,12 +423,13 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
                 f"Issues: {'; '.join(reasons)}."
             )
         else:
-            is_auto_approved = score >= 70
-            final_status = "verified" if is_auto_approved else "needs_review"
+            # Certified Halal claims require physical accreditation verification against official HCB lists by Admin
+            is_auto_approved = False
+            final_status = "needs_review"
             summary_note = (
-                f"AI AUTO-APPROVED: Halal Certified (Confidence: {score}%). Accredited HCB: {hcb_name}. Expiry: {parsed_expiry.isoformat() if parsed_expiry else 'N/A'}."
-                if is_auto_approved
-                else f"AI AUDITED: Certified claim needs manual review (Confidence: {score}%). Issues: {'; '.join(reasons)}."
+                f"AI AUDITED & QUEUED: Halal Certified claim scored {score}% audit readiness. "
+                f"Accredited HCB: {hcb_name}. Expiry: {parsed_expiry.isoformat() if parsed_expiry else 'N/A'}. "
+                f"Queued for final administrative confirmation against official HCB master list."
             )
 
     else:
@@ -689,12 +690,13 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
                 f"Issues: {'; '.join(reasons)}"
             )
         else:
-            is_auto_approved = score >= 70
-            final_status = "VERIFIED" if is_auto_approved else "PENDING_VERIFICATION"
+            # Certified Halal claims require physical accreditation verification against official HCB lists by Admin
+            is_auto_approved = False
+            final_status = "PENDING_VERIFICATION"
             summary_note = (
-                f"AI AUTO-APPROVED: Halal Certified (Confidence: {score}%). Accredited HCB: {hcb_name}. Active validity verified. Additives clean."
-                if is_auto_approved
-                else f"AI AUDITED: Certified claim needs manual review (Confidence: {score}%). Issues: {'; '.join(reasons)}"
+                f"AI AUDITED & QUEUED: Halal Certified claim scored {score}% audit readiness. "
+                f"Accredited HCB: {hcb_name}. Active validity verified. Additives clean. "
+                f"Queued for final administrative confirmation against official HCB master list."
             )
 
     else:
