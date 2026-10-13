@@ -58,7 +58,11 @@ export default function EstablishmentsSidebarList({
                             const statusConfig = getStatusConfig(est);
                             const isSelected = selectedEstablishment?.id === est.id;
 
-                            const isCertified = Boolean(est.certifying_bodies?.code);
+                            const isCertified = Boolean(
+                                statusConfig.key === 'verified' ||
+                                est.certificate_number ||
+                                est.certifying_bodies?.code
+                            );
                             const productsCount = est.products?.length || 0;
 
                             return (
@@ -88,10 +92,10 @@ export default function EstablishmentsSidebarList({
                                     </p>
 
                                     <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-slate-200/50">
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex flex-wrap items-center gap-1.5">
                                             {isCertified ? (
                                                 <span className="font-bold text-emerald-800 bg-emerald-100/70 border border-emerald-200/80 px-1.5 py-0.5 rounded">
-                                                    {est.certifying_bodies.code}
+                                                    {est.certifying_bodies?.code || 'Certified'}
                                                 </span>
                                             ) : statusConfig.key === 'muslim_owned' ? (
                                                 <span className="font-bold text-sky-800 bg-sky-50 border border-sky-200/80 px-1.5 py-0.5 rounded">
@@ -111,13 +115,15 @@ export default function EstablishmentsSidebarList({
                                                 </span>
                                             )}
                                             {(est.has_prayer_space || est.description?.toLowerCase().includes('prayer') || est.description?.toLowerCase().includes('musalah')) && (
-                                                <span title="Dedicated Prayer Space (Musalah)" className="text-emerald-700 font-semibold flex items-center gap-0.5">
-                                                    <Compass size={11} className="text-emerald-600" />
+                                                <span title="Dedicated Prayer Space (Musalah)" className="text-emerald-700 bg-emerald-50 border border-emerald-200/70 px-1.5 py-0.5 rounded text-[9px] font-semibold flex items-center gap-0.5">
+                                                    <Compass size={10} className="text-emerald-600" />
+                                                    Prayer
                                                 </span>
                                             )}
-                                            {(est.is_alcohol_free || est.description?.toLowerCase().includes('alcohol-free')) && (
-                                                <span title="100% Alcohol-Free Premises" className="text-emerald-700 font-semibold flex items-center gap-0.5">
-                                                    <ShieldCheck size={11} className="text-emerald-600" />
+                                            {(est.is_alcohol_free || est.description?.toLowerCase().includes('alcohol-free') || est.description?.toLowerCase().includes('alcohol free')) && (
+                                                <span title="100% Alcohol-Free Premises" className="text-emerald-700 bg-emerald-50 border border-emerald-200/70 px-1.5 py-0.5 rounded text-[9px] font-semibold flex items-center gap-0.5">
+                                                    <ShieldCheck size={10} className="text-emerald-600" />
+                                                    Alcohol-Free
                                                 </span>
                                             )}
                                             {est.distance_km && (

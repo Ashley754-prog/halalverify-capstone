@@ -1,4 +1,4 @@
-import { Save } from 'lucide-react';
+import { Save, Compass, ShieldCheck } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { ESTABLISHMENT_TYPES, ESTABLISHMENT_HALAL_TIERS } from '../../data/constants';
 
@@ -449,6 +449,39 @@ export default function RegistryModals({
                                 </p>
                             </div>
                         )}
+
+                        {/* Guest Amenities & Facilities */}
+                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+                            <span className="text-xs font-bold uppercase tracking-wide text-slate-600 block">
+                                Guest Amenities & Facilities
+                            </span>
+                            <div className="flex flex-wrap gap-2 text-xs">
+                                <button
+                                    type="button"
+                                    onClick={() => setModalForm(prev => ({ ...prev, has_prayer_space: !prev.has_prayer_space }))}
+                                    className={`px-3 py-1.5 rounded-lg border font-medium flex items-center gap-1.5 transition cursor-pointer ${
+                                        modalForm.has_prayer_space
+                                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300 shadow-xs'
+                                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                                    }`}
+                                >
+                                    <Compass size={14} className={modalForm.has_prayer_space ? 'text-emerald-600' : 'text-slate-400'} />
+                                    <span>Dedicated Prayer Space (Musalah)</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setModalForm(prev => ({ ...prev, is_alcohol_free: !prev.is_alcohol_free }))}
+                                    className={`px-3 py-1.5 rounded-lg border font-medium flex items-center gap-1.5 transition cursor-pointer ${
+                                        modalForm.is_alcohol_free
+                                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300 shadow-xs'
+                                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                                    }`}
+                                >
+                                    <ShieldCheck size={14} className={modalForm.is_alcohol_free ? 'text-emerald-600' : 'text-slate-400'} />
+                                    <span>100% Alcohol-Free Premises</span>
+                                </button>
+                            </div>
+                        </div>
                     </>
                 )}
 

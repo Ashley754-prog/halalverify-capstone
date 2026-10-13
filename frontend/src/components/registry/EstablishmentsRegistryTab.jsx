@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Database, Search, Pencil, Trash2, Flag, MapPin } from 'lucide-react';
+import { Database, Search, Pencil, Trash2, Flag, MapPin, Compass, ShieldCheck } from 'lucide-react';
 import { getStatusConfig } from '../../data/constants';
 
 export default function EstablishmentsRegistryTab({
@@ -95,6 +95,16 @@ export default function EstablishmentsRegistryTab({
                     filteredEstablishments.map((shop) => {
                         const statusConfig = getStatusConfig(shop);
                         const isFormallyCertified = Boolean(shop.certificate_number || statusConfig.key === 'verified');
+                        const hasPrayer = Boolean(
+                            shop.has_prayer_space ||
+                            (shop.description && (shop.description.toLowerCase().includes('prayer') || shop.description.toLowerCase().includes('musalah'))) ||
+                            (Array.isArray(shop.amenities) && shop.amenities.some(a => String(a).toLowerCase().includes('prayer')))
+                        );
+                        const hasAlcoholFree = Boolean(
+                            shop.is_alcohol_free ||
+                            (shop.description && shop.description.toLowerCase().includes('alcohol')) ||
+                            (Array.isArray(shop.amenities) && shop.amenities.some(a => String(a).toLowerCase().includes('alcohol')))
+                        );
 
                         return (
                             <div
@@ -179,6 +189,23 @@ export default function EstablishmentsRegistryTab({
                                             <span className="text-[9px] uppercase tracking-wider text-amber-700 font-bold mb-0.5">Source</span>
                                             <span className="font-bold text-slate-700 text-[11px] sm:text-xs truncate">{shop.source || 'Community'}</span>
                                         </div>
+                                    </div>
+                                )}
+
+                                {(hasPrayer || hasAlcoholFree) && (
+                                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                                        {hasPrayer && (
+                                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md">
+                                                <Compass size={11} className="text-emerald-600" />
+                                                Prayer Space
+                                            </span>
+                                        )}
+                                        {hasAlcoholFree && (
+                                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md">
+                                                <ShieldCheck size={11} className="text-emerald-600" />
+                                                Alcohol-Free
+                                            </span>
+                                        )}
                                     </div>
                                 )}
 

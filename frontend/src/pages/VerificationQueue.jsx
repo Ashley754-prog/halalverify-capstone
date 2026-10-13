@@ -18,6 +18,9 @@ import {
     ChevronRight,
     BarChart2,
     UtensilsCrossed,
+    Phone,
+    Globe,
+    Compass,
 } from 'lucide-react';
 import Modal from '../components/ui/Modal';
 import Toast from '../components/ui/Toast';
@@ -364,6 +367,25 @@ export default function VerificationQueue({ onViewChange }) {
                         .eq('establishment_id', estId);
                 } catch (prodCascadeErr) {
                     console.warn('Cascaded product verification notice:', prodCascadeErr);
+                }
+            }
+
+            // If admin typed a dish name in the menu box before approving, auto-commit it as an associated menu item
+            if (newMenuItemName && newMenuItemName.trim()) {
+                try {
+                    const { data: sessionData } = await supabase.auth.getSession();
+                    const userId = sessionData?.session?.user?.id || null;
+                    await supabase.from('products').insert({
+                        name: newMenuItemName.trim(),
+                        establishment_id: estId,
+                        category: 'Food & Beverage',
+                        status: 'VERIFIED',
+                        submitted_by: userId,
+                        source: inspectingItem.source || 'Admin Itemized Menu Dish',
+                    });
+                    setNewMenuItemName('');
+                } catch (addErr) {
+                    console.warn('Auto-save pending menu item notice:', addErr);
                 }
             }
 
@@ -1168,6 +1190,110 @@ export default function VerificationQueue({ onViewChange }) {
                                 </div>
                             )}
 
+                            {/* Submitted Business Profile Card */}
+                            {(() => {
+                                const hasPrayerSpace = Boolean(
+                                    inspectingItem.has_prayer_space ||
+                                    (inspectingItem.description && (inspectingItem.description.toLowerCase().includes('prayer') || inspectingItem.description.toLowerCase().includes('musalah'))) ||
+                                    (Array.isArray(inspectingItem.amenities) && inspectingItem.amenities.some((a) => String(a).toLowerCase().includes('prayer')))
+                                );
+                                const hasAlcoholFree = Boolean(
+                                    inspectingItem.is_alcohol_free ||
+                                    (inspectingItem.description && inspectingItem.description.toLowerCase().includes('alcohol')) ||
+                                    (Array.isArray(inspectingItem.amenities) && inspectingItem.amenities.some((a) => String(a).toLowerCase().includes('alcohol')))
+                                );
+                                const contactPhone = inspectingItem.phone || inspectingItem.contact_number;
+                                const webLink = inspectingItem.source_url || inspectingItem.social_media_url;
+                                const submitterRole = (inspectingItem.source?.includes('Owner') || inspectingItem.submitter_role === 'owner')
+                                    ? 'Business Owner / Staff'
+                                    : 'Customer / Community Scout';
+
+                                return (
+                                    <div className="rounded-2xl bg-white border border-slate-200 p-4 space-y-3 shadow-xs">
+                                        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                                            <span className="font-black text-slate-800 uppercase tracking-wider text-xs flex items-center gap-1.5">
+                                                <Store size={14} className="text-emerald-600" />
+                                                Submitted Business Profile
+                                            </span>
+                                            <span className="text-[11px] font-semibold text-slate-400">
+                                                Contributed Details
+                                            </span>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                            <div>
+                                                <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Business Name</span>
+                                                <span className="font-bold text-slate-900">{inspectingItem.name}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Venue Category</span>
+                                                <span className="font-semibold text-slate-800">{inspectingItem.type || 'Restaurant'}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Submitter Role</span>
+                                                <span className="font-semibold text-slate-800">{submitterRole}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Contact Phone</span>
+                                                {contactPhone ? (
+                                                    <a href={`tel:${contactPhone}`} className="font-semibold text-emerald-700 hover:underline flex items-center gap-1">
+                                                        <Phone size={11} className="text-emerald-600" />
+                                                        {contactPhone}
+                                                    </a>
+                                                ) : (
+                                                    <span className="text-slate-400 italic">Not provided</span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider mb-1">Physical Address</span>
+                                            <p className="text-xs text-slate-800 bg-slate-50 p-2.5 rounded-xl border border-slate-200 flex items-start gap-1.5">
+                                                <MapPin size={13} className="text-emerald-600 shrink-0 mt-0.5" />
+                                                <span>{inspectingItem.address || inspectingItem.city || 'Zamboanga City'}</span>
+                                            </p>
+                                        </div>
+
+                                        {webLink && (
+                                            <div>
+                                                <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider mb-1">Facebook / Web Link</span>
+                                                <a
+                                                    href={getSafeUrl(webLink)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-xs font-semibold text-emerald-700 hover:underline flex items-center gap-1.5 bg-emerald-50/60 p-2 rounded-xl border border-emerald-200/80 truncate"
+                                                >
+                                                    <Globe size={13} className="text-emerald-600 shrink-0" />
+                                                    <span className="truncate">{webLink}</span>
+                                                    <ExternalLink size={11} className="shrink-0 text-emerald-500 ml-auto" />
+                                                </a>
+                                            </div>
+                                        )}
+
+                                        <div>
+                                            <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider mb-1">Declared Guest Amenities</span>
+                                            <div className="flex flex-wrap gap-2">
+                                                {hasPrayerSpace && (
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                                        <Compass size={13} className="text-emerald-600" />
+                                                        Dedicated Prayer Space (Musalah)
+                                                    </span>
+                                                )}
+                                                {hasAlcoholFree && (
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                                        <ShieldCheck size={13} className="text-emerald-600" />
+                                                        100% Alcohol-Free Premises
+                                                    </span>
+                                                )}
+                                                {!hasPrayerSpace && !hasAlcoholFree && (
+                                                    <span className="text-xs text-slate-400 italic">No special guest amenities declared.</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+
                             {/* Credentials Cross-Match Form Card */}
                             <div className="rounded-2xl bg-white border border-slate-200 p-4 space-y-3.5 shadow-xs">
                                 <div className="flex items-center justify-between pb-2 border-b border-slate-100">
@@ -1243,26 +1369,6 @@ export default function VerificationQueue({ onViewChange }) {
                                         />
                                     </div>
                                 </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                                        Physical Address
-                                    </label>
-                                    <p className="text-xs text-slate-700 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                                        {inspectingItem.address || inspectingItem.city || 'Zamboanga City'}
-                                    </p>
-                                </div>
-
-                                {inspectingItem.description && inspectingItem.description.includes('Amenities:') && (
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                                            Declared Guest Amenities
-                                        </label>
-                                        <p className="text-xs text-emerald-800 bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 font-semibold">
-                                            {inspectingItem.description}
-                                        </p>
-                                    </div>
-                                )}
                             </div>
 
                             {/* Submitted Menu Items & Specialties */}

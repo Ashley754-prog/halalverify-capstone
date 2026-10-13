@@ -81,6 +81,10 @@ class EstablishmentUpdate(BaseModel):
     synced_at: Optional[str] = None
     phone: Optional[str] = None
     admin_notes: Optional[str] = None
+    description: Optional[str] = None
+    source_url: Optional[str] = None
+    certificate_url: Optional[str] = None
+    logo_url: Optional[str] = None
 
 
 class EstablishmentSubmissionRequest(BaseModel):

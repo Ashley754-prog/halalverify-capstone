@@ -492,6 +492,7 @@ def submit_establishment(
         "logo_url": submission.logo_url,
         "submitted_by": str(user_id),
         "amenities": submission.amenities or [],
+        "description": f"Amenities: {' | '.join(submission.amenities)}" if submission.amenities else None,
         "source": "Business Owner Submission" if submission.submitter_role == "owner" else "Community User Submission",
     }
 
@@ -525,7 +526,7 @@ def submit_establishment(
         "name", "type", "address", "city", "halal_status", "certifying_body_id",
         "certificate_number", "expiry_date", "certificate_url", "logo_url",
         "submitted_by", "source", "source_url", "phone", "admin_notes",
-        "verified_at", "verified_by", "latitude", "longitude"
+        "verified_at", "verified_by", "latitude", "longitude", "description"
     }
     clean_payload = {k: v for k, v in establishment_payload.items() if k in valid_est_cols and v is not None}
 

@@ -95,6 +95,42 @@ export const getStatusConfig = (statusOrEst, rawNotes = '') => {
     if (statusOrEst && typeof statusOrEst === 'object') {
         status = statusOrEst.halal_status || statusOrEst.status || '';
         notes = statusOrEst.admin_notes || statusOrEst.notes || '';
+        if (statusOrEst.halal_tier === 'halal_certified' && (statusOrEst.certificate_number || (status && status.toLowerCase() === 'verified'))) {
+            return {
+                key: 'verified',
+                label: 'Formally Certified',
+                color: '#10b981',
+                badgeBg: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                weight: 1.0,
+            };
+        }
+        if (statusOrEst.halal_tier === 'muslim_owned') {
+            return {
+                key: 'muslim_owned',
+                label: 'Muslim-Owned',
+                color: '#0284c7',
+                badgeBg: 'bg-sky-50 text-sky-800 border-sky-200',
+                weight: 0.9,
+            };
+        }
+        if (statusOrEst.halal_tier === 'muslim_friendly') {
+            return {
+                key: 'muslim_friendly',
+                label: 'Muslim-Friendly',
+                color: '#6366f1',
+                badgeBg: 'bg-indigo-50 text-indigo-800 border-indigo-200',
+                weight: 0.8,
+            };
+        }
+        if (statusOrEst.halal_tier === 'vegetarian_vegan') {
+            return {
+                key: 'vegetarian_vegan',
+                label: 'Vegetarian / Vegan',
+                color: '#0d9488',
+                badgeBg: 'bg-teal-50 text-teal-800 border-teal-200',
+                weight: 0.8,
+            };
+        }
     } else {
         status = statusOrEst || '';
         notes = rawNotes || '';
@@ -104,7 +140,7 @@ export const getStatusConfig = (statusOrEst, rawNotes = '') => {
     const n = notes.toLowerCase();
 
     // Check for community tiers first (stored with halal_status='verified' but specified in admin_notes)
-    if (s.includes('muslim_owned') || n.includes('muslim-owned') || n.includes('muslim_owned')) {
+    if (s === 'muslim_owned' || s.includes('muslim_owned') || n.includes('muslim-owned') || n.includes('muslim_owned')) {
         return {
             key: 'muslim_owned',
             label: 'Muslim-Owned',
@@ -113,7 +149,7 @@ export const getStatusConfig = (statusOrEst, rawNotes = '') => {
             weight: 0.9,
         };
     }
-    if (s.includes('friendly') || n.includes('muslim-friendly') || n.includes('muslim_friendly')) {
+    if (s === 'muslim_friendly' || s.includes('muslim_friendly') || n.includes('muslim-friendly')) {
         return {
             key: 'muslim_friendly',
             label: 'Muslim-Friendly',
@@ -122,7 +158,7 @@ export const getStatusConfig = (statusOrEst, rawNotes = '') => {
             weight: 0.8,
         };
     }
-    if (s.includes('veg') || n.includes('vegetarian') || n.includes('plant-based')) {
+    if (s === 'vegetarian_vegan' || s.includes('vegetarian') || s.includes('vegan') || n.includes('vegetarian') || n.includes('plant-based')) {
         return {
             key: 'vegetarian_vegan',
             label: 'Vegetarian / Vegan',
