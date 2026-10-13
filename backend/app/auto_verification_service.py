@@ -740,7 +740,7 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
 
             if brand:
                 score += 20
-                audit_notes.append(f"Brand provenance verified: {brand} (+20 pts)")
+                audit_notes.append(f"Brand / maker name provided: {brand} (+20 pts)")
 
             # Auto-approval guardrails: score >= 70, ingredients declared, packaging photo attached
             is_auto_approved = (score >= 70) and bool(ingredients) and has_prod_photo
