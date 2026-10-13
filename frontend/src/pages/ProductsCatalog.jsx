@@ -142,29 +142,60 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
     };
 
     const searchDebounceRef = useRef(null);
+    const filtersRef = useRef({
+        searchQuery: initialSearchQuery || '',
+        category: 'All Categories',
+        status: 'All Statuses',
+        certifier: 'ALL',
+        page: 1,
+    });
 
+    // 1. Load static metadata (manufacturers and certifying bodies) once on component mount
+    useEffect(() => {
+        let isMounted = true;
+        async function fetchMetadata() {
+            try {
+                const [mfgRes, cbRes] = await Promise.all([
+                    supabase.from('manufacturers').select('*').order('name').limit(200),
+                    supabase.from('certifying_bodies').select('*').order('name'),
+                ]);
+                if (isMounted) {
+                    if (mfgRes.data) setManufacturers(mfgRes.data);
+                    if (cbRes.data) setCertifyingBodies(cbRes.data);
+                }
+            } catch (err) {
+                console.warn('Metadata fetch failed:', err);
+            }
+        }
+        fetchMetadata();
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
+    // 2. Stable product loader that does not cause infinite re-render cascades
     const loadData = useCallback(async (
-        targetPage = currentPage,
-        queryParam = searchQuery,
-        categoryParam = selectedCategory,
-        statusParam = selectedStatus,
-        certifierParam = selectedCertifier
+        targetPage,
+        queryParam,
+        categoryParam,
+        statusParam,
+        certifierParam
     ) => {
         try {
             setLoading(true);
             setError('');
 
-            let loadedProducts = null;
-            let loadedMfg = null;
-
-            const q = (queryParam !== undefined ? queryParam : searchQuery).trim();
-            const cat = categoryParam !== undefined ? categoryParam : selectedCategory;
-            const st = statusParam !== undefined ? statusParam : selectedStatus;
-            const cert = certifierParam !== undefined ? certifierParam : selectedCertifier;
-            const from = (targetPage - 1) * itemsPerPage;
+            const page = targetPage !== undefined ? targetPage : filtersRef.current.page;
+            const q = (queryParam !== undefined ? queryParam : filtersRef.current.searchQuery).trim();
+            const cat = categoryParam !== undefined ? categoryParam : filtersRef.current.category;
+            const st = statusParam !== undefined ? statusParam : filtersRef.current.status;
+            const cert = certifierParam !== undefined ? certifierParam : filtersRef.current.certifier;
+            const from = (page - 1) * itemsPerPage;
             const to = from + itemsPerPage - 1;
 
-            // 1. Direct Supabase Query with true count & range (Instant ~120ms response)
+            let loadedProducts = null;
+
+            // Direct Supabase Query with true count & range (Instant ~120ms response)
             try {
                 let pBuilder = supabase
                     .from('products')
@@ -193,7 +224,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                 }
 
                 if (cert && cert !== 'ALL' && cert !== 'All Certifiers / Origins') {
-                    const cbId = CB_UUID_MAP[cert] || certifyingBodies.find((c) => c.code === cert || c.id === cert)?.id;
+                    const cbId = CB_UUID_MAP[cert];
                     if (cbId) {
                         pBuilder = pBuilder.or(`certifying_body_id.eq.${cbId},source.ilike.%${cert}%`);
                     } else {
@@ -207,39 +238,26 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                     .order('name', { ascending: true })
                     .range(from, to);
 
-                const [productsRes, mfgRes, cbRes] = await Promise.all([
-                    pBuilder,
-                    supabase
-                        .from('manufacturers')
-                        .select('*')
-                        .order('name')
-                        .limit(200),
-                    supabase
-                        .from('certifying_bodies')
-                        .select('*')
-                        .order('name'),
-                ]);
+                const productsRes = await pBuilder;
 
                 if (!productsRes.error && productsRes.data) {
                     loadedProducts = productsRes.data;
                     if (typeof productsRes.count === 'number') {
                         setTotalServerCount(productsRes.count);
                     }
-                    if (mfgRes.data) loadedMfg = mfgRes.data;
-                    if (cbRes.data) setCertifyingBodies(cbRes.data);
                 }
             } catch (sbErr) {
                 console.warn('Direct Supabase fetch failed, attempting backend fallback:', sbErr);
             }
 
-            // 2. Fallback to Backend API with a 3.5s timeout if direct Supabase didn't return items
+            // Fallback to Backend API with a 3.5s timeout if direct Supabase didn't return items
             if (!loadedProducts) {
                 try {
                     const searchArg = q ? `&query=${encodeURIComponent(q)}` : '';
-                    const [productsRes, mfgRes] = await Promise.all([
-                        authFetch(`${API_BASE_URL}/products?limit=24&page=${targetPage}${searchArg}`, { timeout: 3500 }),
-                        authFetch(`${API_BASE_URL}/manufacturers?limit=200`, { timeout: 3500 }),
-                    ]);
+                    const productsRes = await authFetch(
+                        `${API_BASE_URL}/products?limit=24&page=${page}${searchArg}`,
+                        { timeout: 3500 }
+                    );
 
                     if (productsRes.ok) {
                         const productsJson = await productsRes.json();
@@ -248,37 +266,32 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                             setTotalServerCount(productsJson.total);
                         }
                     }
-                    if (mfgRes && mfgRes.ok) {
-                        const mfgJson = await mfgRes.json();
-                        loadedMfg = mfgJson.data || [];
-                    }
                 } catch (apiErr) {
                     console.warn('Backend API request timed out or unavailable:', apiErr);
                 }
             }
 
             setProducts(loadedProducts || []);
-            if (loadedMfg) setManufacturers(loadedMfg);
         } catch (err) {
             console.error('Error loading products catalog:', err);
             setError(err.message || 'Could not load products. Please check your network connection.');
         } finally {
             setLoading(false);
         }
-    }, [currentPage, searchQuery, selectedCategory, selectedStatus, selectedCertifier, itemsPerPage, certifyingBodies]);
+    }, [itemsPerPage]);
 
-    // Synchronize initialSearchQuery if passed dynamically, or load default items
+    // Synchronize initialSearchQuery if passed dynamically, or load initial catalog items
     useEffect(() => {
-        if (initialSearchQuery) {
-            setSearchQuery(initialSearchQuery);
-            loadData(1, initialSearchQuery, selectedCategory, selectedStatus, selectedCertifier);
-        } else {
-            loadData(1, '', selectedCategory, selectedStatus, selectedCertifier);
-        }
+        const q = initialSearchQuery || '';
+        setSearchQuery(q);
+        filtersRef.current.searchQuery = q;
+        loadData(1, q, selectedCategory, selectedStatus, selectedCertifier);
     }, [initialSearchQuery, loadData]);
 
     const handleSearchChange = (val) => {
         setSearchQuery(val);
+        filtersRef.current.searchQuery = val;
+        filtersRef.current.page = 1;
         setCurrentPage(1);
         if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
         searchDebounceRef.current = setTimeout(() => {
@@ -288,6 +301,8 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
 
     const handleClearSearch = () => {
         setSearchQuery('');
+        filtersRef.current.searchQuery = '';
+        filtersRef.current.page = 1;
         setCurrentPage(1);
         if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
         loadData(1, '', selectedCategory, selectedStatus, selectedCertifier);
@@ -456,6 +471,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
     const handlePageChange = (newPage) => {
         if (newPage < 1 || newPage > totalPages || newPage === currentPage) return;
         setCurrentPage(newPage);
+        filtersRef.current.page = newPage;
         loadData(newPage, searchQuery, selectedCategory, selectedStatus, selectedCertifier);
         window.scrollTo({ top: 120, behavior: 'smooth' });
     };
@@ -472,6 +488,13 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         setSelectedCategory('All Categories');
         setSelectedStatus('All Statuses');
         setSelectedCertifier('ALL');
+        filtersRef.current = {
+            searchQuery: '',
+            category: 'All Categories',
+            status: 'All Statuses',
+            certifier: 'ALL',
+            page: 1,
+        };
         setCurrentPage(1);
         if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
         loadData(1, '', 'All Categories', 'All Statuses', 'ALL');
@@ -554,6 +577,8 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                         onChange={(e) => {
                             const val = e.target.value;
                             setSelectedCategory(val);
+                            filtersRef.current.category = val;
+                            filtersRef.current.page = 1;
                             setCurrentPage(1);
                             loadData(1, searchQuery, val, selectedStatus, selectedCertifier);
                         }}
@@ -572,6 +597,8 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                         onChange={(e) => {
                             const val = e.target.value;
                             setSelectedStatus(val);
+                            filtersRef.current.status = val;
+                            filtersRef.current.page = 1;
                             setCurrentPage(1);
                             loadData(1, searchQuery, selectedCategory, val, selectedCertifier);
                         }}
@@ -590,6 +617,8 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                         onChange={(e) => {
                             const val = e.target.value;
                             setSelectedCertifier(val);
+                            filtersRef.current.certifier = val;
+                            filtersRef.current.page = 1;
                             setCurrentPage(1);
                             loadData(1, searchQuery, selectedCategory, selectedStatus, val);
                         }}
