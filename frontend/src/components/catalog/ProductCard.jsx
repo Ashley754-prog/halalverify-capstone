@@ -12,6 +12,7 @@ import {
     Pencil,
     Trash2,
     ExternalLink,
+    Leaf,
 } from 'lucide-react';
 import { getSafeUrl } from '../../utils/security';
 import { simplifyStatus } from '../../utils/textFormatters';
@@ -59,9 +60,19 @@ export default function ProductCard({
     onEdit,
     onDelete,
 }) {
-    const isHalal = product.status === 'Halal';
-    const isDoubtful = product.status === 'Doubtful';
-    const certBadge = getProductCertifierBadge(product);
+    const statusLower = (product.status || '').toLowerCase();
+    const adminNotesLower = (product.admin_notes || '').toLowerCase();
+
+    const isPorkFree = statusLower.includes('pork-free') || 
+                       (statusLower === 'community_listed' && adminNotesLower.includes('pork-free'));
+    const isVegetarian = statusLower.includes('vegetarian') || statusLower.includes('vegan') ||
+                         (statusLower === 'community_listed' && (adminNotesLower.includes('vegetarian') || adminNotesLower.includes('vegan')));
+    const isHalal = statusLower === 'halal' || statusLower === 'verified';
+    const isDoubtful = statusLower === 'doubtful' || statusLower.includes('syubhah');
+    const isExpired = statusLower === 'expired';
+    const isCommunityListed = statusLower === 'community_listed' && !isPorkFree && !isVegetarian;
+
+    const certBadge = !isPorkFree && !isVegetarian ? getProductCertifierBadge(product) : null;
 
     return (
         <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 p-3 sm:p-5 mb-4 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-3 sm:space-y-4 min-w-0">
@@ -91,14 +102,29 @@ export default function ProductCard({
                         className={`text-[10px] sm:text-[11px] font-bold px-1.5 sm:px-2.5 py-1 rounded-lg shrink-0 flex items-center gap-1 border ${
                             isHalal
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : isDoubtful
+                                : isPorkFree
+                                ? 'bg-sky-50 text-sky-700 border-sky-200'
+                                : isVegetarian
+                                ? 'bg-teal-50 text-teal-700 border-teal-200'
+                                : isCommunityListed
+                                ? 'bg-sky-50 text-sky-700 border-sky-200'
+                                : isDoubtful || isExpired
                                 ? 'bg-amber-50 text-amber-700 border-amber-200'
                                 : 'bg-red-50 text-red-700 border-red-200'
                         }`}
                     >
                         {isHalal && <CheckCircle2 size={10} className="sm:w-3 sm:h-3" />}
-                        {isDoubtful && <AlertCircle size={10} className="sm:w-3 sm:h-3" />}
-                        {simplifyStatus(product.status)}
+                        {isPorkFree && <CheckCircle2 size={10} className="sm:w-3 sm:h-3" />}
+                        {isVegetarian && <Leaf size={10} className="sm:w-3 sm:h-3" />}
+                        {isCommunityListed && <CheckCircle2 size={10} className="sm:w-3 sm:h-3" />}
+                        {(isDoubtful || isExpired) && <AlertCircle size={10} className="sm:w-3 sm:h-3" />}
+                        {isPorkFree
+                            ? 'Pork-Free Declared'
+                            : isVegetarian
+                            ? 'Vegetarian / Vegan'
+                            : isCommunityListed
+                            ? 'Community Listed'
+                            : simplifyStatus(product.status)}
                     </span>
                 </div>
 
@@ -123,12 +149,27 @@ export default function ProductCard({
                         </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5 text-emerald-800 font-medium text-[10px] sm:text-[11px]">
-                        <Award size={11} className="text-emerald-600 shrink-0 sm:w-[13px] sm:h-[13px]" />
-                        <span className="truncate">
-                            {product.certifying_bodies?.name || 'Accredited Halal Certifier (IDCP/HDIP)'}
-                        </span>
-                    </div>
+                    {isPorkFree ? (
+                        <div className="flex items-center gap-1.5 text-sky-800 font-medium text-[10px] sm:text-[11px]">
+                            <CheckCircle2 size={11} className="text-sky-600 shrink-0 sm:w-[13px] sm:h-[13px]" />
+                            <span className="truncate">Manufacturer Declared Pork-Free</span>
+                        </div>
+                    ) : isVegetarian ? (
+                        <div className="flex items-center gap-1.5 text-teal-800 font-medium text-[10px] sm:text-[11px]">
+                            <Leaf size={11} className="text-teal-600 shrink-0 sm:w-[13px] sm:h-[13px]" />
+                            <span className="truncate">Dietary Standard: Vegetarian / Vegan</span>
+                        </div>
+                    ) : product.certifying_bodies?.name ? (
+                        <div className="flex items-center gap-1.5 text-emerald-800 font-medium text-[10px] sm:text-[11px]">
+                            <Award size={11} className="text-emerald-600 shrink-0 sm:w-[13px] sm:h-[13px]" />
+                            <span className="truncate">{product.certifying_bodies.name}</span>
+                        </div>
+                    ) : isHalal ? (
+                        <div className="flex items-center gap-1.5 text-emerald-800 font-medium text-[10px] sm:text-[11px]">
+                            <Award size={11} className="text-emerald-600 shrink-0 sm:w-[13px] sm:h-[13px]" />
+                            <span className="truncate">Accredited Halal Certifier (IDCP/HDIP)</span>
+                        </div>
+                    ) : null}
 
                     {product.certificate_no && (
                         <div className="text-[10px] text-slate-500 font-mono">
@@ -161,7 +202,7 @@ export default function ProductCard({
             <div className="pt-2 sm:pt-3 border-t border-slate-100 flex items-center justify-between text-[10px] sm:text-xs gap-1">
                 <span className="text-slate-400 flex items-center gap-1 min-w-0" title={product.source_url || product.source}>
                     <FileText size={11} className="shrink-0 text-slate-400" />
-                    <span className="truncate">{product.source || 'IDCP Registry'}</span>
+                    <span className="truncate">{product.source || 'HalalVerify Registry'}</span>
                 </span>
 
                 <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
@@ -198,7 +239,7 @@ export default function ProductCard({
                             </button>
                         </div>
                     ) : (
-                        getSafeUrl(product.source_url) && (
+                        product.source_url && getSafeUrl(product.source_url) && (
                             <a
                                 href={getSafeUrl(product.source_url)}
                                 target="_blank"

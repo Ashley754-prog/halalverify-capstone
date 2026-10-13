@@ -36,7 +36,7 @@ class ProductCreate(BaseModel):
     status: str = "Halal"
     halal_logo_present: bool = True
     ingredients_summary: Optional[str] = None
-    source: Optional[str] = "IDCP Published Registry"
+    source: Optional[str] = "Manual Registry Entry"
     source_url: Optional[str] = None
     synced_at: Optional[str] = None
 
@@ -73,3 +73,4 @@ class ProductSubmissionRequest(BaseModel):
     expiry_date: Optional[str] = None
     image_url: Optional[str] = None
     ingredients_summary: Optional[str] = None
+    source_url: Optional[str] = None

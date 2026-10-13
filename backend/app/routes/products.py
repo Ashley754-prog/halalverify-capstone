@@ -96,6 +96,10 @@ def create_product(product: ProductCreate, user: dict = Depends(require_admin)):
         if k in payload and not payload[k]:
             payload[k] = None
 
+    # Ensure source_url is explicitly None if not provided to prevent database default to IDCP URL
+    if "source_url" not in payload or payload["source_url"] is None:
+        payload["source_url"] = None
+
     response = (
         supabase
         .table("products")
@@ -114,13 +118,18 @@ def create_product(product: ProductCreate, user: dict = Depends(require_admin)):
 @router.put("/products/{product_id}")
 @router.put("/api/v1/products/{product_id}")
 def update_product(product_id: str, product: ProductUpdate, user: dict = Depends(require_admin)):
-    payload = model_dump_without_none(product)
+    payload = product.model_dump(exclude_unset=True)
 
     if not payload:
         raise HTTPException(status_code=400, detail="No product fields to update")
 
     for k in ["manufacturer_id", "certifying_body_id", "establishment_id"]:
         if k in payload and not payload[k]:
+            payload[k] = None
+
+    # Convert empty strings to None for optional text/date fields so admin can clear them
+    for k in ["certificate_no", "expiry_date", "source_url", "barcode", "brand", "ingredients_summary"]:
+        if k in payload and isinstance(payload[k], str) and not payload[k].strip():
             payload[k] = None
 
     response = (
@@ -291,6 +300,7 @@ def submit_product(
         "ingredients_summary": submission.ingredients_summary,
         "submitted_by": str(user_id),
         "source": "Brand Representative Submission" if submission.submitter_role == "brand" else "Community User Submission",
+        "source_url": submission.source_url if submission.source_url else None,
     }
 
     # Execute Automated AI Verification Pipeline
@@ -308,9 +318,12 @@ def submit_product(
         "name", "brand", "category", "barcode", "establishment_id", "manufacturer_id",
         "certifying_body_id", "certificate_no", "expiry_date", "image_url",
         "ingredients_summary", "submitted_by", "source", "status", "verified_at",
-        "verified_by", "admin_notes"
+        "verified_by", "admin_notes", "source_url"
     }
     clean_payload = {k: v for k, v in product_payload.items() if k in valid_prod_cols and v is not None}
+    # Ensure source_url is explicitly None if not provided so postgres does not default to IDCP URL
+    if "source_url" not in clean_payload or clean_payload["source_url"] is None:
+        clean_payload["source_url"] = None
 
     response = (
         supabase

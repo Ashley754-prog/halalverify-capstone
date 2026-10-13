@@ -337,9 +337,10 @@ export default function ContributionModal({
           ingredients_summary: payload.ingredients_summary,
           status: fallbackStatus,
           submitted_by: userId,
+          source_url: null,
           source: prodForm.certifying_body
             ? `Certified by ${prodForm.certifying_body}`
-            : (payload.submitter_role === 'brand' ? 'Brand Representative Submission' : 'Community User Submission'),
+            : 'Community User Submission',
         });
 
         if (sbErr) {

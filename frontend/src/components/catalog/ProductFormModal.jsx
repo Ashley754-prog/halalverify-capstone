@@ -62,12 +62,14 @@ export default function ProductFormModal({
                     </div>
 
                     <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-700">Barcode (GTIN / EAN)</label>
+                        <label className="text-xs font-bold text-slate-700">
+                            Barcode (GTIN / EAN) <span className="font-normal text-slate-400">(Optional)</span>
+                        </label>
                         <input
                             type="text"
                             value={modalForm.barcode}
                             onChange={(e) => setModalForm((prev) => ({ ...prev, barcode: e.target.value }))}
-                            placeholder="e.g. 4800016012345"
+                            placeholder="e.g. 4800016012345 (Optional)"
                             className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm font-mono focus:outline-none focus:border-emerald-500"
                         />
                     </div>
@@ -104,7 +106,9 @@ export default function ProductFormModal({
                     </div>
 
                     <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-700">Certificate Number</label>
+                        <label className="text-xs font-bold text-slate-700">
+                            Certificate Number <span className="font-normal text-slate-400">(Optional for Pork-Free)</span>
+                        </label>
                         <input
                             type="text"
                             value={modalForm.certificate_no}
@@ -115,7 +119,9 @@ export default function ProductFormModal({
                     </div>
 
                     <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-700">Certificate Expiry Date</label>
+                        <label className="text-xs font-bold text-slate-700">
+                            Certificate Expiry Date <span className="font-normal text-slate-400">(Optional for Pork-Free)</span>
+                        </label>
                         <input
                             type="date"
                             value={modalForm.expiry_date}
@@ -130,7 +136,20 @@ export default function ProductFormModal({
                             type="text"
                             value={modalForm.source}
                             onChange={(e) => setModalForm((prev) => ({ ...prev, source: e.target.value }))}
-                            placeholder="e.g. IDCP Published Registry"
+                            placeholder="e.g. Manual Registry Entry, IDCP, or Community Submission"
+                            className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500"
+                        />
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-slate-700">
+                            Source Link / Verification URL <span className="font-normal text-slate-400">(Optional)</span>
+                        </label>
+                        <input
+                            type="url"
+                            value={modalForm.source_url || ''}
+                            onChange={(e) => setModalForm((prev) => ({ ...prev, source_url: e.target.value }))}
+                            placeholder="e.g. https://example.com/verify (Leave empty if none)"
                             className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500"
                         />
                     </div>

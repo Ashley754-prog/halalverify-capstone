@@ -32,7 +32,7 @@ const PRODUCT_CATEGORIES = [
     'Condiments & Sauces',
 ];
 
-const PRODUCT_STATUSES = ['All Statuses', 'Halal', 'Doubtful', 'Haram', 'Expired'];
+const PRODUCT_STATUSES = ['All Statuses', 'Halal', 'Pork-Free Declared', 'Vegetarian / Vegan', 'COMMUNITY_LISTED', 'Doubtful', 'Haram', 'Expired'];
 
 const emptyProductForm = {
     name: '',
@@ -46,8 +46,8 @@ const emptyProductForm = {
     status: 'Halal',
     halal_logo_present: true,
     ingredients_summary: '',
-    source: 'IDCP Published Registry',
-    source_url: 'https://www.idcphalal.org/certified-product-page',
+    source: 'Manual Registry Entry',
+    source_url: '',
 };
 
 function getProductCertifierGroup(product) {
@@ -180,6 +180,10 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                 if (st && st !== 'All Statuses') {
                     if (st === 'Halal') {
                         pBuilder = pBuilder.in('status', ['Halal', 'VERIFIED', 'Verified']);
+                    } else if (st === 'Pork-Free Declared') {
+                        pBuilder = pBuilder.or('status.ilike.%pork-free%,admin_notes.ilike.%pork-free%');
+                    } else if (st === 'Vegetarian / Vegan') {
+                        pBuilder = pBuilder.or('status.ilike.%vegetarian%,status.ilike.%vegan%,admin_notes.ilike.%vegetarian%');
                     } else {
                         pBuilder = pBuilder.eq('status', st);
                     }
@@ -295,7 +299,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                 status: product.status || 'Halal',
                 halal_logo_present: product.halal_logo_present ?? true,
                 ingredients_summary: product.ingredients_summary || '',
-                source: product.source || 'IDCP Published Registry',
+                source: product.source || 'Manual Registry Entry',
                 source_url: product.source_url || '',
             });
         }
@@ -365,8 +369,8 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                 status: modalForm.status || 'Halal',
                 halal_logo_present: Boolean(modalForm.halal_logo_present),
                 ingredients_summary: safeTrim(modalForm.ingredients_summary),
-                source: safeTrim(modalForm.source) || 'IDCP Published Registry',
-                source_url: safeTrim(modalForm.source_url),
+                source: safeTrim(modalForm.source) || 'Manual Registry Entry',
+                source_url: safeTrim(modalForm.source_url) || null,
             };
 
             const response = await authFetch(endpoint, {

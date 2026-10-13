@@ -4,7 +4,6 @@ import {
   X,
   Loader2,
   ShieldCheck,
-  HeartHandshake,
   BadgeCheck,
   CheckCircle2,
   Leaf,
@@ -114,38 +113,6 @@ export default function ProductContributionForm({
         </div>
       </div>
 
-      {/* Submitter Relationship Declaration */}
-      <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-          <HeartHandshake size={15} className="text-emerald-600 shrink-0" />
-          Submission Source:
-        </span>
-        <div className="inline-flex rounded-lg border border-slate-300 bg-white p-0.5 text-xs">
-          <button
-            type="button"
-            onClick={() => setProdForm((prev) => ({ ...prev, submitter_role: 'brand' }))}
-            className={`px-2.5 py-1 rounded-md font-medium transition cursor-pointer ${
-              prodForm.submitter_role === 'brand'
-                ? 'bg-emerald-600 text-white font-semibold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Brand / Manufacturer Rep
-          </button>
-          <button
-            type="button"
-            onClick={() => setProdForm((prev) => ({ ...prev, submitter_role: 'consumer' }))}
-            className={`px-2.5 py-1 rounded-md font-medium transition cursor-pointer ${
-              (prodForm.submitter_role || 'consumer') === 'consumer'
-                ? 'bg-emerald-600 text-white font-semibold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Shopper / Consumer Scout
-          </button>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block font-semibold text-slate-700 mb-1">
@@ -190,13 +157,15 @@ export default function ProductContributionForm({
         </div>
 
         <div>
-          <label className="block font-semibold text-slate-700 mb-1">Barcode (EAN-13)</label>
+          <label className="block font-semibold text-slate-700 mb-1">
+            Barcode (GTIN / EAN) <span className="text-slate-400 font-normal">(Optional)</span>
+          </label>
           <input
             type="text"
-            placeholder="e.g., 4800016445566"
+            placeholder="e.g., 4800016445566 (Optional)"
             value={prodForm.barcode}
             onChange={(e) => setProdForm((prev) => ({ ...prev, barcode: e.target.value }))}
-            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 placeholder:text-slate-400 placeholder:opacity-100 outline-none focus:border-emerald-500"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 placeholder:text-slate-400 placeholder:opacity-100 outline-none focus:border-emerald-500 font-mono"
           />
         </div>
       </div>
