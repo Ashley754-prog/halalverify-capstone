@@ -80,6 +80,7 @@ function getProductCertifierGroup(product) {
 export default function ProductsCatalog({ userRole, onViewChange, initialSearchQuery = '' }) {
     const [products, setProducts] = useState([]);
     const [manufacturers, setManufacturers] = useState([]);
+    const [certifyingBodies, setCertifyingBodies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [searchQuery, setSearchQuery] = useState(initialSearchQuery || '');
@@ -195,13 +196,17 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                     .order('name', { ascending: true })
                     .range(from, to);
 
-                const [productsRes, mfgRes] = await Promise.all([
+                const [productsRes, mfgRes, cbRes] = await Promise.all([
                     pBuilder,
                     supabase
                         .from('manufacturers')
                         .select('*')
                         .order('name')
                         .limit(200),
+                    supabase
+                        .from('certifying_bodies')
+                        .select('*')
+                        .order('name'),
                 ]);
 
                 if (!productsRes.error && productsRes.data) {
@@ -210,6 +215,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                         setTotalServerCount(productsRes.count);
                     }
                     if (mfgRes.data) loadedMfg = mfgRes.data;
+                    if (cbRes.data) setCertifyingBodies(cbRes.data);
                 }
             } catch (sbErr) {
                 console.warn('Direct Supabase fetch failed, attempting backend fallback:', sbErr);
@@ -702,6 +708,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                 modalForm={modalForm}
                 setModalForm={setModalForm}
                 manufacturers={manufacturers}
+                certifyingBodies={certifyingBodies}
                 categories={PRODUCT_CATEGORIES}
                 statuses={PRODUCT_STATUSES}
                 isSaving={isSaving}

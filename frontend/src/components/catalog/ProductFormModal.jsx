@@ -7,6 +7,7 @@ export default function ProductFormModal({
     modalForm,
     setModalForm,
     manufacturers,
+    certifyingBodies = [],
     categories,
     statuses,
     isSaving,
@@ -86,7 +87,7 @@ export default function ProductFormModal({
                                 setModalForm((prev) => ({
                                     ...prev,
                                     status: newStatus,
-                                    ...(isNowNonCertified ? { certificate_no: '', expiry_date: '' } : {}),
+                                    ...(isNowNonCertified ? { certifying_body_id: '', certificate_no: '', expiry_date: '' } : {}),
                                 }));
                             }}
                             className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500 bg-white"
@@ -117,6 +118,22 @@ export default function ProductFormModal({
 
                     {!isNonCertified && (
                         <>
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-slate-700">Halal Certifying Body</label>
+                                <select
+                                    value={modalForm.certifying_body_id || ''}
+                                    onChange={(e) => setModalForm((prev) => ({ ...prev, certifying_body_id: e.target.value }))}
+                                    className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500 bg-white"
+                                >
+                                    <option value="">-- Select Certifying Body --</option>
+                                    {certifyingBodies.map((cb) => (
+                                        <option key={cb.id} value={cb.id}>
+                                            {cb.code ? `${cb.code} - ${cb.name}` : cb.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
                             <div className="space-y-1">
                                 <label className="text-xs font-bold text-slate-700">Certificate Number</label>
                                 <input

@@ -167,7 +167,7 @@ export default function ProductCard({
                     ) : isHalal ? (
                         <div className="flex items-center gap-1.5 text-emerald-800 font-medium text-[10px] sm:text-[11px]">
                             <Award size={11} className="text-emerald-600 shrink-0 sm:w-[13px] sm:h-[13px]" />
-                            <span className="truncate">Accredited Halal Certifier (IDCP/HDIP)</span>
+                            <span className="truncate">Accredited Halal Certifier</span>
                         </div>
                     ) : null}
 
