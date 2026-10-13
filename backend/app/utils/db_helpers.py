@@ -51,3 +51,19 @@ def count_by_status(rows, field_name: str):
         counts[status] = counts.get(status, 0) + 1
 
     return counts
+
+
+def normalize_additive_code(code: str) -> str:
+    """
+    Normalizes food additive or chemical codes to canonical format.
+    Accepts: '120', 'e120', 'E-120', 'INS 120', 'ins-120', '472e'.
+    Returns: 'E120', 'E472E', etc. Non-numeric codes are upper-cased.
+    """
+    if not code:
+        return ""
+    cleaned = code.strip()
+    match = re.match(r"^(?:ins\s*[-]?|e\s*[-]?|#)?\s*(\d+[a-zA-Z]?)$", cleaned, flags=re.I)
+    if match:
+        return f"E{match.group(1).upper()}"
+    return cleaned.upper()
+

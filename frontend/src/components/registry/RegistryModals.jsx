@@ -8,6 +8,16 @@ const ESTABLISHMENT_STATUSES = ['verified', 'needs_review'];
 const HCB_CATEGORIES = ['Accredited HCB', 'Government Oversight', 'International Authority'];
 const HCB_STATUSES = ['Accredited', 'Active Oversight', 'International Recognized', 'active', 'inactive', 'suspended'];
 
+export const normalizeAdditiveCode = (code) => {
+    if (!code) return '';
+    const trimmed = String(code).trim();
+    const match = trimmed.match(/^(?:ins\s*[-]?|e\s*[-]?|#)?\s*(\d+[a-zA-Z]?)$/i);
+    if (match) {
+        return `E${match[1].toUpperCase()}`;
+    }
+    return trimmed.toUpperCase();
+};
+
 export default function RegistryModals({
     activeModal,
     modalForm,
@@ -193,11 +203,24 @@ export default function RegistryModals({
                                 <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Code (E-Number) *</label>
                                 <input
                                     required
-                                    placeholder="e.g. E120"
+                                    placeholder="e.g. E120 or 120"
                                     value={modalForm.code || ''}
                                     onChange={(e) => setModalForm(prev => ({ ...prev, code: e.target.value }))}
+                                    onBlur={() => {
+                                        if (modalForm.code && modalForm.code.trim()) {
+                                            setModalForm(prev => ({ ...prev, code: normalizeAdditiveCode(prev.code) }));
+                                        }
+                                    }}
                                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:border-emerald-500 focus:outline-none"
                                 />
+                                {modalForm.code && modalForm.code.trim() && (
+                                    <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
+                                        <span>Canonical code:</span>
+                                        <span className="font-mono font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                            {normalizeAdditiveCode(modalForm.code)}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Halal Status</label>
@@ -216,7 +239,7 @@ export default function RegistryModals({
                                 <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Common / Scientific Name *</label>
                                 <input
                                     required
-                                    placeholder="e.g. Cochineal / Carmine or Gelatin"
+                                    placeholder="e.g. Carmine, Lecithin, Gelatin"
                                     value={modalForm.name || ''}
                                     onChange={(e) => setModalForm(prev => ({ ...prev, name: e.target.value }))}
                                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"

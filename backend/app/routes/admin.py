@@ -15,6 +15,7 @@ from app.schemas.registry import (
     HcbRegistryUpdate,
 )
 from app.supabase_client import supabase
+from app.utils.db_helpers import normalize_additive_code
 from app.auto_verification_service import (
     evaluate_establishment_submission,
     evaluate_product_submission,
@@ -465,7 +466,7 @@ def create_admin_additive(additive: AdditiveCreate, user: dict = Depends(require
     payload = {k: v for k, v in additive.model_dump().items() if v is not None}
     if not payload.get("code") or not payload.get("name"):
         raise HTTPException(status_code=400, detail="Additive code and name are required")
-    payload["code"] = payload["code"].strip().upper()
+    payload["code"] = normalize_additive_code(payload["code"])
     if payload.get("status"):
         st = payload["status"].strip().lower()
         if st in ["halal", "permissible"]:
@@ -493,7 +494,7 @@ def update_admin_additive(additive_id: str, additive: AdditiveUpdate, user: dict
     if not payload:
         raise HTTPException(status_code=400, detail="No additive fields to update")
     if "code" in payload and payload["code"]:
-        payload["code"] = payload["code"].strip().upper()
+        payload["code"] = normalize_additive_code(payload["code"])
     if payload.get("status"):
         st = payload["status"].strip().lower()
         if st in ["halal", "permissible"]:

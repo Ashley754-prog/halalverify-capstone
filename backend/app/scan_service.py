@@ -100,9 +100,13 @@ def match_additives_from_text(extracted_text: str):
         code = additive.get("code")
         name = additive.get("name") or ""
 
-        code_match = bool(code and code in detected_codes)
+        raw_code = (code or "").strip().upper()
+        norm_code = f"E{raw_code}" if (raw_code and not raw_code.startswith("E") and raw_code[:1].isdigit()) else raw_code
+        code_match = bool(norm_code and (norm_code in detected_codes or raw_code in detected_codes))
         if code_match:
-            seen_codes.add(code)
+            seen_codes.add(norm_code)
+            if raw_code:
+                seen_codes.add(raw_code)
 
         matched_alias = find_additive_alias_match(code, name, normalized_text)
         name_match = bool(matched_alias)

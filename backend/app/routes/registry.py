@@ -10,7 +10,7 @@ from app.supabase_client import supabase
 from typing import Optional
 from app.auto_verification_service import evaluate_establishment_submission
 from app.utils.geocoding import geocode_zamboanga_address
-from app.utils.db_helpers import ensure_deleted, ensure_updated, model_dump_without_none, sanitize_postgrest_search
+from app.utils.db_helpers import ensure_deleted, ensure_updated, model_dump_without_none, sanitize_postgrest_search, normalize_additive_code
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 
@@ -38,6 +38,8 @@ def get_additives():
 @router.post("/api/v1/registry/additives")
 def create_additive(additive: AdditiveCreate, user: dict = Depends(require_admin)):
     payload = model_dump_without_none(additive)
+    if "code" in payload and payload["code"]:
+        payload["code"] = normalize_additive_code(payload["code"])
     if payload.get("status"):
         st = payload["status"].strip().lower()
         if st in ["halal", "permissible"]:
@@ -69,6 +71,9 @@ def update_additive(additive_id: str, additive: AdditiveUpdate, user: dict = Dep
 
     if not payload:
         raise HTTPException(status_code=400, detail="No additive fields to update")
+
+    if "code" in payload and payload["code"]:
+        payload["code"] = normalize_additive_code(payload["code"])
 
     if payload.get("status"):
         st = payload["status"].strip().lower()

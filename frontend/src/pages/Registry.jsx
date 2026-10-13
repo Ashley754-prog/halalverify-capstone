@@ -14,7 +14,7 @@ import ReportIssueModal from '../components/reports/ReportIssueModal';
 import AdditivesRegistryTab from '../components/registry/AdditivesRegistryTab';
 import HcbsRegistryTab from '../components/registry/HcbsRegistryTab';
 import EstablishmentsRegistryTab from '../components/registry/EstablishmentsRegistryTab';
-import RegistryModals from '../components/registry/RegistryModals';
+import RegistryModals, { normalizeAdditiveCode } from '../components/registry/RegistryModals';
 import RegistryDeleteModal from '../components/registry/RegistryDeleteModal';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
@@ -355,8 +355,9 @@ export const Registry = ({ userRole, onViewChange }) => {
         try {
             if (activeModal === 'add-additive') {
                 const addStatus = modalForm.status === 'Needs Review' ? 'Doubtful' : (modalForm.status || 'Doubtful');
+                const rawCode = requireText(modalForm.code, 'Code');
                 const created = await saveRegistryRecord('/api/v1/admin/additives', 'POST', {
-                    code: requireText(modalForm.code, 'Code'),
+                    code: normalizeAdditiveCode(rawCode),
                     name: requireText(modalForm.name, 'Name'),
                     status: addStatus,
                     origin: modalForm.origin || 'Plant',
@@ -368,11 +369,12 @@ export const Registry = ({ userRole, onViewChange }) => {
                 updateToast('New chemical additive saved.', 'success');
             } else if (activeModal === 'edit-additive') {
                 const addStatus = modalForm.status === 'Needs Review' ? 'Doubtful' : (modalForm.status || 'Doubtful');
+                const rawCode = requireText(modalForm.code, 'Code');
                 const updated = await saveRegistryRecord(
                     `/api/v1/admin/additives/${selectedItem.id}`,
                     'PUT',
                     {
-                        code: requireText(modalForm.code, 'Code'),
+                        code: normalizeAdditiveCode(rawCode),
                         name: requireText(modalForm.name, 'Name'),
                         status: addStatus,
                         origin: modalForm.origin || 'Plant',

@@ -235,13 +235,13 @@ def dedupe_text_parts(text_parts):
 
 
 def find_e_numbers(text: str):
-    pattern = r"\bE\s*[-]?\s*\d{3,4}[a-zA-Z]?\b"
+    # Matches both European E-numbers (e.g. E120, E-120) and Codex Alimentarius INS codes (e.g. INS 120, INS-120)
+    pattern = r"\b(?:E|INS)\s*[-]?\s*(\d{3,4}[a-zA-Z]?)\b"
     matches = re.findall(pattern, text, flags=re.IGNORECASE)
 
     cleaned = []
     for match in matches:
-        code = re.sub(r"\s+|-", "", match).upper()
-        cleaned.append(code)
+        cleaned.append(f"E{match.upper()}")
 
     return sorted(set(cleaned))
 
