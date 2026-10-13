@@ -6,7 +6,6 @@ const ADDITIVE_STATUSES = ['Halal', 'Doubtful', 'Haram'];
 const ADDITIVE_ORIGINS = ['Plant', 'Animal', 'Insect', 'Synthetic / Mineral', 'Multiple / Unknown'];
 const ESTABLISHMENT_STATUSES = ['verified', 'needs_review'];
 const HCB_CATEGORIES = ['Local & Regional HCB', 'National HCB', 'Government Oversight', 'International Authority'];
-const HCB_STATUSES = ['Accredited', 'Active Oversight', 'International Recognized', 'Suspended'];
 
 export const normalizeAdditiveCode = (code) => {
     if (!code) return '';
@@ -115,27 +114,15 @@ export default function RegistryModals({
                             </div>
                         </div>
 
-                        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
-                            <div>
-                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Category</label>
-                                <select
-                                    value={modalForm.category || 'Accredited HCB'}
-                                    onChange={(e) => setModalForm(prev => ({ ...prev, category: e.target.value }))}
-                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:border-emerald-500 focus:outline-none"
-                                >
-                                    {HCB_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Accreditation Status</label>
-                                <select
-                                    value={modalForm.status || 'Accredited'}
-                                    onChange={(e) => setModalForm(prev => ({ ...prev, status: e.target.value }))}
-                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
-                                >
-                                    {HCB_STATUSES.map(st => <option key={st} value={st}>{st}</option>)}
-                                </select>
-                            </div>
+                        <div>
+                            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Category</label>
+                            <select
+                                value={modalForm.category || 'Accredited HCB'}
+                                onChange={(e) => setModalForm(prev => ({ ...prev, category: e.target.value }))}
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:border-emerald-500 focus:outline-none"
+                            >
+                                {HCB_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                            </select>
                         </div>
 
                         <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
