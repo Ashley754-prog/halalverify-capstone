@@ -10,6 +10,7 @@ import {
     Loader2,
     X,
     Navigation,
+    ShieldCheck,
 } from 'lucide-react';
 import Toast from '../components/ui/Toast';
 import AuthPromptModal from '../components/submissions/AuthPromptModal';
@@ -733,6 +734,11 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                     {(() => {
                                         const previewConfig = getStatusConfig(activePreviewEst);
+                                        const isCertified = Boolean(
+                                            previewConfig.key === 'verified' ||
+                                            activePreviewEst.certificate_number ||
+                                            activePreviewEst.certifying_bodies?.code
+                                        );
                                         return (
                                             <>
                                                 <span
@@ -740,9 +746,9 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                                                 >
                                                     {previewConfig.label}
                                                 </span>
-                                                {activePreviewEst.certifying_bodies?.code ? (
+                                                {isCertified ? (
                                                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                                        {activePreviewEst.certifying_bodies.code}
+                                                        {activePreviewEst.certifying_bodies?.code || 'Certified'}
                                                     </span>
                                                 ) : previewConfig.key === 'muslim_owned' ? (
                                                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200">
@@ -791,6 +797,37 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                                     <span>{activePreviewEst.address || activePreviewEst.city || 'Zamboanga City'}</span>
                                 </p>
                             </div>
+
+                            {/* Amenity Badges */}
+                            {(() => {
+                                const hasPrayer = Boolean(
+                                    activePreviewEst.has_prayer_space ||
+                                    (activePreviewEst.description && (activePreviewEst.description.toLowerCase().includes('prayer') || activePreviewEst.description.toLowerCase().includes('musalah'))) ||
+                                    (Array.isArray(activePreviewEst.amenities) && activePreviewEst.amenities.some((a) => String(a).toLowerCase().includes('prayer')))
+                                );
+                                const hasAlcohol = Boolean(
+                                    activePreviewEst.is_alcohol_free ||
+                                    (activePreviewEst.description && activePreviewEst.description.toLowerCase().includes('alcohol')) ||
+                                    (Array.isArray(activePreviewEst.amenities) && activePreviewEst.amenities.some((a) => String(a).toLowerCase().includes('alcohol')))
+                                );
+                                if (!hasPrayer && !hasAlcohol) return null;
+                                return (
+                                    <div className="flex flex-wrap gap-1">
+                                        {hasPrayer && (
+                                            <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded">
+                                                <Compass size={10} className="text-emerald-600" />
+                                                Prayer Space
+                                            </span>
+                                        )}
+                                        {hasAlcohol && (
+                                            <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded">
+                                                <ShieldCheck size={10} className="text-emerald-600" />
+                                                Alcohol-Free
+                                            </span>
+                                        )}
+                                    </div>
+                                );
+                            })()}
 
                             {/* Card Actions: View Full Details & Directions */}
                             <div className="flex items-center gap-2 pt-1 border-t border-slate-100">

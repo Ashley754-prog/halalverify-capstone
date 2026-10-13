@@ -95,14 +95,22 @@ export default function EstablishmentDetailModal({
 
     const hasPrayerSpace = Boolean(
         establishment.has_prayer_space ||
-        (establishment.description && (establishment.description.toLowerCase().includes('prayer space') || establishment.description.toLowerCase().includes('musalah'))) ||
+        (establishment.description && (establishment.description.toLowerCase().includes('prayer space') || establishment.description.toLowerCase().includes('musalah') || establishment.description.toLowerCase().includes('prayer'))) ||
         (Array.isArray(establishment.amenities) && establishment.amenities.some((a) => a.toLowerCase().includes('prayer')))
     );
     const isAlcoholFree = Boolean(
         establishment.is_alcohol_free ||
-        (establishment.description && establishment.description.toLowerCase().includes('alcohol-free')) ||
+        (establishment.description && establishment.description.toLowerCase().includes('alcohol')) ||
         (Array.isArray(establishment.amenities) && establishment.amenities.some((a) => a.toLowerCase().includes('alcohol')))
     );
+
+    const bioText = establishment.description
+        ? establishment.description
+            .replace(/^Amenities:\s*.*$/im, '')
+            .replace(/\|\s*Amenities:\s*.*$/im, '')
+            .replace(/Amenities:\s*.*$/im, '')
+            .trim()
+        : '';
 
     return (
         <Modal
@@ -342,21 +350,21 @@ export default function EstablishmentDetailModal({
                 )}
 
                 {/* About this restaurant & Contact Information */}
-                {(establishment.description || establishment.phone || establishment.email || establishment.source_url) && (
+                {(bioText || establishment.phone || establishment.email || establishment.source_url) && (
                     <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-xs space-y-2.5">
-                        {establishment.description && (
+                        {bioText ? (
                             <div className="space-y-1">
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                     About this establishment
                                 </span>
                                 <p className="text-slate-700 text-[11px] leading-relaxed">
-                                    {establishment.description}
+                                    {bioText}
                                 </p>
                             </div>
-                        )}
+                        ) : null}
 
                         {(establishment.phone || establishment.email || establishment.source_url) && (
-                            <div className="pt-2 border-t border-slate-200/60 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px]">
+                            <div className={`${bioText ? 'pt-2 border-t border-slate-200/60' : ''} flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px]`}>
                                 {establishment.phone && (
                                     <div className="flex items-center gap-1.5 text-slate-600">
                                         <Phone size={12} className="text-emerald-600 shrink-0" />
