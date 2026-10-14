@@ -249,22 +249,16 @@ export const CreateAccount = ({ onViewChange, layout = 'create' }) => {
                   <span>Or create with</span>
                   <span className="h-px flex-1 bg-slate-200" />
                 </div>
-                <div className="mt-3 grid grid-cols-2 gap-3">
-                  {[
-                    { provider: 'google', label: 'Google', icon: 'G' },
-                    { provider: 'facebook', label: 'Facebook', icon: 'f' },
-                  ].map(({ provider, label, icon }) => (
-                    <button
-                      key={provider}
-                      type="button"
-                      onClick={() => handleProviderSignIn(provider)}
-                      disabled={Boolean(oauthLoading)}
-                      className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-bold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60 sm:py-3 sm:text-sm"
-                    >
-                      <span className={`text-base font-black leading-none sm:text-lg ${provider === 'google' ? 'text-[#4285f4]' : 'text-[#1877f2]'}`}>{icon}</span>
-                      {oauthLoading === provider ? 'Opening...' : label}
-                    </button>
-                  ))}
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={() => handleProviderSignIn('google')}
+                    disabled={Boolean(oauthLoading)}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-bold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60 sm:py-3 sm:text-sm"
+                  >
+                    <span className="text-base font-black leading-none text-[#4285f4] sm:text-lg">G</span>
+                    {oauthLoading === 'google' ? 'Opening...' : 'Continue with Google'}
+                  </button>
                 </div>
               </div>
 
