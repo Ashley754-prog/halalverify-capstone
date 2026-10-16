@@ -57,12 +57,12 @@ export default function EstablishmentsRegistryTab({
                         className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer shrink-0 max-w-[130px] sm:max-w-none"
                         aria-label="Filter by verification standard"
                     >
-                        <option value="all">All Standards ({establishments.length})</option>
+                        <option value="all">All Standards ({filteredEstablishments.length})</option>
                         <option value="verified">Certified</option>
                         <option value="muslim_owned">Muslim-Owned</option>
                         <option value="muslim_friendly">Muslim-Friendly</option>
                         <option value="vegetarian_vegan">Plant-Based</option>
-                        <option value="needs_review">Pending Review</option>
+                        {isAdmin && <option value="needs_review">Pending Review</option>}
                     </select>
 
                     <div className="relative flex-1 md:w-72">
@@ -72,7 +72,7 @@ export default function EstablishmentsRegistryTab({
                             placeholder="Search name, street, cuisine..."
                             value={localSearch}
                             onChange={(e) => setLocalSearch(e.target.value)}
-                            className="w-full h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 text-xs focus:outline-none focus:border-emerald-500 transition"
+                            className="w-full h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 text-base sm:text-xs focus:outline-none focus:border-emerald-500 transition"
                         />
                     </div>
                 </div>

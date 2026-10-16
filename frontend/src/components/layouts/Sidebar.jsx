@@ -238,10 +238,83 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                 </div>
             </aside>
 
-            {/* Main Content Viewport */}
-            <main className={`min-w-0 flex-1 flex flex-col h-full min-h-0 w-full ${currentView === 'map' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
-                {children}
-            </main>
+            {/* Main Content Viewport & Mobile Bottom Nav */}
+            <div className="min-w-0 flex-1 flex flex-col h-full min-h-0 w-full overflow-hidden">
+                <main className={`min-w-0 flex-1 flex flex-col h-full min-h-0 w-full ${currentView === 'map' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+                    {children}
+                </main>
+
+                {/* Mobile Bottom Navigation Bar (< 768px) */}
+                <nav
+                    aria-label="Mobile quick navigation"
+                    className="md:hidden shrink-0 bg-slate-900 border-t border-slate-800 px-2 py-1.5 flex items-center justify-around z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.3)] select-none"
+                >
+                    <button
+                        type="button"
+                        onClick={() => onViewChange('dashboard')}
+                        className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-xl transition ${
+                            currentView === 'dashboard'
+                                ? 'text-emerald-400 font-bold'
+                                : 'text-slate-400 hover:text-slate-200 font-medium'
+                        }`}
+                    >
+                        <LayoutDashboard size={18} />
+                        <span className="text-[10px] leading-tight">Home</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => onViewChange('products')}
+                        className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-xl transition ${
+                            currentView === 'products'
+                                ? 'text-emerald-400 font-bold'
+                                : 'text-slate-400 hover:text-slate-200 font-medium'
+                        }`}
+                    >
+                        <Package size={18} />
+                        <span className="text-[10px] leading-tight">Catalog</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => onViewChange('scanner')}
+                        className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-2xl font-bold text-xs shadow-lg transition active:scale-95 ${
+                            currentView === 'scanner'
+                                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white ring-2 ring-emerald-400/40 shadow-emerald-900/50'
+                                : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-emerald-950/50'
+                        }`}
+                    >
+                        <Camera size={16} className="shrink-0" />
+                        <span>Scan</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => onViewChange('map')}
+                        className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-xl transition ${
+                            currentView === 'map'
+                                ? 'text-emerald-400 font-bold'
+                                : 'text-slate-400 hover:text-slate-200 font-medium'
+                        }`}
+                    >
+                        <MapPin size={18} />
+                        <span className="text-[10px] leading-tight">Map</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => onViewChange('registry')}
+                        className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-xl transition ${
+                            currentView === 'registry'
+                                ? 'text-emerald-400 font-bold'
+                                : 'text-slate-400 hover:text-slate-200 font-medium'
+                        }`}
+                    >
+                        <BookOpen size={18} />
+                        <span className="text-[10px] leading-tight">Registry</span>
+                    </button>
+                </nav>
+            </div>
         </div>
     );
 };

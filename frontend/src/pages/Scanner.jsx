@@ -41,10 +41,13 @@ export const Scanner = ({ isOnline, onViewChange }) => {
         isMirrored,
         zoom,
         zoomCapabilities,
+        torchOn,
+        torchSupported,
         focusRing,
         startCamera,
         stopCamera,
         toggleCamera,
+        toggleTorch,
         applyZoom,
         handleTapToFocus,
         captureFrame,
@@ -282,6 +285,9 @@ export const Scanner = ({ isOnline, onViewChange }) => {
                 zoomCapabilities={zoomCapabilities}
                 applyZoom={applyZoom}
                 toggleCamera={toggleCamera}
+                torchOn={torchOn}
+                torchSupported={torchSupported}
+                toggleTorch={toggleTorch}
                 focusRing={focusRing}
                 handleTapToFocus={handleTapToFocus}
                 onCapture={handleCapture}

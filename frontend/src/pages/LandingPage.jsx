@@ -386,7 +386,7 @@ export default function LandingPage({ onViewChange, userRole }) {
                   onChange={(e) => handleSearch(e.target.value)}
                   aria-label="Search products, brands, or verified establishments"
                   placeholder="Search product names, brands, or verified establishments in Zamboanga..."
-                  className="w-full rounded-xl border border-slate-700 bg-slate-900/90 py-2.5 pl-3 pr-20 sm:rounded-2xl sm:py-4 sm:pl-4 sm:pr-24 text-[11px] sm:text-sm text-white placeholder-slate-400 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xl backdrop-blur-xl"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-900/90 py-2.5 pl-3 pr-20 sm:rounded-2xl sm:py-4 sm:pl-4 sm:pr-24 text-base sm:text-sm text-white placeholder-slate-400 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xl backdrop-blur-xl"
                 />
                 <button
                   type="button"

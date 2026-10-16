@@ -44,7 +44,7 @@ const calculateDistanceKm = (lat1, lon1, lat2, lon2) => {
 
 const ZAMBOANGA_CENTER = { lat: 6.9214, lng: 122.0790 };
 
-export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '' }) {
+export default function EstablishmentsMap({ userRole, onViewChange, initialSearchQuery = '' }) {
     const mapContainerRef = useRef(null);
     const mapInstanceRef = useRef(null);
     const heatLayerRef = useRef(null);
@@ -553,7 +553,7 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search name, cuisine, street..."
-                        className="w-full h-8 sm:h-8.5 pl-8 pr-7 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-emerald-500 transition"
+                        className="w-full h-8 sm:h-8.5 pl-8 pr-7 text-base sm:text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-emerald-500 transition"
                     />
                     {searchQuery && (
                         <button
@@ -637,10 +637,12 @@ export default function EstablishmentsMap({ onViewChange, initialSearchQuery = '
                                 <option value="muslim_friendly">Muslim-Friendly Venue</option>
                                 <option value="vegetarian_vegan">Vegetarian / Vegan</option>
                             </optgroup>
-                            <optgroup label="Moderation Status">
-                                <option value="needs_review">Pending Verification</option>
-                                <option value="flagged">Expired / Flagged</option>
-                            </optgroup>
+                            {userRole === 'admin' && (
+                                <optgroup label="Moderation Status">
+                                    <option value="needs_review">Pending Verification</option>
+                                    <option value="flagged">Expired / Flagged</option>
+                                </optgroup>
+                            )}
                         </select>
                     </div>
                 </div>

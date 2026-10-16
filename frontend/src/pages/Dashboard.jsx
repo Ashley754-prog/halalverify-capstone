@@ -4,7 +4,7 @@ import KpiCard from '../components/ui/KpiCard';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
 
-export const Dashboard = ({ onViewChange }) => {
+export const Dashboard = ({ userRole, onViewChange }) => {
     const [summary, setSummary] = useState(null);
     const [loadError, setLoadError] = useState(false);
 
@@ -123,14 +123,16 @@ export const Dashboard = ({ onViewChange }) => {
                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                         <span>YOLOv8-Nano logo verification (mAP@50 0.995) &bull; 135+ INS additive database</span>
                     </span>
-                    <button
-                        type="button"
-                        onClick={() => onViewChange?.('analytics')}
-                        className="inline-flex items-center gap-1 font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
-                    >
-                        <span>View System Analytics</span>
-                        <ArrowRight size={13} />
-                    </button>
+                    {userRole === 'admin' && (
+                        <button
+                            type="button"
+                            onClick={() => onViewChange?.('analytics')}
+                            className="inline-flex items-center gap-1 font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
+                        >
+                            <span>View System Analytics</span>
+                            <ArrowRight size={13} />
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

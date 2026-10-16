@@ -18,6 +18,8 @@ export const useCameraStream = (onToast) => {
     const [isMirrored, setIsMirrored] = useState(false);
     const [zoom, setZoom] = useState(1);
     const [zoomCapabilities, setZoomCapabilities] = useState(null);
+    const [torchOn, setTorchOn] = useState(false);
+    const [torchSupported, setTorchSupported] = useState(false);
     const [focusRing, setFocusRing] = useState(null);
     const [cameraError, setCameraError] = useState(null);
 
@@ -139,6 +141,9 @@ export const useCameraStream = (onToast) => {
                     setZoomCapabilities(null);
                     setZoom(1);
                 }
+
+                setTorchSupported(Boolean(capabilities.torch));
+                setTorchOn(false);
             }
 
             updateDeviceList();
@@ -166,8 +171,38 @@ export const useCameraStream = (onToast) => {
             cameraStreamRef.current.getTracks().forEach((track) => track.stop());
             cameraStreamRef.current = null;
         }
+        setTorchOn(false);
         setIsCapturing(false);
     }, []);
+
+    /**
+     * Toggle hardware camera flashlight / torch on supported mobile devices
+     */
+    const toggleTorch = async () => {
+        const stream = cameraStreamRef.current;
+        if (!stream) return;
+        const track = stream.getVideoTracks()[0];
+        if (!track || !track.applyConstraints) return;
+
+        const nextTorch = !torchOn;
+        try {
+            await track.applyConstraints({
+                advanced: [{ torch: nextTorch }]
+            });
+            setTorchOn(nextTorch);
+            if (window.navigator?.vibrate) {
+                window.navigator.vibrate(15);
+            }
+        } catch {
+            if (onToast) {
+                onToast({
+                    visible: true,
+                    message: 'Flashlight is only available on supported mobile rear cameras.',
+                    type: 'info'
+                });
+            }
+        }
+    };
 
     /**
      * Switch between front and rear cameras
@@ -319,11 +354,14 @@ export const useCameraStream = (onToast) => {
         setIsMirrored,
         zoom,
         zoomCapabilities,
+        torchOn,
+        torchSupported,
         focusRing,
         cameraError,
         startCamera,
         stopCamera,
         toggleCamera,
+        toggleTorch,
         applyZoom,
         handleTapToFocus,
         captureFrame,

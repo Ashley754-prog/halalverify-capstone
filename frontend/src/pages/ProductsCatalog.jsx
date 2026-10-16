@@ -541,7 +541,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                                 }
                             }}
                             placeholder="Search by product name, brand, manufacturer, or certificate #..."
-                            className="w-full pl-8 sm:pl-10 pr-8 py-2 sm:py-2.5 rounded-lg sm:rounded-xl border border-slate-200 bg-slate-50/50 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
+                            className="w-full pl-8 sm:pl-10 pr-8 py-2 sm:py-2.5 rounded-lg sm:rounded-xl border border-slate-200 bg-slate-50/50 text-base sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
                         />
                         {searchQuery && (
                             <button

@@ -10,7 +10,8 @@ import {
     ChevronRight,
     ScanSearch,
     FileText,
-    Layers
+    Layers,
+    Zap
 } from 'lucide-react';
 
 export const CameraViewfinder = ({
@@ -29,6 +30,8 @@ export const CameraViewfinder = ({
     zoomCapabilities,
     applyZoom,
     toggleCamera,
+    torchOn = false,
+    toggleTorch = null,
     focusRing,
     handleTapToFocus,
     onCapture,
@@ -236,7 +239,35 @@ export const CameraViewfinder = ({
                     </div>
                 )}
 
-                {/* 5. Minimal Top HUD (Instruction & Camera Flip) */}
+                {/* 4.5. Live Viewfinder Framing Guide Overlay (Corner Brackets) */}
+                {isCapturing && !selectedImage && (
+                    <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-6">
+                        <div
+                            className={`relative transition-all duration-300 flex flex-col items-center justify-end pb-3 ${
+                                scannerMode === 'cert'
+                                    ? 'w-[78%] max-w-xs h-[62%] max-h-80'
+                                    : 'w-[86%] max-w-md h-[46%] max-h-60'
+                            }`}
+                        >
+                            {/* Top-Left Bracket */}
+                            <div className="absolute top-0 left-0 w-7 h-7 border-t-2 border-l-2 border-emerald-400/80 rounded-tl-xl shadow-[0_0_10px_rgba(16,185,129,0.25)]" />
+                            {/* Top-Right Bracket */}
+                            <div className="absolute top-0 right-0 w-7 h-7 border-t-2 border-r-2 border-emerald-400/80 rounded-tr-xl shadow-[0_0_10px_rgba(16,185,129,0.25)]" />
+                            {/* Bottom-Left Bracket */}
+                            <div className="absolute bottom-0 left-0 w-7 h-7 border-b-2 border-l-2 border-emerald-400/80 rounded-bl-xl shadow-[0_0_10px_rgba(16,185,129,0.25)]" />
+                            {/* Bottom-Right Bracket */}
+                            <div className="absolute bottom-0 right-0 w-7 h-7 border-b-2 border-r-2 border-emerald-400/80 rounded-br-xl shadow-[0_0_10px_rgba(16,185,129,0.25)]" />
+
+                            <span className="px-2.5 py-0.5 rounded-full bg-slate-950/60 border border-slate-800/80 text-[10px] font-medium text-emerald-300/90 backdrop-blur-xs">
+                                {scannerMode === 'cert'
+                                    ? 'Align Halal Certificate inside frame'
+                                    : 'Align Ingredient List or Halal Logo inside frame'}
+                            </span>
+                        </div>
+                    </div>
+                )}
+
+                {/* 5. Minimal Top HUD (Instruction, Flashlight & Camera Flip) */}
                 <div className="relative z-20 p-3 bg-gradient-to-b from-slate-950/80 via-slate-950/30 to-transparent">
                     {fusionState?.active ? (
                         /* Multi-Part / Continuing Capture Banner */
@@ -273,28 +304,50 @@ export const CameraViewfinder = ({
                             )}
                         </div>
                     ) : (
-                        /* Standard Guidance Pill & Camera Flip */
-                        <div className="flex items-center justify-between">
-                            <div className="px-3 py-1 rounded-full bg-slate-950/70 border border-slate-800 backdrop-blur-md text-[11px] text-slate-300 font-medium flex items-center gap-1.5 shadow-sm">
-                                <span className={`w-2 h-2 rounded-full ${isCapturing ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
-                                <span>
+                        /* Standard Guidance Pill, Flashlight & Camera Flip */
+                        <div className="flex items-center justify-between gap-2">
+                            <div className="px-3 py-1 rounded-full bg-slate-950/70 border border-slate-800 backdrop-blur-md text-[11px] text-slate-300 font-medium flex items-center gap-1.5 shadow-sm min-w-0">
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${isCapturing ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
+                                <span className="truncate">
                                     {scannerMode === 'label'
                                         ? 'Point at ingredients or Halal logo'
                                         : 'Point at Halal Certificate'}
                                 </span>
                             </div>
 
-                            <button
-                                type="button"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleCamera();
-                                }}
-                                className="p-2 rounded-full bg-slate-900/80 border border-slate-700 text-slate-300 hover:text-white backdrop-blur-md transition shadow-sm active:rotate-180 duration-300"
-                                title="Switch front/rear camera"
-                            >
-                                <SwitchCamera size={16} />
-                            </button>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                                {isCapturing && toggleTorch && (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleTorch();
+                                        }}
+                                        className={`p-2 rounded-full border backdrop-blur-md transition shadow-sm active:scale-95 ${
+                                            torchOn
+                                                ? 'bg-amber-500/90 border-amber-300 text-slate-950 shadow-[0_0_15px_rgba(245,158,11,0.5)]'
+                                                : 'bg-slate-900/80 border-slate-700 text-slate-300 hover:text-white'
+                                        }`}
+                                        title={torchOn ? 'Turn off flashlight' : 'Turn on flashlight'}
+                                        aria-label={torchOn ? 'Turn off flashlight' : 'Turn on flashlight'}
+                                    >
+                                        <Zap size={16} className={torchOn ? 'fill-slate-950' : ''} />
+                                    </button>
+                                )}
+
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleCamera();
+                                    }}
+                                    className="p-2 rounded-full bg-slate-900/80 border border-slate-700 text-slate-300 hover:text-white backdrop-blur-md transition shadow-sm active:rotate-180 duration-300"
+                                    title="Switch front/rear camera"
+                                    aria-label="Switch front/rear camera"
+                                >
+                                    <SwitchCamera size={16} />
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
