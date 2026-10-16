@@ -308,7 +308,11 @@ def search_establishments(q: Optional[str] = Query(None, description="Search que
     """
     query_str = sanitize_postgrest_search(q)
     try:
-        base_query = supabase.table("establishments").select("*, certifying_bodies(*)")
+        base_query = (
+            supabase.table("establishments")
+            .select("*, certifying_bodies(*)")
+            .not_("halal_status", "in", "(rejected,REJECTED,needs_review,pending,pending_review,flagged,suspended)")
+        )
         if query_str:
             base_query = base_query.or_(
                 f"name.ilike.%{query_str}%,city.ilike.%{query_str}%,address.ilike.%{query_str}%,type.ilike.%{query_str}%"
@@ -325,7 +329,7 @@ def search_establishments(q: Optional[str] = Query(None, description="Search que
             "success": False,
             "count": 0,
             "data": [],
-            "error": str(e),
+            "error": "Failed to search establishments",
         }
 
 
@@ -335,6 +339,7 @@ def get_establishments():
         supabase
         .table("establishments")
         .select("*, certifying_bodies(*)")
+        .not_("halal_status", "in", "(rejected,REJECTED,flagged,suspended)")
         .order("name")
         .execute()
     )

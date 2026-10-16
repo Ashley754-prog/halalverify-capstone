@@ -52,6 +52,55 @@ DOUBTFUL_INGREDIENT_PATTERNS = [
 ]
 
 
+import ipaddress
+import socket
+from urllib.parse import urlparse
+
+
+def is_safe_public_url(url_str: str) -> bool:
+    """
+    Blocks Server-Side Request Forgery (SSRF) against localhost, loopback, link-local,
+    cloud metadata (169.254.169.254), and private RFC-1918 networks.
+    """
+    try:
+        parsed = urlparse(url_str.strip())
+        if parsed.scheme not in ("http", "https"):
+            return False
+        hostname = (parsed.hostname or "").lower().strip()
+        if not hostname or hostname in ("localhost", "0.0.0.0", "127.0.0.1", "::1"):
+            return False
+
+        try:
+            ip_obj = ipaddress.ip_address(hostname)
+            if (
+                ip_obj.is_private
+                or ip_obj.is_loopback
+                or ip_obj.is_link_local
+                or ip_obj.is_multicast
+                or ip_obj.is_reserved
+                or ip_obj.is_unspecified
+            ):
+                return False
+        except ValueError:
+            # Hostname is a domain name; resolve and verify none of its IPs are internal
+            addr_info = socket.getaddrinfo(hostname, None)
+            for item in addr_info:
+                ip_str = item[4][0]
+                ip_obj = ipaddress.ip_address(ip_str)
+                if (
+                    ip_obj.is_private
+                    or ip_obj.is_loopback
+                    or ip_obj.is_link_local
+                    or ip_obj.is_multicast
+                    or ip_obj.is_reserved
+                    or ip_obj.is_unspecified
+                ):
+                    return False
+        return True
+    except Exception:
+        return False
+
+
 def fetch_image_base64_from_url(url: str, timeout: float = 6.0) -> Optional[str]:
     """
     Safely retrieves an image from a URL or parses Data URI, returning clean base64 string.
@@ -68,8 +117,8 @@ def fetch_image_base64_from_url(url: str, timeout: float = 6.0) -> Optional[str]
             return parts[1]
         return None
 
-    # Handle HTTP/HTTPS URL
-    if trimmed.startswith("http://") or trimmed.startswith("https://"):
+    # Handle HTTP/HTTPS URL with SSRF check
+    if (trimmed.startswith("http://") or trimmed.startswith("https://")) and is_safe_public_url(trimmed):
         try:
             with httpx.Client(timeout=timeout, follow_redirects=True) as client:
                 resp = client.get(trimmed)
@@ -120,6 +169,9 @@ def verify_url_liveness(url: str, timeout: float = 2.5) -> Tuple[bool, str]:
     trimmed = url.strip()
     if not (trimmed.startswith("http://") or trimmed.startswith("https://")):
         return False, "Invalid URL scheme"
+
+    if not is_safe_public_url(trimmed):
+        return False, "Restricted or unreachable URL host"
 
     try:
         with httpx.Client(timeout=timeout, follow_redirects=True, headers={"User-Agent": "HalalVerify/1.0"}) as client:

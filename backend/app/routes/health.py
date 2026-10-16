@@ -1,5 +1,6 @@
+from app.auth import require_admin
 from app.supabase_client import supabase
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 router = APIRouter(tags=["health"])
 
@@ -25,7 +26,7 @@ def root_check() -> dict:
 
 
 @router.get("/test-supabase")
-def test_supabase():
+def test_supabase(_user: dict = Depends(require_admin)):
     response = supabase.table("additives").select("*").limit(5).execute()
 
     return {
@@ -35,7 +36,7 @@ def test_supabase():
 
 
 @router.get("/test-ai")
-def test_ai():
+def test_ai(_user: dict = Depends(require_admin)):
     import time
     from PIL import Image, ImageDraw
     import numpy as np
@@ -78,7 +79,7 @@ def test_ai():
 
 
 @router.get("/test-gemini")
-def test_gemini_endpoint():
+def test_gemini_endpoint(_user: dict = Depends(require_admin)):
     import time
     from PIL import Image, ImageDraw
     import io, base64
@@ -108,7 +109,7 @@ def test_gemini_endpoint():
 
 
 @router.get("/test-yolo")
-def test_yolo_endpoint():
+def test_yolo_endpoint(_user: dict = Depends(require_admin)):
     import time
     from PIL import Image, ImageDraw
 

@@ -99,7 +99,7 @@ def get_pending_approvals(user: dict = Depends(require_admin)):
         }
     except Exception as e:
         print(f"Error fetching pending approvals: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch pending approvals: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch pending approvals")
 
 
 @router.patch("/establishments/{establishment_id}/verify")

@@ -111,17 +111,19 @@ export default function LandingPage({ onViewChange, userRole }) {
 
     searchDebounceRef.current = setTimeout(async () => {
       try {
+        const safeQ = q.replace(/[,()'"%&|{}]/g, '').trim().slice(0, 100);
+        if (!safeQ) return;
         const [liveProdRes, liveEstRes] = await Promise.all([
           supabase
             .from('products')
             .select('id, name, brand, category, status')
-            .or(`name.ilike.%${q}%,brand.ilike.%${q}%,category.ilike.%${q}%`)
+            .or(`name.ilike.%${safeQ}%,brand.ilike.%${safeQ}%,category.ilike.%${safeQ}%`)
             .not('status', 'in', '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft)')
             .limit(25),
           supabase
             .from('establishments')
             .select('id, name, address, halal_status')
-            .or(`name.ilike.%${q}%,address.ilike.%${q}%`)
+            .or(`name.ilike.%${safeQ}%,address.ilike.%${safeQ}%`)
             .not('halal_status', 'in', '(rejected,REJECTED,needs_review,pending,pending_review,flagged,suspended)')
             .limit(25),
         ]);

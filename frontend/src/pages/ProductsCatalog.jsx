@@ -200,8 +200,9 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                     .from('products')
                     .select('*, manufacturers(*), certifying_bodies(*)', { count: 'exact' });
 
-                if (q) {
-                    pBuilder = pBuilder.or(`name.ilike.%${q}%,brand.ilike.%${q}%,barcode.ilike.%${q}%,certificate_no.ilike.%${q}%`);
+                const safeQ = q.replace(/[,()'"%&|{}]/g, '').trim().slice(0, 100);
+                if (safeQ) {
+                    pBuilder = pBuilder.or(`name.ilike.%${safeQ}%,brand.ilike.%${safeQ}%,barcode.ilike.%${safeQ}%,certificate_no.ilike.%${safeQ}%`);
                 }
 
                 if (cat && cat !== 'All Categories') {
