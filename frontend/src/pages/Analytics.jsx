@@ -10,7 +10,9 @@ import {
     AlertOctagon,
     PieChart,
     ExternalLink,
-    Activity
+    Activity,
+    Download,
+    Printer,
 } from 'lucide-react';
 import { API_BASE_URL, authFetch } from '../utils/api';
 
@@ -129,10 +131,70 @@ export default function Analytics({ onViewChange }) {
 
     const totalMonitoredEsts = (estBreakdown.verified || 0) + (estBreakdown.pending_review || 0) + (estBreakdown.flagged || 0);
 
+    const handleExportCsv = () => {
+        const windowLabel = interval === 'daily' ? 'Last 7 Days' : interval === 'weekly' ? 'Last 30 Days' : 'All Time';
+        const rows = [
+            ['HalalVerify Zamboanga City Surveillance & Compliance Report'],
+            ['Generated At', new Date().toLocaleString()],
+            ['Reporting Window', windowLabel],
+            [],
+            ['KPI METRIC', 'VALUE'],
+            ['Total Scans Audited', totals.total_scans || 0],
+            ['Halal Compliance Rate (%)', `${totals.compliance_rate ?? halalPct}%`],
+            ['Halal Verdicts', halalCount],
+            ['Doubtful / Mushbooh Verdicts', doubtfulCount],
+            ['Haram / Non-Halal Verdicts', haramCount],
+            ['Total Establishments Monitored', totalMonitoredEsts],
+            ['Verified Establishments', estBreakdown.verified || 0],
+            ['Pending Review Establishments', estBreakdown.pending_review || 0],
+            ['Flagged Establishments', estBreakdown.flagged || 0],
+            ['Total Community Reports', reports.total_reports || 0],
+            ['Open Community Reports', reports.open_count || 0],
+            ['Resolved Community Reports', reports.resolved_count || 0],
+            [],
+            ['TOP FLAGGED ADDITIVES', 'NAME', 'STATUS', 'DETECTION COUNT', 'ORIGIN / SOURCE'],
+            ...topAdditives.map((a) => [
+                a.code || '',
+                a.name || '',
+                a.status || '',
+                a.detection_count || 0,
+                a.source_description || '',
+            ]),
+            [],
+            ['COMMUNITY REPORT CATEGORY', 'INCIDENT COUNT'],
+            ...Object.entries(reports.categories || {}).map(([cat, count]) => [cat, count]),
+        ];
+
+        const csvContent = rows
+            .map((r) =>
+                r
+                    .map((cell) => {
+                        const str = String(cell ?? '').replace(/"/g, '""');
+                        return `"${str}"`;
+                    })
+                    .join(',')
+            )
+            .join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `halalverify-analytics-${interval}-${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
+    const handlePrintReport = () => {
+        window.print();
+    };
+
     return (
         <div className="p-3 sm:p-5 md:p-6 space-y-4 sm:space-y-5 flex-1 flex flex-col h-full bg-slate-50/70 overflow-y-auto text-slate-800">
             {/* Enterprise Control Toolbar */}
-            <div className="bg-white rounded-2xl border border-slate-200/90 p-2 sm:p-2.5 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2 shrink-0">
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-2 sm:p-2.5 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2 shrink-0 print:hidden">
                 {/* Row 1 on mobile: Status on left, Actions on right */}
                 <div className="flex items-center justify-between gap-2 w-full md:w-auto">
                     {/* Live Telemetry Status Pill */}
@@ -146,6 +208,22 @@ export default function Analytics({ onViewChange }) {
 
                     {/* Actions on mobile (right aligned) */}
                     <div className="flex md:hidden items-center gap-1.5 shrink-0">
+                        <button
+                            type="button"
+                            onClick={handleExportCsv}
+                            className="p-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium inline-flex items-center transition shadow-2xs cursor-pointer"
+                            title="Export CSV Report"
+                        >
+                            <Download size={13} className="text-slate-600" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handlePrintReport}
+                            className="p-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium inline-flex items-center transition shadow-2xs cursor-pointer"
+                            title="Print or Save as PDF"
+                        >
+                            <Printer size={13} className="text-slate-600" />
+                        </button>
                         <button
                             type="button"
                             onClick={loadAnalyticsData}
@@ -218,9 +296,29 @@ export default function Analytics({ onViewChange }) {
 
                     <button
                         type="button"
+                        onClick={handleExportCsv}
+                        className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium inline-flex items-center gap-1.5 transition shadow-2xs cursor-pointer"
+                        title="Download surveillance metrics as CSV"
+                    >
+                        <Download size={13} className="text-emerald-600" />
+                        <span>Export CSV</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={handlePrintReport}
+                        className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium inline-flex items-center gap-1.5 transition shadow-2xs cursor-pointer"
+                        title="Print or Save Report as PDF"
+                    >
+                        <Printer size={13} className="text-slate-600" />
+                        <span>Print / PDF</span>
+                    </button>
+
+                    <button
+                        type="button"
                         onClick={loadAnalyticsData}
                         disabled={loading}
-                        className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium inline-flex items-center gap-1.5 transition shadow-2xs disabled:opacity-50"
+                        className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium inline-flex items-center gap-1.5 transition shadow-2xs disabled:opacity-50 cursor-pointer"
                         title="Reload latest telemetry metrics"
                     >
                         <RefreshCw size={13} className={loading ? 'animate-spin text-emerald-600' : 'text-slate-500'} />
@@ -230,7 +328,7 @@ export default function Analytics({ onViewChange }) {
                     <button
                         type="button"
                         onClick={() => onViewChange?.('verification-queue')}
-                        className="px-3 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-medium inline-flex items-center gap-1.5 transition shadow-2xs"
+                        className="px-3 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-medium inline-flex items-center gap-1.5 transition shadow-2xs cursor-pointer"
                     >
                         <span>Audit Queue</span>
                         <ChevronRight size={13} />
