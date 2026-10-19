@@ -11,7 +11,6 @@ import {
     Layers,
     PlusCircle,
     ChevronRight,
-    Cpu,
     Package
 } from 'lucide-react';
 import { simplifyHalalText, simplifyStatus } from '../../utils/textFormatters';
@@ -523,52 +522,7 @@ export const LabelResultsSheet = ({
                                 </div>
                             )}
 
-                            {/* 6. Collapsible Technical & IPO Pipeline Details */}
-                            <details className="group rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-xs">
-                                <summary className="cursor-pointer font-semibold text-slate-400 hover:text-slate-200 flex items-center justify-between select-none">
-                                    <span className="flex items-center gap-1.5">
-                                        <Cpu size={14} className="text-emerald-400" />
-                                        <span>Technical & Pipeline Details</span>
-                                    </span>
-                                    <ChevronDown size={14} className="transition-transform group-open:rotate-180 text-slate-500" />
-                                </summary>
-
-                                <div className="mt-3 space-y-3 pt-2 border-t border-slate-800/80">
-                                    {/* 5 Stages Breakdown */}
-                                    {scanResult.pipelineStages?.length > 0 && (
-                                        <div className="space-y-1.5">
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
-                                                5-Stage IPO Execution
-                                            </span>
-                                            {scanResult.pipelineStages.map((st) => (
-                                                <div key={st.step} className="p-2 rounded bg-slate-900/90 border border-slate-800 flex items-center justify-between text-[11px]">
-                                                    <span className="text-slate-300">
-                                                        <strong className="text-emerald-400 mr-1.5">#{st.step}</strong>
-                                                        {st.name}
-                                                    </span>
-                                                    <span className="font-mono text-slate-400 text-[10px]">
-                                                        {st.latencyMs ? `${st.latencyMs}ms` : st.status}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {/* Raw Extracted OCR Text */}
-                                    {scanResult.ocrText && (
-                                        <div className="space-y-1">
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
-                                                Raw Extracted OCR Text
-                                            </span>
-                                            <div className="p-2.5 bg-slate-900 rounded border border-slate-800 font-mono text-[10px] text-slate-300 max-h-32 overflow-y-auto whitespace-pre-wrap select-text">
-                                                {scanResult.ocrText}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </details>
-
-                            {/* 7. Catalog Bridge (When No Logo Found) */}
+                            {/* 6. Catalog Bridge (When No Logo Found) */}
                             {scanResult.riskLevel === 'No Halal Logo Found' && (
                                 <button
                                     type="button"
