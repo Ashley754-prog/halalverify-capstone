@@ -7,6 +7,23 @@ import { useCameraStream } from '../hooks/useCameraStream';
 import CameraViewfinder from '../components/scanner/CameraViewfinder';
 import LabelResultsSheet from '../components/scanner/LabelResultsSheet';
 import CertResultsSheet from '../components/scanner/CertResultsSheet';
+import ContributionModal from '../components/submissions/ContributionModal';
+import AuthPromptModal from '../components/submissions/AuthPromptModal';
+import { supabase } from '../lib/supabaseClient';
+
+const resolveCertifierCode = (logoBodyStr = '') => {
+    const upper = logoBodyStr.toUpperCase();
+    const codes = [
+        'IDCP', 'HDIP', 'NCMF', 'PRIME', 'HICCIP', 'MMHCB', 'BPCC', 'BUSC',
+        'MINHA', 'MASLAHA', 'FIQHI', 'PUCOI', 'PHILCOSED', 'AHIP', 'JAKIM', 'MUIS', 'MUI',
+    ];
+    for (const code of codes) {
+        if (upper.includes(code)) return code;
+    }
+    if (upper.includes("DA'WAH") || upper.includes('DAWAH')) return 'IDCP';
+    if (upper.includes('NATIONAL HALAL')) return 'NCMF';
+    return upper ? 'OTHER' : '';
+};
 
 export const Scanner = ({ isOnline, onViewChange }) => {
     // Mode state: 'label' (Logo & Ingredients) vs 'cert' (Certificate Analyzer)
@@ -23,6 +40,11 @@ export const Scanner = ({ isOnline, onViewChange }) => {
     const [scanResult, setScanResult] = useState(null);
     const [certResult, setCertResult] = useState(null);
     const [showResultsSheet, setShowResultsSheet] = useState(false);
+
+    // Contribute Scanned Product Modal State
+    const [showContributionModal, setShowContributionModal] = useState(false);
+    const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+    const [prefillProductData, setPrefillProductData] = useState(null);
 
     // Touch Swipe Gesture State
     const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
@@ -308,6 +330,20 @@ export const Scanner = ({ isOnline, onViewChange }) => {
                     onClose={() => setShowResultsSheet(false)}
                     onViewChange={onViewChange}
                     onScanSecondary={handleScanSecondary}
+                    onContributeProduct={async (result) => {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (!session?.user) {
+                            setShowAuthPrompt(true);
+                            return;
+                        }
+                        const hasValidLogo = Boolean(result?.logoDetected && !result?.isInvalidLogo);
+                        setPrefillProductData({
+                            halal_tier: hasValidLogo ? 'halal_certified' : 'pork_free_declared',
+                            certifying_body: hasValidLogo ? resolveCertifierCode(result?.logoBody || '') : '',
+                            ingredients_summary: result?.ocrText ? result.ocrText.slice(0, 600) : '',
+                        });
+                        setShowContributionModal(true);
+                    }}
                 />
             )}
 
@@ -322,6 +358,29 @@ export const Scanner = ({ isOnline, onViewChange }) => {
                     onViewChange={onViewChange}
                 />
             )}
+
+            {/* Contribute Scanned Product Modal */}
+            <ContributionModal
+                isOpen={showContributionModal}
+                onClose={() => setShowContributionModal(false)}
+                initialTab="product"
+                initialProductData={prefillProductData}
+                onSubmitted={() => {
+                    setToast({
+                        visible: true,
+                        message: 'Scanned product submitted to catalog!',
+                        type: 'success',
+                    });
+                }}
+            />
+
+            {/* Guest Authentication Prompt Modal */}
+            <AuthPromptModal
+                isOpen={showAuthPrompt}
+                onClose={() => setShowAuthPrompt(false)}
+                onNavigate={(v) => onViewChange?.(v)}
+                actionTitle="Add Scanned Product to Catalog"
+            />
 
             {/* Notification Toast */}
             <Toast

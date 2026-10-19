@@ -56,7 +56,8 @@ export const LabelResultsSheet = ({
     onRetry,
     onClose,
     onViewChange,
-    onScanSecondary
+    onScanSecondary,
+    onContributeProduct,
 }) => {
     const [touchStartY, setTouchStartY] = useState(null);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -522,16 +523,31 @@ export const LabelResultsSheet = ({
                                 </div>
                             )}
 
-                            {/* 6. Catalog Bridge (When No Logo Found) */}
-                            {scanResult.riskLevel === 'No Halal Logo Found' && (
-                                <button
-                                    type="button"
-                                    onClick={() => onViewChange?.('products')}
-                                    className="w-full py-2.5 px-3.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 font-semibold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-xs"
-                                >
-                                    <Package size={14} className="text-emerald-400 shrink-0" />
-                                    <span>Check Brand in Verified Products Catalog</span>
-                                </button>
+                            {/* 6. Catalog Bridge & Contribute Product */}
+                            {scanResult.riskLevel !== 'No Product Detected' && (
+                                <div className="space-y-2">
+                                    {scanResult.statusColor !== 'red' && onContributeProduct && (
+                                        <button
+                                            type="button"
+                                            onClick={() => onContributeProduct(scanResult)}
+                                            className="w-full py-2.5 px-3.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-xs cursor-pointer"
+                                        >
+                                            <PlusCircle size={15} className="text-sky-400 shrink-0" />
+                                            <span>+ Add This Scanned Product to Public Catalog</span>
+                                        </button>
+                                    )}
+
+                                    {scanResult.riskLevel === 'No Halal Logo Found' && (
+                                        <button
+                                            type="button"
+                                            onClick={() => onViewChange?.('products')}
+                                            className="w-full py-2.5 px-3.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 font-semibold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-xs cursor-pointer"
+                                        >
+                                            <Package size={14} className="text-emerald-400 shrink-0" />
+                                            <span>Check Brand in Verified Products Catalog</span>
+                                        </button>
+                                    )}
+                                </div>
                             )}
 
                             {/* 8. Footer Actions */}
