@@ -29,24 +29,21 @@ export default function EstablishmentContributionForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-4 text-xs sm:text-sm">
-      {/* 2-Level Conceptual Hierarchy for Halal Classification */}
+      {/* 1. Halal Status Selection */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <label className="block font-bold text-slate-800 text-xs sm:text-sm">
-            Halal Classification Tier <span className="text-red-500">*</span>
+            1. Select Halal Category <span className="text-red-500">*</span>
           </label>
-          <span className="text-[11px] text-slate-400 font-medium">Select tier</span>
+          <span className="text-[11px] text-slate-400 font-medium">Choose 1 option</span>
         </div>
 
-        {/* Level 1: Institutional Certification */}
+        {/* Option A: Officially Certified */}
         <div className="space-y-1.5">
           <div className="flex items-center gap-1.5 text-slate-700">
             <BadgeCheck size={15} className="text-emerald-700 shrink-0" />
             <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-              Institutional Certification
-            </span>
-            <span className="text-[11px] text-slate-500 font-normal">
-              (Third-Party Audited)
+              With Official Halal Certificate
             </span>
           </div>
 
@@ -97,20 +94,17 @@ export default function EstablishmentContributionForm({
           })}
         </div>
 
-        {/* Level 2: Community & Lifestyle Accommodations */}
+        {/* Option B: Community / Muslim-Owned */}
         <div className="space-y-1.5 pt-2 border-t border-slate-100">
           <div>
             <div className="flex items-center gap-1.5 text-slate-700">
               <Store size={15} className="text-slate-600 shrink-0" />
               <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                Community & Dietary Accommodations
-              </span>
-              <span className="text-[11px] text-slate-500 font-normal">
-                (Self-Declared Practices)
+                Without Certificate (Muslim-Owned or Friendly)
               </span>
             </div>
             <p className="text-[11px] text-slate-500 mt-0.5">
-              For dining places without formal third-party certificates, declare their kitchen operation:
+              For local Muslim eateries or pork-free kitchens that do not have a formal paper certificate yet:
             </p>
           </div>
 
@@ -192,11 +186,11 @@ export default function EstablishmentContributionForm({
         </div>
       </div>
 
-      {/* Submitter Relationship Declaration */}
+      {/* Submitter Role */}
       <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
           <HeartHandshake size={15} className="text-emerald-600 shrink-0" />
-          Your Relationship to this Venue:
+          Who is submitting this place?
         </span>
         <div className="inline-flex rounded-lg border border-slate-300 bg-white p-0.5 text-xs">
           <button
@@ -219,7 +213,7 @@ export default function EstablishmentContributionForm({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Customer / Community Scout
+            Customer / Community
           </button>
         </div>
       </div>
@@ -272,11 +266,11 @@ export default function EstablishmentContributionForm({
         </div>
       </div>
 
-      {/* Public Contact & Social Media Links (Factor 3) */}
+      {/* Public Contact & Social Media Links */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block font-semibold text-slate-700 mb-1">
-            Contact Phone / Mobile <span className="text-slate-400 font-normal">(Actionable info)</span>
+            Contact Phone / Mobile <span className="text-emerald-600 font-normal text-[11px]">(For instant verification)</span>
           </label>
           <div className="relative">
             <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -312,13 +306,13 @@ export default function EstablishmentContributionForm({
         <div className="space-y-4 p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/40">
           <div className="flex items-center gap-2 text-emerald-800 font-bold text-xs">
             <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
-            <span>Accredited Certification Credentials (IDCP, HDIP, NCMF, etc.)</span>
+            <span>Halal Certificate Details (IDCP, HDIP, NCMF, PRIME, etc.)</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block font-semibold text-slate-700 mb-1">
-                Halal Certificate Number
+                Halal Certificate Number <span className="text-slate-400 font-normal">(Auto-read if photo uploaded)</span>
               </label>
               <input
                 type="text"
@@ -330,7 +324,7 @@ export default function EstablishmentContributionForm({
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Certificate Validity / Expiry</label>
+              <label className="block font-semibold text-slate-700 mb-1">Certificate Expiry Date</label>
               <input
                 type="date"
                 value={estForm.expiry_date}
@@ -343,7 +337,7 @@ export default function EstablishmentContributionForm({
           {/* Upload Certificate Photo */}
           <div>
             <label className="block font-semibold text-slate-700 mb-1">
-              Upload Certificate Photo (Enables Instant AI Verification)
+              Upload Certificate Photo <span className="text-emerald-600 font-normal text-[11px]">(Required for Instant AI Verification)</span>
             </label>
             <div className="rounded-xl border-2 border-dashed border-slate-300 bg-white p-3 text-center hover:border-emerald-500 transition">
               {estForm.certificate_url ? (
@@ -384,17 +378,17 @@ export default function EstablishmentContributionForm({
           <div className="p-3 rounded-xl bg-sky-50 border border-sky-200 text-sky-800 text-xs">
             <p className="font-semibold flex items-center gap-1.5">
               <HeartHandshake size={15} className="text-sky-600 shrink-0" />
-              Community-Backed Transparency
+              Easy Community Verification
             </p>
             <p className="text-[11px] text-sky-700 mt-0.5">
-              No formal certificate upload is required for Muslim-owned or friendly spots. The automated checker validates local Zamboanga address and contact availability to list it under the community directory.
+              No paper certificate is needed for Muslim-owned or pork-free places. Provide a Zamboanga City address, an active phone number, and a storefront or menu photo for instant listing.
             </p>
           </div>
 
           {/* Storefront / Menu Photo Upload for Community Listings */}
           <div>
             <label className="block font-semibold text-slate-700 mb-1">
-              Storefront or Menu Signboard Photo <span className="text-slate-400 font-normal">(Optional, helps community verify)</span>
+              Storefront or Menu Signboard Photo <span className="text-sky-600 font-normal text-[11px]">(Required for instant verification)</span>
             </label>
             <div className="rounded-xl border-2 border-dashed border-slate-300 bg-white p-3 text-center hover:border-emerald-500 transition">
               {estForm.logo_url || estForm.certificate_url ? (

@@ -236,7 +236,20 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
     cert_url = payload.get("certificate_url")
     address = (payload.get("address") or "").strip()
     city = (payload.get("city") or "Zamboanga City").strip()
-    halal_tier = (payload.get("halal_tier") or "halal_certified").strip().lower()
+    raw_tier = (payload.get("halal_tier") or "").strip().lower()
+    if not raw_tier:
+        notes_and_status = f"{payload.get('halal_status') or ''} {payload.get('admin_notes') or ''}".lower()
+        if "muslim-owned" in notes_and_status or "muslim_owned" in notes_and_status:
+            raw_tier = "muslim_owned"
+        elif "muslim-friendly" in notes_and_status or "muslim_friendly" in notes_and_status:
+            raw_tier = "muslim_friendly"
+        elif "vegetarian" in notes_and_status or "vegan" in notes_and_status:
+            raw_tier = "vegetarian_vegan"
+        elif "community" in notes_and_status and not (cert_no or hcb_id or cert_url):
+            raw_tier = "muslim_owned"
+        else:
+            raw_tier = "halal_certified"
+    halal_tier = raw_tier
     contact_phone = (payload.get("phone") or payload.get("contact_number") or "").strip()
     social_url = (payload.get("source_url") or payload.get("social_media_url") or "").strip()
     submitter_role = (payload.get("submitter_role") or "community").strip().lower()
@@ -474,14 +487,22 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
                 f"FATAL INVARIANT FAILED: Certified claim blocked from auto-approval (Confidence: 0%). "
                 f"Issues: {'; '.join(reasons)}."
             )
+        elif score >= 75 and bool(cert_url):
+            is_auto_approved = True
+            final_status = "verified"
+            summary_note = (
+                f"AI VERIFIED & PUBLISHED: Halal Certified establishment authenticated (Confidence: {score}%). "
+                f"Accredited HCB: {hcb_name}. Expiry: {parsed_expiry.isoformat() if parsed_expiry else 'Active'}."
+            )
         else:
-            # Certified Halal claims require physical accreditation verification against official HCB lists by Admin
             is_auto_approved = False
             final_status = "needs_review"
+            if not cert_url:
+                reasons.append("Certificate photo not uploaded for automated OCR verification")
             summary_note = (
                 f"AI AUDITED & QUEUED: Halal Certified claim scored {score}% audit readiness. "
                 f"Accredited HCB: {hcb_name}. Expiry: {parsed_expiry.isoformat() if parsed_expiry else 'N/A'}. "
-                f"Queued for final administrative confirmation against official HCB master list."
+                f"Queued for final administrative confirmation."
             )
 
     else:
@@ -523,7 +544,7 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
             score += 10
             audit_notes.append(f"Guest amenities declared: {', '.join(amenities)} (+10 pts)")
 
-        # Community tier auto-acceptance as 'community_listed'
+        # Community tier auto-acceptance
         # Strict Guardrails: Must be within Zamboanga, valid non-dummy phone, no duplicates, AND must have photo evidence!
         is_community_approved = (
             (score >= 65) and
@@ -543,7 +564,7 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
             is_auto_approved = False
             final_status = "needs_review"
             summary_note = (
-                f"AI AUDITED: Community listing queued for review (Confidence: {score}%). "
+                f"AI AUDITED: Community Listed - {tier_label} queued for review (Confidence: {score}%). "
                 f"Issues: {'; '.join(reasons)}."
             )
 
@@ -579,7 +600,7 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
 def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
     """
     Automated AI verification engine for submitted packaged products.
-    Evaluates chemical additives, certificate credentials, and brand matching.
+    Evaluates packaging OCR text, chemical additives, certificate credentials, and brand matching.
     """
     name = (payload.get("name") or "").strip()
     brand = (payload.get("brand") or "").strip() or None
@@ -588,7 +609,16 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
     hcb_id = payload.get("certifying_body_id")
     ingredients = (payload.get("ingredients_summary") or "").strip()
     image_url = payload.get("image_url")
-    halal_tier = (payload.get("halal_tier") or "halal_certified").strip().lower()
+    raw_tier = (payload.get("halal_tier") or "").strip().lower()
+    if not raw_tier:
+        notes_and_status = f"{payload.get('status') or ''} {payload.get('admin_notes') or ''} {payload.get('source') or ''}".lower()
+        if "pork-free" in notes_and_status or "pork_free" in notes_and_status:
+            raw_tier = "pork_free_declared"
+        elif "vegetarian" in notes_and_status or "vegan" in notes_and_status:
+            raw_tier = "vegetarian_vegan"
+        else:
+            raw_tier = "halal_certified"
+    halal_tier = raw_tier
     submitter_role = (payload.get("submitter_role") or "consumer").strip().lower()
 
     score = 0
@@ -596,10 +626,31 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
     audit_notes = []
     haram_found = []
     doubtful_found = []
+    ocr_text = ""
+
+    # 0. OCR Packaging Photo Extraction (if product image uploaded)
+    if image_url:
+        img_b64 = fetch_image_base64_from_url(image_url)
+        if img_b64:
+            try:
+                ocr_text = extract_text_from_image(img_b64) or ""
+                if ocr_text:
+                    if not cert_no:
+                        extracted_no, _ = extract_certificate_number(ocr_text)
+                        if extracted_no:
+                            cert_no = extracted_no
+                    if not expiry_str:
+                        extracted_exp = extract_expiration_date(ocr_text)
+                        if extracted_exp:
+                            expiry_str = extracted_exp
+            except Exception as ocr_err:
+                print(f"[AutoVerify] Product OCR processing notice: {ocr_err}")
+
+    effective_ingredients = f"{ingredients} {ocr_text}".strip()
 
     # 1. Ingredient & Chemical Additive Screening
-    # Screen across product name, brand, and ingredient declaration
-    screened_text = f"{name} {brand or ''} {ingredients}".lower()
+    # Screen across product name, brand, ingredient declaration, and OCR packaging text
+    screened_text = f"{name} {brand or ''} {effective_ingredients}".lower()
 
     # A. Prohibited (Haram) Regex Scan
     for pattern, label in HARAM_INGREDIENT_PATTERNS:
@@ -618,11 +669,11 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
                 doubtful_found.append(f"{label} ('{matched_term}')")
 
     # C. Database Additives Table Scan
-    if ingredients:
+    if effective_ingredients:
         try:
             additives_res = supabase.table("additives").select("code, name, status").execute()
             additives = additives_res.data or []
-            upper_ing = ingredients.upper()
+            upper_ing = effective_ingredients.upper()
             for add in additives:
                 code = (add.get("code") or "").upper()
                 add_name = (add.get("name") or "").upper()
@@ -667,20 +718,20 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
                 pass
 
         matched_hcb_code = None
-        cert_body_input = (payload.get("certifying_body") or "").strip().upper()
+        cert_body_input = (payload.get("certifying_body") or payload.get("source") or "").strip().upper()
 
         if not hcb_matched and cert_body_input:
             for code in ACCREDITED_HCB_CODES:
                 if code == cert_body_input or code in cert_body_input:
                     matched_hcb_code = code
                     break
-            if not matched_hcb_code and cert_body_input in ["MUI", "BPJPH"]:
-                matched_hcb_code = cert_body_input
+            if not matched_hcb_code and any(k in cert_body_input for k in ["MUI", "BPJPH"]):
+                matched_hcb_code = "MUI"
 
             if matched_hcb_code:
                 hcb_matched = True
                 hcb_name = f"Accredited Body ({matched_hcb_code})"
-            elif cert_body_input != "OTHER":
+            elif payload.get("certifying_body") and cert_body_input != "OTHER":
                 hcb_matched = True
                 hcb_name = f"Certifying Body ({payload.get('certifying_body')})"
 
@@ -688,6 +739,15 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
             upper_cert = cert_no.upper()
             for code in ACCREDITED_HCB_CODES:
                 if code in upper_cert:
+                    hcb_matched = True
+                    hcb_name = f"Accredited Body ({code})"
+                    matched_hcb_code = code
+                    break
+
+        if not hcb_matched and ocr_text:
+            upper_ocr = ocr_text.upper()
+            for code in ACCREDITED_HCB_CODES:
+                if code in upper_ocr:
                     hcb_matched = True
                     hcb_name = f"Accredited Body ({code})"
                     matched_hcb_code = code
@@ -708,7 +768,7 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
         else:
             reasons.append("No accredited Halal Certifying Body verified")
 
-        # Expiry Check (30 pts)
+        # Expiry / Packaging Evidence Check (30 pts)
         if parsed_expiry:
             if parsed_expiry >= today:
                 score += 30
@@ -716,8 +776,11 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
             else:
                 is_expired = True
                 reasons.append(f"Certificate has expired on {parsed_expiry.isoformat()} (-30 pts)")
+        elif image_url:
+            score += 20
+            audit_notes.append("Product packaging photo attached for seal verification (+20 pts)")
         else:
-            reasons.append("Expiration date not provided")
+            reasons.append("Neither certificate expiry date nor packaging photo provided")
 
         # Chemical Additive Screening (35 pts)
         if haram_found:
@@ -741,14 +804,20 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
                 f"FATAL INVARIANT FAILED: Product blocked from auto-approval (Confidence: 0%). "
                 f"Issues: {'; '.join(reasons)}"
             )
+        elif score >= 70 and (bool(image_url) or bool(cert_no)):
+            is_auto_approved = True
+            final_status = "VERIFIED"
+            summary_note = (
+                f"AI VERIFIED & PUBLISHED: Formally Halal Certified product authenticated (Confidence: {score}%). "
+                f"Accredited HCB: {hcb_name}. Zero prohibited additives detected."
+            )
         else:
-            # Certified Halal claims require physical accreditation verification against official HCB lists by Admin
             is_auto_approved = False
             final_status = "PENDING_VERIFICATION"
             summary_note = (
                 f"AI AUDITED & QUEUED: Halal Certified claim scored {score}% audit readiness. "
-                f"Accredited HCB: {hcb_name}. Active validity verified. Additives clean. "
-                f"Queued for final administrative confirmation against official HCB master list."
+                f"Accredited HCB: {hcb_name}. Additives clean. "
+                f"Queued for administrative confirmation."
             )
 
     else:
@@ -779,11 +848,11 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
             )
         else:
             # Clean ingredients - calculate community scoring (up to 100 pts)
-            if ingredients:
+            if effective_ingredients:
                 score += 40
                 audit_notes.append("Chemical screening: Zero prohibited or doubtful ingredients detected (+40 pts)")
             else:
-                reasons.append("Full ingredient declaration not provided")
+                reasons.append("Full ingredient declaration or clear label photo not provided")
 
             has_prod_photo = bool(image_url)
             if has_prod_photo:
@@ -796,15 +865,15 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
                 score += 20
                 audit_notes.append(f"Brand / maker name provided: {brand} (+20 pts)")
 
-            # Auto-approval guardrails: score >= 70, ingredients declared, packaging photo attached
-            is_auto_approved = (score >= 70) and bool(ingredients) and has_prod_photo
+            # Auto-approval guardrails: score >= 70, ingredients declared/extracted, packaging photo attached
+            is_auto_approved = (score >= 70) and bool(effective_ingredients) and has_prod_photo
             final_status = (
                 "Pork-Free Declared" if halal_tier == "pork_free_declared" else "Vegetarian / Vegan"
             ) if is_auto_approved else "PENDING_VERIFICATION"
             summary_note = (
                 f"AI TRIAGED & PUBLISHED: Community Listed - {tier_label} (Confidence: {score}%). Zero prohibited additives detected with packaging photo."
                 if is_auto_approved
-                else f"AI AUDITED: Community product queued for review (Confidence: {score}%). Issues: {'; '.join(reasons)}"
+                else f"AI AUDITED: Community Listed - {tier_label} queued for review (Confidence: {score}%). Issues: {'; '.join(reasons)}"
             )
 
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -816,6 +885,8 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
         "halal_tier": halal_tier,
         "verified_at": now_iso if is_auto_approved else None,
         "verified_by": None,
+        "certificate_no": cert_no,
+        "expiry_date": parsed_expiry.isoformat() if parsed_expiry else expiry_str,
         "certifying_body_id": hcb_id,
         "admin_notes": summary_note,
         "audit_trail": {

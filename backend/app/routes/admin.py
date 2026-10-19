@@ -126,9 +126,24 @@ def verify_establishment(
 
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
+    tier_note_map = {
+        "muslim_owned": "Community Listed - Muslim-Owned",
+        "community_listed": "Community Listed - Muslim-Owned",
+        "muslim_friendly": "Community Listed - Muslim-Friendly",
+        "vegetarian_vegan": "Community Listed - Vegetarian / Vegan",
+    }
+    notes_str = (payload.admin_notes or "").strip()
+    if status_clean in tier_note_map:
+        required_tag = tier_note_map[status_clean]
+        if required_tag.lower() not in notes_str.lower():
+            notes_str = f"{required_tag}. {notes_str}".strip(". ")
+        db_status = "verified"
+    else:
+        db_status = status_clean
+
     update_fields = {
-        "halal_status": status_clean,
-        "admin_notes": payload.admin_notes or "",
+        "halal_status": db_status,
+        "admin_notes": notes_str,
         "verified_at": now_iso,
         "verified_by": str(user_id) if user_id else None,
     }
@@ -648,10 +663,18 @@ def auto_verify_establishment_endpoint(
     user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
     admin_uuid = str(user_id) if user_id else None
 
-    if auto_approve and eval_result["is_auto_approved"]:
+    can_approve_est = eval_result["is_auto_approved"] or (
+        eval_result["score"] >= 65
+        and not eval_result.get("audit_trail", {}).get("is_expired")
+        and not eval_result.get("audit_trail", {}).get("is_duplicate")
+        and eval_result.get("audit_trail", {}).get("is_zamboanga")
+    )
+
+    if auto_approve and can_approve_est:
         update_fields["halal_status"] = "verified"
         update_fields["verified_at"] = now_iso
         update_fields["verified_by"] = admin_uuid
+        eval_result["is_auto_approved"] = True
 
         # Cascade to pending products linked to this establishment
         try:
@@ -696,14 +719,29 @@ def auto_verify_product_endpoint(
     update_fields = {
         "admin_notes": eval_result["admin_notes"],
     }
+    if eval_result.get("certificate_no") and not prod.get("certificate_no"):
+        update_fields["certificate_no"] = eval_result["certificate_no"]
+    if eval_result.get("expiry_date") and not prod.get("expiry_date"):
+        update_fields["expiry_date"] = eval_result["expiry_date"]
+    if eval_result.get("certifying_body_id") and not prod.get("certifying_body_id"):
+        update_fields["certifying_body_id"] = eval_result["certifying_body_id"]
+
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
     user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
     admin_uuid = str(user_id) if user_id else None
 
-    if auto_approve and eval_result["is_auto_approved"]:
-        update_fields["status"] = "VERIFIED"
+    can_approve_prod = eval_result["is_auto_approved"] or (
+        eval_result["score"] >= 65
+        and not eval_result.get("audit_trail", {}).get("is_expired")
+        and not eval_result.get("audit_trail", {}).get("haram_additives")
+    )
+
+    if auto_approve and can_approve_prod:
+        approved_status = eval_result["status"] if eval_result["status"] != "PENDING_VERIFICATION" else "VERIFIED"
+        update_fields["status"] = approved_status
         update_fields["verified_at"] = now_iso
         update_fields["verified_by"] = admin_uuid
+        eval_result["is_auto_approved"] = True
 
     supabase.table("products").update(update_fields).eq("id", product_id).execute()
 
@@ -756,7 +794,14 @@ def auto_verify_all_pending(
             if eval_res.get("certifying_body_id") and not est.get("certifying_body_id"):
                 update_fields["certifying_body_id"] = eval_res["certifying_body_id"]
 
-            if auto_approve and eval_res["is_auto_approved"]:
+            can_approve_est = eval_res["is_auto_approved"] or (
+                eval_res["score"] >= 65
+                and not eval_res.get("audit_trail", {}).get("is_expired")
+                and not eval_res.get("audit_trail", {}).get("is_duplicate")
+                and eval_res.get("audit_trail", {}).get("is_zamboanga")
+            )
+
+            if auto_approve and can_approve_est:
                 update_fields["halal_status"] = "verified"
                 update_fields["verified_at"] = now_iso
                 update_fields["verified_by"] = admin_uuid
@@ -793,8 +838,22 @@ def auto_verify_all_pending(
             audited_prod_count += 1
 
             update_fields = {"admin_notes": eval_res["admin_notes"]}
-            if auto_approve and eval_res["is_auto_approved"]:
-                update_fields["status"] = "VERIFIED"
+            if eval_res.get("certificate_no") and not prod.get("certificate_no"):
+                update_fields["certificate_no"] = eval_res["certificate_no"]
+            if eval_res.get("expiry_date") and not prod.get("expiry_date"):
+                update_fields["expiry_date"] = eval_res["expiry_date"]
+            if eval_res.get("certifying_body_id") and not prod.get("certifying_body_id"):
+                update_fields["certifying_body_id"] = eval_res["certifying_body_id"]
+
+            can_approve_prod = eval_res["is_auto_approved"] or (
+                eval_res["score"] >= 65
+                and not eval_res.get("audit_trail", {}).get("is_expired")
+                and not eval_res.get("audit_trail", {}).get("haram_additives")
+            )
+
+            if auto_approve and can_approve_prod:
+                approved_status = eval_res["status"] if eval_res["status"] != "PENDING_VERIFICATION" else "VERIFIED"
+                update_fields["status"] = approved_status
                 update_fields["verified_at"] = now_iso
                 update_fields["verified_by"] = admin_uuid
                 approved_prod_count += 1

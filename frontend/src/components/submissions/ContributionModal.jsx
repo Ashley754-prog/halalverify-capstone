@@ -219,11 +219,11 @@ export default function ContributionModal({
           ? 'Muslim-Friendly' 
           : payload.halal_tier === 'vegetarian_vegan' 
           ? 'Vegetarian / Vegan' 
-          : 'Self-Declared';
-        const fallbackStatus = payload.halal_tier === 'halal_certified' ? 'needs_review' : 'community_listed';
+          : 'Halal Certified';
+        const fallbackStatus = 'needs_review';
         const fallbackNotes = payload.halal_tier === 'halal_certified'
-          ? 'Community User Submission: Awaiting Verification'
-          : `Community Listed - ${tierName}`;
+          ? 'Community User Submission: Halal Certified claim awaiting verification'
+          : `Community Listed - ${tierName} (Awaiting Verification)`;
 
         const { data: insertedEst, error: sbErr } = await supabase.from('establishments').insert({
           name: payload.name,
@@ -256,7 +256,7 @@ export default function ContributionModal({
             name: pName,
             establishment_id: insertedEst[0].id,
             category: 'Food & Beverage',
-            status: fallbackStatus === 'verified' ? 'VERIFIED' : 'PENDING_VERIFICATION',
+            status: 'PENDING_VERIFICATION',
             submitted_by: userId,
             source: payload.submitter_role === 'owner' ? 'Business Owner Submission' : 'Community User Submission',
           }));
@@ -337,7 +337,11 @@ export default function ContributionModal({
           throw new Error('You must be logged in to submit a product.');
         }
 
-        const fallbackStatus = payload.halal_tier === 'halal_certified' ? 'PENDING_VERIFICATION' : 'COMMUNITY_LISTED';
+        const prodTierNote = payload.halal_tier === 'pork_free_declared'
+          ? 'Community Listed - Pork-Free Declared (Awaiting Verification)'
+          : payload.halal_tier === 'vegetarian_vegan'
+          ? 'Community Listed - Vegetarian / Vegan (Awaiting Verification)'
+          : 'Halal Certified Claim (Awaiting Verification)';
 
         const { error: sbErr } = await supabase.from('products').insert({
           name: payload.name,
@@ -348,7 +352,8 @@ export default function ContributionModal({
           expiry_date: payload.expiry_date,
           image_url: payload.image_url,
           ingredients_summary: payload.ingredients_summary,
-          status: fallbackStatus,
+          status: 'PENDING_VERIFICATION',
+          admin_notes: prodTierNote,
           submitted_by: userId,
           source_url: null,
           source: prodForm.certifying_body

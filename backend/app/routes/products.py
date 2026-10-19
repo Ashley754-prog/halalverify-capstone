@@ -314,6 +314,10 @@ def submit_product(
     product_payload["verified_at"] = ai_eval["verified_at"]
     product_payload["verified_by"] = ai_eval["verified_by"]
     product_payload["admin_notes"] = ai_eval["admin_notes"]
+    if ai_eval.get("certificate_no") and not product_payload.get("certificate_no"):
+        product_payload["certificate_no"] = ai_eval["certificate_no"]
+    if ai_eval.get("expiry_date") and not product_payload.get("expiry_date"):
+        product_payload["expiry_date"] = ai_eval["expiry_date"]
     if ai_eval.get("certifying_body_id") and not product_payload.get("certifying_body_id"):
         product_payload["certifying_body_id"] = ai_eval["certifying_body_id"]
 

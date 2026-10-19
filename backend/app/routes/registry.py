@@ -229,6 +229,15 @@ def get_establishments_map(
             res = query.order("name").execute()
             data = res.data or []
 
+            if status and ("verified" in status.lower() or "certified" in status.lower()):
+                data = [
+                    d for d in data
+                    if not any(
+                        tag in (d.get("admin_notes") or "").lower()
+                        for tag in ("community listed", "muslim-owned", "muslim_owned", "muslim-friendly", "vegetarian")
+                    )
+                ]
+
             # If status is default ("all" or not provided), filter out pending review and flagged/rejected items
             if not status or status == "all":
                 EXCLUDED_UNVERIFIED_STATUSES = {"needs_review", "pending", "pending_review", "flagged", "rejected", "suspended"}

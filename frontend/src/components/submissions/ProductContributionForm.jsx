@@ -24,16 +24,16 @@ export default function ProductContributionForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-4 text-xs sm:text-sm">
-      {/* Product Classification Tier */}
+      {/* 1. Product Halal Status */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className="block font-bold text-slate-800 text-xs sm:text-sm">
-            Product Halal Status / Tier <span className="text-red-500">*</span>
+            1. Select Product Halal Status <span className="text-red-500">*</span>
           </label>
-          <span className="text-[11px] text-slate-400 font-medium">Select tier</span>
+          <span className="text-[11px] text-slate-400 font-medium">Choose 1 option</span>
         </div>
         <p className="text-[11px] text-slate-500">
-          Select the classification that accurately describes this packaged item's ingredients and certification status.
+          Choose the option that best matches this product's packaging and ingredients:
         </p>
 
         <div className="space-y-1.5">
@@ -159,7 +159,7 @@ export default function ProductContributionForm({
         <div className="space-y-3 p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/40">
           <div>
             <label className="block font-semibold text-slate-700 mb-1">
-              Certifying Body / Seal Issuer
+              Certifying Body / Seal on Packaging <span className="text-emerald-600 font-normal text-[11px]">(For instant verification)</span>
             </label>
             <select
               value={prodForm.certifying_body || ''}
@@ -169,8 +169,18 @@ export default function ProductContributionForm({
               <option value="">Select Certifying Body (Shown on packaging)</option>
               <option value="IDCP">IDCP (Islamic Da'wah Council of the Philippines)</option>
               <option value="HDIP">HDIP (Halal Development Institute of the Philippines)</option>
-              <option value="MMHCB">MMHCB (Muslim Mindanao Halal Certification Board)</option>
+              <option value="NCMF">NCMF / DTI (National Halal Seal)</option>
+              <option value="PRIME">PRIME (Philippine Ulama Congress Organization / Prime)</option>
               <option value="HICCIP">HICCIP (Halal International Chamber of Commerce)</option>
+              <option value="MMHCB">MMHCB (Muslim Mindanao Halal Certification Board)</option>
+              <option value="BPCC">BPCC (Bangsamoro Consultative Council)</option>
+              <option value="BUSC">BUSC (Basilan Ulama Supreme Council)</option>
+              <option value="MINHA">MinHA (Mindanao Halal Authority)</option>
+              <option value="MASLAHA">MASLAHA (Maslaha Halal Certification)</option>
+              <option value="FIQHI">FIQHI (Fiqhi Halal Certification)</option>
+              <option value="PUCOI">PUCOI (Philippine Ulama Congress Organization Inc.)</option>
+              <option value="PHILCOSED">Philcosed (Philippine Council for Socio-Economic Dev.)</option>
+              <option value="AHIP">AHIP (Alliance of Halal Integrity in the Philippines)</option>
               <option value="JAKIM">JAKIM (Department of Islamic Development Malaysia)</option>
               <option value="MUIS">MUIS (Majlis Ugama Islam Singapura)</option>
               <option value="MUI">BPJPH / MUI (Indonesia)</option>
@@ -181,7 +191,7 @@ export default function ProductContributionForm({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block font-semibold text-slate-700 mb-1">
-                Halal Certificate Number <span className="text-slate-400 font-normal">(Optional if logo on packaging)</span>
+                Halal Certificate Number <span className="text-slate-400 font-normal">(Optional)</span>
               </label>
               <input
                 type="text"
@@ -210,7 +220,7 @@ export default function ProductContributionForm({
       {/* Upload Product Package Photo */}
       <div>
         <label className="block font-semibold text-slate-700 mb-1">
-          Product Packaging / Halal Logo Photo
+          Product Packaging Photo <span className="text-emerald-600 font-normal text-[11px]">(Required for Instant AI Verification)</span>
         </label>
         <div className="rounded-xl border-2 border-dashed border-slate-200 p-4 text-center hover:border-emerald-500 transition">
           {prodForm.image_url ? (
@@ -231,9 +241,9 @@ export default function ProductContributionForm({
             <label className="cursor-pointer flex flex-col items-center">
               <Upload size={22} className="text-slate-400 mb-1" />
               <span className="text-xs font-semibold text-emerald-600 hover:underline">
-                {uploadingImage ? 'Uploading to storage...' : 'Click to select packaging photo'}
+                {uploadingImage ? 'Uploading to storage...' : 'Click to upload packaging or Halal seal photo'}
               </span>
-              <span className="text-[11px] text-slate-400 mt-0.5">PNG, JPG up to 10MB</span>
+              <span className="text-[11px] text-slate-400 mt-0.5">PNG, JPG up to 10MB (AI automatically reads text from photo)</span>
               <input
                 type="file"
                 accept="image/*"
@@ -248,7 +258,7 @@ export default function ProductContributionForm({
 
       <div>
         <label className="block font-semibold text-slate-700 mb-1">
-          Ingredients Summary <span className="text-slate-400 font-normal">(Auto-screened for E-numbers & chemicals)</span>
+          Ingredients List <span className="text-slate-400 font-normal">(Optional if visible in packaging photo)</span>
         </label>
         <textarea
           rows={2}
