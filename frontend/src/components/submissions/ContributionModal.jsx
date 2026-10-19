@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Building2,
   Package,
@@ -45,6 +45,7 @@ export default function ContributionModal({
   isOpen,
   onClose,
   initialTab = 'establishment', // 'establishment' | 'product'
+  initialProductData = null,
   onSubmitted,
 }) {
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -60,6 +61,8 @@ export default function ContributionModal({
     type: 'Restaurant',
     address: '',
     city: 'Zamboanga City',
+    latitude: null,
+    longitude: null,
     halal_tier: 'halal_certified',
     contact_number: '',
     social_media_url: '',
@@ -87,6 +90,20 @@ export default function ContributionModal({
     image_url: '',
     ingredients_summary: '',
   });
+
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab(initialTab);
+      if (initialProductData) {
+        setProdForm((prev) => ({
+          ...prev,
+          halal_tier: initialProductData.halal_tier || prev.halal_tier,
+          certifying_body: initialProductData.certifying_body || prev.certifying_body,
+          ingredients_summary: initialProductData.ingredients_summary || prev.ingredients_summary,
+        }));
+      }
+    }
+  }, [isOpen, initialTab, initialProductData]);
 
   const handleFileUpload = async (e, type) => {
     const file = e.target.files?.[0];
@@ -161,6 +178,8 @@ export default function ContributionModal({
         type: estForm.type,
         address: estForm.address.trim(),
         city: estForm.city || 'Zamboanga City',
+        latitude: estForm.latitude || null,
+        longitude: estForm.longitude || null,
         halal_tier: estForm.halal_tier || 'halal_certified',
         contact_number: estForm.contact_number?.trim() || null,
         social_media_url: estForm.social_media_url?.trim() || null,
@@ -238,8 +257,8 @@ export default function ContributionModal({
           logo_url: payload.logo_url,
           halal_status: fallbackStatus,
           admin_notes: fallbackNotes,
-          latitude: 6.9142,
-          longitude: 122.0745,
+          latitude: payload.latitude || 6.9142,
+          longitude: payload.longitude || 122.0745,
           submitted_by: userId,
           description: amenities.length > 0 ? `Amenities: ${amenities.join(' • ')}` : null,
           source: payload.submitter_role === 'owner' ? 'Business Owner Submission' : 'Community User Submission',
@@ -397,6 +416,8 @@ export default function ContributionModal({
       product_names: '',
       has_prayer_space: false,
       is_alcohol_free: false,
+      latitude: null,
+      longitude: null,
     });
     setProdForm({
       name: '',

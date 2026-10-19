@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   MapPin,
   FileText,
@@ -12,6 +13,8 @@ import {
   Store,
   Leaf,
   Compass,
+  Navigation,
+  CheckCircle2,
 } from 'lucide-react';
 import { ESTABLISHMENT_TYPES, ESTABLISHMENT_HALAL_TIERS } from '../../data/constants';
 
@@ -24,8 +27,56 @@ export default function EstablishmentContributionForm({
   onFileUpload,
   onCancel,
 }) {
+  const [locatingGps, setLocatingGps] = useState(false);
+  const [gpsStatus, setGpsStatus] = useState('');
   const currentTier = estForm.halal_tier || 'halal_certified';
   const isCertifiedTier = currentTier === 'halal_certified';
+
+  const handleUseCurrentGps = () => {
+    if (!navigator.geolocation) {
+      setGpsStatus('GPS is not supported by your browser.');
+      return;
+    }
+    setLocatingGps(true);
+    setGpsStatus('');
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = Number(pos.coords.latitude.toFixed(6));
+        const lng = Number(pos.coords.longitude.toFixed(6));
+        setEstForm((prev) => ({
+          ...prev,
+          latitude: lat,
+          longitude: lng,
+        }));
+
+        // Attempt reverse geocoding to auto-fill address if blank
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
+            { headers: { 'Accept-Language': 'en' } }
+          );
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.display_name && !estForm.address?.trim()) {
+              setEstForm((prev) => ({
+                ...prev,
+                address: data.display_name,
+              }));
+            }
+          }
+        } catch {
+          // Ignore reverse geocoding network issues; coordinates are still saved
+        }
+        setLocatingGps(false);
+        setGpsStatus(`GPS pinned (${lat}, ${lng})`);
+      },
+      () => {
+        setLocatingGps(false);
+        setGpsStatus('Could not access GPS. Please allow location access or type the address.');
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  };
 
   return (
     <form onSubmit={onSubmit} className="space-y-4 text-xs sm:text-sm">
@@ -250,9 +301,24 @@ export default function EstablishmentContributionForm({
       </div>
 
       <div>
-        <label className="block font-semibold text-slate-700 mb-1">
-          Physical Address in Zamboanga City <span className="text-red-500">*</span>
-        </label>
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <label className="block font-semibold text-slate-700">
+            Physical Address in Zamboanga City <span className="text-red-500">*</span>
+          </label>
+          <button
+            type="button"
+            onClick={handleUseCurrentGps}
+            disabled={locatingGps}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[11px] font-bold transition cursor-pointer disabled:opacity-50"
+          >
+            {locatingGps ? (
+              <Loader2 size={12} className="animate-spin text-emerald-600" />
+            ) : (
+              <Navigation size={12} className="text-emerald-600" />
+            )}
+            <span>{locatingGps ? 'Locating...' : 'Pin Current GPS'}</span>
+          </button>
+        </div>
         <div className="relative">
           <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -264,6 +330,26 @@ export default function EstablishmentContributionForm({
             className="w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-2 text-slate-800 placeholder:text-slate-400 placeholder:opacity-100 outline-none focus:border-emerald-500"
           />
         </div>
+        {(estForm.latitude && estForm.longitude) ? (
+          <div className="mt-1.5 flex items-center justify-between bg-emerald-50/80 border border-emerald-200/80 rounded-lg px-2.5 py-1 text-[11px] text-emerald-800 font-medium">
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
+              Exact Map Coordinates Pinned ({estForm.latitude}, {estForm.longitude})
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setEstForm((prev) => ({ ...prev, latitude: null, longitude: null }));
+                setGpsStatus('');
+              }}
+              className="text-slate-400 hover:text-red-500 font-semibold text-[10px] cursor-pointer"
+            >
+              Clear Pin
+            </button>
+          </div>
+        ) : gpsStatus ? (
+          <p className="mt-1 text-[11px] text-amber-600 font-medium">{gpsStatus}</p>
+        ) : null}
       </div>
 
       {/* Public Contact & Social Media Links */}
