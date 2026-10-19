@@ -592,3 +592,62 @@ def submit_establishment(
         "associated_products": created_products,
         "audit_trail": ai_eval["audit_trail"],
     }
+
+
+@router.get("/my-submissions")
+@router.get("/api/v1/my-submissions")
+def get_my_submissions(user: dict = Depends(get_current_user)):
+    """
+    Returns all establishments, products, and issue reports submitted by the authenticated user.
+    """
+    user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Valid user credentials required")
+
+    uid = str(user_id)
+    est_list = []
+    prod_list = []
+    rep_list = []
+
+    try:
+        res_est = (
+            supabase.table("establishments")
+            .select("id, name, type, address, halal_status, admin_notes, created_at, verified_at")
+            .eq("submitted_by", uid)
+            .order("created_at", desc=True)
+            .execute()
+        )
+        est_list = res_est.data or []
+    except Exception:
+        pass
+
+    try:
+        res_prod = (
+            supabase.table("products")
+            .select("id, name, brand, category, status, admin_notes, created_at, verified_at")
+            .eq("submitted_by", uid)
+            .order("created_at", desc=True)
+            .execute()
+        )
+        prod_list = res_prod.data or []
+    except Exception:
+        pass
+
+    try:
+        res_rep = (
+            supabase.table("issue_reports")
+            .select("id, issue_type, subject_name, related_to, status, resolution_notes, created_at")
+            .eq("user_id", uid)
+            .order("created_at", desc=True)
+            .execute()
+        )
+        rep_list = res_rep.data or []
+    except Exception:
+        pass
+
+    return {
+        "establishments": est_list,
+        "products": prod_list,
+        "reports": rep_list,
+    }
+
