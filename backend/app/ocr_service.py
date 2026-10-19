@@ -158,11 +158,14 @@ def extract_text_with_gemini(image_base64: str) -> str:
                                     "no visible text",
                                     "there is no text",
                                     "there is no readable text",
+                                    "there is no packaging",
+                                    "no packaging",
+                                    "nothing visible",
                                     "unable to read text",
                                     "cannot read any text",
                                     "no text could be",
                                 ]
-                                if any(phrase in lower_text for phrase in no_text_phrases) and len(extracted) < 120:
+                                if any(phrase in lower_text for phrase in no_text_phrases) and len(extracted) < 160:
                                     logger.info("Cloud Vision indicated no readable text in image.")
                                     return ""
 

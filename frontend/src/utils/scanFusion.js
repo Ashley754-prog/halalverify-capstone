@@ -36,10 +36,12 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
     const text2 = (secondScan.ocrText || "").trim();
     const combinedOcrText = [text1, text2].filter(Boolean).join("\n---\n");
 
-    // 4. Deduplicate and merge flagged ingredients
+    // 4. Deduplicate and merge flagged ingredients (excluding Halal/safe additives)
     const flagsMap = new Map();
     [...(firstScan.flaggedIngredients || []), ...(secondScan.flaggedIngredients || [])].forEach((item) => {
         if (!item || !item.ingredient) return;
+        const st = (item.status || "").toLowerCase().trim();
+        if (["halal", "safe", "compliant", "verified", "approved"].includes(st)) return;
         const key = item.ingredient.toLowerCase().trim();
         if (!flagsMap.has(key)) {
             flagsMap.set(key, item);

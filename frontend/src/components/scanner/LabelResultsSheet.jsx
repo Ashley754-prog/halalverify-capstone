@@ -337,58 +337,66 @@ export const LabelResultsSheet = ({
                             )}
 
                             {/* 3. Screened Additives & Ingredients */}
-                            <div className="bg-slate-800/80 border border-slate-700 rounded-xl p-3.5 space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                                        Ingredients & Additives
-                                    </span>
-                                    <span className="text-[10px] font-mono text-slate-400">
-                                        {scanResult.flaggedIngredients?.length || 0} Flagged
-                                    </span>
-                                </div>
+                            {(() => {
+                                const visibleFlagged = (scanResult.flaggedIngredients || []).filter((f) => {
+                                    const st = (f.status || '').toLowerCase().trim();
+                                    return !['halal', 'safe', 'compliant', 'verified', 'approved'].includes(st);
+                                });
+                                return (
+                                    <div className="bg-slate-800/80 border border-slate-700 rounded-xl p-3.5 space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                                                Ingredients & Additives
+                                            </span>
+                                            <span className="text-[10px] font-mono text-slate-400">
+                                                {visibleFlagged.length} Flagged
+                                            </span>
+                                        </div>
 
-                                {scanResult.flaggedIngredients?.length > 0 ? (
-                                    <div className="space-y-2 pt-1">
-                                        {scanResult.flaggedIngredients.map((flag, idx) => {
-                                            const isHaram = (flag.status || '').toLowerCase().includes('haram') || (flag.status || '').toLowerCase().includes('prohibit');
-                                            return (
-                                                <div
-                                                    key={idx}
-                                                    className={`p-2.5 rounded-lg border text-xs space-y-1 ${
-                                                        isHaram
-                                                            ? 'bg-red-950/60 border-red-500/40 text-red-200'
-                                                            : 'bg-amber-950/60 border-amber-500/40 text-amber-200'
-                                                    }`}
-                                                >
-                                                    <div className="flex items-center justify-between font-bold">
-                                                        <span>{simplifyHalalText(flag.ingredient)}</span>
-                                                        <span className={`text-[10px] uppercase px-1.5 py-0.2 rounded border ${
-                                                            isHaram
-                                                                ? 'bg-red-900/80 border-red-400/50 text-red-100'
-                                                                : 'bg-amber-900/80 border-amber-400/50 text-amber-100'
-                                                        }`}>
-                                                            {simplifyStatus(flag.status)}
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-[11px] opacity-90 leading-relaxed">
-                                                        {simplifyHalalText(flag.reason)}
-                                                    </p>
-                                                </div>
-                                            );
-                                        })}
+                                        {visibleFlagged.length > 0 ? (
+                                            <div className="space-y-2 pt-1">
+                                                {visibleFlagged.map((flag, idx) => {
+                                                    const isHaram = (flag.status || '').toLowerCase().includes('haram') || (flag.status || '').toLowerCase().includes('prohibit');
+                                                    return (
+                                                        <div
+                                                            key={idx}
+                                                            className={`p-2.5 rounded-lg border text-xs space-y-1 ${
+                                                                isHaram
+                                                                    ? 'bg-red-950/60 border-red-500/40 text-red-200'
+                                                                    : 'bg-amber-950/60 border-amber-500/40 text-amber-200'
+                                                            }`}
+                                                        >
+                                                            <div className="flex items-center justify-between font-bold">
+                                                                <span>{simplifyHalalText(flag.ingredient)}</span>
+                                                                <span className={`text-[10px] uppercase px-1.5 py-0.2 rounded border ${
+                                                                    isHaram
+                                                                        ? 'bg-red-900/80 border-red-400/50 text-red-100'
+                                                                        : 'bg-amber-900/80 border-amber-400/50 text-amber-100'
+                                                                }`}>
+                                                                    {simplifyStatus(flag.status)}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-[11px] opacity-90 leading-relaxed">
+                                                                {simplifyHalalText(flag.reason)}
+                                                            </p>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : scanResult.riskLevel === 'No Product Detected' ? (
+                                            <div className="p-2.5 bg-slate-800/50 border border-slate-700/60 rounded-lg text-xs text-slate-400 flex items-center gap-2">
+                                                <FileText size={15} className="text-slate-500 shrink-0" />
+                                                <span>No ingredient label detected in this photo.</span>
+                                            </div>
+                                        ) : (
+                                            <div className="p-2.5 bg-emerald-950/40 border border-emerald-500/30 rounded-lg text-xs text-emerald-300 flex items-center gap-2">
+                                                <CheckCircle2 size={15} className="text-emerald-400 shrink-0" />
+                                                <span>No prohibited or doubtful food additives found.</span>
+                                            </div>
+                                        )}
                                     </div>
-                                ) : scanResult.riskLevel === 'No Product Detected' ? (
-                                    <div className="p-2.5 bg-slate-800/50 border border-slate-700/60 rounded-lg text-xs text-slate-400 flex items-center gap-2">
-                                        <FileText size={15} className="text-slate-500 shrink-0" />
-                                        <span>No ingredient label detected in this photo.</span>
-                                    </div>
-                                ) : (
-                                    <div className="p-2.5 bg-emerald-950/40 border border-emerald-500/30 rounded-lg text-xs text-emerald-300 flex items-center gap-2">
-                                        <CheckCircle2 size={15} className="text-emerald-400 shrink-0" />
-                                        <span>No prohibited or doubtful food additives found.</span>
-                                    </div>
-                                )}
-                            </div>
+                                );
+                            })()}
 
                             {/* 4. Optional Multi-Angle or Wrap-Around Continuation */}
                             {scanResult.riskLevel === 'No Product Detected' ? (
@@ -562,11 +570,15 @@ export const LabelResultsSheet = ({
                                 <button
                                     type="button"
                                     onClick={() => {
+                                        const nonHalalFlags = (scanResult.flaggedIngredients || []).filter((f) => {
+                                            const st = (f.status || '').toLowerCase().trim();
+                                            return !['halal', 'safe', 'compliant', 'verified', 'approved'].includes(st);
+                                        });
                                         const issueType = scanResult.isInvalidLogo
                                             ? 'Suspicious / Counterfeit Logo'
                                             : scanResult.riskLevel === 'No Product Detected'
                                             ? 'Wrong Verdict (Scanner Error)'
-                                            : scanResult.flaggedIngredients?.length > 0
+                                            : nonHalalFlags.length > 0
                                             ? 'Ingredient Incorrectly Flagged'
                                             : 'Wrong Verdict (Scanner Error)';
 
@@ -575,8 +587,8 @@ export const LabelResultsSheet = ({
                                             scanResult.analysisSummary ? `Details: ${scanResult.analysisSummary}` : '',
                                             scanResult.logoDetected ? `Logo: ${scanResult.logoBody} (${scanResult.logoConfidence}% match)` : 'Logo: None detected',
                                         ];
-                                        if (scanResult.flaggedIngredients?.length > 0) {
-                                            descLines.push(`Flagged: ${scanResult.flaggedIngredients.map(f => f.ingredient).join(', ')}`);
+                                        if (nonHalalFlags.length > 0) {
+                                            descLines.push(`Flagged: ${nonHalalFlags.map(f => f.ingredient).join(', ')}`);
                                         }
 
                                         onViewChange?.('report-issue', {

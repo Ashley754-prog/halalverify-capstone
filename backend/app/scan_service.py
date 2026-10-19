@@ -152,11 +152,15 @@ def match_additives_from_text(extracted_text: str):
             continue
 
         seen_ids.add(additive_id)
+        additive_status = str(additive.get("status") or "").strip()
+        if additive_status.lower() in ("halal", "safe", "compliant", "verified", "approved"):
+            continue
+
         flagged_items.append({
             "additive_id": additive_id,
             "ingredient": f"{name} ({code})" if code else name,
             "matched_text": code if code_match else matched_alias,
-            "status": additive.get("status"),
+            "status": additive_status or "Doubtful",
             "reason": (
                 additive.get("reason")
                 or additive.get("source_description")
@@ -285,7 +289,9 @@ FOOD_LABEL_KEYWORDS = [
     "net wt", "net weight", "food", "sauce", "extract", "syrup", "halal",
     "kosher", "manufactured by", "produced by", "best before", "expiry", "exp date",
     "protein", "carbohydrate", "allergen", "vitamins", "calcium", "energy",
-    "cocoa", "soy", "lecithin", "starch", "powder", "cheese", "cream", "yeast"
+    "cocoa", "soy", "lecithin", "starch", "powder", "cheese", "cream", "yeast",
+    "citric", "ascorbic", "carrageenan", "xanthan", "guar", "sorbate", "benzoate",
+    "caramel", "carotene", "glutamate", "corn", "rice", "potato", "spices"
 ]
 
 

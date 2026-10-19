@@ -46,18 +46,24 @@ export const formatFullDate = (dateStr) => {
 
 export const getFlaggedItems = (item) => {
     if (!item) return [];
+    const isNonHalalFlag = (f) => {
+        const st = (f?.status || '').toLowerCase().trim();
+        return !['halal', 'safe', 'compliant', 'verified', 'approved'].includes(st);
+    };
     if (Array.isArray(item.scan_flagged_items) && item.scan_flagged_items.length > 0) {
-        return item.scan_flagged_items;
+        return item.scan_flagged_items.filter(isNonHalalFlag);
     }
     try {
         const raw = typeof item.raw_result === 'string' ? JSON.parse(item.raw_result) : item.raw_result;
         if (raw && Array.isArray(raw.flaggedIngredients)) {
-            return raw.flaggedIngredients.map(f => ({
-                matched_text: f.matched_text || f.ingredient || f.name,
-                status: f.status,
-                reason: f.reason,
-                additive_id: f.additive_id || f.code,
-            }));
+            return raw.flaggedIngredients
+                .filter(isNonHalalFlag)
+                .map(f => ({
+                    matched_text: f.matched_text || f.ingredient || f.name,
+                    status: f.status,
+                    reason: f.reason,
+                    additive_id: f.additive_id || f.code,
+                }));
         }
     } catch {
         // Safe fallback
