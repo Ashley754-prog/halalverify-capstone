@@ -301,6 +301,7 @@ export const Scanner = ({ isOnline, onViewChange }) => {
             {showResultsSheet && scannerMode === 'label' && (
                 <LabelResultsSheet
                     scanResult={scanResult}
+                    selectedImage={selectedImage}
                     isLoading={isLoading}
                     onReset={resetState}
                     onRetry={() => selectedImage && triggerAIScan(selectedImage)}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     ShieldCheck,
     ShieldAlert,
@@ -16,8 +16,42 @@ import {
 } from 'lucide-react';
 import { simplifyHalalText, simplifyStatus } from '../../utils/textFormatters';
 
+const CERTIFIER_LOGO_MAP = [
+    { keys: ['idcp', 'philippines2', 'da\'wah', 'dawah'], src: '/logos/IDCP.jpg' },
+    { keys: ['hdip', 'philippines3', 'halal development institute'], src: '/logos/HDIP.jpg' },
+    { keys: ['ncmf', 'national_halal_logo', 'philippines1', 'national halal seal', 'dti'], src: '/logos/NCMF.jpg' },
+    { keys: ['hiccip'], src: '/logos/HICCIP.png' },
+    { keys: ['prime'], src: '/logos/PRIME.png' },
+    { keys: ['minha', 'mindanao halal authority'], src: '/logos/MinHA.png' },
+    { keys: ['philcosed'], src: '/logos/Philcosed.png' },
+    { keys: ['ahip'], src: '/logos/AHIP.png' },
+    { keys: ['bpcc'], src: '/logos/BPCC.png' },
+    { keys: ['busc'], src: '/logos/BUSC.png' },
+    { keys: ['fiqhi'], src: '/logos/FIQHI.png' },
+    { keys: ['maslaha'], src: '/logos/MASLAHA.png' },
+    { keys: ['mmhcb'], src: '/logos/MMHCB.png' },
+    { keys: ['pucoi'], src: '/logos/PUCOI.png' },
+    { keys: ['invalid', 'counterfeit', 'unrecognized'], src: '/logos/Invalid_Logo.png' },
+];
+
+const resolveReferenceLogoSrc = (scanResult) => {
+    if (!scanResult?.logoDetected) return null;
+    const rawClass = (scanResult.detectedLogos?.[0]?.class_name || '').toLowerCase();
+    const rawLabel = (scanResult.detectedLogos?.[0]?.label || '').toLowerCase();
+    const bodyText = (scanResult.logoBody || '').toLowerCase();
+    const combined = `${rawClass} ${rawLabel} ${bodyText}`;
+
+    for (const item of CERTIFIER_LOGO_MAP) {
+        if (item.keys.some((k) => combined.includes(k))) {
+            return item.src;
+        }
+    }
+    return null;
+};
+
 export const LabelResultsSheet = ({
     scanResult,
+    selectedImage = null,
     isLoading,
     onReset,
     onRetry,
@@ -27,6 +61,51 @@ export const LabelResultsSheet = ({
 }) => {
     const [touchStartY, setTouchStartY] = useState(null);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+    const [croppedLogoUrl, setCroppedLogoUrl] = useState(null);
+
+    const referenceLogoSrc = resolveReferenceLogoSrc(scanResult);
+
+    // Fallback: crop the detected logo region from the camera scan if no static reference graphic matches
+    useEffect(() => {
+        if (!scanResult?.logoDetected || referenceLogoSrc) {
+            setCroppedLogoUrl(null);
+            return;
+        }
+        const box = scanResult.detectedLogos?.[0]?.norm_box || scanResult.bestBox;
+        const sourceImg = selectedImage || scanResult.images?.[0];
+        if (!box || box.length < 4 || !sourceImg) {
+            setCroppedLogoUrl(null);
+            return;
+        }
+
+        let isCancelled = false;
+        const img = new Image();
+        img.onload = () => {
+            if (isCancelled) return;
+            try {
+                const [x1, y1, x2, y2] = box;
+                const sx = Math.max(0, Math.floor(x1 * img.width));
+                const sy = Math.max(0, Math.floor(y1 * img.height));
+                const sw = Math.max(1, Math.floor((x2 - x1) * img.width));
+                const sh = Math.max(1, Math.floor((y2 - y1) * img.height));
+                const canvas = document.createElement('canvas');
+                canvas.width = sw;
+                canvas.height = sh;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+                setCroppedLogoUrl(canvas.toDataURL('image/jpeg', 0.9));
+            } catch {
+                setCroppedLogoUrl(null);
+            }
+        };
+        img.src = sourceImg;
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [scanResult, selectedImage, referenceLogoSrc]);
+
+    const displayedLogoSrc = referenceLogoSrc || croppedLogoUrl;
 
     const handleTouchStart = (e) => {
         setTouchStartY(e.touches[0].clientY);
@@ -118,7 +197,83 @@ export const LabelResultsSheet = ({
 
                     {!isLoading && scanResult && (
                         <div className="space-y-3.5">
-                            {/* 1. Primary Verdict Card */}
+                            {/* 1. Certifying Body / Seal Status (Centered at Top) */}
+                            <div
+                                className={`rounded-2xl border p-4 text-center flex flex-col items-center justify-center gap-2.5 transition ${
+                                    scanResult.logoDetected
+                                        ? scanResult.isInvalidLogo
+                                            ? 'bg-red-950/40 border-red-500/40'
+                                            : 'bg-slate-800/90 border-emerald-500/40 shadow-lg shadow-emerald-950/20'
+                                        : 'bg-slate-800/80 border-slate-700'
+                                }`}
+                            >
+                                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                                    Certifying Body / Seal
+                                </span>
+
+                                {scanResult.logoDetected ? (
+                                    <>
+                                        {/* Centered Identified Logo Picture */}
+                                        {displayedLogoSrc ? (
+                                            <div
+                                                className={`w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white p-1.5 flex items-center justify-center overflow-hidden shadow-md border-2 ${
+                                                    scanResult.isInvalidLogo
+                                                        ? 'border-red-500/70'
+                                                        : 'border-emerald-400/70'
+                                                }`}
+                                            >
+                                                <img
+                                                    src={displayedLogoSrc}
+                                                    alt={scanResult.logoBody || 'Detected Halal Seal'}
+                                                    className="w-full h-full object-contain rounded-xl"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div
+                                                className={`w-16 h-16 rounded-2xl flex items-center justify-center border ${
+                                                    scanResult.isInvalidLogo
+                                                        ? 'bg-red-500/15 border-red-500/40 text-red-400'
+                                                        : 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
+                                                }`}
+                                            >
+                                                {scanResult.isInvalidLogo ? <ShieldAlert size={30} /> : <ShieldCheck size={30} />}
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-1 max-w-xs">
+                                            <strong className="text-white font-bold text-sm sm:text-base block leading-snug">
+                                                {scanResult.logoBody}
+                                            </strong>
+                                            {scanResult.logoConfidence > 0 && (
+                                                <span
+                                                    className={`inline-flex items-center gap-1 font-mono text-[11px] px-2.5 py-0.5 rounded-full border ${
+                                                        scanResult.isInvalidLogo
+                                                            ? 'text-red-200 bg-red-900/60 border-red-500/40'
+                                                            : 'text-emerald-300 bg-emerald-900/60 border-emerald-500/35'
+                                                    }`}
+                                                >
+                                                    {scanResult.isInvalidLogo ? <ShieldAlert size={12} /> : <ShieldCheck size={12} />}
+                                                    <span>{scanResult.logoConfidence}% match</span>
+                                                </span>
+                                            )}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        {/* Centered Neutral Shield when No Logo Detected */}
+                                        <div className="w-14 h-14 rounded-2xl bg-slate-700/50 border border-slate-600/60 flex items-center justify-center text-slate-400 shadow-inner">
+                                            <ShieldCheck size={26} />
+                                        </div>
+                                        <div className="space-y-0.5">
+                                            <strong className="text-white font-semibold text-xs sm:text-sm block">
+                                                No accredited logo detected on this panel
+                                            </strong>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* 2. Primary Verdict Card (Halal Status) */}
                             <div
                                 className={`p-4 rounded-2xl border flex items-center justify-between gap-3 ${
                                     scanResult.verdict === 'Green'
@@ -180,28 +335,6 @@ export const LabelResultsSheet = ({
                                     )}
                                 </div>
                             )}
-
-                            {/* 2. Halal Certifying Body / Seal Status */}
-                            <div className="bg-slate-800/80 border border-slate-700 rounded-xl p-3.5 text-xs flex items-center justify-between">
-                                <div className="flex items-center gap-2.5 min-w-0">
-                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${scanResult.logoDetected ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-700/50 text-slate-400'}`}>
-                                        <ShieldCheck size={18} />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
-                                            Certifying Body / Seal
-                                        </span>
-                                        <strong className="text-white font-semibold text-xs truncate block">
-                                            {scanResult.logoDetected ? scanResult.logoBody : 'No accredited logo detected on this panel'}
-                                        </strong>
-                                    </div>
-                                </div>
-                                {scanResult.logoDetected && scanResult.logoConfidence > 0 && (
-                                    <span className="font-mono text-[10px] text-emerald-300 bg-emerald-900/60 border border-emerald-500/30 px-2 py-0.5 rounded-full shrink-0">
-                                        {scanResult.logoConfidence}% match
-                                    </span>
-                                )}
-                            </div>
 
                             {/* 3. Screened Additives & Ingredients */}
                             <div className="bg-slate-800/80 border border-slate-700 rounded-xl p-3.5 space-y-2">
