@@ -8,7 +8,7 @@ import {
     Compass,
     ShieldCheck,
 } from 'lucide-react';
-import { getStatusConfig } from '../../data/constants';
+import { getStatusConfig, resolveZamboangaDistrict } from '../../data/constants';
 
 export default function EstablishmentsSidebarList({
     filteredList,
@@ -17,6 +17,7 @@ export default function EstablishmentsSidebarList({
     mobileTab,
     onSelectEstablishment,
     onResetFilters,
+    userLocation,
 }) {
     return (
         <div
@@ -54,15 +55,11 @@ export default function EstablishmentsSidebarList({
                             </button>
                         </div>
                     ) : (
-                        filteredList.map((est) => {
+                        filteredList.map((est, index) => {
                             const statusConfig = getStatusConfig(est);
+                            const districtInfo = resolveZamboangaDistrict(est);
                             const isSelected = selectedEstablishment?.id === est.id;
-
-                            const isCertified = Boolean(
-                                statusConfig.key === 'verified' ||
-                                est.certificate_number ||
-                                est.certifying_bodies?.code
-                            );
+                            const isNearest = Boolean(userLocation && index === 0 && est.distance_km != null);
                             const productsCount = est.products?.length || 0;
 
                             return (
@@ -93,6 +90,16 @@ export default function EstablishmentsSidebarList({
 
                                     <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-slate-200/50">
                                         <div className="flex flex-wrap items-center gap-1.5">
+                                            {isNearest && (
+                                                <span className="font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded">
+                                                    Nearest to You
+                                                </span>
+                                            )}
+                                            {districtInfo && (
+                                                <span className={`font-bold px-1.5 py-0.5 rounded border ${districtInfo.badgeClass}`}>
+                                                    {districtInfo.shortLabel}
+                                                </span>
+                                            )}
                                             {est.certifying_bodies?.code && (
                                                 <span className="font-bold text-emerald-800 bg-emerald-100/70 border border-emerald-200/80 px-1.5 py-0.5 rounded">
                                                     {est.certifying_bodies.code}

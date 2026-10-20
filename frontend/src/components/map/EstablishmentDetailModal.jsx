@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { getSafeUrl } from '../../utils/security';
-import { getStatusConfig } from '../../data/constants';
+import { getStatusConfig, resolveZamboangaDistrict } from '../../data/constants';
 import { supabase } from '../../lib/supabaseClient';
 
 export default function EstablishmentDetailModal({
@@ -27,27 +27,7 @@ export default function EstablishmentDetailModal({
     onClose,
     onFlagEstablishment,
 }) {
-    if (!establishment) return null;
-
-    const statusConfig = getStatusConfig(establishment);
-
-    const isFormallyCertified = Boolean(
-        statusConfig.key === 'verified' ||
-        establishment.certificate_number ||
-        establishment.certifying_bodies
-    );
-
-    const relationshipLabel = (
-        establishment.submitter_role === 'owner' ||
-        (establishment.source && establishment.source.toLowerCase().includes('owner'))
-    ) ? 'Business Owner / Staff' : (
-        establishment.submitter_role === 'community' ||
-        (establishment.source && establishment.source.toLowerCase().includes('community'))
-    ) ? 'Customer / Scout' : (
-        establishment.source || 'Official Registry Record'
-    );
-
-    const [menuItems, setMenuItems] = useState(establishment.products || []);
+    const [menuItems, setMenuItems] = useState(establishment?.products || []);
     const [loadingMenu, setLoadingMenu] = useState(false);
 
     useEffect(() => {
@@ -93,6 +73,28 @@ export default function EstablishmentDetailModal({
         fetchDishes();
         return () => { isMounted = false; };
     }, [establishment]);
+
+    if (!establishment) return null;
+
+    const statusConfig = getStatusConfig(establishment);
+    const districtInfo = resolveZamboangaDistrict(establishment);
+    const evidenceUrl = getSafeUrl(establishment.certificate_url || establishment.logo_url || establishment.photo_url);
+
+    const isFormallyCertified = Boolean(
+        statusConfig.key === 'verified' ||
+        establishment.certificate_number ||
+        establishment.certifying_bodies
+    );
+
+    const relationshipLabel = (
+        establishment.submitter_role === 'owner' ||
+        (establishment.source && establishment.source.toLowerCase().includes('owner'))
+    ) ? 'Business Owner / Staff' : (
+        establishment.submitter_role === 'community' ||
+        (establishment.source && establishment.source.toLowerCase().includes('community'))
+    ) ? 'Customer / Scout' : (
+        establishment.source || 'Official Registry Record'
+    );
 
     const hasPrayerSpace = Boolean(
         establishment.has_prayer_space ||
@@ -159,6 +161,12 @@ export default function EstablishmentDetailModal({
                                 <Store size={11} className="text-slate-500" />
                                 <span>{relationshipLabel}</span>
                             </span>
+                            {districtInfo && (
+                                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${districtInfo.badgeClass}`}>
+                                    <MapPin size={10} />
+                                    <span>{districtInfo.shortLabel}</span>
+                                </span>
+                            )}
                         </div>
                         <h3 className="text-lg font-black text-slate-900 leading-tight">
                             {establishment.name}
@@ -323,6 +331,52 @@ export default function EstablishmentDetailModal({
                                 <span className="text-slate-500 block">Compliance Status:</span>
                                 <span className="font-bold text-amber-700">Pending Review</span>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Uploaded Halal Certificate / Verification Evidence */}
+                {evidenceUrl && (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-3 text-xs space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                            <span className="font-bold text-emerald-900 flex items-center gap-1.5">
+                                <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+                                Halal Certificate / Verification Evidence
+                            </span>
+                            <a
+                                href={evidenceUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-900 hover:underline"
+                            >
+                                <span>Open Full Image</span>
+                                <ExternalLink size={11} />
+                            </a>
+                        </div>
+                        <a
+                            href={evidenceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block rounded-lg overflow-hidden border border-emerald-200/80 bg-white max-h-48"
+                        >
+                            <img
+                                src={evidenceUrl}
+                                alt={`${establishment.name} Halal certificate or evidence`}
+                                className="w-full h-40 object-cover hover:opacity-95 transition"
+                            />
+                        </a>
+                    </div>
+                )}
+
+                {/* Consumer Discretion & Advisory Disclaimer for Unverified / Non-Certified Venues */}
+                {!isFormallyCertified && (
+                    <div className="rounded-xl bg-amber-50/90 border border-amber-300/90 p-2.5 text-left flex items-start gap-2">
+                        <AlertCircle size={15} className="text-amber-700 shrink-0 mt-0.5" />
+                        <div className="text-[11px] text-amber-950 leading-snug">
+                            <span className="font-extrabold block text-amber-900">
+                                Consumer Discretion &amp; Advisory Disclaimer
+                            </span>
+                            This venue does not hold an active third-party Halal Certification Body (HCB) certificate on file. Please verify current ingredients, meat sourcing, or Halal accreditation directly with management before dining. Consumption of unverified items is at the consumer&apos;s own discretion.
                         </div>
                     </div>
                 )}

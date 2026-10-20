@@ -114,7 +114,7 @@ export const SEED_ESTABLISHMENTS = [
             },
             {
                 "id": "063b6441-3a8c-4539-8ad4-4a493fc9c051",
-                "name": "Sinuglaw (Grilled Pork & Kinilaw)",
+                "name": "Kilawin Tanguigue (Fresh Fish Ceviche)",
                 "category": "Local Specialties"
             },
             {

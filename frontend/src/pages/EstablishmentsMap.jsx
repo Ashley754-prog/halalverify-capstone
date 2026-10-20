@@ -16,7 +16,7 @@ import Toast from '../components/ui/Toast';
 import AuthPromptModal from '../components/submissions/AuthPromptModal';
 import ReportIssueModal from '../components/reports/ReportIssueModal';
 import EstablishmentDetailModal from '../components/map/EstablishmentDetailModal';
-import { getStatusConfig } from '../data/constants';
+import { getStatusConfig, ZAMBOANGA_DISTRICTS, resolveZamboangaDistrict } from '../data/constants';
 import EstablishmentsSidebarList from '../components/map/EstablishmentsSidebarList';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
@@ -59,6 +59,7 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
 
     // Filters (Certifier filter removed per instructions)
     const [selectedStatus, setSelectedStatus] = useState('all');
+    const [selectedDistrict, setSelectedDistrict] = useState('all');
     const [selectedRadius, setSelectedRadius] = useState('all');
     const [searchQuery, setSearchQuery] = useState(initialSearchQuery || '');
 
@@ -72,6 +73,23 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
     // User Geolocation
     const [userLocation, setUserLocation] = useState(null);
     const [isLocating, setIsLocating] = useState(false);
+
+    // Auto-detect user GPS silently on mount to compute distances & highlight nearest venue
+    useEffect(() => {
+        if (!navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                setUserLocation({
+                    lat: pos.coords.latitude,
+                    lng: pos.coords.longitude,
+                });
+            },
+            () => {
+                // Silent fallback if user denies or GPS times out on initial load
+            },
+            { enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 }
+        );
+    }, []);
 
     // Modals & Previews
     const [selectedEstablishment, setSelectedEstablishment] = useState(null);
@@ -185,6 +203,7 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                             const radiusKm = parseFloat(selectedRadius);
                             withCoords = withCoords.filter((e) => e.distance_km <= radiusKm);
                         }
+                        withCoords.sort((a, b) => (a.distance_km ?? 999) - (b.distance_km ?? 999));
                     }
                     if (withCoords.length > 0) {
                         setEstablishments(withCoords);
@@ -353,15 +372,24 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
     }, []);
 
     const filteredList = useMemo(() => {
-        return establishments.filter((est) => {
-            const matchesQuery =
-                !searchQuery ||
-                est.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                est.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                est.type?.toLowerCase().includes(searchQuery.toLowerCase());
-            return matchesQuery;
-        });
-    }, [establishments, searchQuery]);
+        return establishments
+            .filter((est) => {
+                const matchesQuery =
+                    !searchQuery ||
+                    est.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    est.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    est.type?.toLowerCase().includes(searchQuery.toLowerCase());
+                const district = resolveZamboangaDistrict(est);
+                const matchesDistrict = selectedDistrict === 'all' || district.id === selectedDistrict;
+                return matchesQuery && matchesDistrict;
+            })
+            .sort((a, b) => {
+                if (a.distance_km != null && b.distance_km != null) {
+                    return a.distance_km - b.distance_km;
+                }
+                return 0;
+            });
+    }, [establishments, searchQuery, selectedDistrict]);
 
     useEffect(() => {
         const map = mapInstanceRef.current;
@@ -621,6 +649,22 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                     </div>
 
                     <div className="h-8 sm:h-8.5 flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100/80 px-2 sm:px-2.5 rounded-xl border border-slate-200 text-xs transition shrink-0">
+                        <MapPin size={13} className="text-slate-500 shrink-0" />
+                        <select
+                            value={selectedDistrict}
+                            onChange={(e) => setSelectedDistrict(e.target.value)}
+                            className="bg-transparent font-bold text-slate-800 focus:outline-none cursor-pointer text-xs"
+                            aria-label="Filter by Zamboanga District"
+                        >
+                            {ZAMBOANGA_DISTRICTS.map((d) => (
+                                <option key={d.id} value={d.id}>
+                                    {d.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="h-8 sm:h-8.5 flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100/80 px-2 sm:px-2.5 rounded-xl border border-slate-200 text-xs transition shrink-0">
                         <Filter size={13} className="text-slate-500 shrink-0" />
                         <select
                             value={selectedStatus}
@@ -758,6 +802,19 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                                             {activePreviewEst.distance_km} km away
                                         </span>
                                     )}
+                                    {userLocation && filteredList[0]?.id === activePreviewEst.id && (
+                                        <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-300">
+                                            Nearest to You
+                                        </span>
+                                    )}
+                                    {(() => {
+                                        const dInfo = resolveZamboangaDistrict(activePreviewEst);
+                                        return dInfo ? (
+                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${dInfo.badgeClass}`}>
+                                                {dInfo.shortLabel}
+                                            </span>
+                                        ) : null;
+                                    })()}
                                 </div>
                                 <button
                                     type="button"
@@ -846,9 +903,11 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                     onSelectEstablishment={flyToEstablishment}
                     onResetFilters={() => {
                         setSelectedStatus('all');
+                        setSelectedDistrict('all');
                         setSelectedRadius('all');
                         setSearchQuery('');
                     }}
+                    userLocation={userLocation}
                 />
             </div>
 

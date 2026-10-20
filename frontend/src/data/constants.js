@@ -2,6 +2,123 @@ export const SYSTEM_TITLE = "HalalVerify";
 export const PROPONENTS = ["Cuento, Collen B.", "Mira, Kenneth Q.", "Villanueva, Ashley Nicole N."];
 export const JURISDICTION = "Zamboanga City (Ordinance No. 489)";
 
+export const ZAMBOANGA_DISTRICTS = [
+  { id: 'all', label: 'All Zamboanga Districts' },
+  { id: 'district_1', label: 'District 1 (West Coast & Downtown)', shortLabel: 'District 1 (West/Downtown)' },
+  { id: 'district_2', label: 'District 2 (East Coast)', shortLabel: 'District 2 (East Coast)' },
+];
+
+const DISTRICT_2_KEYWORDS = [
+  'district 2', 'district ii', 'east coast',
+  'tetuan', 'kcc', 'camino nuevo', 'tugbungan', 'guiwan', 'putik',
+  'divisoria', 'boalan', 'zambowood', 'lumbangan', 'lunzuran',
+  'pasobolong', 'salaan', 'cabaluay', 'cacao', 'mercedes',
+  'taluksangay', 'culianan', 'guisao', 'lanzones', 'victoria',
+  'bolong', 'manicahan', 'bunguiao', 'sangali', 'curuan',
+  'quiniput', 'vitali', 'licomo', 'mampang', 'talon-talon', 'talon talon',
+  'kasanyangan', 'arena blanco', 'tupilac', 'tigtabon', 'buenavista',
+];
+
+const DISTRICT_1_KEYWORDS = [
+  'district 1', 'district i', 'west coast',
+  'zone i', 'zone ii', 'zone iii', 'zone iv', 'zone 1', 'zone 2', 'zone 3', 'zone 4',
+  'poblacion', 'downtown', 'la purisima', 'mindpro', 'gov. lim', 'gov lim',
+  'jaldon', 'canelar', 'sta. maria', 'sta maria', 'santa maria', 'pasonanca',
+  'tumaga', 'san jose cawa', 'san jose gusu', 'cawa-cawa', 'baliwasan',
+  'san roque', 'suterville', 'campo islam', 'mariki', 'rio hondo',
+  'sta. barbara', 'sta barbara', 'santa barbara', 'sta. catalina', 'santa catalina',
+  'calarian', 'sinunuc', 'maasin', 'cawit', 'recodo', 'ayala',
+  'talisayan', 'pamucutan', 'baluno', 'patalon', 'labuan', 'limpapa',
+  'malagutay', 'tulungatung', 'upper calarian', 'southcom', 'pilar st', 'valderrosa',
+];
+
+/**
+ * Classifies an establishment or product into Zamboanga City Legislative District 1 or District 2.
+ */
+export const resolveZamboangaDistrict = (itemOrAddress, fallbackLng = null) => {
+  let text;
+  let lng = fallbackLng;
+
+  if (itemOrAddress && typeof itemOrAddress === 'object') {
+    text = [
+      itemOrAddress.address,
+      itemOrAddress.name,
+      itemOrAddress.description,
+      itemOrAddress.city,
+      itemOrAddress.brand,
+      itemOrAddress.source,
+      itemOrAddress.admin_notes,
+      itemOrAddress.establishments?.address,
+      itemOrAddress.establishments?.name,
+      itemOrAddress.manufacturers?.address,
+      itemOrAddress.manufacturers?.name,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    if (lng === null || lng === undefined) {
+      lng = itemOrAddress.longitude ?? itemOrAddress.establishments?.longitude ?? null;
+    }
+  } else {
+    text = String(itemOrAddress || '').toLowerCase();
+  }
+
+  for (const kw of DISTRICT_2_KEYWORDS) {
+    if (text.includes(kw)) {
+      return {
+        id: 'district_2',
+        label: 'District 2 (East Coast)',
+        shortLabel: 'District 2',
+        badgeClass: 'bg-violet-50 text-violet-800 border-violet-200',
+      };
+    }
+  }
+
+  for (const kw of DISTRICT_1_KEYWORDS) {
+    if (text.includes(kw)) {
+      return {
+        id: 'district_1',
+        label: 'District 1 (West / Downtown)',
+        shortLabel: 'District 1',
+        badgeClass: 'bg-cyan-50 text-cyan-800 border-cyan-200',
+      };
+    }
+  }
+
+  if (lng !== null && lng !== undefined && !Number.isNaN(Number(lng))) {
+    if (Number(lng) >= 122.0785) {
+      return {
+        id: 'district_2',
+        label: 'District 2 (East Coast)',
+        shortLabel: 'District 2',
+        badgeClass: 'bg-violet-50 text-violet-800 border-violet-200',
+      };
+    }
+    return {
+      id: 'district_1',
+      label: 'District 1 (West / Downtown)',
+      shortLabel: 'District 1',
+      badgeClass: 'bg-cyan-50 text-cyan-800 border-cyan-200',
+    };
+  }
+
+  if (text.includes('zamboanga') || text.includes('zampen') || text.includes('satti') || text.includes('tausug')) {
+    return {
+      id: 'district_1',
+      label: 'District 1 (West / Downtown)',
+      shortLabel: 'District 1',
+      badgeClass: 'bg-cyan-50 text-cyan-800 border-cyan-200',
+    };
+  }
+
+  return {
+    id: 'commercial',
+    label: 'National / Commercial',
+    shortLabel: 'National Catalog',
+    badgeClass: 'bg-slate-100 text-slate-600 border-slate-200',
+  };
+};
+
 export const ESTABLISHMENT_TYPES = [
   'Restaurant',
   'Cafeteria / Eatery',
@@ -89,8 +206,8 @@ export const PRODUCT_HALAL_TIERS = [
 ];
 
 export const getStatusConfig = (statusOrEst, rawNotes = '') => {
-    let status = '';
-    let notes = '';
+    let status;
+    let notes;
 
     if (statusOrEst && typeof statusOrEst === 'object') {
         status = statusOrEst.halal_status || statusOrEst.status || '';
