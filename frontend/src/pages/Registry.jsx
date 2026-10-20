@@ -39,6 +39,7 @@ const emptyEstablishmentForm = {
     phone: '',
     certNo: '',
     expiry: '',
+    certificate_url: '',
 };
 
 const emptyHcbForm = {
@@ -219,7 +220,7 @@ export const Registry = ({ userRole, onViewChange }) => {
             const statusConfig = getStatusConfig(item);
             const isCert = statusConfig.key === 'verified' || Boolean(item.certificate_number);
             const validTiers = ['halal_certified', 'muslim_owned', 'muslim_friendly', 'vegetarian_vegan'];
-            let tierKey = 'halal_certified';
+            let tierKey;
             if (item.halal_tier && validTiers.includes(item.halal_tier)) {
                 tierKey = item.halal_tier;
             } else if (isCert) {
@@ -258,6 +259,7 @@ export const Registry = ({ userRole, onViewChange }) => {
                 has_prayer_space: hasPrayer,
                 is_alcohol_free: hasAlcohol,
                 description: item.description || '',
+                certificate_url: item.certificate_url || item.logo_url || '',
             });
         }
     };
@@ -492,6 +494,8 @@ export const Registry = ({ userRole, onViewChange }) => {
                     halal_status: modalForm.status || 'verified',
                     phone: safeTrim(modalForm.phone),
                     admin_notes: adminNotes,
+                    certificate_url: safeTrim(modalForm.certificate_url),
+                    logo_url: safeTrim(modalForm.certificate_url),
                 });
 
                 setEstablishments(prev => [created, ...prev]);
@@ -533,6 +537,8 @@ export const Registry = ({ userRole, onViewChange }) => {
                         admin_notes: adminNotes,
                         source: modalForm.source || selectedItem.source || 'Official Halal Registry',
                         description: description,
+                        certificate_url: safeTrim(modalForm.certificate_url),
+                        logo_url: safeTrim(modalForm.certificate_url),
                     }
                 );
 

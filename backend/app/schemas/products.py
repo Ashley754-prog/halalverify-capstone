@@ -38,6 +38,7 @@ class ProductCreate(BaseModel):
     ingredients_summary: Optional[str] = None
     source: Optional[str] = "Manual Registry Entry"
     source_url: Optional[str] = None
+    image_url: Optional[str] = None
     synced_at: Optional[str] = None
 
 
@@ -55,6 +56,7 @@ class ProductUpdate(BaseModel):
     ingredients_summary: Optional[str] = None
     source: Optional[str] = None
     source_url: Optional[str] = None
+    image_url: Optional[str] = None
     synced_at: Optional[str] = None
 
 

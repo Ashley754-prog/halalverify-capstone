@@ -19,6 +19,8 @@ import ProductFormModal from '../components/catalog/ProductFormModal';
 import ProductDeleteModal from '../components/catalog/ProductDeleteModal';
 import { supabase } from '../lib/supabaseClient';
 import { API_BASE_URL, authFetch } from '../utils/api';
+import { ZAMBOANGA_DISTRICTS, resolveZamboangaDistrict } from '../data/constants';
+import { SEED_ESTABLISHMENTS } from '../data/seedEstablishments';
 
 const PRODUCT_CATEGORIES = [
     'All Categories',
@@ -83,6 +85,7 @@ const emptyProductForm = {
     ingredients_summary: '',
     source: 'Manual Registry Entry',
     source_url: '',
+    image_url: '',
 };
 
 export default function ProductsCatalog({ userRole, onViewChange, initialSearchQuery = '' }) {
@@ -95,6 +98,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
     const [selectedCategory, setSelectedCategory] = useState('All Categories');
     const [selectedStatus, setSelectedStatus] = useState('All Statuses');
     const [selectedCertifier, setSelectedCertifier] = useState('ALL');
+    const [selectedDistrict, setSelectedDistrict] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalServerCount, setTotalServerCount] = useState(13239);
     const itemsPerPage = 24;
@@ -146,21 +150,37 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         category: 'All Categories',
         status: 'All Statuses',
         certifier: 'ALL',
+        district: 'all',
         page: 1,
     });
+    const establishmentsMapRef = useRef({});
 
-    // 1. Load static metadata (manufacturers and certifying bodies) once on component mount
+    // 1. Load static metadata (manufacturers, certifying bodies, establishments) once on component mount
     useEffect(() => {
         let isMounted = true;
         async function fetchMetadata() {
+            const seedMap = {};
+            SEED_ESTABLISHMENTS.forEach((e) => {
+                if (e.id) seedMap[e.id] = e;
+            });
+            establishmentsMapRef.current = seedMap;
+
             try {
-                const [mfgRes, cbRes] = await Promise.all([
+                const [mfgRes, cbRes, estRes] = await Promise.all([
                     supabase.from('manufacturers').select('*').order('name').limit(200),
                     supabase.from('certifying_bodies').select('*').order('name'),
+                    supabase.from('establishments').select('id, name, address, city, latitude, longitude'),
                 ]);
                 if (isMounted) {
                     if (mfgRes.data) setManufacturers(mfgRes.data);
                     if (cbRes.data) setCertifyingBodies(cbRes.data);
+                    if (estRes.data && estRes.data.length > 0) {
+                        const merged = { ...seedMap };
+                        estRes.data.forEach((e) => {
+                            if (e.id) merged[e.id] = e;
+                        });
+                        establishmentsMapRef.current = merged;
+                    }
                 }
             } catch (err) {
                 console.warn('Metadata fetch failed:', err);
@@ -178,7 +198,8 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         queryParam,
         categoryParam,
         statusParam,
-        certifierParam
+        certifierParam,
+        districtParam
     ) => {
         try {
             setLoading(true);
@@ -189,10 +210,18 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             const cat = categoryParam !== undefined ? categoryParam : filtersRef.current.category;
             const st = statusParam !== undefined ? statusParam : filtersRef.current.status;
             const cert = certifierParam !== undefined ? certifierParam : filtersRef.current.certifier;
+            const dist = districtParam !== undefined ? districtParam : filtersRef.current.district;
             const from = (page - 1) * itemsPerPage;
             const to = from + itemsPerPage - 1;
 
             let loadedProducts = null;
+            const estMap = establishmentsMapRef.current || {};
+            const matchingEstIds = dist && dist !== 'all'
+                ? Object.values(estMap)
+                    .filter((e) => resolveZamboangaDistrict(e).id === dist)
+                    .map((e) => e.id)
+                    .filter(Boolean)
+                : [];
 
             // Direct Supabase Query with true count & range (Instant ~120ms response)
             try {
@@ -207,6 +236,10 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
 
                 if (cat && cat !== 'All Categories') {
                     pBuilder = pBuilder.ilike('category', `%${cat}%`);
+                }
+
+                if (dist && dist !== 'all' && matchingEstIds.length > 0) {
+                    pBuilder = pBuilder.in('establishment_id', matchingEstIds);
                 }
 
                 if (st && st !== 'All Statuses') {
@@ -274,7 +307,40 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                 }
             }
 
-            setProducts(loadedProducts || []);
+            // Enrich with establishment info if linked, or fallback to curated Zamboanga district specialties when filtering by District
+            let finalProducts = (loadedProducts || []).map((p) => ({
+                ...p,
+                establishments: p.establishment_id ? estMap[p.establishment_id] : p.establishments,
+            }));
+
+            if (dist && dist !== 'all' && finalProducts.length === 0) {
+                const districtEsts = Object.values(estMap).filter((e) => resolveZamboangaDistrict(e).id === dist);
+                const seededItems = [];
+                districtEsts.forEach((est) => {
+                    (est.products || []).forEach((item) => {
+                        if (q && !item.name?.toLowerCase().includes(q.toLowerCase()) && !est.name?.toLowerCase().includes(q.toLowerCase())) {
+                            return;
+                        }
+                        seededItems.push({
+                            id: item.id || `${est.id}-${item.name}`,
+                            name: item.name,
+                            brand: est.name,
+                            category: item.category || 'Restaurant & Catering Menu',
+                            status: est.certificate_number ? 'Halal' : 'Pork-Free Declared',
+                            certificate_no: est.certificate_number || null,
+                            expiry_date: est.expiry_date || null,
+                            source: est.source || 'Zamboanga Local Halal Directory',
+                            establishment_id: est.id,
+                            establishments: est,
+                            certifying_bodies: est.certifying_bodies || null,
+                        });
+                    });
+                });
+                setTotalServerCount(seededItems.length);
+                finalProducts = seededItems.slice(from, to + 1);
+            }
+
+            setProducts(finalProducts);
         } catch (err) {
             console.error('Error loading products catalog:', err);
             setError(err.message || 'Could not load products. Please check your network connection.');
@@ -346,6 +412,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                 ingredients_summary: product.ingredients_summary || '',
                 source: product.source || 'Manual Registry Entry',
                 source_url: product.source_url || '',
+                image_url: product.image_url || '',
             });
         }
     };
@@ -416,6 +483,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                 ingredients_summary: safeTrim(modalForm.ingredients_summary),
                 source: safeTrim(modalForm.source) || 'Manual Registry Entry',
                 source_url: safeTrim(modalForm.source_url) || null,
+                image_url: safeTrim(modalForm.image_url) || null,
             };
 
             const response = await authFetch(endpoint, {
@@ -483,7 +551,8 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         (searchQuery && searchQuery.trim()) ||
         (selectedCategory && selectedCategory !== 'All Categories') ||
         (selectedStatus && selectedStatus !== 'All Statuses') ||
-        (selectedCertifier && selectedCertifier !== 'ALL')
+        (selectedCertifier && selectedCertifier !== 'ALL') ||
+        (selectedDistrict && selectedDistrict !== 'all')
     );
 
     const handleResetFilters = () => {
@@ -491,16 +560,18 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         setSelectedCategory('All Categories');
         setSelectedStatus('All Statuses');
         setSelectedCertifier('ALL');
+        setSelectedDistrict('all');
         filtersRef.current = {
             searchQuery: '',
             category: 'All Categories',
             status: 'All Statuses',
             certifier: 'ALL',
+            district: 'all',
             page: 1,
         };
         setCurrentPage(1);
         if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-        loadData(1, '', 'All Categories', 'All Statuses', 'ALL');
+        loadData(1, '', 'All Categories', 'All Statuses', 'ALL', 'all');
     };
 
     const getPageNumbers = () => {
@@ -623,7 +694,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                             filtersRef.current.certifier = val;
                             filtersRef.current.page = 1;
                             setCurrentPage(1);
-                            loadData(1, searchQuery, selectedCategory, selectedStatus, val);
+                            loadData(1, searchQuery, selectedCategory, selectedStatus, val, selectedDistrict);
                         }}
                         className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500 max-w-[210px] truncate"
                         title="Filter by certifying body or registry origin"
@@ -631,6 +702,28 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                         {CERTIFIER_ORIGINS.map((c) => (
                             <option key={c.value} value={c.value}>
                                 {c.label}
+                            </option>
+                        ))}
+                    </select>
+
+                    {/* Zamboanga City District Selector */}
+                    <select
+                        value={selectedDistrict}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            setSelectedDistrict(val);
+                            filtersRef.current.district = val;
+                            filtersRef.current.page = 1;
+                            setCurrentPage(1);
+                            loadData(1, searchQuery, selectedCategory, selectedStatus, selectedCertifier, val);
+                        }}
+                        className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500 max-w-[205px] truncate"
+                        title="Filter products & dishes by Zamboanga City District"
+                        aria-label="Filter products by Zamboanga District"
+                    >
+                        {ZAMBOANGA_DISTRICTS.map((d) => (
+                            <option key={d.id} value={d.id}>
+                                {d.label}
                             </option>
                         ))}
                     </select>

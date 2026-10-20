@@ -12,9 +12,12 @@ import {
     Trash2,
     ExternalLink,
     Leaf,
+    MapPin,
+    ShieldCheck,
 } from 'lucide-react';
 import { getSafeUrl } from '../../utils/security';
 import { simplifyStatus } from '../../utils/textFormatters';
+import { resolveZamboangaDistrict } from '../../data/constants';
 
 function getProductCertifierBadge(product) {
     const raw = `${product.certifying_bodies?.code || ''} ${product.certifying_bodies?.name || ''} ${product.source || ''}`.toLowerCase();
@@ -72,6 +75,8 @@ export default function ProductCard({
     const isCommunityListed = statusLower === 'community_listed' && !isPorkFree && !isVegetarian;
 
     const certBadge = !isPorkFree && !isVegetarian ? getProductCertifierBadge(product) : null;
+    const districtInfo = resolveZamboangaDistrict(product);
+    const evidenceUrl = getSafeUrl(product.image_url);
 
     return (
         <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 p-3 sm:p-5 mb-4 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-3 sm:space-y-4 min-w-0">
@@ -127,12 +132,40 @@ export default function ProductCard({
                     </span>
                 </div>
 
-                {/* Category */}
+                {/* Category & District Badge */}
                 <div className="flex flex-wrap gap-1 sm:gap-2 text-[10px] sm:text-xs text-slate-500 pt-1">
                     <span className="flex items-center gap-1 bg-slate-100 px-1.5 sm:px-2 py-0.5 rounded-md">
                         <Tag size={10} className="sm:w-3 sm:h-3" /> {product.category || 'Food'}
                     </span>
+                    {districtInfo && districtInfo.id !== 'commercial' && (
+                        <span className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md font-bold border ${districtInfo.badgeClass}`}>
+                            <MapPin size={10} className="shrink-0" />
+                            <span>{districtInfo.shortLabel}</span>
+                        </span>
+                    )}
+                    {evidenceUrl && (
+                        <a
+                            href={evidenceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 px-1.5 sm:px-2 py-0.5 rounded-md font-bold transition"
+                        >
+                            <ShieldCheck size={10} className="text-emerald-600 shrink-0" />
+                            <span>View Certificate / Evidence</span>
+                            <ExternalLink size={9} />
+                        </a>
+                    )}
                 </div>
+
+                {/* Consumer Discretion Advisory for Doubtful / Expired / Non-Certified */}
+                {(isDoubtful || isExpired) && (
+                    <div className="rounded-lg bg-amber-50/90 border border-amber-200 px-2.5 py-1.5 text-[10px] text-amber-900 leading-snug flex items-start gap-1.5">
+                        <AlertCircle size={12} className="text-amber-700 shrink-0 mt-0.5" />
+                        <span>
+                            <strong>Consumer Discretion Advisory:</strong> Verify active certification or ingredient sources directly with the manufacturer before consumption.
+                        </span>
+                    </div>
+                )}
 
                 {/* Manufacturer & Certification Info */}
                 <div className="space-y-1 text-[11px] sm:text-xs text-slate-600 bg-slate-50 rounded-lg sm:rounded-xl p-2 sm:p-3 border border-slate-100">

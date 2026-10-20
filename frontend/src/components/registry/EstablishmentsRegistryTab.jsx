@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Database, Search, Pencil, Trash2, Flag, MapPin, Compass, ShieldCheck } from 'lucide-react';
-import { getStatusConfig } from '../../data/constants';
+import { Database, Search, Pencil, Trash2, Flag, MapPin, Compass, ShieldCheck, ExternalLink } from 'lucide-react';
+import { getStatusConfig, ZAMBOANGA_DISTRICTS, resolveZamboangaDistrict } from '../../data/constants';
+import { getSafeUrl } from '../../utils/security';
 
 export default function EstablishmentsRegistryTab({
     establishments,
@@ -12,6 +13,7 @@ export default function EstablishmentsRegistryTab({
     onReportEstablishment,
 }) {
     const [statusFilter, setStatusFilter] = useState('all');
+    const [districtFilter, setDistrictFilter] = useState('all');
 
     const filteredEstablishments = establishments.filter((shop) => {
         const matchesSearch =
@@ -20,6 +22,11 @@ export default function EstablishmentsRegistryTab({
             (shop.type || '').toLowerCase().includes(localSearch.toLowerCase());
 
         if (!matchesSearch) return false;
+
+        if (districtFilter !== 'all') {
+            const dist = resolveZamboangaDistrict(shop);
+            if (dist.id !== districtFilter) return false;
+        }
 
         if (statusFilter !== 'all') {
             const cfg = getStatusConfig(shop);
@@ -50,7 +57,20 @@ export default function EstablishmentsRegistryTab({
                     </p>
                 </div>
 
-                <div className="flex items-center gap-2 w-full md:w-auto">
+                <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full md:w-auto">
+                    <select
+                        value={districtFilter}
+                        onChange={(e) => setDistrictFilter(e.target.value)}
+                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer shrink-0 max-w-[145px] sm:max-w-none"
+                        aria-label="Filter by Zamboanga District"
+                    >
+                        {ZAMBOANGA_DISTRICTS.map((d) => (
+                            <option key={d.id} value={d.id}>
+                                {d.label}
+                            </option>
+                        ))}
+                    </select>
+
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
@@ -90,6 +110,7 @@ export default function EstablishmentsRegistryTab({
                             onClick={() => {
                                 setLocalSearch('');
                                 setStatusFilter('all');
+                                setDistrictFilter('all');
                             }}
                             className="text-xs text-emerald-700 font-bold hover:underline mt-2 inline-block"
                         >
@@ -99,6 +120,8 @@ export default function EstablishmentsRegistryTab({
                 ) : (
                     filteredEstablishments.map((shop) => {
                         const statusConfig = getStatusConfig(shop);
+                        const districtInfo = resolveZamboangaDistrict(shop);
+                        const evidenceUrl = getSafeUrl(shop.certificate_url || shop.logo_url);
                         const isFormallyCertified = Boolean(shop.certificate_number || statusConfig.key === 'verified');
                         const hasPrayer = Boolean(
                             shop.has_prayer_space ||
@@ -125,6 +148,11 @@ export default function EstablishmentsRegistryTab({
                                             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200/80">
                                                 {shop.source?.includes('Owner') || shop.submitter_role === 'owner' ? 'Owner / Staff' : 'Community Scout'}
                                             </span>
+                                            {districtInfo && (
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${districtInfo.badgeClass}`}>
+                                                    {districtInfo.shortLabel}
+                                                </span>
+                                            )}
                                         </div>
                                         <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full shrink-0 border ${statusConfig.badgeBg}`}>
                                             {statusConfig.label}
@@ -197,8 +225,20 @@ export default function EstablishmentsRegistryTab({
                                     </div>
                                 )}
 
-                                {(hasPrayer || hasAlcoholFree) && (
+                                {(hasPrayer || hasAlcoholFree || evidenceUrl) && (
                                     <div className="flex flex-wrap gap-1.5 pt-0.5">
+                                        {evidenceUrl && (
+                                            <a
+                                                href={evidenceUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-100/80 hover:bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-md transition"
+                                            >
+                                                <ShieldCheck size={11} className="text-emerald-700" />
+                                                <span>View Certificate Evidence</span>
+                                                <ExternalLink size={10} />
+                                            </a>
+                                        )}
                                         {hasPrayer && (
                                             <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md">
                                                 <Compass size={11} className="text-emerald-600" />

@@ -49,7 +49,6 @@ class HcbRegistryUpdate(BaseModel):
     registry_reference: Optional[str] = None
 
 
-
 class EstablishmentCreate(BaseModel):
     name: str
     type: Optional[str] = None
@@ -64,6 +63,11 @@ class EstablishmentCreate(BaseModel):
     source: Optional[str] = "Curated Local Registry"
     source_url: Optional[str] = None
     synced_at: Optional[str] = None
+    phone: Optional[str] = None
+    admin_notes: Optional[str] = None
+    description: Optional[str] = None
+    certificate_url: Optional[str] = None
+    logo_url: Optional[str] = None
 
 
 class EstablishmentUpdate(BaseModel):
@@ -105,4 +109,3 @@ class EstablishmentSubmissionRequest(BaseModel):
     product_names: Optional[list[str]] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
-

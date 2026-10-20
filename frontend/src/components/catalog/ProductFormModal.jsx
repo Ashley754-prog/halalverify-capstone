@@ -1,5 +1,8 @@
 
+import { useState } from 'react';
+import { Upload, Loader2, ExternalLink } from 'lucide-react';
 import Modal from '../ui/Modal';
+import { supabase } from '../../lib/supabaseClient';
 
 export default function ProductFormModal({
     isOpen,
@@ -14,7 +17,41 @@ export default function ProductFormModal({
     onClose,
     onSubmit,
 }) {
+    const [isUploadingEvidence, setIsUploadingEvidence] = useState(false);
+
     if (!isOpen) return null;
+
+    const handleEvidenceUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            setIsUploadingEvidence(true);
+            const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '');
+            const filePath = `certificates/prod_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+            const { error: upErr } = await supabase.storage
+                .from('submissions')
+                .upload(filePath, file, { upsert: true });
+
+            if (!upErr) {
+                const { data: pub } = supabase.storage.from('submissions').getPublicUrl(filePath);
+                if (pub?.publicUrl) {
+                    setModalForm((prev) => ({ ...prev, image_url: pub.publicUrl }));
+                    return;
+                }
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+                if (typeof reader.result === 'string') {
+                    setModalForm((prev) => ({ ...prev, image_url: reader.result }));
+                }
+            };
+            reader.readAsDataURL(file);
+        } catch (err) {
+            console.warn('Product evidence upload fallback:', err);
+        } finally {
+            setIsUploadingEvidence(false);
+        }
+    };
 
     const isNonCertified = modalForm.status === 'Pork-Free Declared' || modalForm.status === 'Vegetarian / Vegan';
 
@@ -167,6 +204,53 @@ export default function ProductFormModal({
                             placeholder="e.g. https://example.com/verify (Leave empty if none)"
                             className="w-full rounded-xl border border-slate-200 p-2.5 text-xs sm:text-sm focus:outline-none focus:border-emerald-500"
                         />
+                    </div>
+
+                    <div className="sm:col-span-2 space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                        <div className="flex items-center justify-between gap-2">
+                            <label className="text-xs font-bold text-slate-700">
+                                Halal Certificate / Packaging Evidence Photo <span className="font-normal text-slate-400">(Optional)</span>
+                            </label>
+                            {modalForm.image_url && (
+                                <a
+                                    href={modalForm.image_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[11px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-1"
+                                >
+                                    <span>Preview Evidence</span>
+                                    <ExternalLink size={11} />
+                                </a>
+                            )}
+                        </div>
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                            <label className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold cursor-pointer transition shrink-0">
+                                {isUploadingEvidence ? (
+                                    <>
+                                        <Loader2 size={13} className="animate-spin text-emerald-600" />
+                                        <span>Uploading...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Upload size={13} className="text-emerald-600" />
+                                        <span>Upload Certificate / Photo</span>
+                                    </>
+                                )}
+                                <input
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    onChange={handleEvidenceUpload}
+                                    className="hidden"
+                                />
+                            </label>
+                            <input
+                                type="url"
+                                value={modalForm.image_url || ''}
+                                onChange={(e) => setModalForm((prev) => ({ ...prev, image_url: e.target.value }))}
+                                placeholder="Or paste certificate / packaging photo URL..."
+                                className="flex-1 rounded-xl border border-slate-200 bg-white p-2 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
+                            />
+                        </div>
                     </div>
 
                     <div className="sm:col-span-2 space-y-1">

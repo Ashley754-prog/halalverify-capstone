@@ -1,12 +1,14 @@
-import { Save, Compass, ShieldCheck } from 'lucide-react';
+import { useState } from 'react';
+import { Compass, ShieldCheck, Upload, Loader2, ExternalLink } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { ESTABLISHMENT_TYPES, ESTABLISHMENT_HALAL_TIERS } from '../../data/constants';
+import { supabase } from '../../lib/supabaseClient';
 
 const ADDITIVE_STATUSES = ['Halal', 'Doubtful', 'Haram'];
 const ADDITIVE_ORIGINS = ['Plant', 'Animal', 'Insect', 'Synthetic / Mineral', 'Multiple / Unknown'];
-const ESTABLISHMENT_STATUSES = ['verified', 'needs_review'];
 const HCB_CATEGORIES = ['Local & Regional HCB', 'National HCB', 'Government Oversight', 'International Authority'];
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const normalizeAdditiveCode = (code) => {
     if (!code) return '';
     const trimmed = String(code).trim();
@@ -24,7 +26,42 @@ export default function RegistryModals({
     onClose,
     onSubmit,
 }) {
+    const [isUploadingCert, setIsUploadingCert] = useState(false);
+
     if (!activeModal) return null;
+
+    const handleCertFileUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            setIsUploadingCert(true);
+            const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '');
+            const filePath = `certificates/est_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+            const { error: upErr } = await supabase.storage
+                .from('submissions')
+                .upload(filePath, file, { upsert: true });
+
+            if (!upErr) {
+                const { data: pub } = supabase.storage.from('submissions').getPublicUrl(filePath);
+                if (pub?.publicUrl) {
+                    setModalForm((prev) => ({ ...prev, certificate_url: pub.publicUrl }));
+                    return;
+                }
+            }
+            // Fallback to local object URL or data URL if storage bucket is restricted
+            const reader = new FileReader();
+            reader.onload = () => {
+                if (typeof reader.result === 'string') {
+                    setModalForm((prev) => ({ ...prev, certificate_url: reader.result }));
+                }
+            };
+            reader.readAsDataURL(file);
+        } catch (err) {
+            console.warn('Certificate upload fallback:', err);
+        } finally {
+            setIsUploadingCert(false);
+        }
+    };
 
     const modalTitle =
         activeModal?.startsWith('add-additive') ? 'Add Chemical Additive' :
@@ -449,6 +486,54 @@ export default function RegistryModals({
                                 </p>
                             </div>
                         )}
+
+                        {/* Halal Certificate / Storefront Verification Evidence Upload */}
+                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                                <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
+                                    Halal Certificate / Storefront Evidence
+                                </span>
+                                {modalForm.certificate_url && (
+                                    <a
+                                        href={modalForm.certificate_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-[11px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-1"
+                                    >
+                                        <span>Preview Uploaded Evidence</span>
+                                        <ExternalLink size={11} />
+                                    </a>
+                                )}
+                            </div>
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                                <label className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold cursor-pointer transition shrink-0">
+                                    {isUploadingCert ? (
+                                        <>
+                                            <Loader2 size={13} className="animate-spin text-emerald-600" />
+                                            <span>Uploading...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload size={13} className="text-emerald-600" />
+                                            <span>Upload Certificate Photo</span>
+                                        </>
+                                    )}
+                                    <input
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp"
+                                        onChange={handleCertFileUpload}
+                                        className="hidden"
+                                    />
+                                </label>
+                                <input
+                                    type="url"
+                                    value={modalForm.certificate_url || ''}
+                                    onChange={(e) => setModalForm((prev) => ({ ...prev, certificate_url: e.target.value }))}
+                                    placeholder="Or paste certificate / evidence image URL..."
+                                    className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                />
+                            </div>
+                        </div>
 
                         {/* Guest Amenities & Facilities */}
                         <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
