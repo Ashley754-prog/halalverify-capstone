@@ -313,6 +313,19 @@ export const LabelResultsSheet = ({
                                 </div>
                             </div>
 
+                            {/* Consumer & Regulatory Disclaimer for Doubtful / Unverified Results */}
+                            {scanResult.verdict === 'Yellow' && scanResult.riskLevel !== 'No Product Detected' && (
+                                <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-500/35 text-amber-200/95 text-[11px] leading-relaxed space-y-1">
+                                    <div className="flex items-center gap-1.5 font-bold text-amber-300 text-xs">
+                                        <AlertTriangle size={14} className="text-amber-400 shrink-0" />
+                                        <span>Consumer Discretion &amp; Advisory Disclaimer</span>
+                                    </div>
+                                    <p>
+                                        This result is an automated decision-support screening based on visible packaging data and does not constitute a formal Islamic legal ruling (Fatwa). Because active Halal certification or the exact plant vs. animal origin of certain ingredients could not be confirmed from the label alone, consumption is at the consumer&apos;s own discretion. In accordance with Islamic dietary precaution (Ihtiyat) and RA 10817, consumers are advised to verify directly with the manufacturer or abstain if in doubt.
+                                    </p>
+                                </div>
+                            )}
+
                             {/* Server Sleeping / Offline Fallback Notice */}
                             {scanResult.analysisSummary?.toLowerCase().includes('offline') && (
                                 <div className="p-3.5 rounded-2xl bg-amber-950/70 border border-amber-500/50 text-amber-100 text-xs space-y-2">

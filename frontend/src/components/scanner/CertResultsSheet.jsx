@@ -121,6 +121,17 @@ export const CertResultsSheet = ({
                                 </div>
                             </div>
 
+                            {certResult.status !== 'Valid' && (
+                                <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-500/35 text-amber-200/95 text-[11px] leading-relaxed space-y-1">
+                                    <p className="font-bold text-amber-300 text-xs">
+                                        Consumer Discretion &amp; Advisory Disclaimer
+                                    </p>
+                                    <p>
+                                        This certificate could not be automatically authenticated against active accredited Halal Certifying Body (HCB) registries under RA 10817 and Zamboanga City Ordinance No. 489. Patronage is at the consumer&apos;s own discretion; please verify the physical certificate directly with establishment management.
+                                    </p>
+                                </div>
+                            )}
+
                             {/* Server Sleeping / Offline Fallback Notice */}
                             {certResult.authenticationNote?.toLowerCase().includes('offline') && (
                                 <div className="p-3.5 rounded-2xl bg-amber-950/70 border border-amber-500/50 text-amber-100 text-xs space-y-2">
