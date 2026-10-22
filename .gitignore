@@ -59,3 +59,6 @@ spikes/s3-cer-baseline/images/
 spikes/s1-idcp-registry/*.csv
 spikes/s5-additives-lexicon/
 spikes/s6-packaging-validation/
+
+# PDF documents and capstone manuscripts
+*.pdf
