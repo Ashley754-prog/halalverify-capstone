@@ -17,7 +17,7 @@ if ('serviceWorker' in navigator) {
     if (import.meta.env.PROD) {
       navigator.serviceWorker.register('/sw.js')
         .then((reg) => {
-          console.log('HalalVerify Service Worker registered successfully:', reg.scope);
+          // Service Worker registered
           // Check for deployed updates immediately on load
           reg.update().catch(() => {});
 

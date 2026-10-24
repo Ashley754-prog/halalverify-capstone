@@ -146,7 +146,7 @@ export async function analyzeImage(base64Image, mode) {
             : `${baseUrl}/analyze/certificate`;
 
         try {
-            console.log(`[HalalVerify API] Sending scan request to ${endpoint}`);
+            // Dispatch scan request to active backend endpoint
             const response = await authFetch(endpoint, {
                 method: 'POST',
                 headers: {

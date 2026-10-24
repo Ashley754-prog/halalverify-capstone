@@ -1,3 +1,4 @@
+import logging
 import os
 
 # Limit thread allocations and glibc arenas to prevent OOM in 512MB cloud environments
@@ -9,6 +10,7 @@ os.environ.setdefault("MKL_NUM_THREADS", "1")
 
 import time
 from collections import defaultdict
+from contextlib import asynccontextmanager
 from threading import Lock
 
 from app.routes import admin, analyze, health, issue_reports, products, registry, scan_history, summaries
@@ -17,7 +19,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
-app = FastAPI(title="HalalVerify API", version="0.1.0")
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        from app.logo_service import get_yolo_model
+        get_yolo_model()
+    except Exception as exc:
+        logger.warning("Startup ML model preload skipped: %s", exc)
+    yield
+
+
+app = FastAPI(title="HalalVerify API", version="0.1.0", lifespan=lifespan)
 
 
 # ---------------------------------------------------------------------------
@@ -113,12 +128,3 @@ app.include_router(summaries.router)
 app.include_router(issue_reports.router)
 app.include_router(scan_history.router)
 app.include_router(admin.router)
-
-
-@app.on_event("startup")
-def preload_ml_models():
-    try:
-        from app.logo_service import get_yolo_model
-        get_yolo_model()
-    except Exception as e:
-        pass

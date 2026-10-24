@@ -354,7 +354,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         const q = initialSearchQuery || '';
         setSearchQuery(q);
         filtersRef.current.searchQuery = q;
-        loadData(1, q, selectedCategory, selectedStatus, selectedCertifier);
+        loadData(1, q);
     }, [initialSearchQuery, loadData]);
 
     const handleSearchChange = (val) => {

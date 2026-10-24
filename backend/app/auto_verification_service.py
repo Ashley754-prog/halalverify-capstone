@@ -1,4 +1,5 @@
 import base64
+import logging
 import datetime
 import re
 from difflib import SequenceMatcher
@@ -15,6 +16,8 @@ from app.certificate_service import (
 from app.ocr_service import extract_text_from_image, normalize_text
 from app.scan_service import is_ingredient_negated
 from app.supabase_client import supabase
+
+logger = logging.getLogger(__name__)
 
 # Accredited Certifying Body Acronyms recognized by Philippine and International Halal authorities
 ACCREDITED_HCB_CODES = {
@@ -125,7 +128,7 @@ def fetch_image_base64_from_url(url: str, timeout: float = 6.0) -> Optional[str]
                 if resp.status_code == 200 and resp.content:
                     return base64.b64encode(resp.content).decode("utf-8")
         except Exception as err:
-            print(f"[AutoVerify] Warning: Could not fetch image from {trimmed[:60]}...: {err}")
+            logger.warning("[AutoVerify] Could not fetch image from %s...: %s", trimmed[:60], err)
             return None
 
     return None
@@ -364,7 +367,7 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
                     reasons.append(f"Potential duplicate listing detected ('{est.get('name')}', {int(sim*100)}% match)")
                     break
     except Exception as dup_err:
-        print(f"[AutoVerify] Duplicate check warning: {dup_err}")
+        logger.warning("[AutoVerify] Duplicate check warning: %s", dup_err)
 
     # 5. OCR Document Processing (if certificate image/URL provided)
     if cert_url:
@@ -383,7 +386,7 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
                         if extracted_exp:
                             expiry_str = extracted_exp
             except Exception as ocr_err:
-                print(f"[AutoVerify] OCR processing notice: {ocr_err}")
+                logger.info("[AutoVerify] OCR processing notice: %s", ocr_err)
 
     # 6. Branching Evaluation: Formally Certified vs. Community/Muslim-Owned Tier
     today = datetime.date.today()
@@ -644,7 +647,7 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
                         if extracted_exp:
                             expiry_str = extracted_exp
             except Exception as ocr_err:
-                print(f"[AutoVerify] Product OCR processing notice: {ocr_err}")
+                logger.info("[AutoVerify] Product OCR processing notice: %s", ocr_err)
 
     effective_ingredients = f"{ingredients} {ocr_text}".strip()
 
@@ -691,7 +694,7 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
                         if match_display not in doubtful_found:
                             doubtful_found.append(match_display)
         except Exception as add_err:
-            print(f"[AutoVerify] Additive screening notice: {add_err}")
+            logger.info("[AutoVerify] Additive screening notice: %s", add_err)
 
     # Deduplicate findings
     haram_found = list(dict.fromkeys(haram_found))

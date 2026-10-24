@@ -1,4 +1,5 @@
 import datetime
+import logging
 import re
 from typing import Optional
 
@@ -22,6 +23,7 @@ from app.auto_verification_service import (
 )
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
 
 
@@ -61,7 +63,7 @@ def get_pending_approvals(user: dict = Depends(require_admin)):
                     for e in pending_establishments:
                         e["associated_products"] = prod_map.get(e["id"], [])
                 except Exception as p_err:
-                    print(f"Warning: attaching products to pending establishments failed: {p_err}")
+                    logger.warning("Attaching products to pending establishments failed: %s", p_err)
 
         # 2. Fetch pending standalone community products
         prod_res = (
@@ -98,7 +100,7 @@ def get_pending_approvals(user: dict = Depends(require_admin)):
             },
         }
     except Exception as e:
-        print(f"Error fetching pending approvals: {e}")
+        logger.error("Error fetching pending approvals: %s", e)
         raise HTTPException(status_code=500, detail="Failed to fetch pending approvals")
 
 
@@ -174,7 +176,7 @@ def verify_establishment(
                 "verified_by": str(user_id) if user_id else None,
             }).eq("establishment_id", establishment_id).ilike("status", "%pending%").execute()
         except Exception as p_err:
-            print(f"Warning: cascaded product approval notice: {p_err}")
+            logger.warning("Cascaded product approval notice: %s", p_err)
 
     return {
         "success": True,
@@ -274,7 +276,7 @@ def resolve_issue_report(
                 "verified_by": str(user_id) if user_id else None,
             }).eq("id", est_id).execute()
         except Exception as s_err:
-            print(f"Warning: suspending establishment failed: {s_err}")
+            logger.warning("Suspending establishment failed: %s", s_err)
 
     return {
         "success": True,
@@ -389,7 +391,7 @@ def get_analytics_trends(
             },
         }
     except Exception as e:
-        print(f"Error in analytics trends: {e}")
+        logger.error("Error in analytics trends: %s", e)
         raise HTTPException(status_code=500, detail=f"Failed to generate analytics trends: {str(e)}")
 
 
@@ -436,7 +438,7 @@ def get_reports_summary(user: dict = Depends(require_admin)):
             },
         }
     except Exception as e:
-        print(f"Error in reports summary: {e}")
+        logger.error("Error in reports summary: %s", e)
         raise HTTPException(status_code=500, detail=f"Failed to fetch reports summary: {str(e)}")
 
 
@@ -540,7 +542,7 @@ def delete_admin_additive(additive_id: str, user: dict = Depends(require_admin))
         try:
             supabase.table("scan_flagged_items").update({"additive_id": None}).eq("additive_id", additive_id).execute()
         except Exception as fk_err:
-            print(f"Notice: cascade scan_flagged_items on additive delete: {fk_err}")
+            logger.info("Cascade scan_flagged_items on additive delete: %s", fk_err)
         res = supabase.table("additives").delete().eq("id", additive_id).execute()
         return {"success": True, "data": {"id": additive_id, "deleted": True}}
     except Exception as e:
@@ -619,7 +621,7 @@ def delete_admin_hcb_entry(hcb_id: str, user: dict = Depends(require_admin)):
             supabase.table("products").update({"certifying_body_id": None}).eq("certifying_body_id", hcb_id).execute()
             supabase.table("establishments").update({"certifying_body_id": None}).eq("certifying_body_id", hcb_id).execute()
         except Exception as fk_err:
-            print(f"Notice: cascade certifying_body_id on HCB delete: {fk_err}")
+            logger.info("Cascade certifying_body_id on HCB delete: %s", fk_err)
         res = supabase.table("certifying_bodies").delete().eq("id", hcb_id).execute()
         return {"success": True, "data": {"id": hcb_id, "deleted": True}}
     except Exception as e:
@@ -684,7 +686,7 @@ def auto_verify_establishment_endpoint(
                 "verified_by": admin_uuid,
             }).eq("establishment_id", establishment_id).ilike("status", "%pending%").execute()
         except Exception as p_err:
-            print(f"Warning: cascaded product approval: {p_err}")
+            logger.warning("Cascaded product approval: %s", p_err)
 
     supabase.table("establishments").update(update_fields).eq("id", establishment_id).execute()
 
@@ -818,7 +820,7 @@ def auto_verify_all_pending(
 
             supabase.table("establishments").update(update_fields).eq("id", est["id"]).execute()
         except Exception as e:
-            print(f"Error auto-verifying establishment {est.get('id')}: {e}")
+            logger.error("Error auto-verifying establishment %s: %s", est.get("id"), e)
 
     # 2. Pending Products
     prod_res = (
@@ -860,7 +862,7 @@ def auto_verify_all_pending(
 
             supabase.table("products").update(update_fields).eq("id", prod["id"]).execute()
         except Exception as e:
-            print(f"Error auto-verifying product {prod.get('id')}: {e}")
+            logger.error("Error auto-verifying product %s: %s", prod.get("id"), e)
 
     return {
         "success": True,

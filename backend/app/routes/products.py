@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 
 from app.auth import get_current_user, require_admin
@@ -13,6 +14,7 @@ from app.auto_verification_service import evaluate_product_submission
 from app.utils.db_helpers import ensure_deleted, ensure_updated, model_dump_without_none, sanitize_postgrest_search
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+logger = logging.getLogger(__name__)
 router = APIRouter(tags=["products"])
 
 
@@ -153,7 +155,7 @@ def delete_product(product_id: str, user: dict = Depends(require_admin)):
     try:
         supabase.table("issue_reports").update({"product_id": None}).eq("product_id", product_id).execute()
     except Exception as fk_err:
-        print(f"Notice: cascade issue_reports on product delete: {fk_err}")
+        logger.info("Cascade issue_reports on product delete: %s", fk_err)
 
     response = (
         supabase

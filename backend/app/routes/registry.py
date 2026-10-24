@@ -7,6 +7,7 @@ from app.schemas.registry import (
     EstablishmentSubmissionRequest,
 )
 from app.supabase_client import supabase
+import logging
 from typing import Optional
 from app.auto_verification_service import evaluate_establishment_submission
 from app.utils.geocoding import geocode_zamboanga_address
@@ -14,6 +15,7 @@ from app.utils.db_helpers import ensure_deleted, ensure_updated, model_dump_with
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 
+logger = logging.getLogger(__name__)
 router = APIRouter(tags=["registry"])
 
 
@@ -104,7 +106,7 @@ def delete_additive(additive_id: str, user: dict = Depends(require_admin)):
     try:
         supabase.table("scan_flagged_items").update({"additive_id": None}).eq("additive_id", additive_id).execute()
     except Exception as fk_err:
-        print(f"Notice: cascade scan_flagged_items on additive delete: {fk_err}")
+        logger.info("Cascade scan_flagged_items on additive delete: %s", fk_err)
 
     response = (
         supabase
@@ -270,7 +272,7 @@ def get_establishments_map(
                     for d in data:
                         d["products"] = products_by_est.get(d.get("id"), [])
                 except Exception as p_err:
-                    print(f"Warning: Failed to fetch products for establishments: {p_err}")
+                    logger.warning("Failed to fetch products for establishments: %s", p_err)
 
         return {
             "success": True,
@@ -278,7 +280,7 @@ def get_establishments_map(
             "data": data,
         }
     except Exception as e:
-        print(f"Error in map endpoint: {e}")
+        logger.error("Error in map endpoint: %s", e)
         try:
             fallback_res = supabase.table("establishments").select("*, certifying_bodies(*)").execute()
             fallback_data = fallback_res.data or []
@@ -333,7 +335,7 @@ def search_establishments(q: Optional[str] = Query(None, description="Search que
             "data": res.data or [],
         }
     except Exception as e:
-        print(f"Error in establishments search: {e}")
+        logger.error("Error in establishments search: %s", e)
         return {
             "success": False,
             "count": 0,
@@ -462,7 +464,7 @@ def delete_establishment(establishment_id: str, user: dict = Depends(require_adm
         supabase.table("products").update({"establishment_id": None}).eq("establishment_id", establishment_id).execute()
         supabase.table("issue_reports").update({"establishment_id": None}).eq("establishment_id", establishment_id).execute()
     except Exception as fk_err:
-        print(f"Notice: cascade references on establishment delete: {fk_err}")
+        logger.info("Cascade references on establishment delete: %s", fk_err)
 
     response = (
         supabase
