@@ -1,17 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import { 
-  Camera, 
-  Package, 
-  MapPin, 
-  BookOpen, 
-  ShieldCheck, 
-  CheckCircle2, 
-  ArrowRight, 
-  Sparkles, 
-  Search, 
+import {
+  Camera,
+  Package,
+  MapPin,
+  ShieldCheck,
+  CheckCircle2,
+  Sparkles,
+  Search,
   LogIn,
   LayoutDashboard,
-  ExternalLink,
   X,
   Building2,
   Plus,
@@ -20,6 +17,7 @@ import {
 import { supabase } from '../lib/supabaseClient';
 import ContributionModal from '../components/submissions/ContributionModal';
 import AuthPromptModal from '../components/submissions/AuthPromptModal';
+import LandingMarketingSections from '../components/landing/LandingMarketingSections';
 
 export default function LandingPage({ onViewChange, userRole }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -86,7 +84,6 @@ export default function LandingPage({ onViewChange, userRole }) {
 
     const qLower = q.toLowerCase();
 
-    // 1. Instant local matching
     const matchedProducts = allProducts.filter((p) =>
       (p.name && p.name.toLowerCase().includes(qLower)) ||
       (p.brand && p.brand.toLowerCase().includes(qLower)) ||
@@ -104,7 +101,6 @@ export default function LandingPage({ onViewChange, userRole }) {
       totalCount: matchedProducts.length + matchedEstablishments.length,
     });
 
-    // 2. Debounced live Supabase search across entire 13k+ database
     if (searchDebounceRef.current) {
       clearTimeout(searchDebounceRef.current);
     }
@@ -149,20 +145,20 @@ export default function LandingPage({ onViewChange, userRole }) {
       }
     }, 250);
   };
+
   return (
     <div className="min-h-screen bg-[#0e1625] text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white overflow-x-hidden w-full max-w-full">
       {/* Top Navigation Bar */}
       <header className="sticky top-0 z-50 w-full border-b border-slate-800/80 bg-[#0e1625]/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto flex items-center justify-between h-16 sm:h-20 px-4 sm:px-6 lg:px-8">
-          {/* Logo & Brand Name */}
-          <div 
+          <div
             className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0"
             onClick={() => { setIsMobileMenuOpen(false); onViewChange('landing'); }}
           >
-            <img 
-              src="/halalverify-logo.png" 
-              alt="HalalVerify Logo" 
-              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full border border-emerald-500/30 shadow-md group-hover:scale-105 transition duration-200" 
+            <img
+              src="/halalverify-logo.png"
+              alt="HalalVerify Logo"
+              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full border border-emerald-500/30 shadow-md group-hover:scale-105 transition duration-200"
             />
             <div>
               <div className="flex items-center gap-1.5 sm:gap-2">
@@ -171,28 +167,27 @@ export default function LandingPage({ onViewChange, userRole }) {
                   Zamboanga
                 </span>
               </div>
-              <p className="hidden xs:block text-[8px] sm:text-[10px] text-slate-400 tracking-wide">Verification & Compliance Pipeline</p>
+              <p className="hidden xs:block text-[8px] sm:text-[10px] text-slate-400 tracking-wide">Verification &amp; Compliance Pipeline</p>
             </div>
           </div>
 
-          {/* Desktop Navigation Links (Large Screens Only: >= 1024px) */}
           <nav className="hidden lg:flex items-center gap-3.5 xl:gap-7 text-xs xl:text-sm font-medium text-slate-300 whitespace-nowrap">
             <a href="#features" className="hover:text-emerald-400 transition whitespace-nowrap shrink-0">Features</a>
             <a href="#how-it-works" className="hover:text-emerald-400 transition whitespace-nowrap shrink-0">How It Works</a>
             <a href="#certifiers" className="hover:text-emerald-400 transition whitespace-nowrap shrink-0">Certifiers</a>
-            <button 
+            <button
               onClick={() => onViewChange('products')}
               className="hover:text-emerald-400 transition font-medium whitespace-nowrap shrink-0"
             >
               Catalog
             </button>
-            <button 
+            <button
               onClick={() => onViewChange('map')}
               className="hover:text-emerald-400 transition font-medium whitespace-nowrap shrink-0"
             >
               Map
             </button>
-            <button 
+            <button
               onClick={() => handleOpenContribution('establishment')}
               className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 xl:px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:text-emerald-200 transition active:scale-95 shadow-xs whitespace-nowrap shrink-0"
               title="Submit an establishment or product to the registry"
@@ -202,7 +197,6 @@ export default function LandingPage({ onViewChange, userRole }) {
             </button>
           </nav>
 
-          {/* Desktop Action Buttons (Large Screens Only) */}
           <div className="hidden lg:flex items-center gap-2 xl:gap-3 shrink-0 whitespace-nowrap">
             {userRole ? (
               <button
@@ -231,7 +225,6 @@ export default function LandingPage({ onViewChange, userRole }) {
             </button>
           </div>
 
-          {/* Mobile & Tablet Controls (< 1024px) */}
           <div className="flex items-center gap-2 lg:hidden">
             <button
               onClick={() => onViewChange('scanner')}
@@ -252,7 +245,6 @@ export default function LandingPage({ onViewChange, userRole }) {
           </div>
         </div>
 
-        {/* Mobile Slide-Down Navigation Menu */}
         {isMobileMenuOpen && (
           <div className="lg:hidden border-t border-slate-800 bg-[#0e1625]/98 backdrop-blur-xl animate-in slide-in-from-top-3 duration-200 shadow-2xl">
             <div className="px-4 py-4 space-y-3">
@@ -353,18 +345,15 @@ export default function LandingPage({ onViewChange, userRole }) {
 
       {/* Hero Section */}
       <section className="relative pt-7 pb-10 sm:pt-16 sm:pb-24 overflow-hidden">
-        {/* Background Subtle Gradient Glow */}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-emerald-600/15 blur-[120px] rounded-full pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-3xl mx-auto">
-            {/* Pill Badge */}
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-800/60 text-emerald-300 text-[10px] sm:text-xs font-semibold mb-4 sm:mb-6 backdrop-blur-sm shadow-inner">
               <Sparkles size={12} className="text-emerald-400 sm:h-3.5 sm:w-3.5" />
-              <span>Optical Character Recognition & Verified Database</span>
+              <span>Optical Character Recognition &amp; Verified Database</span>
             </div>
 
-            {/* Main Headline */}
             <h1 className="text-2xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight sm:leading-tight">
               Verify Halal Authenticity in{' '}
               <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-200 bg-clip-text text-transparent">
@@ -372,12 +361,11 @@ export default function LandingPage({ onViewChange, userRole }) {
               </span>
             </h1>
 
-            {/* Subtitle */}
             <p className="mt-3 sm:mt-5 text-xs sm:text-lg text-slate-300 leading-relaxed max-w-2xl mx-auto">
               Empowering consumers and families to inspect food packaging labels, detect certifying logos, and discover certified dining establishments across Zamboanga City, instantly and freely.
             </p>
 
-            {/* Interactive Search Interface (Finalized Features Section 1) */}
+            {/* Interactive Search Interface */}
             <div className="mt-5 sm:mt-8 max-w-2xl mx-auto text-left">
               <div className="relative">
                 <input
@@ -409,14 +397,13 @@ export default function LandingPage({ onViewChange, userRole }) {
                 )}
               </div>
 
-              {/* Live Search Results & Visual Product Scan Fallback Engine */}
               {searchQuery.trim() && searchResults && (
                 <div className="mt-3">
                   {searchResults.totalCount > 0 ? (
                     <div className="rounded-2xl border border-slate-700 bg-slate-900/95 p-4 shadow-2xl space-y-2.5 backdrop-blur-xl max-h-80 overflow-y-auto">
                       <div className="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800 pb-2">
                         <span>Found {searchResults.totalCount} matching record(s)</span>
-                        <button 
+                        <button
                           onClick={() => onViewChange('products', { searchQuery })}
                           className="text-emerald-400 hover:underline font-semibold"
                         >
@@ -424,9 +411,8 @@ export default function LandingPage({ onViewChange, userRole }) {
                         </button>
                       </div>
 
-                      {/* Products matches */}
                       {searchResults.products.map(p => (
-                        <div 
+                        <div
                           key={p.id}
                           onClick={() => onViewChange('products', { searchQuery: p.name })}
                           className="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 cursor-pointer border border-slate-700/50 transition"
@@ -444,9 +430,8 @@ export default function LandingPage({ onViewChange, userRole }) {
                         </div>
                       ))}
 
-                      {/* Establishments matches */}
                       {searchResults.establishments.map(e => (
-                        <div 
+                        <div
                           key={e.id}
                           onClick={() => onViewChange('map')}
                           className="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 cursor-pointer border border-slate-700/50 transition"
@@ -465,7 +450,6 @@ export default function LandingPage({ onViewChange, userRole }) {
                       ))}
                     </div>
                   ) : (
-                    /* Visual Product Scan Fallback Engine (Section 2 of Finalized Features) */
                     <div className="rounded-2xl border border-emerald-500/50 bg-slate-900/95 p-6 shadow-2xl text-center backdrop-blur-xl space-y-3">
                       <div className="w-12 h-12 rounded-full bg-emerald-950 border border-emerald-800 flex items-center justify-center text-emerald-400 mx-auto">
                         <Camera size={22} />
@@ -498,7 +482,6 @@ export default function LandingPage({ onViewChange, userRole }) {
               )}
             </div>
 
-            {/* Main CTAs - Displayed during idle state; hidden while searching to focus on search results/fallback */}
             {!searchQuery.trim() && (
               <>
                 <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2.5 sm:gap-4 max-w-md sm:max-w-none mx-auto">
@@ -550,7 +533,6 @@ export default function LandingPage({ onViewChange, userRole }) {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-left">
-                {/* Simulated Step 1 */}
                 <div className="rounded-xl bg-slate-800/60 border border-slate-700/50 p-3 sm:rounded-2xl sm:p-4 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between text-[9px] text-slate-400 mb-1.5 sm:mb-2 sm:text-xs">
@@ -565,14 +547,13 @@ export default function LandingPage({ onViewChange, userRole }) {
                   </div>
                 </div>
 
-                {/* Simulated Step 2 */}
                 <div className="rounded-xl bg-slate-800/60 border border-slate-700/50 p-3 sm:rounded-2xl sm:p-4 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between text-[9px] text-slate-400 mb-1.5 sm:mb-2 sm:text-xs">
                       <span className="font-semibold uppercase tracking-wider text-emerald-400">Step 2</span>
                       <ShieldCheck size={13} className="sm:h-[14px] sm:w-[14px]" />
                     </div>
-                    <h4 className="font-bold text-white text-xs sm:text-sm">Ingredient & Logo Audit</h4>
+                    <h4 className="font-bold text-white text-xs sm:text-sm">Ingredient &amp; Logo Audit</h4>
                     <p className="mt-1 text-[10px] text-slate-400 sm:text-xs leading-relaxed">Cross-referenced with prohibited and doubtful additives and certifiers.</p>
                   </div>
                   <div className="mt-3 rounded-lg bg-slate-950/80 p-2 font-mono text-[9px] text-slate-300 border border-slate-800 sm:rounded-xl sm:p-2.5 sm:text-[11px] space-y-0.5">
@@ -581,7 +562,6 @@ export default function LandingPage({ onViewChange, userRole }) {
                   </div>
                 </div>
 
-                {/* Simulated Step 3 */}
                 <div className="rounded-xl bg-emerald-950/30 border border-emerald-700/40 p-3 sm:rounded-2xl sm:p-4 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between text-[9px] text-slate-400 mb-1.5 sm:mb-2 sm:text-xs">
@@ -603,341 +583,8 @@ export default function LandingPage({ onViewChange, userRole }) {
         </div>
       </section>
 
-      {/* Core Features Grid */}
-      <section id="features" className="py-10 sm:py-20 bg-slate-900/60 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-16">
-            <h2 className="text-xs sm:text-sm font-bold uppercase tracking-[0.25em] text-emerald-400">
-              Core Capabilities
-            </h2>
-            <p className="mt-2 text-xl sm:text-4xl font-extrabold text-white tracking-tight">
-              Designed for Everyday Shoppers & Diners
-            </p>
-            <p className="mt-3 text-sm text-slate-400">
-              Complete transparency at your fingertips, whether you are shopping at grocery aisles or dining in Zamboanga City.
-            </p>
-          </div>
+      <LandingMarketingSections onViewChange={onViewChange} />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-            {/* Feature 1 */}
-            <div 
-              onClick={() => onViewChange('scanner')}
-              className="group w-full cursor-pointer rounded-xl border border-slate-800 bg-slate-900/90 p-4 transition-all duration-200 hover:-translate-y-1 hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-950/30 sm:rounded-2xl sm:p-6"
-            >
-              <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-emerald-950 border border-emerald-800/60 flex items-center justify-center text-emerald-400 mb-3 sm:mb-4 group-hover:scale-110 transition duration-200">
-                <Camera size={18} className="sm:h-[22px] sm:w-[22px]" />
-              </div>
-              <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-emerald-300 transition">
-                Halal Scanner & OCR
-              </h3>
-              <p className="mt-1 text-xs sm:mt-1.5 sm:text-sm text-slate-400 leading-relaxed">
-                Scan packaged goods using RapidOCR to analyze ingredient lists for doubtful additives and verify certifying logos.
-              </p>
-              <div className="mt-3 sm:mt-4 flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
-                <span>Try Scanner</span>
-                <ArrowRight size={14} className="group-hover:translate-x-1 transition" />
-              </div>
-            </div>
-
-            {/* Feature 2 */}
-            <div 
-              onClick={() => onViewChange('products')}
-              className="group w-full cursor-pointer rounded-xl border border-slate-800 bg-slate-900/90 p-4 transition-all duration-200 hover:-translate-y-1 hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-950/30 sm:rounded-2xl sm:p-6"
-            >
-              <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-emerald-950 border border-emerald-800/60 flex items-center justify-center text-emerald-400 mb-3 sm:mb-4 group-hover:scale-110 transition duration-200">
-                <Package size={18} className="sm:h-[22px] sm:w-[22px]" />
-              </div>
-              <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-emerald-300 transition">
-                Product Catalog
-              </h3>
-              <p className="mt-1 text-xs sm:mt-1.5 sm:text-sm text-slate-400 leading-relaxed">
-                Search verified consumer food, beverages, and household goods sold across local Zamboanga stores and supermarkets.
-              </p>
-              <div className="mt-3 sm:mt-4 flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
-                <span>View Products</span>
-                <ArrowRight size={14} className="group-hover:translate-x-1 transition" />
-              </div>
-            </div>
-
-            {/* Feature 3 */}
-            <div 
-              onClick={() => onViewChange('map')}
-              className="group w-full cursor-pointer rounded-xl border border-slate-800 bg-slate-900/90 p-4 transition-all duration-200 hover:-translate-y-1 hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-950/30 sm:rounded-2xl sm:p-6"
-            >
-              <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-emerald-950 border border-emerald-800/60 flex items-center justify-center text-emerald-400 mb-3 sm:mb-4 group-hover:scale-110 transition duration-200">
-                <MapPin size={18} className="sm:h-[22px] sm:w-[22px]" />
-              </div>
-              <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-emerald-300 transition">
-                Establishments Map
-              </h3>
-              <p className="mt-1 text-xs sm:mt-1.5 sm:text-sm text-slate-400 leading-relaxed">
-                Interactive map pinpointing halal-certified dining options, restaurants, cafes, and caterers across Zamboanga City.
-              </p>
-              <div className="mt-3 sm:mt-4 flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
-                <span>Open Map</span>
-                <ArrowRight size={14} className="group-hover:translate-x-1 transition" />
-              </div>
-            </div>
-
-            {/* Feature 4 */}
-            <div 
-              onClick={() => onViewChange('registry')}
-              className="group w-full cursor-pointer rounded-xl border border-slate-800 bg-slate-900/90 p-4 transition-all duration-200 hover:-translate-y-1 hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-950/30 sm:rounded-2xl sm:p-6"
-            >
-              <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-emerald-950 border border-emerald-800/60 flex items-center justify-center text-emerald-400 mb-3 sm:mb-4 group-hover:scale-110 transition duration-200">
-                <BookOpen size={18} className="sm:h-[22px] sm:w-[22px]" />
-              </div>
-              <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-emerald-300 transition">
-                Accredited Registry
-              </h3>
-              <p className="mt-1 text-xs sm:mt-1.5 sm:text-sm text-slate-400 leading-relaxed">
-                Direct public lookup of certified bodies, standards, and accreditation statuses recognized under Philippine frameworks.
-              </p>
-              <div className="mt-3 sm:mt-4 flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
-                <span>Check Registry</span>
-                <ArrowRight size={14} className="group-hover:translate-x-1 transition" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section id="how-it-works" className="py-10 sm:py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-16">
-            <h2 className="text-xs sm:text-sm font-bold uppercase tracking-[0.25em] text-emerald-400">
-              Simple Workflow
-            </h2>
-            <p className="mt-2 text-xl sm:text-4xl font-extrabold text-white tracking-tight">
-              How HalalVerify Verifies Products
-            </p>
-          </div>
-
-          <div className="relative grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-            <div
-              className="workflow-step flex min-h-[200px] flex-col items-center rounded-xl border border-emerald-500/50 bg-slate-900/60 p-3 text-center shadow-lg shadow-emerald-950/30 sm:p-5"
-              style={{ animationDelay: '0s' }}
-            >
-              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-base font-bold text-white shadow-lg shadow-emerald-900/30 sm:h-12 sm:w-12 sm:text-lg">
-                1
-              </div>
-              <h3 className="mb-2 text-sm font-bold text-white sm:text-lg">Snap or Upload</h3>
-              <p className="text-[10px] leading-relaxed text-slate-400 sm:text-sm">
-                Position your phone camera over the product packaging, ingredient panel, or halal certification logo.
-              </p>
-            </div>
-
-            <div
-              className="workflow-step flex min-h-[200px] flex-col items-center rounded-xl border border-slate-800 bg-slate-900/40 p-3 text-center sm:p-5"
-              style={{ animationDelay: '2s' }}
-            >
-              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-base font-bold text-white shadow-lg shadow-emerald-900/30 sm:h-12 sm:w-12 sm:text-lg">
-                2
-              </div>
-              <h3 className="mb-2 text-sm font-bold text-white sm:text-lg">OCR Parsing & Match</h3>
-              <p className="text-[10px] leading-relaxed text-slate-400 sm:text-sm">
-                RapidOCR extracts textual content and tests each word against verified halal listings and prohibited additives.
-              </p>
-            </div>
-
-            <div
-              className="workflow-step flex min-h-[200px] flex-col items-center rounded-xl border border-slate-800 bg-slate-900/40 p-3 text-center sm:p-5"
-              style={{ animationDelay: '4s' }}
-            >
-              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-base font-bold text-white shadow-lg shadow-emerald-900/30 sm:h-12 sm:w-12 sm:text-lg">
-                3
-              </div>
-              <h3 className="mb-2 text-sm font-bold text-white sm:text-lg">Transparent Verdict</h3>
-              <p className="text-[10px] leading-relaxed text-slate-400 sm:text-sm">
-                Receive an instant compliance verdict with detailed reasons, certifier logo verification, and guidance.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <style>{`
-        .workflow-step {
-          animation: workflowStepCycle 6s ease-in-out infinite;
-          transform-origin: center;
-        }
-
-        @keyframes workflowStepCycle {
-          0%, 24% {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-            border-color: rgba(52, 211, 153, 0.6);
-            box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.15), 0 16px 25px rgba(6, 78, 59, 0.25);
-          }
-          28%, 31% {
-            opacity: 0.8;
-            transform: translateY(4px) scale(0.985);
-            border-color: rgba(51, 65, 85, 1);
-            box-shadow: none;
-          }
-          32%, 100% {
-            opacity: 0.35;
-            transform: translateY(8px) scale(0.97);
-            border-color: rgba(51, 65, 85, 1);
-            box-shadow: none;
-          }
-        }
-      `}</style>
-
-      {/* Recognized Certifiers & Scope Section */}
-      <section id="certifiers" className="py-10 sm:py-20 bg-slate-900/60 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-xs sm:text-sm font-bold uppercase tracking-[0.25em] text-emerald-400">
-              Philippine Halal Accreditation
-            </h2>
-            <p className="mt-2 text-xl sm:text-3xl font-extrabold text-white tracking-tight">
-              Supported Certifying Bodies & Local Scope
-            </p>
-            <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
-              HalalVerify is focused specifically on the local food ecosystem of <strong>Zamboanga City</strong>, recognizing certifications issued by authorized Islamic bodies such as the National Commission on Muslim Filipinos (NCMF), Halal Development Institute of the Philippines (HDIP), Islamic Da&apos;wah Council of the Philippines (IDCP), and international mutual recognition partners.
-            </p>
-
-            <div className="mt-6 sm:mt-8">
-              <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-slate-300">Philippine Halal Bodies</h3>
-              <div className="mt-3 sm:mt-4 grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4 text-left">
-                {[
-                  {
-                    name: 'NCMF',
-                    fullName: 'National Commission on Muslim Filipinos',
-                    description: 'Government agency supporting Muslim affairs and halal development in the Philippines.',
-                    url: 'https://www.foi.gov.ph/agencies/ncmf/',
-                  },
-                  {
-                    name: 'HDIP',
-                    fullName: 'Halal Development Institute of the Philippines',
-                    description: 'Philippine halal development and certification organization serving local businesses.',
-                    url: 'https://www.hdiphilippineshalal.com/',
-                  },
-                  {
-                    name: 'IDCP',
-                    fullName: 'Islamic Da&apos;wah Council of the Philippines',
-                    description: 'Islamic organization providing halal certification and related community services.',
-                    url: 'https://www.idcphalal.org/',
-                  },
-                  {
-                    name: 'DTI',
-                    fullName: 'Department of Trade and Industry',
-                    description: 'Government trade agency supporting Philippine halal industry and export development.',
-                    url: 'https://tradelinephilippines.dti.gov.ph/ca/web/tradeline-portal/philippine-halal-export-development',
-                  },
-                ].map((body) => (
-                  <div key={body.name} className="flex min-h-[180px] flex-col rounded-xl border border-slate-800 bg-slate-900 p-2.5 sm:p-4">
-                    <span className="font-extrabold text-emerald-400 text-sm sm:text-base">{body.name}</span>
-                    <p className="mt-1 text-[9px] font-semibold uppercase tracking-wide text-slate-300 sm:text-[10px]">{body.fullName}</p>
-                    <p className="mt-2 flex-1 text-[10px] leading-relaxed text-slate-400 sm:text-[11px]">{body.description}</p>
-                    <a
-                      href={body.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-3 inline-flex items-center justify-center gap-1 rounded-md border border-emerald-700/70 px-2 py-1 text-[9px] font-bold text-emerald-300 transition hover:border-emerald-500 hover:bg-emerald-950 sm:px-2.5 sm:py-1.5 sm:text-[10px]"
-                    >
-                      Official Website <ExternalLink size={11} />
-                    </a>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-7 sm:mt-10">
-              <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-slate-300">International Halal Bodies</h3>
-              <div className="mt-3 sm:mt-4 grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-2 text-left">
-                {[
-                  {
-                    name: 'JAKIM',
-                    fullName: 'Jabatan Kemajuan Islam Malaysia',
-                    description: "Malaysia's Department of Islamic Development and national halal certification authority.",
-                    url: 'https://www.islam.gov.my/ms/hukum-undang-undang/semakan-status-halal',
-                  },
-                  {
-                    name: 'MUIS',
-                    fullName: 'Majlis Ugama Islam Singapura',
-                    description: "Singapore's Islamic Religious Council, providing halal certification and verification services.",
-                    url: 'https://halal.muis.gov.sg/account/login',
-                  },
-                ].map((body) => (
-                  <div key={body.name} className="flex min-h-[180px] flex-col rounded-xl border border-slate-800 bg-slate-900 p-2.5 sm:p-4">
-                    <span className="font-extrabold text-emerald-400 text-sm sm:text-base">{body.name}</span>
-                    <p className="mt-1 text-[9px] font-semibold uppercase tracking-wide text-slate-300 sm:text-[10px]">{body.fullName}</p>
-                    <p className="mt-2 flex-1 text-[10px] leading-relaxed text-slate-400 sm:text-[11px]">{body.description}</p>
-                    <a
-                      href={body.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-3 inline-flex items-center justify-center gap-1 rounded-md border border-emerald-700/70 px-2 py-1 text-[9px] font-bold text-emerald-300 transition hover:border-emerald-500 hover:bg-emerald-950 sm:px-2.5 sm:py-1.5 sm:text-[10px]"
-                    >
-                      Official Website <ExternalLink size={11} />
-                    </a>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Call to Action Banner */}
-      <section className="py-10 sm:py-20 relative overflow-hidden">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="rounded-2xl sm:rounded-3xl bg-gradient-to-r from-emerald-950 via-slate-900 to-teal-950 border border-emerald-700/50 p-5 sm:p-14 shadow-2xl relative">
-            <div className="max-w-2xl mx-auto">
-              <h2 className="text-xl sm:text-4xl font-extrabold text-white tracking-tight">
-                Start Verifying Products Today
-              </h2>
-              <p className="mt-4 text-xs sm:text-base text-slate-300 leading-relaxed">
-                Scan your first product, check halal logos, or browse certified local restaurants across Zamboanga City right now.
-              </p>
-
-              <div className="mt-5 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 max-w-sm sm:max-w-none mx-auto">
-                <button
-                  onClick={() => onViewChange('scanner')}
-                  className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-3 sm:px-6 sm:py-3.5 font-bold text-white text-xs sm:text-base shadow-lg shadow-emerald-900/50 transition hover:from-emerald-500 hover:to-teal-500"
-                >
-                  <Camera size={18} className="sm:h-5 sm:w-5" />
-                  <span>Open Halal Scanner</span>
-                </button>
-
-                <button
-                  onClick={() => onViewChange('login')}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-5 py-3 sm:px-6 sm:py-3.5 font-semibold text-slate-200 text-xs sm:text-base transition hover:bg-slate-700"
-                >
-                  <LogIn size={17} className="sm:h-[18px] sm:w-[18px]" />
-                  <span>Sign In / Register</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="mt-auto border-t border-slate-800 bg-[#0a0f19] py-7 sm:py-10 text-[11px] sm:text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
-          <div className="flex items-center gap-3">
-            <img src="/halalverify-logo.png" alt="HalalVerify" className="h-7 w-7 rounded-full opacity-80" />
-            <span className="font-bold text-slate-300 tracking-wider">HALALVERIFY ZAMBOANGA</span>
-          </div>
-
-          <p className="text-center text-slate-400">
-            Capstone Research Project &bull; Western Mindanao State University &bull; Zamboanga City
-          </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6">
-            <button onClick={() => onViewChange('scanner')} className="hover:text-emerald-400 transition">Scanner</button>
-            <button onClick={() => onViewChange('products')} className="hover:text-emerald-400 transition">Catalog</button>
-            <button onClick={() => onViewChange('map')} className="hover:text-emerald-400 transition">Map</button>
-            <button onClick={() => onViewChange('login')} className="hover:text-emerald-400 transition">Sign In</button>
-          </div>
-        </div>
-      </footer>
-
-      {/* Community Contribution Modal */}
       <ContributionModal
         isOpen={showContributionModal}
         onClose={() => setShowContributionModal(false)}
@@ -945,7 +592,6 @@ export default function LandingPage({ onViewChange, userRole }) {
         onSubmitted={() => {}}
       />
 
-      {/* Guest Authentication Prompt Modal */}
       <AuthPromptModal
         isOpen={showAuthPrompt}
         onClose={() => setShowAuthPrompt(false)}
