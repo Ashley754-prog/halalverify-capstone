@@ -26,7 +26,7 @@ export default function VerificationQueueTabs({
 }) {
     if (activeTab === 'establishments') {
         return (
-            <div className="flex-1 bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3 overflow-y-auto">
+            <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                     <div>
                         <h3 className="text-sm font-bold text-slate-900">
@@ -161,7 +161,7 @@ export default function VerificationQueueTabs({
 
     if (activeTab === 'products') {
         return (
-            <div className="flex-1 bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3 overflow-y-auto">
+            <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                     <div>
                         <h3 className="text-sm font-bold text-slate-900">
@@ -254,7 +254,7 @@ export default function VerificationQueueTabs({
 
     if (activeTab === 'reports') {
         return (
-            <div className="flex-1 bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3 overflow-y-auto">
+            <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                     <div>
                         <h3 className="text-sm font-bold text-slate-900">

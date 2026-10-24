@@ -569,7 +569,7 @@ export const Registry = ({ userRole, onViewChange }) => {
     };
 
     return (
-        <div className="p-3 sm:p-6 md:p-8 space-y-3 sm:space-y-5 flex-1 flex flex-col h-full">
+        <div className="p-3 sm:p-6 md:p-8 space-y-3 sm:space-y-5 flex-1 flex flex-col min-h-full">
             {/* Module Title and Actions Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3 pb-1 border-b border-slate-200/80 shrink-0">
                 <div>

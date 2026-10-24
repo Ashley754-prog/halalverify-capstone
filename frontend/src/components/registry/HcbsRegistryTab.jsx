@@ -74,7 +74,7 @@ export default function HcbsRegistryTab({
             </div>
 
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto pr-1 pb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
                 {filteredHcbs.map((body) => {
                     const isGov = body.category === 'Government Oversight';
                     const isIntl = body.category === 'International Authority';

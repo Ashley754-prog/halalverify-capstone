@@ -489,9 +489,9 @@ export default function VerificationQueue({ onViewChange }) {
     };
 
     return (
-        <div className="p-3 sm:p-5 md:p-6 space-y-4 sm:space-y-5 flex-1 flex flex-col h-full bg-slate-50">
+        <div className="p-3 sm:p-5 md:p-6 space-y-4 sm:space-y-5 flex-1 flex flex-col bg-slate-50 min-h-full">
             {/* Navigation Tabs Bar */}
-            <div className="bg-white rounded-2xl border border-slate-200/90 p-2 sm:p-2.5 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2 shrink-0">
+            <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-xs rounded-2xl border border-slate-200/90 p-2 sm:p-2.5 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2 shrink-0">
                 {/* Row 1 on mobile: Module Title & Action Buttons */}
                 <div className="flex md:hidden items-center justify-between gap-2 w-full">
                     <div className="flex items-center gap-1.5 font-black text-slate-800 text-xs tracking-tight">

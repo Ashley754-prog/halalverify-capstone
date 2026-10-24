@@ -100,7 +100,7 @@ export default function EstablishmentsRegistryTab({
 
 
             {/* Establishments Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 overflow-y-auto pr-1 sm:pr-2 pb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 pb-4">
                 {filteredEstablishments.length === 0 ? (
                     <div className="col-span-full text-center py-12 text-slate-400">
                         <Database size={32} className="mx-auto text-slate-300 mb-2" />
