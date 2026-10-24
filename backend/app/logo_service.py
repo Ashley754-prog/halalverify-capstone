@@ -234,7 +234,7 @@ def detect_halal_logo(image_input) -> Dict:
         orig_w, orig_h = image.size
 
         # Pass 1: Global Letterboxed Frame
-        b1, s1, c1 = _run_yolo_onnx_pass(session, image, 0.0, 0.0, conf_threshold=0.20)
+        b1, s1, c1 = _run_yolo_onnx_pass(session, image, 0.0, 0.0, conf_threshold=0.35)
         max_conf1 = float(np.max(s1)) if len(s1) > 0 else 0.0
 
         b2, s2, c2 = np.empty((0, 4)), np.empty(0), np.empty(0)
@@ -249,7 +249,7 @@ def detect_halal_logo(image_input) -> Dict:
             px = (pad_dim - sw) // 2
             py = (pad_dim - sh) // 2
             bg.paste(scaled_img, (px, py))
-            b2_raw, s2, c2 = _run_yolo_onnx_pass(session, bg, 0.0, 0.0, conf_threshold=0.20)
+            b2_raw, s2, c2 = _run_yolo_onnx_pass(session, bg, 0.0, 0.0, conf_threshold=0.35)
             if len(b2_raw) > 0:
                 bx1 = (b2_raw[:, 0] - px) / scale
                 by1 = (b2_raw[:, 1] - py) / scale
@@ -265,7 +265,7 @@ def detect_halal_logo(image_input) -> Dict:
             crop_x = (orig_w - crop_dim) / 2.0
             crop_y = (orig_h - crop_dim) / 2.0
             center_roi = image.crop((crop_x, crop_y, crop_x + crop_dim, crop_y + crop_dim))
-            b3, s3, c3 = _run_yolo_onnx_pass(session, center_roi, crop_x, crop_y, conf_threshold=0.20)
+            b3, s3, c3 = _run_yolo_onnx_pass(session, center_roi, crop_x, crop_y, conf_threshold=0.35)
 
         # Select candidate detections based on best detection context
         if max_conf1 >= 0.75:
@@ -315,7 +315,8 @@ def detect_halal_logo(image_input) -> Dict:
 
         detected_logos: List[Dict] = []
         highest_conf = 0.0
-        best_logo_body = "Accredited Halal Logo"
+        best_logo_body = "Recognized Halal Certification Seal"
+        best_raw_class = ""
         has_invalid = False
 
         for idx in keep_indices:
@@ -325,6 +326,10 @@ def detect_halal_logo(image_input) -> Dict:
             raw_class_name = _class_names.get(cls_id, FALLBACK_CLASS_NAMES.get(cls_id, f"class_{cls_id}"))
             formatted_name = CLASS_LABEL_MAPPING.get(raw_class_name, raw_class_name)
             is_invalid = raw_class_name.lower() in ("invalid_logo", "counterfeit")
+
+            # Strict Counterfeit Guard: ignore low-confidence (< 75%) Invalid_Logo detections
+            if is_invalid and conf < 0.75:
+                continue
 
             bx1 = max(0.0, min(float(orig_w), float(box[0])))
             by1 = max(0.0, min(float(orig_h), float(box[1])))
@@ -339,12 +344,10 @@ def detect_halal_logo(image_input) -> Dict:
                 max(0.0, min(1.0, round(by2 / orig_h, 4))),
             ]
 
-            if is_invalid:
-                has_invalid = True
-
             if conf > highest_conf:
                 highest_conf = conf
                 best_logo_body = formatted_name
+                best_raw_class = raw_class_name
 
             detected_logos.append({
                 "class_id": cls_id,
@@ -356,13 +359,46 @@ def detect_halal_logo(image_input) -> Dict:
                 "norm_box": norm_pct_box,
             })
 
+        if not detected_logos:
+            return {
+                "logoDetected": False,
+                "logoConfidence": 0.0,
+                "logoBody": "No Halal Logo Detected",
+                "isInvalidLogo": False,
+                "detectedLogos": [],
+                "imageWidth": orig_w,
+                "imageHeight": orig_h,
+            }
+
         detected_logos.sort(key=lambda x: x["confidence"], reverse=True)
+        top_logo = detected_logos[0]
+        has_invalid = bool(top_logo.get("is_invalid") and highest_conf >= 0.75)
+
+        # Two-Tier Confidence Gating:
+        # At >= 78% visual confidence, YOLOv8 reliably distinguishes the specific HCB seal.
+        # Between 35% and 77.9%, YOLOv8 reliably localizes that a Halal seal exists,
+        # but circular seals without readable text can look similar across HCBs.
+        # Keep the visual candidate for Stage 3 Multi-Modal Consensus while avoiding false HCB attribution.
+        HIGH_CONF_THRESHOLD = 0.78
+        is_ambiguous_hcb = bool(not has_invalid and highest_conf < HIGH_CONF_THRESHOLD)
+        visual_candidate = best_logo_body
+        visual_candidate_code = best_raw_class
+
+        if is_ambiguous_hcb:
+            best_logo_body = "Recognized Halal Certification Seal"
+            detected_logos[0]["visual_candidate"] = visual_candidate
+            detected_logos[0]["visual_candidate_code"] = visual_candidate_code
+            detected_logos[0]["label"] = best_logo_body
+            detected_logos[0]["class_name"] = "Generic_Halal_Seal"
 
         return {
             "logoDetected": True,
             "logoConfidence": round(highest_conf * 100, 1),
             "logoBody": best_logo_body,
             "isInvalidLogo": has_invalid,
+            "isAmbiguousHcb": is_ambiguous_hcb,
+            "visualCandidate": visual_candidate,
+            "visualCandidateCode": visual_candidate_code,
             "detectedLogos": detected_logos,
             "bestBox": detected_logos[0]["norm_box"] if detected_logos else None,
             "imageWidth": orig_w,

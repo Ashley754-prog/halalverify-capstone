@@ -96,6 +96,96 @@ PRIMARY_DOUBTFUL_INGREDIENTS = [
 
 _cached_additives = []
 _cached_additives_ts = 0
+_cached_catalog_certs = []
+_cached_catalog_certs_ts = 0
+
+HCB_METADATA_BY_CODE = {
+    "IDCP": ("IDCP", 0, "IDCP (Islamic Da'wah Council of the Philippines)", 96.0),
+    "HDIP": ("HDIP", 1, "HDIP (Halal Development Institute of the Philippines)", 96.0),
+    "NATIONAL_HALAL_LOGO": ("National_Halal_Logo", 2, "Philippine National Halal Seal (DTI / NCMF)", 95.0),
+    "BUSC": ("BUSC", 3, "BUSC (Bangsamoro Unity Summit Consultative)", 95.0),
+    "BPCC": ("BPCC", 4, "BPCC (Bangsamoro Professional Certification)", 95.0),
+    "MMHCB": ("MMHCB", 5, "MMHCB (Mindanao Muslim Halal Certification Board)", 96.0),
+    "PUCOI": ("PUCOI", 6, "PUCOI (Philippine Ulama Congress Organization)", 96.0),
+    "AHIP": ("AHIP", 7, "AHIP (Alliance for Halal Integrity in the Phils)", 96.0),
+    "HICCIP": ("HICCIP", 8, "HICCIP (Halal International Chamber of Commerce and Industries Phils)", 96.0),
+    "MINHA": ("MinHA", 9, "MinHA (Mindanao Halal Authority)", 96.0),
+    "PRIME": ("PRIME", 10, "PRIME Certification Asia", 95.0),
+    "FIQHI": ("FIQHI", 11, "FIQHI Islamic Certification", 95.0),
+    "MASLAHA": ("MASLAHA", 12, "MASLAHA Halal Certification", 96.0),
+    "PHILCOSED": ("Philcosed", 13, "PHILCOSED Halal Certification", 95.0),
+    "NCMF_GENERAL": ("NCMF_General", 14, "NCMF Official Halal Seal (Philippines)", 96.0),
+    "NCMF": ("NCMF_General", 14, "NCMF Official Halal Seal (Philippines)", 96.0),
+    "THAILAND_CICOT": ("Thailand_CICOT", 15, "Thailand Halal - CICOT (Recognized Foreign Certifier)", 95.0),
+    "CICOT": ("Thailand_CICOT", 15, "Thailand Halal - CICOT (Recognized Foreign Certifier)", 95.0),
+    "MALAYSIA_JAKIM": ("Malaysia_JAKIM", 16, "Malaysia Halal - JAKIM (Recognized Foreign Certifier)", 95.0),
+    "JAKIM": ("Malaysia_JAKIM", 16, "Malaysia Halal - JAKIM (Recognized Foreign Certifier)", 95.0),
+    "INDONESIA_BPJPH": ("Indonesia_BPJPH", 17, "Indonesia Halal - BPJPH / MUI (Recognized Foreign Certifier)", 95.0),
+    "BPJPH": ("Indonesia_BPJPH", 17, "Indonesia Halal - BPJPH / MUI (Recognized Foreign Certifier)", 95.0),
+    "MUI": ("Indonesia_BPJPH", 17, "Indonesia Halal - BPJPH / MUI (Recognized Foreign Certifier)", 95.0),
+    "SINGAPORE_MUIS": ("Singapore_MUIS", -1, "Singapore Halal - MUIS (Recognized Foreign Certifier)", 95.0),
+    "MUIS": ("Singapore_MUIS", -1, "Singapore Halal - MUIS (Recognized Foreign Certifier)", 95.0),
+}
+
+VISUAL_CANDIDATE_RIM_KEYWORDS = {
+    "IDCP": ["ISLAMIC", "DAWAH", "DA'WAH", "COUNCIL", "MANILA"],
+    "HDIP": ["DEVELOPMENT", "INSTITUTE"],
+    "HICCIP": ["INTERNATIONAL", "CHAMBER", "COMMERCE", "INDUSTRIES"],
+    "MMHCB": ["MINDANAO", "MUSLIM", "BOARD"],
+    "MASLAHA": ["MASLAHA", "ADVOCACY", "AFFAIRS"],
+    "MINHA": ["MINDANAO", "AUTHORITY"],
+    "PUCOI": ["ULAMA", "CONGRESS", "ORGANIZATION"],
+    "AHIP": ["ALLIANCE", "INTEGRITY"],
+    "PRIME": ["PRIME", "ASIA", "CERTIFICATION"],
+    "FIQHI": ["FIQHI", "ISLAMIC"],
+    "PHILCOSED": ["PHILCOSED", "SOCIO", "ECONOMIC"],
+    "NCMF_GENERAL": ["NATIONAL", "COMMISSION", "MUSLIM", "FILIPINOS"],
+    "NATIONAL_HALAL_LOGO": ["NATIONAL", "PHILIPPINES", "DTI"],
+    "BUSC": ["BANGSAMORO", "UNITY", "SUMMIT", "BASILAN"],
+    "BPCC": ["BANGSAMORO", "PROFESSIONAL", "CONSULTATIVE"],
+    "MALAYSIA_JAKIM": ["MALAYSIA", "KEMAJUAN", "MS 1500", "MS1500"],
+    "INDONESIA_BPJPH": ["INDONESIA", "ULAMA", "MAJELIS"],
+    "THAILAND_CICOT": ["THAILAND", "CENTRAL", "ISLAMIC"],
+}
+
+
+def match_certifier_from_catalog(upper_text: str):
+    """Cross-references OCR packaging text against verified products/certificates in Supabase to resolve graphic-only seals."""
+    global _cached_catalog_certs, _cached_catalog_certs_ts
+    if not upper_text or len(upper_text) < 4:
+        return None
+
+    now = time.time()
+    if not _cached_catalog_certs or (now - _cached_catalog_certs_ts > 180):
+        try:
+            res = (
+                supabase.table("products")
+                .select("name, brand, certificate_no, certifying_bodies(code, name)")
+                .not_.is_("certifying_body_id", "null")
+                .limit(400)
+                .execute()
+            )
+            if res.data:
+                _cached_catalog_certs = res.data
+                _cached_catalog_certs_ts = now
+        except Exception:
+            pass
+
+    for item in (_cached_catalog_certs or []):
+        cb = item.get("certifying_bodies") or {}
+        cb_code = (cb.get("code") or "").strip().upper()
+        if not cb_code or cb_code not in HCB_METADATA_BY_CODE:
+            continue
+
+        cert_no = (item.get("certificate_no") or "").strip().upper()
+        if cert_no and len(cert_no) >= 5 and cert_no in upper_text:
+            return HCB_METADATA_BY_CODE[cb_code]
+
+        p_name = (item.get("name") or "").strip().upper()
+        if p_name and len(p_name) >= 8 and p_name in upper_text:
+            return HCB_METADATA_BY_CODE[cb_code]
+
+    return None
 
 
 def get_all_additives():
@@ -466,9 +556,15 @@ def analyze_label_image(image_base64: str) -> dict:
 
     gc.collect()
 
-    # Multi-Modal Consensus: Cross-reference visual detection with OCR text signatures
+    # Multi-Modal Consensus: Cross-reference visual detection with OCR text, country-of-origin, and catalog signatures
     if extracted_text:
         upper_text = extracted_text.upper()
+        has_halal_signal = bool(
+            logo_result.get("logoDetected")
+            or "HALAL" in upper_text
+            or "حلال" in extracted_text
+            or "حاال" in extracted_text
+        )
 
         is_idcp_text = bool(
             re.search(r"\bIDCP\b", upper_text)
@@ -515,12 +611,60 @@ def analyze_label_image(image_base64: str) -> dict:
             re.search(r"\bNCMF\b", upper_text)
             or "NATIONAL COMMISSION ON MUSLIM FILIPINOS" in upper_text
         )
-        is_jakim_text = bool(re.search(r"\bJAKIM\b", upper_text) or "KEMAJUAN ISLAM MALAYSIA" in upper_text)
-        is_muis_text = bool(re.search(r"\bMUIS\b", upper_text) or "MAJLIS UGAMA ISLAM" in upper_text)
-        is_bpjph_text = bool(re.search(r"\bBPJPH\b", upper_text) or "HALAL INDONESIA" in upper_text)
-        is_cicot_text = bool(re.search(r"\bCICOT\b", upper_text) or "CENTRAL ISLAMIC COUNCIL OF THAILAND" in upper_text)
-        is_busc_text = bool(re.search(r"\bBUSC\b", upper_text) or "BANGSAMORO UNITY" in upper_text)
-        is_bpcc_text = bool(re.search(r"\bBPCC\b", upper_text) or "BANGSAMORO PROFESSIONAL" in upper_text)
+        is_busc_text = bool(re.search(r"\bBUSC\b", upper_text) or "BANGSAMORO UNITY" in upper_text or "BASILAN ULAMA" in upper_text)
+        is_bpcc_text = bool(re.search(r"\bBPCC\b", upper_text) or "BANGSAMORO PROFESSIONAL" in upper_text or "BANGSAMORO CONSULTATIVE" in upper_text)
+
+        # Foreign Certifiers: Support both explicit acronyms AND graphic-only seals paired with country-of-origin markers
+        is_jakim_text = bool(
+            re.search(r"\bJAKIM\b", upper_text)
+            or "KEMAJUAN ISLAM MALAYSIA" in upper_text
+            or "HALAL MALAYSIA" in upper_text
+            or re.search(r"\bMS\s*1500\b", upper_text)
+            or (
+                has_halal_signal
+                and any(
+                    m in upper_text
+                    for m in (
+                        "MALAYSIA", "KUALA LUMPUR", "SELANGOR", "PENANG", "JOHOR",
+                        "SARAWAK", "SABAH", "SDN BHD", "SDN. BHD.", "BUATAN MALAYSIA",
+                    )
+                )
+            )
+        )
+        is_muis_text = bool(
+            re.search(r"\bMUIS\b", upper_text)
+            or "MAJLIS UGAMA ISLAM" in upper_text
+            or "HALAL SINGAPURA" in upper_text
+            or (has_halal_signal and ("SINGAPURA" in upper_text or "SINGAPORE" in upper_text))
+        )
+        is_bpjph_text = bool(
+            re.search(r"\bBPJPH\b", upper_text)
+            or re.search(r"\bLPPOM\b", upper_text)
+            or re.search(r"\bMUI\b", upper_text)
+            or "HALAL INDONESIA" in upper_text
+            or "MAJELIS ULAMA" in upper_text
+            or (
+                has_halal_signal
+                and any(
+                    m in upper_text
+                    for m in (
+                        "INDONESIA", "JAKARTA", "SURABAYA", "BANDUNG", "TANGERANG",
+                        "BEKASI", "SIDOARJO", "DIPRODUKSI OLEH", "BPOM RI",
+                    )
+                )
+            )
+        )
+        is_cicot_text = bool(
+            re.search(r"\bCICOT\b", upper_text)
+            or "CENTRAL ISLAMIC COUNCIL" in upper_text
+            or (
+                has_halal_signal
+                and any(
+                    m in upper_text
+                    for m in ("THAILAND", "BANGKOK", "CHONBURI", "SAMUT PRAKAN", "PRODUCT OF THAILAND")
+                )
+            )
+        )
 
         # Ground truth correction: text printed on packaging takes precedence over ambiguous visual models
         current_logos = logo_result.get("detectedLogos") or []
@@ -529,41 +673,50 @@ def analyze_label_image(image_base64: str) -> dict:
 
         cert_match = None
         if is_idcp_text:
-            cert_match = ("IDCP", 0, "IDCP (Islamic Da'wah Council of the Philippines)", 97.0)
+            cert_match = HCB_METADATA_BY_CODE["IDCP"]
         elif is_hdip_text:
-            cert_match = ("HDIP", 1, "HDIP (Halal Development Institute of the Philippines)", 96.0)
+            cert_match = HCB_METADATA_BY_CODE["HDIP"]
         elif is_hiccip_text:
-            cert_match = ("HICCIP", 8, "HICCIP (Halal International Chamber of Commerce and Industries Phils)", 96.0)
+            cert_match = HCB_METADATA_BY_CODE["HICCIP"]
         elif is_mmhcb_text:
-            cert_match = ("MMHCB", 5, "MMHCB (Mindanao Muslim Halal Certification Board)", 96.0)
+            cert_match = HCB_METADATA_BY_CODE["MMHCB"]
         elif is_maslaha_text:
-            cert_match = ("MASLAHA", 12, "MASLAHA Halal Certification", 96.0)
+            cert_match = HCB_METADATA_BY_CODE["MASLAHA"]
         elif is_minha_text:
-            cert_match = ("MinHA", 9, "MinHA (Mindanao Halal Authority)", 96.0)
+            cert_match = HCB_METADATA_BY_CODE["MINHA"]
         elif is_pucoi_text:
-            cert_match = ("PUCOI", 6, "PUCOI (Philippine Ulama Congress Organization)", 96.0)
+            cert_match = HCB_METADATA_BY_CODE["PUCOI"]
         elif is_ahip_text:
-            cert_match = ("AHIP", 7, "AHIP (Alliance for Halal Integrity in the Phils)", 96.0)
+            cert_match = HCB_METADATA_BY_CODE["AHIP"]
         elif is_prime_text:
-            cert_match = ("PRIME", 10, "PRIME Certification Asia", 95.0)
+            cert_match = HCB_METADATA_BY_CODE["PRIME"]
         elif is_fiqhi_text:
-            cert_match = ("FIQHI", 11, "FIQHI Islamic Certification", 95.0)
+            cert_match = HCB_METADATA_BY_CODE["FIQHI"]
         elif is_philcosed_text:
-            cert_match = ("Philcosed", 13, "PHILCOSED Halal Certification", 95.0)
+            cert_match = HCB_METADATA_BY_CODE["PHILCOSED"]
         elif is_ncmf_text:
-            cert_match = ("NCMF_General", 14, "NCMF Official Halal Seal (Philippines)", 96.0)
+            cert_match = HCB_METADATA_BY_CODE["NCMF_GENERAL"]
         elif is_busc_text:
-            cert_match = ("BUSC", 3, "BUSC (Bangsamoro Unity Summit Consultative)", 95.0)
+            cert_match = HCB_METADATA_BY_CODE["BUSC"]
         elif is_bpcc_text:
-            cert_match = ("BPCC", 4, "BPCC (Bangsamoro Professional Certification)", 95.0)
+            cert_match = HCB_METADATA_BY_CODE["BPCC"]
         elif is_jakim_text:
-            cert_match = ("Malaysia_JAKIM", 16, "Malaysia Halal - JAKIM (Recognized Foreign Certifier)", 96.0)
+            cert_match = HCB_METADATA_BY_CODE["MALAYSIA_JAKIM"]
         elif is_muis_text:
-            cert_match = ("Singapore_MUIS", -1, "Singapore Halal - MUIS (Recognized Foreign Certifier)", 96.0)
+            cert_match = HCB_METADATA_BY_CODE["SINGAPORE_MUIS"]
         elif is_bpjph_text:
-            cert_match = ("Indonesia_BPJPH", 17, "Indonesia Halal - BPJPH / MUI (Recognized Foreign Certifier)", 96.0)
+            cert_match = HCB_METADATA_BY_CODE["INDONESIA_BPJPH"]
         elif is_cicot_text:
-            cert_match = ("Thailand_CICOT", 15, "Thailand Halal - CICOT (Recognized Foreign Certifier)", 96.0)
+            cert_match = HCB_METADATA_BY_CODE["THAILAND_CICOT"]
+
+        # Corroborate moderate-confidence YOLOv8 visual candidate with partial rim text or Supabase Product Catalog
+        if not cert_match and logo_result.get("logoDetected"):
+            vis_code = (logo_result.get("visualCandidateCode") or "").strip().upper()
+            rim_words = VISUAL_CANDIDATE_RIM_KEYWORDS.get(vis_code, [])
+            if vis_code in HCB_METADATA_BY_CODE and rim_words and any(w in upper_text for w in rim_words):
+                cert_match = HCB_METADATA_BY_CODE[vis_code]
+            else:
+                cert_match = match_certifier_from_catalog(upper_text)
 
         if cert_match:
             c_name, c_id, c_label, c_conf = cert_match
@@ -571,6 +724,7 @@ def analyze_label_image(image_base64: str) -> dict:
             logo_result["logoConfidence"] = max(logo_result.get("logoConfidence", 0), c_conf)
             logo_result["logoBody"] = c_label
             logo_result["isInvalidLogo"] = False
+            logo_result["isAmbiguousHcb"] = False
             logo_result["detectedLogos"] = [
                 {
                     "label": c_label,
@@ -582,12 +736,13 @@ def analyze_label_image(image_base64: str) -> dict:
                     "norm_box": base_norm,
                 }
             ]
-        elif not logo_result.get("logoDetected") and ("HALAL CERTIFIED" in upper_text or "CERTIFIED HALAL" in upper_text or "HALAL" in upper_text):
+        elif not logo_result.get("logoDetected") and ("HALAL CERTIFIED" in upper_text or "CERTIFIED HALAL" in upper_text or "HALAL" in upper_text or "حلال" in extracted_text):
             logo_result["logoDetected"] = True
             logo_result["logoConfidence"] = 90.0
-            logo_result["logoBody"] = "Halal Certified Packaging Seal"
+            logo_result["logoBody"] = "Recognized Halal Certification Seal"
             logo_result["isInvalidLogo"] = False
-            logo_result["detectedLogos"] = [{"label": "Halal Certified", "confidence": 90.0, "is_invalid": False, "box": [0,0,0,0], "norm_box": [0.25, 0.25, 0.75, 0.75]}]
+            logo_result["isAmbiguousHcb"] = True
+            logo_result["detectedLogos"] = [{"label": "Recognized Halal Certification Seal", "class_name": "Generic_Halal_Seal", "confidence": 90.0, "is_invalid": False, "box": [0,0,0,0], "norm_box": [0.25, 0.25, 0.75, 0.75]}]
 
     # Stage 4: Relational Lexicon Cross-Matching against Database Additives
     t_match = time.time()
@@ -657,6 +812,8 @@ def analyze_label_image(image_base64: str) -> dict:
         "logoConfidence": logo_result.get("logoConfidence", 0.0),
         "logoBody": logo_result.get("logoBody", "No Logo Detected"),
         "isInvalidLogo": logo_result.get("isInvalidLogo", False),
+        "isAmbiguousHcb": logo_result.get("isAmbiguousHcb", False),
+        "visualCandidate": logo_result.get("visualCandidate"),
         "detectedLogos": logo_result.get("detectedLogos", []),
         "bestBox": logo_result.get("bestBox"),
         "imageWidth": logo_result.get("imageWidth"),

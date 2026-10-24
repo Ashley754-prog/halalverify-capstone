@@ -33,8 +33,42 @@ const CERTIFIER_LOGO_MAP = [
     { keys: ['invalid', 'counterfeit', 'unrecognized'], src: '/logos/Invalid_Logo.png' },
 ];
 
-const resolveReferenceLogoSrc = (scanResult) => {
+const ACCREDITED_HCB_OPTIONS = [
+    { value: '', label: 'Auto-Detected Authority' },
+    { value: "IDCP (Islamic Da'wah Council of the Philippines)", label: 'IDCP (Islamic Da\'wah Council)' },
+    { value: 'HDIP (Halal Development Institute of the Philippines)', label: 'HDIP (Halal Development Institute)' },
+    { value: 'NCMF Official Halal Seal (Philippines)', label: 'NCMF / National Halal Seal' },
+    { value: 'MMHCB (Mindanao Muslim Halal Certification Board)', label: 'MMHCB (Mindanao Muslim Halal Board)' },
+    { value: 'BUSC (Bangsamoro Unity Summit Consultative)', label: 'BUSC (Basilan / Bangsamoro Ulama)' },
+    { value: 'BPCC (Bangsamoro Professional Certification)', label: 'BPCC (Bangsamoro Consultative)' },
+    { value: 'HICCIP (Halal International Chamber of Commerce and Industries Phils)', label: 'HICCIP (Chamber of Commerce)' },
+    { value: 'MinHA (Mindanao Halal Authority)', label: 'MinHA (Mindanao Halal Authority)' },
+    { value: 'PUCOI (Philippine Ulama Congress Organization)', label: 'PUCOI (Philippine Ulama Congress)' },
+    { value: 'MASLAHA Halal Certification', label: 'MASLAHA Halal Certification' },
+    { value: 'PRIME Certification Asia', label: 'PRIME Certification Asia' },
+    { value: 'FIQHI Islamic Certification', label: 'FIQHI Islamic Certification' },
+    { value: 'PHILCOSED Halal Certification', label: 'PHILCOSED Halal Certification' },
+    { value: 'AHIP (Alliance for Halal Integrity in the Phils)', label: 'AHIP (Alliance for Halal Integrity)' },
+    { value: 'Malaysia Halal - JAKIM (Recognized Foreign Certifier)', label: 'JAKIM (Malaysia Halal)' },
+    { value: 'Indonesia Halal - BPJPH / MUI (Recognized Foreign Certifier)', label: 'BPJPH / MUI (Indonesia Halal)' },
+    { value: 'Thailand Halal - CICOT (Recognized Foreign Certifier)', label: 'CICOT (Thailand Halal)' },
+    { value: 'Singapore Halal - MUIS (Recognized Foreign Certifier)', label: 'MUIS (Singapore Halal)' },
+];
+
+const resolveReferenceLogoSrc = (scanResult, manualOverride = '') => {
     if (!scanResult?.logoDetected) return null;
+    if (manualOverride) {
+        const overLower = manualOverride.toLowerCase();
+        for (const item of CERTIFIER_LOGO_MAP) {
+            if (item.keys.some((k) => overLower.includes(k))) {
+                return item.src;
+            }
+        }
+        return null;
+    }
+    if (scanResult.isAmbiguousHcb) {
+        return null;
+    }
     const rawClass = (scanResult.detectedLogos?.[0]?.class_name || '').toLowerCase();
     const rawLabel = (scanResult.detectedLogos?.[0]?.label || '').toLowerCase();
     const bodyText = (scanResult.logoBody || '').toLowerCase();
@@ -62,8 +96,14 @@ export const LabelResultsSheet = ({
     const [touchStartY, setTouchStartY] = useState(null);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [croppedLogoUrl, setCroppedLogoUrl] = useState(null);
+    const [manualHcbOverride, setManualHcbOverride] = useState('');
 
-    const referenceLogoSrc = resolveReferenceLogoSrc(scanResult);
+    useEffect(() => {
+        setManualHcbOverride('');
+    }, [scanResult]);
+
+    const referenceLogoSrc = resolveReferenceLogoSrc(scanResult, manualHcbOverride);
+    const activeLogoBody = manualHcbOverride || scanResult?.logoBody;
 
     // Fallback: crop the detected logo region from the camera scan if no static reference graphic matches
     useEffect(() => {
@@ -240,10 +280,15 @@ export const LabelResultsSheet = ({
                                             </div>
                                         )}
 
-                                        <div className="space-y-1 max-w-xs">
+                                        <div className="space-y-1.5 max-w-xs w-full">
                                             <strong className="text-white font-bold text-sm sm:text-base block leading-snug">
-                                                {scanResult.logoBody}
+                                                {activeLogoBody}
                                             </strong>
+                                            {scanResult.isAmbiguousHcb && !manualHcbOverride && (
+                                                <p className="text-[11px] text-slate-300 leading-snug">
+                                                    Graphic Halal seal localized. Because this seal does not display clear English letters, select the certifying body below if visible on the box.
+                                                </p>
+                                            )}
                                             {scanResult.logoConfidence > 0 && (
                                                 <span
                                                     className={`inline-flex items-center gap-1 font-mono text-[11px] px-2.5 py-0.5 rounded-full border ${
@@ -253,8 +298,24 @@ export const LabelResultsSheet = ({
                                                     }`}
                                                 >
                                                     {scanResult.isInvalidLogo ? <ShieldAlert size={12} /> : <ShieldCheck size={12} />}
-                                                    <span>{scanResult.logoConfidence}% match</span>
+                                                    <span>{manualHcbOverride ? 'Confirmed by User' : `${scanResult.logoConfidence}% match`}</span>
                                                 </span>
+                                            )}
+                                            {!scanResult.isInvalidLogo && (
+                                                <div className="pt-1">
+                                                    <select
+                                                        value={manualHcbOverride}
+                                                        onChange={(e) => setManualHcbOverride(e.target.value)}
+                                                        aria-label="Confirm or override detected Halal certifying body"
+                                                        className="w-full max-w-[260px] mx-auto rounded-xl bg-slate-900/90 border border-slate-600/80 text-slate-200 text-[11px] font-medium px-2.5 py-1.5 focus:outline-none focus:border-emerald-400 cursor-pointer"
+                                                    >
+                                                        {ACCREDITED_HCB_OPTIONS.map((opt) => (
+                                                            <option key={opt.label} value={opt.value}>
+                                                                {opt.value ? `Certifier: ${opt.label}` : 'Graphic Seal? Select Certifying Body...'}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
                                             )}
                                         </div>
                                     </>
@@ -550,7 +611,7 @@ export const LabelResultsSheet = ({
                                     {scanResult.statusColor !== 'red' && onContributeProduct && (
                                         <button
                                             type="button"
-                                            onClick={() => onContributeProduct(scanResult)}
+                                            onClick={() => onContributeProduct({ ...scanResult, logoBody: activeLogoBody })}
                                             className="w-full py-2.5 px-3.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-xs cursor-pointer"
                                         >
                                             <PlusCircle size={15} className="text-sky-400 shrink-0" />
