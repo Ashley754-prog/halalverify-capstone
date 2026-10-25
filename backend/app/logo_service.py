@@ -165,7 +165,6 @@ def nms_numpy(boxes: np.ndarray, scores: np.ndarray, iou_threshold: float = 0.45
 
 def _run_yolo_onnx_pass(session, img_pil: Image.Image, offset_x: float = 0.0, offset_y: float = 0.0, conf_threshold: float = 0.20):
     """Executes a single letterboxed YOLOv8 ONNX pass on an image/ROI preserving aspect ratio."""
-    # Read model input dimensions dynamically
     input_shape = session.get_inputs()[0].shape
     target_h = input_shape[2] if len(input_shape) > 2 and isinstance(input_shape[2], int) else 640
     target_w = input_shape[3] if len(input_shape) > 3 and isinstance(input_shape[3], int) else 640
@@ -209,10 +208,39 @@ def _run_yolo_onnx_pass(session, img_pil: Image.Image, offset_x: float = 0.0, of
     return boxes, filtered_scores, filtered_cls
 
 
-def detect_halal_logo(image_input) -> Dict:
+def _crop_logo_roi_for_ocr(image: Image.Image, box: List[float], margin_ratio: float = 0.15) -> str:
+    """
+    Crops the detected logo bounding box from the full-resolution source image with a context margin
+    and runs targeted high-resolution ROI OCR (including polar rim unwrapping for circular seals).
+    """
+    try:
+        from app.ocr_service import extract_roi_crop_text
+        orig_w, orig_h = image.size
+        bx1, by1, bx2, by2 = box
+        bw = max(1.0, bx2 - bx1)
+        bh = max(1.0, by2 - by1)
+        pad_x = bw * margin_ratio
+        pad_y = bh * margin_ratio
+
+        cx1 = max(0, int(round(bx1 - pad_x)))
+        cy1 = max(0, int(round(by1 - pad_y)))
+        cx2 = min(orig_w, int(round(bx2 + pad_x)))
+        cy2 = min(orig_h, int(round(by2 + pad_y)))
+
+        if (cx2 - cx1) < 12 or (cy2 - cy1) < 12:
+            return ""
+
+        roi_crop = image.crop((cx1, cy1, cx2, cy2))
+        return extract_roi_crop_text(roi_crop)
+    except Exception as err:
+        logger.debug(f"Logo ROI crop OCR error: {err}")
+        return ""
+
+
+def detect_halal_logo(image_input, run_crop_ocr: bool = True) -> Dict:
     """
     Detects accredited Halal certification logos on product packaging using YOLOv8-Nano (pure ONNX Runtime).
-    Uses aspect-ratio preserving letterboxing and multi-scale reticle ROI inspection.
+    Uses aspect-ratio preserving letterboxing, multi-scale reticle ROI inspection, and high-res logo crop OCR.
     """
     try:
         if isinstance(image_input, str):
@@ -292,6 +320,7 @@ def detect_halal_logo(image_input) -> Dict:
                 "logoConfidence": 0.0,
                 "logoBody": "No Halal Logo Detected",
                 "isInvalidLogo": False,
+                "cropOcrText": "",
                 "detectedLogos": [],
                 "imageWidth": orig_w,
                 "imageHeight": orig_h,
@@ -308,6 +337,7 @@ def detect_halal_logo(image_input) -> Dict:
                 "logoConfidence": 0.0,
                 "logoBody": "No Halal Logo Detected",
                 "isInvalidLogo": False,
+                "cropOcrText": "",
                 "detectedLogos": [],
                 "imageWidth": orig_w,
                 "imageHeight": orig_h,
@@ -365,6 +395,7 @@ def detect_halal_logo(image_input) -> Dict:
                 "logoConfidence": 0.0,
                 "logoBody": "No Halal Logo Detected",
                 "isInvalidLogo": False,
+                "cropOcrText": "",
                 "detectedLogos": [],
                 "imageWidth": orig_w,
                 "imageHeight": orig_h,
@@ -377,12 +408,17 @@ def detect_halal_logo(image_input) -> Dict:
         # Two-Tier Confidence Gating:
         # At >= 78% visual confidence, YOLOv8 reliably distinguishes the specific HCB seal.
         # Between 35% and 77.9%, YOLOv8 reliably localizes that a Halal seal exists,
-        # but circular seals without readable text can look similar across HCBs.
-        # Keep the visual candidate for Stage 3 Multi-Modal Consensus while avoiding false HCB attribution.
+        # and Stage 3 combines High-Res ROI Crop OCR + Full-Label OCR to disambiguate the certifying body.
         HIGH_CONF_THRESHOLD = 0.78
         is_ambiguous_hcb = bool(not has_invalid and highest_conf < HIGH_CONF_THRESHOLD)
         visual_candidate = best_logo_body
         visual_candidate_code = best_raw_class
+
+        # Run High-Resolution ROI Crop OCR on the top detected bounding box from the full-res source image
+        crop_ocr_text = ""
+        if run_crop_ocr and not has_invalid and top_logo.get("box"):
+            crop_ocr_text = _crop_logo_roi_for_ocr(image, top_logo["box"])
+            top_logo["crop_ocr_text"] = crop_ocr_text
 
         if is_ambiguous_hcb:
             best_logo_body = "Recognized Halal Certification Seal"
@@ -399,6 +435,7 @@ def detect_halal_logo(image_input) -> Dict:
             "isAmbiguousHcb": is_ambiguous_hcb,
             "visualCandidate": visual_candidate,
             "visualCandidateCode": visual_candidate_code,
+            "cropOcrText": crop_ocr_text,
             "detectedLogos": detected_logos,
             "bestBox": detected_logos[0]["norm_box"] if detected_logos else None,
             "imageWidth": orig_w,
@@ -416,6 +453,7 @@ def _empty_logo_result(reason: str) -> Dict:
         "logoConfidence": 0.0,
         "logoBody": "Not Detected",
         "isInvalidLogo": False,
+        "cropOcrText": "",
         "detectedLogos": [],
         "note": reason,
     }

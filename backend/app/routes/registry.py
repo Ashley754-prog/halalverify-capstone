@@ -1,22 +1,73 @@
+import logging
+from typing import Optional
+
 from app.auth import get_current_user, require_admin
+from app.auto_verification_service import evaluate_establishment_submission
 from app.schemas.registry import (
     AdditiveCreate,
     AdditiveUpdate,
     EstablishmentCreate,
-    EstablishmentUpdate,
     EstablishmentSubmissionRequest,
+    EstablishmentUpdate,
 )
 from app.supabase_client import supabase
-import logging
-from typing import Optional
-from app.auto_verification_service import evaluate_establishment_submission
+from app.utils.db_helpers import (
+    ensure_deleted,
+    ensure_updated,
+    model_dump_without_none,
+    normalize_additive_code,
+    sanitize_postgrest_search,
+)
 from app.utils.geocoding import geocode_zamboanga_address
-from app.utils.db_helpers import ensure_deleted, ensure_updated, model_dump_without_none, sanitize_postgrest_search, normalize_additive_code
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["registry"])
+
+EXCLUDED_UNVERIFIED_ESTABLISHMENT_STATUSES = {
+    "needs_review",
+    "pending",
+    "pending_review",
+    "flagged",
+    "rejected",
+    "suspended",
+}
+
+
+def derive_establishment_tier(record: dict) -> str:
+    """
+    Deterministically resolves an establishment's verification tier:
+    'halal_certified' | 'muslim_owned' | 'muslim_friendly' | 'vegetarian_vegan'
+    Uses explicit tier fields, canonical [Tier: ...] tags in description, or admin_notes,
+    preventing accidental promotion of self-declared community venues to 'halal_certified'.
+    """
+    if not record:
+        return "halal_certified"
+
+    explicit = (record.get("verification_tier") or record.get("halal_tier") or "").strip().lower()
+    if explicit in ("halal_certified", "muslim_owned", "muslim_friendly", "vegetarian_vegan"):
+        return explicit
+
+    combined = f"{record.get('description') or ''} {record.get('admin_notes') or ''} {record.get('halal_status') or ''}".lower()
+    if "[tier: muslim_owned]" in combined or "muslim-owned" in combined or "muslim_owned" in combined:
+        return "muslim_owned"
+    if "[tier: muslim_friendly]" in combined or "muslim-friendly" in combined or "muslim_friendly" in combined:
+        return "muslim_friendly"
+    if "[tier: vegetarian_vegan]" in combined or "vegetarian" in combined or "vegan" in combined or "plant-based" in combined:
+        return "vegetarian_vegan"
+    if "community listed" in combined and not (record.get("certifying_body_id") or record.get("certificate_number")):
+        return "muslim_owned"
+    return "halal_certified"
+
+
+def enrich_establishment_tier(records: list) -> list:
+    for item in records or []:
+        if isinstance(item, dict):
+            tier = derive_establishment_tier(item)
+            item["halal_tier"] = tier
+            item["verification_tier"] = tier
+    return records
 
 
 @router.get("/api/v1/additives")
@@ -138,7 +189,6 @@ def get_public_hcb_registry(
     }
 
 
-
 @router.get("/api/v1/establishments/map")
 @router.get("/establishments/map")
 def get_establishments_map(
@@ -170,11 +220,9 @@ def get_establishments_map(
             rpc_res = supabase.rpc("get_nearby_establishments", rpc_params).execute()
             raw_data = rpc_res.data or []
 
-            EXCLUDED_UNVERIFIED_STATUSES = {"needs_review", "pending", "pending_review", "flagged", "rejected", "suspended"}
-
             for item in raw_data:
                 item_status = (item.get("halal_status") or "").strip().lower()
-                if (not status or status == "all") and item_status in EXCLUDED_UNVERIFIED_STATUSES:
+                if (not status or status == "all") and item_status in EXCLUDED_UNVERIFIED_ESTABLISHMENT_STATUSES:
                     continue
                 dist_m = item.get("distance_meters")
                 dist_km = round(dist_m / 1000.0, 2) if dist_m is not None else None
@@ -196,6 +244,7 @@ def get_establishments_map(
                     "phone": item.get("phone"),
                     "email": item.get("email"),
                     "description": item.get("description"),
+                    "admin_notes": item.get("admin_notes"),
                     "source_url": item.get("source_url"),
                     "certifying_bodies": {
                         "code": item.get("hcb_code"),
@@ -211,11 +260,11 @@ def get_establishments_map(
             if status and status != "all":
                 st_lower = status.lower()
                 if "muslim_owned" in st_lower or "muslim-owned" in st_lower or "community" in st_lower:
-                    query = query.or_("halal_status.ilike.%muslim_owned%,admin_notes.ilike.%Muslim-Owned%,admin_notes.ilike.%Community Listed%")
+                    query = query.or_("halal_status.ilike.%muslim_owned%,description.ilike.%[Tier: muslim_owned]%,admin_notes.ilike.%Muslim-Owned%,admin_notes.ilike.%Community Listed%")
                 elif "friendly" in st_lower:
-                    query = query.or_("halal_status.ilike.%friendly%,admin_notes.ilike.%Muslim-Friendly%")
+                    query = query.or_("halal_status.ilike.%friendly%,description.ilike.%[Tier: muslim_friendly]%,admin_notes.ilike.%Muslim-Friendly%")
                 elif "veg" in st_lower:
-                    query = query.or_("halal_status.ilike.%veg%,admin_notes.ilike.%Vegetarian%,admin_notes.ilike.%Plant-Based%")
+                    query = query.or_("halal_status.ilike.%veg%,description.ilike.%[Tier: vegetarian_vegan]%,admin_notes.ilike.%Vegetarian%,admin_notes.ilike.%Plant-Based%")
                 elif "verified" in st_lower or "certified" in st_lower:
                     query = query.eq("halal_status", "verified")
                 elif "needs_review" in st_lower or "pending" in st_lower:
@@ -234,17 +283,14 @@ def get_establishments_map(
             if status and ("verified" in status.lower() or "certified" in status.lower()):
                 data = [
                     d for d in data
-                    if not any(
-                        tag in (d.get("admin_notes") or "").lower()
-                        for tag in ("community listed", "muslim-owned", "muslim_owned", "muslim-friendly", "vegetarian")
-                    )
+                    if derive_establishment_tier(d) == "halal_certified"
                 ]
 
-            # If status is default ("all" or not provided), filter out pending review and flagged/rejected items
             if not status or status == "all":
-                EXCLUDED_UNVERIFIED_STATUSES = {"needs_review", "pending", "pending_review", "flagged", "rejected", "suspended"}
-                data = [d for d in data if (d.get("halal_status") or "").strip().lower() not in EXCLUDED_UNVERIFIED_STATUSES]
-
+                data = [
+                    d for d in data
+                    if (d.get("halal_status") or "").strip().lower() not in EXCLUDED_UNVERIFIED_ESTABLISHMENT_STATUSES
+                ]
 
             if hcb and hcb != "all":
                 hcb_lower = hcb.lower()
@@ -255,6 +301,8 @@ def get_establishments_map(
                         hcb_lower in (d["certifying_bodies"].get("name") or "").lower()
                     ))
                 ]
+
+        enrich_establishment_tier(data)
 
         # Attach associated compliant products/menu items for rich details
         if data:
@@ -283,7 +331,13 @@ def get_establishments_map(
         logger.error("Error in map endpoint: %s", e)
         try:
             fallback_res = supabase.table("establishments").select("*, certifying_bodies(*)").execute()
-            fallback_data = fallback_res.data or []
+            raw_fallback = fallback_res.data or []
+            # Security Guard: Never leak rejected, flagged, suspended, or pending_review rows in the fallback path
+            fallback_data = [
+                d for d in raw_fallback
+                if (d.get("halal_status") or "").strip().lower() not in EXCLUDED_UNVERIFIED_ESTABLISHMENT_STATUSES
+            ]
+            enrich_establishment_tier(fallback_data)
             if fallback_data:
                 fb_ids = [d["id"] for d in fallback_data if d.get("id")]
                 if fb_ids:
@@ -322,17 +376,18 @@ def search_establishments(q: Optional[str] = Query(None, description="Search que
         base_query = (
             supabase.table("establishments")
             .select("*, certifying_bodies(*)")
-            .not_("halal_status", "in", "(rejected,REJECTED,needs_review,pending,pending_review,flagged,suspended)")
+            .not_("halal_status", "in", "(rejected,REJECTED,needs_review,NEEDS_REVIEW,pending,PENDING,pending_review,flagged,suspended)")
         )
         if query_str:
             base_query = base_query.or_(
                 f"name.ilike.%{query_str}%,city.ilike.%{query_str}%,address.ilike.%{query_str}%,type.ilike.%{query_str}%"
             )
         res = base_query.order("name").limit(30).execute()
+        rows = enrich_establishment_tier(res.data or [])
         return {
             "success": True,
-            "count": len(res.data or []),
-            "data": res.data or [],
+            "count": len(rows),
+            "data": rows,
         }
     except Exception as e:
         logger.error("Error in establishments search: %s", e)
@@ -350,14 +405,15 @@ def get_establishments():
         supabase
         .table("establishments")
         .select("*, certifying_bodies(*)")
-        .not_("halal_status", "in", "(rejected,REJECTED,flagged,suspended)")
+        .not_("halal_status", "in", "(rejected,REJECTED,flagged,suspended,needs_review,NEEDS_REVIEW,pending,PENDING,pending_review)")
         .order("name")
         .execute()
     )
+    rows = enrich_establishment_tier(response.data or [])
 
     return {
         "success": True,
-        "data": response.data,
+        "data": rows,
     }
 
 
@@ -485,19 +541,24 @@ def submit_establishment(
 ):
     """
     Community user establishment submission endpoint with automated AI verification pipeline.
-    High-confidence submissions (accredited HCB, active expiry, name match >= 70%)
-    are automatically verified and published live immediately.
     """
     user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
     if not user_id:
         raise HTTPException(status_code=401, detail="Valid user credentials required")
+
+    selected_tier = (submission.halal_tier or "halal_certified").strip().lower()
+    desc_parts = []
+    if selected_tier != "halal_certified":
+        desc_parts.append(f"[Tier: {selected_tier}]")
+    if submission.amenities:
+        desc_parts.append(f"Amenities: {' | '.join(submission.amenities)}")
 
     establishment_payload = {
         "name": submission.name.strip(),
         "type": submission.type or "Restaurant",
         "address": submission.address.strip(),
         "city": submission.city or "Zamboanga City",
-        "halal_tier": submission.halal_tier or "halal_certified",
+        "halal_tier": selected_tier,
         "phone": submission.contact_number.strip() if submission.contact_number else None,
         "source_url": submission.social_media_url.strip() if submission.social_media_url else None,
         "submitter_role": submission.submitter_role or "community",
@@ -508,7 +569,7 @@ def submit_establishment(
         "logo_url": submission.logo_url,
         "submitted_by": str(user_id),
         "amenities": submission.amenities or [],
-        "description": f"Amenities: {' | '.join(submission.amenities)}" if submission.amenities else None,
+        "description": " | ".join(desc_parts) if desc_parts else None,
         "source": "Business Owner Submission" if submission.submitter_role == "owner" else "Community User Submission",
     }
 
@@ -542,10 +603,9 @@ def submit_establishment(
         "name", "type", "address", "city", "halal_status", "certifying_body_id",
         "certificate_number", "expiry_date", "certificate_url", "logo_url",
         "submitted_by", "source", "source_url", "phone", "admin_notes",
-        "verified_at", "verified_by", "latitude", "longitude", "description"
+        "verified_at", "verified_by", "latitude", "longitude", "description",
     }
     clean_payload = {k: v for k, v in establishment_payload.items() if k in valid_est_cols and v is not None}
-
 
     response = (
         supabase
@@ -557,6 +617,9 @@ def submit_establishment(
     created_establishment = response.data[0] if response.data else None
     if not created_establishment:
         raise HTTPException(status_code=500, detail="Failed to record establishment submission")
+
+    created_establishment["halal_tier"] = selected_tier
+    created_establishment["verification_tier"] = selected_tier
 
     # If associated product names were submitted, insert them
     created_products = []
@@ -614,12 +677,12 @@ def get_my_submissions(user: dict = Depends(get_current_user)):
     try:
         res_est = (
             supabase.table("establishments")
-            .select("id, name, type, address, halal_status, admin_notes, created_at, verified_at")
+            .select("id, name, type, address, description, halal_status, admin_notes, created_at, verified_at, certifying_body_id, certificate_number")
             .eq("submitted_by", uid)
             .order("created_at", desc=True)
             .execute()
         )
-        est_list = res_est.data or []
+        est_list = enrich_establishment_tier(res_est.data or [])
     except Exception:
         pass
 
@@ -652,4 +715,3 @@ def get_my_submissions(user: dict = Depends(get_current_user)):
         "products": prod_list,
         "reports": rep_list,
     }
-

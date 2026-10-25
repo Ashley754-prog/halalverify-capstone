@@ -4,6 +4,11 @@ import re
 from typing import Optional
 
 from app.auth import require_admin
+from app.auto_verification_service import (
+    evaluate_establishment_submission,
+    evaluate_product_submission,
+)
+from app.routes.registry import enrich_establishment_tier
 from app.schemas.admin import (
     EstablishmentVerifyRequest,
     ProductVerifyRequest,
@@ -17,10 +22,6 @@ from app.schemas.registry import (
 )
 from app.supabase_client import supabase
 from app.utils.db_helpers import normalize_additive_code
-from app.auto_verification_service import (
-    evaluate_establishment_submission,
-    evaluate_product_submission,
-)
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 logger = logging.getLogger(__name__)
@@ -42,7 +43,7 @@ def get_pending_approvals(user: dict = Depends(require_admin)):
             .order("created_at", desc=True)
             .execute()
         )
-        pending_establishments = est_res.data or []
+        pending_establishments = enrich_establishment_tier(est_res.data or [])
 
         # If associated products exist, attach them
         if pending_establishments:
@@ -118,7 +119,7 @@ def verify_establishment(
     status_clean = (payload.status or "").strip().lower()
     valid_est_statuses = {
         "verified", "rejected", "suspended", "flagged",
-        "community_listed", "muslim_owned", "muslim_friendly", "vegetarian_vegan"
+        "community_listed", "muslim_owned", "muslim_friendly", "vegetarian_vegan",
     }
     if status_clean not in valid_est_statuses:
         raise HTTPException(
@@ -129,16 +130,19 @@ def verify_establishment(
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
     tier_note_map = {
-        "muslim_owned": "Community Listed - Muslim-Owned",
-        "community_listed": "Community Listed - Muslim-Owned",
-        "muslim_friendly": "Community Listed - Muslim-Friendly",
-        "vegetarian_vegan": "Community Listed - Vegetarian / Vegan",
+        "muslim_owned": ("muslim_owned", "Community Listed - Muslim-Owned"),
+        "community_listed": ("muslim_owned", "Community Listed - Muslim-Owned"),
+        "muslim_friendly": ("muslim_friendly", "Community Listed - Muslim-Friendly"),
+        "vegetarian_vegan": ("vegetarian_vegan", "Community Listed - Vegetarian / Vegan"),
     }
     notes_str = (payload.admin_notes or "").strip()
     if status_clean in tier_note_map:
-        required_tag = tier_note_map[status_clean]
+        canonical_tier, required_tag = tier_note_map[status_clean]
+        tier_marker = f"[Tier: {canonical_tier}]"
         if required_tag.lower() not in notes_str.lower():
             notes_str = f"{required_tag}. {notes_str}".strip(". ")
+        if tier_marker.lower() not in notes_str.lower():
+            notes_str = f"{tier_marker} {notes_str}".strip()
         db_status = "verified"
     else:
         db_status = status_clean
@@ -178,10 +182,12 @@ def verify_establishment(
         except Exception as p_err:
             logger.warning("Cascaded product approval notice: %s", p_err)
 
+    updated_row = enrich_establishment_tier(res.data)[0]
+
     return {
         "success": True,
         "message": f"Establishment marked as {payload.status.upper()}.",
-        "data": res.data[0],
+        "data": updated_row,
     }
 
 
@@ -265,7 +271,6 @@ def resolve_issue_report(
 
     resolved_report = res.data[0]
 
-    # If the admin verified a critical violation and flagged/suspended the establishment
     if payload.suspend_establishment and resolved_report.get("establishment_id"):
         est_id = resolved_report["establishment_id"]
         try:
@@ -283,6 +288,8 @@ def resolve_issue_report(
         "message": f"Issue report marked as {status_clean.capitalize()}.",
         "data": resolved_report,
     }
+
+
 @router.get("/analytics/trends")
 def get_analytics_trends(
     interval: Optional[str] = "weekly",
@@ -635,7 +642,7 @@ def delete_admin_hcb_entry(hcb_id: str, user: dict = Depends(require_admin)):
 @router.post("/establishments/{establishment_id}/auto-verify")
 def auto_verify_establishment_endpoint(
     establishment_id: str,
-    auto_approve: bool = Query(True, description="Automatically mark as VERIFIED if score >= 70 and unexpired"),
+    auto_approve: bool = Query(True, description="Automatically mark as VERIFIED if all certification invariants pass"),
     user: dict = Depends(require_admin),
 ):
     """
@@ -665,12 +672,7 @@ def auto_verify_establishment_endpoint(
     user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
     admin_uuid = str(user_id) if user_id else None
 
-    can_approve_est = eval_result["is_auto_approved"] or (
-        eval_result["score"] >= 65
-        and not eval_result.get("audit_trail", {}).get("is_expired")
-        and not eval_result.get("audit_trail", {}).get("is_duplicate")
-        and eval_result.get("audit_trail", {}).get("is_zamboanga")
-    )
+    can_approve_est = bool(eval_result.get("is_auto_approved"))
 
     if auto_approve and can_approve_est:
         update_fields["halal_status"] = "verified"
@@ -678,7 +680,6 @@ def auto_verify_establishment_endpoint(
         update_fields["verified_by"] = admin_uuid
         eval_result["is_auto_approved"] = True
 
-        # Cascade to pending products linked to this establishment
         try:
             supabase.table("products").update({
                 "status": "VERIFIED",
@@ -691,25 +692,26 @@ def auto_verify_establishment_endpoint(
     supabase.table("establishments").update(update_fields).eq("id", establishment_id).execute()
 
     updated_res = supabase.table("establishments").select("*, certifying_bodies(*)").eq("id", establishment_id).execute()
+    updated_row = enrich_establishment_tier(updated_res.data)[0] if updated_res.data else est
 
     return {
         "success": True,
         "is_auto_approved": eval_result["is_auto_approved"],
         "score": eval_result["score"],
         "evaluation": eval_result,
-        "data": updated_res.data[0] if updated_res.data else est,
+        "data": updated_row,
     }
 
 
 @router.post("/products/{product_id}/auto-verify")
 def auto_verify_product_endpoint(
     product_id: str,
-    auto_approve: bool = Query(True, description="Automatically mark as VERIFIED if score >= 70 and clean additives"),
+    auto_approve: bool = Query(True, description="Automatically mark as VERIFIED if all certification and additive invariants pass"),
     user: dict = Depends(require_admin),
 ):
     """
     Triggers the AI Automated Verification Engine for a specific community product submission.
-    Screens chemical additives and cross-checks certifying body credentials.
+    Screens chemical additives, runs YOLOv8 logo detection, and cross-checks certifying body credentials.
     """
     res = supabase.table("products").select("*, certifying_bodies(*)").eq("id", product_id).execute()
     if not res.data:
@@ -732,11 +734,7 @@ def auto_verify_product_endpoint(
     user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
     admin_uuid = str(user_id) if user_id else None
 
-    can_approve_prod = eval_result["is_auto_approved"] or (
-        eval_result["score"] >= 65
-        and not eval_result.get("audit_trail", {}).get("is_expired")
-        and not eval_result.get("audit_trail", {}).get("haram_additives")
-    )
+    can_approve_prod = bool(eval_result.get("is_auto_approved"))
 
     if auto_approve and can_approve_prod:
         approved_status = eval_result["status"] if eval_result["status"] != "PENDING_VERIFICATION" else "VERIFIED"
@@ -760,14 +758,13 @@ def auto_verify_product_endpoint(
 
 @router.post("/auto-verify-all")
 def auto_verify_all_pending(
-    auto_approve: bool = Query(True, description="Automatically approve submissions exceeding the 70% threshold"),
+    auto_approve: bool = Query(True, description="Automatically approve submissions that satisfy all strict verification invariants"),
     user: dict = Depends(require_admin),
 ):
     """
     Batch administrative action: runs AI verification across all pending establishments and products.
     Auto-approves qualifying submissions and flags dubious or expired ones for manual inspection.
     """
-    # 1. Pending Establishments
     est_res = (
         supabase.table("establishments")
         .select("*, certifying_bodies(*)")
@@ -796,12 +793,7 @@ def auto_verify_all_pending(
             if eval_res.get("certifying_body_id") and not est.get("certifying_body_id"):
                 update_fields["certifying_body_id"] = eval_res["certifying_body_id"]
 
-            can_approve_est = eval_res["is_auto_approved"] or (
-                eval_res["score"] >= 65
-                and not eval_res.get("audit_trail", {}).get("is_expired")
-                and not eval_res.get("audit_trail", {}).get("is_duplicate")
-                and eval_res.get("audit_trail", {}).get("is_zamboanga")
-            )
+            can_approve_est = bool(eval_res.get("is_auto_approved"))
 
             if auto_approve and can_approve_est:
                 update_fields["halal_status"] = "verified"
@@ -822,7 +814,6 @@ def auto_verify_all_pending(
         except Exception as e:
             logger.error("Error auto-verifying establishment %s: %s", est.get("id"), e)
 
-    # 2. Pending Products
     prod_res = (
         supabase.table("products")
         .select("*, certifying_bodies(*)")
@@ -847,11 +838,7 @@ def auto_verify_all_pending(
             if eval_res.get("certifying_body_id") and not prod.get("certifying_body_id"):
                 update_fields["certifying_body_id"] = eval_res["certifying_body_id"]
 
-            can_approve_prod = eval_res["is_auto_approved"] or (
-                eval_res["score"] >= 65
-                and not eval_res.get("audit_trail", {}).get("is_expired")
-                and not eval_res.get("audit_trail", {}).get("haram_additives")
-            )
+            can_approve_prod = bool(eval_res.get("is_auto_approved"))
 
             if auto_approve and can_approve_prod:
                 approved_status = eval_res["status"] if eval_res["status"] != "PENDING_VERIFICATION" else "VERIFIED"
@@ -872,6 +859,5 @@ def auto_verify_all_pending(
             "establishments_approved": approved_est_count,
             "products_audited": audited_prod_count,
             "products_approved": approved_prod_count,
-        }
+        },
     }
-

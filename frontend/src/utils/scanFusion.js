@@ -5,6 +5,27 @@
  * into a single unified 5-stage verification verdict.
  */
 
+const CROSS_PANEL_HCB_PATTERNS = [
+    { regex: /\bIDCP\b|ISLAMIC\s+DA'?WAH\s+COUNCIL/i, label: "IDCP (Islamic Da'wah Council of the Philippines)" },
+    { regex: /\bHDIP\b|HALAL\s+DEVELOPMENT\s+INSTITUTE/i, label: "HDIP (Halal Development Institute of the Philippines)" },
+    { regex: /\bHICCIP\b|HALAL\s+INTERNATIONAL\s+CHAMBER/i, label: "HICCIP (Halal International Chamber of Commerce and Industries Phils)" },
+    { regex: /\bMMHCB\b|MINDANAO\s+MUSLIM\s+HALAL/i, label: "MMHCB (Mindanao Muslim Halal Certification Board)" },
+    { regex: /\bMASLAHA\b|ADVOCACY\s+FOR\s+MUSLIM\s+AFFAIRS/i, label: "MASLAHA Halal Certification" },
+    { regex: /\bMINHA\b|MINDANAO\s+HALAL\s+AUTHORITY/i, label: "MinHA (Mindanao Halal Authority)" },
+    { regex: /\bPUCOI\b|PHILIPPINE\s+ULAMA\s+CONGRESS/i, label: "PUCOI (Philippine Ulama Congress Organization)" },
+    { regex: /\bAHIP\b|ALLIANCE\s+FOR\s+HALAL\s+INTEGRITY/i, label: "AHIP (Alliance for Halal Integrity in the Phils)" },
+    { regex: /\bPRIME\s+CERTIFICATION/i, label: "PRIME Certification Asia" },
+    { regex: /\bFIQHI\b/i, label: "FIQHI Islamic Certification" },
+    { regex: /\bPHILCOSED\b/i, label: "PHILCOSED Halal Certification" },
+    { regex: /\bNCMF\b|NATIONAL\s+COMMISSION\s+ON\s+MUSLIM\s+FILIPINOS/i, label: "NCMF Official Halal Seal (Philippines)" },
+    { regex: /\bBUSC\b|BANGSAMORO\s+UNITY|BASILAN\s+ULAMA/i, label: "BUSC (Bangsamoro Unity Summit Consultative)" },
+    { regex: /\bBPCC\b|BANGSAMORO\s+PROFESSIONAL/i, label: "BPCC (Bangsamoro Professional Certification)" },
+    { regex: /\bJAKIM\b|KEMAJUAN\s+ISLAM\s+MALAYSIA|\bMS\s*1500\b/i, label: "Malaysia Halal - JAKIM (Recognized Foreign Certifier)" },
+    { regex: /\bMUIS\b|MAJLIS\s+UGAMA\s+ISLAM/i, label: "Singapore Halal - MUIS (Recognized Foreign Certifier)" },
+    { regex: /\bBPJPH\b|\bLPPOM\b|\bMUI\b|MAJELIS\s+ULAMA\s+INDONESIA/i, label: "Indonesia Halal - BPJPH / MUI (Recognized Foreign Certifier)" },
+    { regex: /\bCICOT\b|CENTRAL\s+ISLAMIC\s+COUNCIL\s+OF\s+THAILAND/i, label: "Thailand Halal - CICOT (Recognized Foreign Certifier)" },
+];
+
 export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) {
     if (!firstScan && !secondScan) return null;
     if (!firstScan) return secondScan;
@@ -22,8 +43,15 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
 
     const logoDetected = Boolean(firstHasLogo || secondHasLogo);
     const isInvalidLogo = Boolean(firstScan.isInvalidLogo || secondScan.isInvalidLogo);
-    const logoBody = logoDetected ? bestLogoScan.logoBody : "Not detected";
-    const logoConfidence = logoDetected ? Math.max(firstConfidence, secondConfidence) : 0;
+    let isAmbiguousHcb = logoDetected
+        ? Boolean(
+            firstHasLogo && secondHasLogo
+                ? (firstScan.isAmbiguousHcb && secondScan.isAmbiguousHcb)
+                : bestLogoScan.isAmbiguousHcb
+        )
+        : false;
+    let logoBody = logoDetected ? bestLogoScan.logoBody : "Not detected";
+    let logoConfidence = logoDetected ? Math.max(firstConfidence, secondConfidence) : 0;
 
     // 2. Accumulate all captured images
     const existingImages = firstScan.images || (firstImage ? [firstImage] : []);
@@ -31,10 +59,27 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
     const combinedImages = [...existingImages, ...newImages].filter((img, idx, arr) => arr.indexOf(img) === idx);
     const totalPanels = combinedImages.length || 2;
 
-    // 3. Combine and deduplicate OCR text
+    // 3. Combine and deduplicate OCR text + check cross-panel HCB disambiguation
     const text1 = (firstScan.ocrText || "").trim();
     const text2 = (secondScan.ocrText || "").trim();
     const combinedOcrText = [text1, text2].filter(Boolean).join("\n---\n");
+
+    if (logoDetected && !isInvalidLogo && isAmbiguousHcb && combinedOcrText) {
+        const matchedHcb = CROSS_PANEL_HCB_PATTERNS.find((p) => p.regex.test(combinedOcrText));
+        if (matchedHcb) {
+            logoBody = matchedHcb.label;
+            isAmbiguousHcb = false;
+            logoConfidence = Math.min(95, Math.max(logoConfidence + 18, 82));
+        }
+    }
+
+    const combinedTokenCount = Number(firstScan.ingredientTokenCount || 0) + Number(secondScan.ingredientTokenCount || 0);
+    const hasReadableIngredients = Boolean(
+        firstScan.ingredientStatus === "READABLE_PANEL" ||
+        secondScan.ingredientStatus === "READABLE_PANEL" ||
+        combinedTokenCount >= 3
+    );
+    const ingredientStatus = hasReadableIngredients ? "READABLE_PANEL" : "MISSING_OR_UNREADABLE";
 
     // 4. Deduplicate and merge flagged ingredients (excluding Halal/safe additives)
     const flagsMap = new Map();
@@ -58,7 +103,7 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
         return s === "doubtful" || s.includes("review") || s === "syubhah";
     }).length;
 
-    // 6. Hierarchical Rule Engine Verdict Evaluation
+    // 6. Hierarchical Evidence-Fused Rule Engine Verdict Evaluation
     let verdict;
     let riskLevel;
     let analysisSummary;
@@ -96,7 +141,22 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
             "Verify the specific source of the flagged additive with the manufacturer.",
             "Check whether the batch is covered by the certifying body's active manifest."
         ];
-    } else if (logoDetected && combinedOcrText.length > 0) {
+    } else if (logoDetected && !hasReadableIngredients) {
+        verdict = "Yellow";
+        riskLevel = "Seal Found - Scan Ingredients";
+        analysisSummary = `Detected ${logoBody} (${logoConfidence}% confidence) across ${totalPanels} panels, but a complete ingredient list was not readable yet. Capture a clearer photo of the back ingredient panel to complete verification.`;
+        recommendations = [
+            "Tap '+ Scan Continuing Ingredients' and point the camera directly at the back ingredient list.",
+            "Ensure the ingredient text is flat, in focus, and free of glare."
+        ];
+    } else if (logoDetected && isAmbiguousHcb) {
+        verdict = "Yellow";
+        riskLevel = "Seal Found - Certifier Unclear";
+        analysisSummary = `A Halal seal was localized (${logoConfidence}% confidence) and ingredients across ${totalPanels} panels are clean, but the specific certifying body name on the seal rim could not be confirmed.`;
+        recommendations = [
+            "Capture a closer, well-lit shot of the Halal seal or select the printed certifying body if clearly legible on the package."
+        ];
+    } else if (logoDetected && hasReadableIngredients) {
         verdict = "Green";
         riskLevel = "Verified Halal";
         analysisSummary = `All ${totalPanels} packaging panels verified! Accredited ${logoBody} seal confirmed (${logoConfidence}% match), and 0 prohibited or doubtful food additives found across screened ingredient declarations.`;
@@ -104,21 +164,13 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
             "Product exhibits accredited certification and clean ingredient declarations.",
             "Always check product packaging expiration dates before purchase."
         ];
-    } else if (logoDetected) {
-        verdict = "Green";
-        riskLevel = "Verified Halal";
-        analysisSummary = `Accredited ${logoBody} certification logo localized with ${logoConfidence}% confidence across ${totalPanels} panels.`;
-        recommendations = [
-            "Certification mark matches accredited Islamic bodies.",
-            "Product passed visual logo authentication."
-        ];
     } else if (combinedOcrText.length > 0) {
         verdict = "Yellow";
         riskLevel = "No Halal Logo Found";
-        analysisSummary = `OCR screened ingredients across ${totalPanels} packaging panels and found zero matching prohibited additives. No accredited halal certification logo was recognized.`;
+        analysisSummary = `OCR screened ingredients across ${totalPanels} packaging panels and found zero matching prohibited additives, but no visual Halal certification seal was detected.`;
         recommendations = [
             "Ingredient list appears free of known prohibited E-codes.",
-            "Check other sides of packaging for an accredited Halal logo."
+            "Capture the side of the packaging showing the official Halal certification seal."
         ];
     } else {
         verdict = "Yellow";
@@ -136,15 +188,15 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
         {
             step: 1,
             name: "Multi-Frame Packaging Acquisition",
-            module: "OpenCV / Volatile RAM",
+            module: "PIL / Volatile RAM",
             status: "Success",
             latencyMs: 32.5,
             details: `${totalPanels} packaging panels captured, normalized, and fused in memory.`
         },
         {
             step: 2,
-            name: "Halal Logo Localization",
-            module: "Ultralytics YOLOv8-Nano (CNN)",
+            name: "Halal Logo Localization & ROI Crop OCR",
+            module: "YOLOv8n ONNX + High-Res Crop OCR",
             status: logoDetected ? (isInvalidLogo ? "Invalid" : "Detected") : "None",
             latencyMs: Math.round(((firstScan.pipelineStages?.[1]?.latencyMs || 40) + (secondScan.pipelineStages?.[1]?.latencyMs || 40)) / 2),
             details: logoDetected
@@ -153,18 +205,18 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
         },
         {
             step: 3,
-            name: "Ingredient Text Extraction",
-            module: "RapidOCR / Google Vision OCR",
-            status: combinedOcrText.length > 0 ? "Success" : "None",
+            name: "Ingredient Text Extraction & Section Isolation",
+            module: firstScan.ocrEngine || secondScan.ocrEngine || "RapidOCR / Cloud Vision OCR",
+            status: ingredientStatus,
             latencyMs: Math.round(((firstScan.pipelineStages?.[2]?.latencyMs || 100) + (secondScan.pipelineStages?.[2]?.latencyMs || 100)) / 2),
-            details: combinedOcrText.length > 0
-                ? `Ingredient declarations extracted across ${totalPanels} packaging panels.`
-                : "No readable ingredient text extracted."
+            details: hasReadableIngredients
+                ? `Readable ingredient panel extracted across ${totalPanels} packaging panels (${combinedTokenCount} tokens).`
+                : "Ingredient declaration panel not yet captured or readable."
         },
         {
             step: 4,
-            name: "Chemical Additive Lexicon Screening",
-            module: "Supabase PostgreSQL Lexicon",
+            name: "Multilingual & Chemical Additive Lexicon Screening",
+            module: "Supabase Additives + EN/TL/MS Lexicon",
             status: mergedFlaggedIngredients.length > 0 ? "Flagged" : "Clear",
             latencyMs: 15.2,
             details: `Cross-matched against additives database: ${mergedFlaggedIngredients.length} ingredient(s) flagged.`
@@ -172,7 +224,7 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
         {
             step: 5,
             name: "Multi-Angle Packaging Fusion Decision",
-            module: "Hierarchical Rule Engine",
+            module: "Tri-State Evidence Decision Engine",
             status: verdict,
             latencyMs: 1.8,
             details: `Unified multi-capture verdict: ${verdict} State (${riskLevel}).`
@@ -187,8 +239,11 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
         recommendations,
         logoDetected,
         isInvalidLogo,
+        isAmbiguousHcb,
         logoBody,
         logoConfidence,
+        ingredientStatus,
+        ingredientTokenCount: combinedTokenCount,
         ocrText: combinedOcrText,
         flaggedIngredients: mergedFlaggedIngredients,
         pipelineStages,

@@ -1,3 +1,4 @@
+from difflib import SequenceMatcher
 import gc
 import logging
 import re
@@ -6,9 +7,13 @@ import time
 logger = logging.getLogger(__name__)
 
 from app.logo_service import detect_halal_logo
-from app.ocr_service import extract_text_from_image, find_e_numbers, normalize_text
+from app.ocr_service import (
+    extract_text_from_image,
+    extract_text_with_metadata,
+    find_e_numbers,
+    normalize_text,
+)
 from app.supabase_client import supabase
-
 
 
 VERDICT_TO_STATUS = {
@@ -19,7 +24,7 @@ VERDICT_TO_STATUS = {
 
 ADDITIVE_ALIASES = {
     "E100": ["curcumin", "turmeric extract", "turmeric yellow"],
-    "E120": ["carmine", "cochineal", "cochineal extract", "natural red 4", "carminic acid"],
+    "E120": ["carmine", "cochineal", "cochineal extract", "natural red 4", "carminic acid", "crimson lake"],
     "E150A": ["plain caramel", "caramel color", "caramel i"],
     "E150D": ["caramel iv", "ammonia caramel", "sulfite ammonia caramel"],
     "E160A": ["beta-carotene", "beta carotene", "carotenes"],
@@ -27,6 +32,9 @@ ADDITIVE_ALIASES = {
     "E211": ["sodium benzoate", "benzoate of soda"],
     "E282": ["calcium propionate"],
     "E300": ["ascorbic acid", "vitamin c"],
+    "E319": ["tbhq", "tertiary butylhydroquinone", "tert-butylhydroquinone"],
+    "E320": ["bha", "butylated hydroxyanisole"],
+    "E321": ["bht", "butylated hydroxytoluene"],
     "E322": ["lecithin", "soy lecithin", "soya lecithin", "sunflower lecithin"],
     "E330": ["citric acid"],
     "E407": ["carrageenan", "carrageen", "irish moss"],
@@ -41,12 +49,12 @@ ADDITIVE_ALIASES = {
         "diglycerides",
         "monoglyceride",
         "mono- and di-glycerides",
-        "mono- and diglycerides of fatty acids"
+        "mono- and diglycerides of fatty acids",
     ],
     "E472E": [
         "datem",
         "diacetyl tartaric acid esters",
-        "diacetyl tartaric acid esters of mono- and diglycerides"
+        "diacetyl tartaric acid esters of mono- and diglycerides",
     ],
     "E476": ["polyglycerol polyricinoleate", "pgpr"],
     "E481": ["sodium stearoyl lactylate", "sodium stearoyl-2-lactylate", "ssl"],
@@ -55,14 +63,16 @@ ADDITIVE_ALIASES = {
     "E627": ["disodium guanylate", "sodium guanylate"],
     "E631": ["disodium inosinate", "sodium inosinate"],
     "E635": ["disodium 5'-ribonucleotides", "disodium ribonucleotides", "i+g", "ribonucleotides"],
-    "E904": ["shellac", "confectioner's glaze", "resinous glaze"],
+    "E904": ["shellac", "confectioner's glaze", "resinous glaze", "pharmaceutical glaze"],
     "E920": ["l-cysteine", "cysteine", "l-cysteine hydrochloride"],
 }
 
 PRIMARY_HARAM_INGREDIENTS = [
+    # English Swine & Derivatives
     {"term": "pork fat", "name": "Pork Fat", "reason": "Fat derived from swine is strictly prohibited (Haram)."},
     {"term": "pork meat", "name": "Pork Meat", "reason": "Swine flesh is strictly prohibited (Haram) in Islamic dietary law."},
     {"term": "pork belly", "name": "Pork Belly", "reason": "Swine flesh is strictly prohibited (Haram)."},
+    {"term": "pork rind", "name": "Pork Rind", "reason": "Swine skin/rind is strictly prohibited (Haram)."},
     {"term": "pork", "name": "Pork", "reason": "Swine flesh is strictly prohibited (Haram) in Islamic dietary law (Surah Al-Baqarah 2:173)."},
     {"term": "lard", "name": "Lard", "reason": "Rendered pig fat is strictly prohibited (Haram)."},
     {"term": "bacon", "name": "Bacon", "reason": "Cured pork product strictly prohibited (Haram)."},
@@ -70,17 +80,41 @@ PRIMARY_HARAM_INGREDIENTS = [
     {"term": "swine", "name": "Swine Derivatives", "reason": "Any ingredient sourced from swine is strictly prohibited (Haram)."},
     {"term": "porcine gelatin", "name": "Porcine Gelatin", "reason": "Gelatin derived from pig skin or bones is strictly prohibited (Haram)."},
     {"term": "porcine", "name": "Porcine Derivatives", "reason": "Porcine indicates pig or swine origin, strictly prohibited (Haram)."},
+    {"term": "blood plasma", "name": "Animal Blood Plasma", "reason": "Blood and blood fractions are prohibited in Islamic dietary law."},
+    {"term": "blood", "name": "Animal Blood", "reason": "Flowing blood is explicitly forbidden in Islamic dietary law (Surah Al-Ma'idah 5:3)."},
+    # Filipino / Tagalog Swine, Blood & Alcohol Terms
+    {"term": "karne ng baboy", "name": "Karne ng Baboy (Pork Meat)", "reason": "Filipino declaration for pork meat, strictly prohibited (Haram)."},
+    {"term": "taba ng baboy", "name": "Taba ng Baboy (Pork Fat)", "reason": "Filipino declaration for pork fat, strictly prohibited (Haram)."},
+    {"term": "mantika ng baboy", "name": "Mantika ng Baboy (Lard)", "reason": "Filipino declaration for rendered pig fat (lard), strictly prohibited (Haram)."},
+    {"term": "balat ng baboy", "name": "Balat ng Baboy (Pork Skin)", "reason": "Filipino declaration for pig skin, strictly prohibited (Haram)."},
+    {"term": "baboy", "name": "Baboy (Pork / Swine)", "reason": "Filipino declaration for swine/pork, strictly prohibited (Haram)."},
+    {"term": "chicharon", "name": "Chicharon (Pork Rind)", "reason": "Fried pork rind is strictly prohibited unless explicitly certified beef/chicken."},
+    {"term": "dugo", "name": "Dugo (Animal Blood)", "reason": "Filipino declaration for blood, prohibited in Islamic dietary law."},
+    {"term": "lambanog", "name": "Lambanog (Coconut Liquor)", "reason": "Distilled alcoholic spirit prohibited in food preparations."},
+    {"term": "alak", "name": "Alak (Alcohol / Liquor)", "reason": "Filipino declaration for intoxicating liquor, prohibited (Haram)."},
+    # Malay / Indonesian Swine & Alcohol Terms
+    {"term": "daging babi", "name": "Daging Babi (Pork Meat)", "reason": "Malay/Indonesian declaration for pork meat, strictly prohibited (Haram)."},
+    {"term": "lemak babi", "name": "Lemak Babi (Pork Fat / Lard)", "reason": "Malay/Indonesian declaration for pig fat, strictly prohibited (Haram)."},
+    {"term": "minyak babi", "name": "Minyak Babi (Lard Oil)", "reason": "Malay/Indonesian declaration for pig oil, strictly prohibited (Haram)."},
+    {"term": "babi", "name": "Babi (Pork / Swine)", "reason": "Malay/Indonesian declaration for swine/pork, strictly prohibited (Haram)."},
+    {"term": "alkohol", "name": "Alkohol (Alcohol)", "reason": "Intoxicating alcohol declaration prohibited in food processing."},
+    {"term": "arak", "name": "Arak (Distilled Spirit)", "reason": "Distilled alcoholic beverage prohibited in food preparations."},
+    # Intoxicants & Cooking Liquors
     {"term": "ethyl alcohol", "name": "Ethyl Alcohol", "reason": "Added intoxicating alcohol is prohibited in food processing."},
     {"term": "ethanol", "name": "Ethanol", "reason": "Alcoholic solvent or intoxicant prohibited in food preparations."},
     {"term": "alcohol", "name": "Alcohol", "reason": "Intoxicants (khamr) are strictly prohibited in food preparations."},
     {"term": "red wine", "name": "Red Wine", "reason": "Alcoholic beverage prohibited in food preparations."},
     {"term": "white wine", "name": "White Wine", "reason": "Alcoholic beverage prohibited in food preparations."},
+    {"term": "rice wine", "name": "Rice Wine", "reason": "Fermented alcoholic cooking wine prohibited in food preparations."},
     {"term": "wine", "name": "Wine", "reason": "Alcoholic beverage or derivative prohibited in food preparations."},
     {"term": "beer", "name": "Beer Extract", "reason": "Alcoholic beverage residue prohibited in food preparations."},
     {"term": "rum", "name": "Rum Extract", "reason": "Alcoholic spirit flavoring prohibited in food preparations."},
+    {"term": "brandy", "name": "Brandy", "reason": "Distilled wine spirit prohibited in food preparations."},
+    {"term": "whisky", "name": "Whisky", "reason": "Distilled alcoholic spirit prohibited in food preparations."},
+    {"term": "whiskey", "name": "Whiskey", "reason": "Distilled alcoholic spirit prohibited in food preparations."},
     {"term": "mirin", "name": "Mirin (Cooking Wine)", "reason": "Traditional Japanese sweet rice wine containing alcohol."},
     {"term": "sake", "name": "Sake (Rice Wine)", "reason": "Japanese fermented rice wine containing alcohol."},
-    {"term": "blood", "name": "Animal Blood", "reason": "Flowing blood is explicitly forbidden in Islamic dietary law (Surah Al-Ma'idah 5:3)."},
+    {"term": "soju", "name": "Soju (Distilled Spirit)", "reason": "Distilled alcoholic beverage prohibited in food preparations."},
 ]
 
 PRIMARY_DOUBTFUL_INGREDIENTS = [
@@ -89,9 +123,17 @@ PRIMARY_DOUBTFUL_INGREDIENTS = [
     {"term": "geltin", "name": "Gelatin (Geltin)", "reason": "Animal-derived gelling agent requiring halal certification verification."},
     {"term": "pepsin", "name": "Pepsin", "reason": "Enzyme commonly harvested from pig stomachs. Doubtful unless certified microbial or bovine halal source."},
     {"term": "rennet", "name": "Animal Rennet", "reason": "Coagulating enzyme from animal stomachs. Doubtful unless certified microbial or halal slaughtered."},
+    {"term": "lipase", "name": "Lipase Enzyme", "reason": "Fat-splitting enzyme that may be animal-derived unless certified microbial."},
     {"term": "animal tallow", "name": "Animal Tallow", "reason": "Rendered animal fat requiring proof of halal slaughter."},
+    {"term": "tallow", "name": "Tallow (Rendered Animal Fat)", "reason": "Rendered animal fat requiring proof of halal slaughter."},
+    {"term": "suet", "name": "Suet (Raw Animal Fat)", "reason": "Hard animal fat around loins/kidneys requiring proof of halal slaughter."},
     {"term": "animal shortening", "name": "Animal Shortening", "reason": "Fat blend that may contain non-halal animal fats."},
+    {"term": "animal fat", "name": "Animal Fat (Unspecified)", "reason": "Unspecified animal fat requiring verification of animal species and halal slaughter."},
     {"term": "bone char", "name": "Bone Char", "reason": "Carbonized animal bones used in sugar decoloring, doubtful unless certified plant-based or bovine halal."},
+    {"term": "whey powder", "name": "Whey Powder (Rennet Byproduct)", "reason": "Liquid byproduct of cheese manufacture; doubtful if coagulated with non-halal animal rennet."},
+    {"term": "carmine", "name": "Carmine / Cochineal (E120)", "reason": "Red pigment extracted from crushed scale insects; disputed/doubtful across scholarly schools."},
+    {"term": "shellac", "name": "Shellac Glaze (E904)", "reason": "Resinous insect secretion often dissolved in ethanol; requires solvent and certification check."},
+    {"term": "l-cysteine", "name": "L-Cysteine (E920)", "reason": "Dough conditioner often synthesized from human hair, duck feathers, or hog bristles unless microbial/synthetic."},
 ]
 
 _cached_additives = []
@@ -127,25 +169,26 @@ HCB_METADATA_BY_CODE = {
     "MUIS": ("Singapore_MUIS", -1, "Singapore Halal - MUIS (Recognized Foreign Certifier)", 95.0),
 }
 
+# Distinctive keywords that help corroborate YOLOv8's visual candidate when read on the seal rim or label
 VISUAL_CANDIDATE_RIM_KEYWORDS = {
-    "IDCP": ["ISLAMIC", "DAWAH", "DA'WAH", "COUNCIL", "MANILA"],
-    "HDIP": ["DEVELOPMENT", "INSTITUTE"],
-    "HICCIP": ["INTERNATIONAL", "CHAMBER", "COMMERCE", "INDUSTRIES"],
-    "MMHCB": ["MINDANAO", "MUSLIM", "BOARD"],
-    "MASLAHA": ["MASLAHA", "ADVOCACY", "AFFAIRS"],
-    "MINHA": ["MINDANAO", "AUTHORITY"],
-    "PUCOI": ["ULAMA", "CONGRESS", "ORGANIZATION"],
-    "AHIP": ["ALLIANCE", "INTEGRITY"],
-    "PRIME": ["PRIME", "ASIA", "CERTIFICATION"],
-    "FIQHI": ["FIQHI", "ISLAMIC"],
+    "IDCP": ["DAWAH", "DA'WAH", "IDCP"],
+    "HDIP": ["HDIP", "DEVELOPMENT INSTITUTE"],
+    "HICCIP": ["HICCIP", "CHAMBER", "COMMERCE", "INDUSTRIES"],
+    "MMHCB": ["MMHCB", "MINDANAO MUSLIM", "CERTIFICATION BOARD"],
+    "MASLAHA": ["MASLAHA", "ADVOCACY", "MUSLIM AFFAIRS"],
+    "MINHA": ["MINHA", "MINDANAO HALAL", "AUTHORITY"],
+    "PUCOI": ["PUCOI", "ULAMA CONGRESS"],
+    "AHIP": ["AHIP", "ALLIANCE", "INTEGRITY"],
+    "PRIME": ["PRIME", "PRIME CERTIFICATION"],
+    "FIQHI": ["FIQHI"],
     "PHILCOSED": ["PHILCOSED", "SOCIO", "ECONOMIC"],
-    "NCMF_GENERAL": ["NATIONAL", "COMMISSION", "MUSLIM", "FILIPINOS"],
-    "NATIONAL_HALAL_LOGO": ["NATIONAL", "PHILIPPINES", "DTI"],
-    "BUSC": ["BANGSAMORO", "UNITY", "SUMMIT", "BASILAN"],
-    "BPCC": ["BANGSAMORO", "PROFESSIONAL", "CONSULTATIVE"],
-    "MALAYSIA_JAKIM": ["MALAYSIA", "KEMAJUAN", "MS 1500", "MS1500"],
-    "INDONESIA_BPJPH": ["INDONESIA", "ULAMA", "MAJELIS"],
-    "THAILAND_CICOT": ["THAILAND", "CENTRAL", "ISLAMIC"],
+    "NCMF_GENERAL": ["NCMF", "COMMISSION ON MUSLIM FILIPINOS"],
+    "NATIONAL_HALAL_LOGO": ["HALAL PHILIPPINES", "NATIONAL HALAL"],
+    "BUSC": ["BUSC", "UNITY SUMMIT", "BASILAN"],
+    "BPCC": ["BPCC", "PROFESSIONAL", "CONSULTATIVE"],
+    "MALAYSIA_JAKIM": ["JAKIM", "MALAYSIA", "KEMAJUAN", "MS 1500", "MS1500"],
+    "INDONESIA_BPJPH": ["BPJPH", "INDONESIA", "MAJELIS ULAMA", "LPPOM"],
+    "THAILAND_CICOT": ["CICOT", "THAILAND", "CENTRAL ISLAMIC"],
 }
 
 
@@ -190,9 +233,7 @@ def match_certifier_from_catalog(upper_text: str):
 
 def get_all_additives():
     global _cached_additives, _cached_additives_ts
-    import time
     now = time.time()
-    # Cache for 60 seconds
     if _cached_additives and (now - _cached_additives_ts < 60):
         return _cached_additives
 
@@ -202,23 +243,156 @@ def get_all_additives():
             _cached_additives = response.data
             _cached_additives_ts = now
             return _cached_additives
-    except Exception as e:
+    except Exception:
         if _cached_additives:
             return _cached_additives
 
     return _cached_additives or []
 
 
+# --- Stage 2: Structural Label Section Parser ---
+
+_INGREDIENT_SECTION_HEADERS = (
+    r"\b(?:ingredients?|mga\s+sangkap|sangkap|komposisi|ramuan|bahan[-\s]?bahan)\b\s*[:\-]?"
+)
+_SECTION_STOP_HEADERS = (
+    r"\b(?:nutrition\s+facts?|nutrition\s+information|nutritional\s+info|nilai\s+gizi|"
+    r"storage\s+condition|storage\s+instructions?|keep\s+in\s+a\s+cool|best\s+before|"
+    r"expiry\s+date|expiration\s+date|manufactured\s+by|distributed\s+by|imported\s+by|"
+    r"packed\s+by|net\s+wt|net\s+weight|serving\s+size|direction\s+for\s+use)\b"
+)
+_ALLERGEN_HEADERS = (
+    r"\b(?:allergen\s+information|allergen\s+advice|allergens?|contains\s*:|may\s+contain(?:\s+traces\s+of)?)\b"
+)
+
+COMMON_INGREDIENT_TOKENS = {
+    "water", "sugar", "salt", "flour", "wheat", "oil", "palm", "vegetable", "corn",
+    "starch", "milk", "powder", "soy", "soya", "lecithin", "cocoa", "butter", "fat",
+    "syrup", "glucose", "fructose", "maltodextrin", "dextrose", "citric", "acid",
+    "sodium", "potassium", "calcium", "benzoate", "sorbate", "glutamate", "spices",
+    "garlic", "onion", "pepper", "chili", "vinegar", "yeast", "extract", "flavor",
+    "flavour", "flavoring", "colour", "color", "caramel", "carotene", "xanthan",
+    "guar", "carrageenan", "emulsifier", "stabilizer", "antioxidant", "preservative",
+    "regulator", "cheese", "cream", "egg", "rice", "oat", "chicken", "beef", "fish",
+    "shrimp", "tubig", "asukal", "asin", "harina", "mantika", "gatas", "bawang",
+    "sibuyas", "paminta", "suka", "air", "gula", "garam", "tepung", "minyak", "susu",
+}
+
+
+def parse_label_sections(raw_text: str) -> dict:
+    """
+    Separates raw OCR text into:
+    - ingredients_section: Isolated ingredient declaration block (if header found) or full text
+    - allergen_section: Allergen disclaimer block
+    - marketing_section: Non-ingredient marketing/banner text
+    - has_explicit_header: Whether an explicit 'INGREDIENTS:' / 'SANGKAP:' / 'KOMPOSISI:' header was found
+    - ingredient_token_count: Number of recognized food/additive tokens or comma-delimited items
+    - ingredient_status: 'READABLE_PANEL' | 'MISSING_OR_UNREADABLE'
+    """
+    if not raw_text or not raw_text.strip():
+        return {
+            "ingredients_section": "",
+            "allergen_section": "",
+            "marketing_section": "",
+            "has_explicit_header": False,
+            "ingredient_token_count": 0,
+            "ingredient_status": "MISSING_OR_UNREADABLE",
+        }
+
+    header_match = re.search(_INGREDIENT_SECTION_HEADERS, raw_text, flags=re.IGNORECASE)
+    has_explicit_header = bool(header_match)
+
+    if header_match:
+        start_idx = header_match.end()
+        marketing_section = raw_text[:header_match.start()].strip()
+        tail = raw_text[start_idx:]
+        stop_match = re.search(_SECTION_STOP_HEADERS, tail, flags=re.IGNORECASE)
+        if stop_match:
+            ingredients_block = tail[:stop_match.start()].strip()
+            marketing_section = (marketing_section + " " + tail[stop_match.start():]).strip()
+        else:
+            ingredients_block = tail.strip()
+    else:
+        ingredients_block = raw_text.strip()
+        marketing_section = ""
+
+    allergen_section = ""
+    allergen_match = re.search(_ALLERGEN_HEADERS, ingredients_block, flags=re.IGNORECASE)
+    if allergen_match:
+        allergen_section = ingredients_block[allergen_match.start():]
+
+    norm_ing = normalize_text(ingredients_block)
+    words = set(norm_ing.split())
+    food_token_hits = len(words.intersection(COMMON_INGREDIENT_TOKENS))
+    e_code_hits = len(find_e_numbers(ingredients_block))
+    comma_items = [seg.strip() for seg in re.split(r"[,;•]", ingredients_block) if len(seg.strip()) >= 3]
+
+    effective_token_count = food_token_hits + e_code_hits + (len(comma_items) if has_explicit_header else 0)
+    is_readable_panel = bool(
+        (has_explicit_header and (food_token_hits >= 1 or len(comma_items) >= 2 or e_code_hits >= 1))
+        or food_token_hits >= 3
+        or (food_token_hits >= 2 and len(comma_items) >= 3)
+        or e_code_hits >= 2
+    )
+
+    return {
+        "ingredients_section": ingredients_block,
+        "allergen_section": allergen_section,
+        "marketing_section": marketing_section,
+        "has_explicit_header": has_explicit_header,
+        "ingredient_token_count": effective_token_count,
+        "ingredient_status": "READABLE_PANEL" if is_readable_panel else "MISSING_OR_UNREADABLE",
+    }
+
+
+def _fuzzy_match_term_in_tokens(candidate_norm: str, text_tokens: list, min_len: int = 6, threshold: float = 0.84) -> str:
+    """
+    Bounded fuzzy matching for single-word ingredient/additive terms >= 6 chars to recover from OCR typos
+    (e.g. 'gelatln' -> 'gelatin', 'porclne' -> 'porcine', 'carmlne' -> 'carmine', 'tbhqjl' -> 'tbhq').
+    Short words (< 6 chars like 'pork', 'lard', 'ham', 'wine') are restricted to exact word boundaries
+    to prevent false positives (e.g. 'corn' vs 'pork').
+    """
+    if not candidate_norm or " " in candidate_norm:
+        return ""
+
+    # Special handling for OCR suffix merge on acronyms like (TBHQJL -> tbhqjl
+    if candidate_norm in ("tbhq", "datem", "pgpr"):
+        for tok in text_tokens:
+            if tok.startswith(candidate_norm) and len(tok) <= len(candidate_norm) + 2:
+                return tok
+        return ""
+
+    if len(candidate_norm) < min_len:
+        return ""
+
+    for tok in text_tokens:
+        if len(tok) < min_len - 1 or abs(len(tok) - len(candidate_norm)) > 2:
+            continue
+        if tok[0] != candidate_norm[0]:
+            continue
+        ratio = SequenceMatcher(None, candidate_norm, tok).ratio()
+        if ratio >= threshold:
+            return tok
+    return ""
+
+
 def match_additives_from_text(extracted_text: str):
+    if not extracted_text or not extracted_text.strip():
+        return []
+
+    sections = parse_label_sections(extracted_text)
+    # Screen primarily the isolated ingredients section, but also check full text so nothing is missed if headers are malformed
+    primary_text = sections["ingredients_section"] or extracted_text
     detected_codes = find_e_numbers(extracted_text)
     normalized_text = normalize_text(extracted_text)
+    normalized_ing_tokens = normalize_text(primary_text).split()
 
     additives = get_all_additives()
 
     flagged_items = []
     seen_ids = set()
-
     seen_codes = set()
+
     for additive in additives:
         additive_id = additive.get("id")
         code = additive.get("code")
@@ -232,7 +406,9 @@ def match_additives_from_text(extracted_text: str):
             if raw_code:
                 seen_codes.add(raw_code)
 
-        matched_alias = find_additive_alias_match(code, name, normalized_text)
+        matched_alias, match_type = find_additive_alias_match_with_type(
+            code, name, normalized_text, normalized_ing_tokens
+        )
         name_match = bool(matched_alias)
 
         if not code_match and not name_match:
@@ -250,6 +426,7 @@ def match_additives_from_text(extracted_text: str):
             "additive_id": additive_id,
             "ingredient": f"{name} ({code})" if code else name,
             "matched_text": code if code_match else matched_alias,
+            "match_type": "e_number" if code_match else match_type,
             "status": additive_status or "Doubtful",
             "reason": (
                 additive.get("reason")
@@ -265,6 +442,7 @@ def match_additives_from_text(extracted_text: str):
                 "additive_id": None,
                 "ingredient": f"Unknown Additive ({code})",
                 "matched_text": code,
+                "match_type": "e_number",
                 "status": "Doubtful",
                 "reason": (
                     f"E-number {code} was detected on the label but is not yet cataloged in the local halal database. "
@@ -272,12 +450,15 @@ def match_additives_from_text(extracted_text: str):
                 ),
             })
 
-    # Scan for primary non-additive Haram substances (e.g. pork, lard, alcohol, bacon)
+    # Scan for primary non-additive Haram substances (English, Filipino/Tagalog, Malay/Indonesian)
     matched_primary_terms = set()
     for item in PRIMARY_HARAM_INGREDIENTS:
         term = item["term"]
         pattern = rf"\b{re.escape(term)}\b"
-        if re.search(pattern, normalized_text):
+        exact_hit = bool(re.search(pattern, normalized_text))
+        fuzzy_hit = "" if exact_hit else _fuzzy_match_term_in_tokens(term, normalized_ing_tokens)
+
+        if exact_hit or fuzzy_hit:
             if is_ingredient_negated(term, extracted_text):
                 continue
             if not any(term in prev for prev in matched_primary_terms):
@@ -285,24 +466,32 @@ def match_additives_from_text(extracted_text: str):
                 flagged_items.append({
                     "additive_id": None,
                     "ingredient": item["name"],
-                    "matched_text": term,
+                    "matched_text": term if exact_hit else f"{fuzzy_hit} (~{term})",
+                    "match_type": "exact" if exact_hit else "fuzzy_ocr",
                     "status": "Haram",
                     "reason": item["reason"],
                 })
 
-    # Scan for primary non-additive Doubtful substances (e.g. unspecified gelatin, pepsin)
+    # Scan for primary non-additive Doubtful substances (e.g. unspecified gelatin, pepsin, rennet, tallow)
     for item in PRIMARY_DOUBTFUL_INGREDIENTS:
         term = item["term"]
         pattern = rf"\b{re.escape(term)}\b"
-        if re.search(pattern, normalized_text):
+        exact_hit = bool(re.search(pattern, normalized_text))
+        fuzzy_hit = "" if exact_hit else _fuzzy_match_term_in_tokens(term, normalized_ing_tokens)
+
+        if exact_hit or fuzzy_hit:
             if is_ingredient_negated(term, extracted_text):
                 continue
-            if not any(term in prev for prev in matched_primary_terms) and not any(term in (f.get("matched_text") or "").lower() for f in flagged_items):
+            if not any(term in prev for prev in matched_primary_terms) and not any(
+                term in (f.get("matched_text") or "").lower() or term in (f.get("ingredient") or "").lower()
+                for f in flagged_items
+            ):
                 matched_primary_terms.add(term)
                 flagged_items.append({
                     "additive_id": None,
                     "ingredient": item["name"],
-                    "matched_text": term,
+                    "matched_text": term if exact_hit else f"{fuzzy_hit} (~{term})",
+                    "match_type": "exact" if exact_hit else "fuzzy_ocr",
                     "status": "Doubtful",
                     "reason": item["reason"],
                 })
@@ -312,40 +501,71 @@ def match_additives_from_text(extracted_text: str):
 
 def is_ingredient_negated(term: str, raw_text: str) -> bool:
     """
-    Checks if a prohibited term is negated in context (e.g. 'pork-free', 'no pork', 'alcohol-free').
+    Clause-local negation check:
+    Splits the text into individual comma/semicolon/line clauses and checks whether EVERY clause
+    containing `term` negates it (e.g., 'no pork', 'pork-free', 'alcohol-free', 'non-dairy').
+    Prevents a front marketing claim ('No Alcohol') from suppressing 'ethyl alcohol' in the ingredient list.
     """
-    if not raw_text:
+    if not raw_text or not term:
         return False
-    negations = [
-        rf"{re.escape(term)}\s*[-]?\s*free",
-        rf"no\s+{re.escape(term)}",
-        rf"free\s+of\s+{re.escape(term)}",
-        rf"without\s+{re.escape(term)}",
-        rf"non\s*[-]?\s*{re.escape(term)}",
-        rf"zero\s+{re.escape(term)}",
-        rf"0%\s*{re.escape(term)}",
+
+    clauses = re.split(r"[,;.\n•|()\[\]]+", raw_text)
+    negation_patterns = [
+        rf"\b{re.escape(term)}\s*[-]?\s*free\b",
+        rf"\bno\s+(?:added\s+)?{re.escape(term)}\b",
+        rf"\bfree\s+(?:of|from)\s+{re.escape(term)}\b",
+        rf"\bwithout\s+{re.escape(term)}\b",
+        rf"\bnon\s*[-]?\s*{re.escape(term)}\b",
+        rf"\bzero\s+{re.escape(term)}\b",
+        rf"\b0%\s*{re.escape(term)}\b",
+        rf"\bwalang\s+{re.escape(term)}\b",
+        rf"\btanpa\s+{re.escape(term)}\b",
     ]
-    for pattern in negations:
-        if re.search(r"\b" + pattern + r"\b", raw_text, re.IGNORECASE):
-            return True
-    return False
+
+    found_positive_occurrence = False
+    found_negated_occurrence = False
+
+    for clause in clauses:
+        norm_clause = normalize_text(clause)
+        if not re.search(rf"\b{re.escape(normalize_text(term))}\b", norm_clause):
+            continue
+
+        clause_negated = any(re.search(pat, clause, re.IGNORECASE) for pat in negation_patterns)
+        if clause_negated:
+            found_negated_occurrence = True
+        else:
+            found_positive_occurrence = True
+
+    if found_positive_occurrence:
+        return False
+    return found_negated_occurrence
 
 
-def find_additive_alias_match(code, name: str, normalized_text: str):
+def find_additive_alias_match_with_type(code, name: str, normalized_text: str, text_tokens: list = None):
     candidates = build_additive_match_terms(code, name)
 
     for candidate in candidates:
         normalized_candidate = normalize_text(candidate)
-
         if not normalized_candidate:
             continue
 
         pattern = rf"\b{re.escape(normalized_candidate)}\b"
-
         if re.search(pattern, normalized_text):
-            return candidate
+            return candidate, "exact"
 
-    return ""
+    if text_tokens:
+        for candidate in candidates:
+            normalized_candidate = normalize_text(candidate)
+            fuzzy_tok = _fuzzy_match_term_in_tokens(normalized_candidate, text_tokens)
+            if fuzzy_tok:
+                return f"{candidate} (~{fuzzy_tok})", "fuzzy_ocr"
+
+    return "", ""
+
+
+def find_additive_alias_match(code, name: str, normalized_text: str):
+    matched, _ = find_additive_alias_match_with_type(code, name, normalized_text)
+    return matched
 
 
 def build_additive_match_terms(code, name: str):
@@ -359,13 +579,10 @@ def build_additive_match_terms(code, name: str):
         terms.extend(ADDITIVE_ALIASES.get(code.upper(), []))
 
     cleaned_terms = []
-
     for term in terms:
         term = term.strip()
-
         if len(term) < 3:
             continue
-
         if term not in cleaned_terms:
             cleaned_terms.append(term)
 
@@ -373,15 +590,15 @@ def build_additive_match_terms(code, name: str):
 
 
 FOOD_LABEL_KEYWORDS = [
-    "ingredient", "ingredients", "nutrition", "serving", "calories",
-    "sugar", "salt", "water", "oil", "fat", "flour", "wheat", "milk",
-    "flavor", "flavour", "acid", "sodium", "contains", "preservative",
+    "ingredient", "ingredients", "sangkap", "komposisi", "ramuan", "nutrition",
+    "serving", "calories", "sugar", "salt", "water", "oil", "fat", "flour", "wheat",
+    "milk", "flavor", "flavour", "acid", "sodium", "contains", "preservative",
     "net wt", "net weight", "food", "sauce", "extract", "syrup", "halal",
     "kosher", "manufactured by", "produced by", "best before", "expiry", "exp date",
     "protein", "carbohydrate", "allergen", "vitamins", "calcium", "energy",
     "cocoa", "soy", "lecithin", "starch", "powder", "cheese", "cream", "yeast",
     "citric", "ascorbic", "carrageenan", "xanthan", "guar", "sorbate", "benzoate",
-    "caramel", "carotene", "glutamate", "corn", "rice", "potato", "spices"
+    "caramel", "carotene", "glutamate", "corn", "rice", "potato", "spices",
 ]
 
 
@@ -394,27 +611,292 @@ def is_food_label_content(text: str, flagged_items: list, logo_detected: bool) -
     if not text or not text.strip():
         return False
     lower = text.lower()
-    if "ingredient" in lower or "nutrition" in lower:
+    if any(h in lower for h in ("ingredient", "sangkap", "komposisi", "ramuan", "nutrition")):
         return True
     keyword_matches = sum(1 for kw in FOOD_LABEL_KEYWORDS if kw in lower)
     return keyword_matches >= 2
 
 
-def explain_label_verdict(flagged_items, extracted_text: str, logo_result: dict = None):
+# --- Stage 3: Multi-Channel OCR-YOLO Evidence Fusion (Deliverable 5) ---
+
+def _match_explicit_hcb_in_text(text: str, allow_country_origin: bool = False, has_visual_seal: bool = False):
+    """
+    Matches explicit certifying body acronyms or organization titles inside text
+    (either from high-res logo crop OCR or full-label OCR).
+    """
+    if not text or len(text.strip()) < 2:
+        return None
+
+    upper_text = text.upper()
+
+    if (
+        re.search(r"\bIDCP\b", upper_text)
+        or re.search(r"ISLAMIC\s+DA'?WAH\s+COUNCIL", upper_text)
+        or re.search(r"DA'?WAH\s+COUNCIL", upper_text)
+        or "IDCP-HC" in upper_text
+    ):
+        return HCB_METADATA_BY_CODE["IDCP"]
+
+    if re.search(r"\bHDIP\b", upper_text) or "HALAL DEVELOPMENT INSTITUTE" in upper_text:
+        return HCB_METADATA_BY_CODE["HDIP"]
+
+    if re.search(r"\bHICCIP\b", upper_text) or "HALAL INTERNATIONAL CHAMBER" in upper_text:
+        return HCB_METADATA_BY_CODE["HICCIP"]
+
+    if re.search(r"\bMMHCB\b", upper_text) or "MINDANAO MUSLIM HALAL" in upper_text:
+        return HCB_METADATA_BY_CODE["MMHCB"]
+
+    if re.search(r"\bMASLAHA\b", upper_text) or "ADVOCACY FOR MUSLIM AFFAIRS" in upper_text:
+        return HCB_METADATA_BY_CODE["MASLAHA"]
+
+    if re.search(r"\bMINHA\b", upper_text) or "MINDANAO HALAL AUTHORITY" in upper_text:
+        return HCB_METADATA_BY_CODE["MINHA"]
+
+    if re.search(r"\bPUCOI\b", upper_text) or "PHILIPPINE ULAMA CONGRESS" in upper_text:
+        return HCB_METADATA_BY_CODE["PUCOI"]
+
+    if re.search(r"\bAHIP\b", upper_text) or "ALLIANCE FOR HALAL INTEGRITY" in upper_text:
+        return HCB_METADATA_BY_CODE["AHIP"]
+
+    if re.search(r"\bPRIME\b", upper_text) and ("HALAL" in upper_text or "CERTIF" in upper_text or has_visual_seal):
+        return HCB_METADATA_BY_CODE["PRIME"]
+
+    if re.search(r"\bFIQHI\b", upper_text):
+        return HCB_METADATA_BY_CODE["FIQHI"]
+
+    if re.search(r"\bPHILCOSED\b", upper_text):
+        return HCB_METADATA_BY_CODE["PHILCOSED"]
+
+    if re.search(r"\bNCMF\b", upper_text) or "NATIONAL COMMISSION ON MUSLIM FILIPINOS" in upper_text:
+        return HCB_METADATA_BY_CODE["NCMF_GENERAL"]
+
+    if re.search(r"\bBUSC\b", upper_text) or "BANGSAMORO UNITY" in upper_text or "BASILAN ULAMA" in upper_text:
+        return HCB_METADATA_BY_CODE["BUSC"]
+
+    if re.search(r"\bBPCC\b", upper_text) or "BANGSAMORO PROFESSIONAL" in upper_text or "BANGSAMORO CONSULTATIVE" in upper_text:
+        return HCB_METADATA_BY_CODE["BPCC"]
+
+    if (
+        re.search(r"\bJAKIM\b", upper_text)
+        or "KEMAJUAN ISLAM MALAYSIA" in upper_text
+        or "HALAL MALAYSIA" in upper_text
+        or re.search(r"\bMS\s*1500\b", upper_text)
+        or (
+            allow_country_origin
+            and has_visual_seal
+            and any(
+                m in upper_text
+                for m in (
+                    "MALAYSIA", "KUALA LUMPUR", "SELANGOR", "PENANG", "JOHOR",
+                    "SARAWAK", "SABAH", "SDN BHD", "SDN. BHD.", "BUATAN MALAYSIA",
+                )
+            )
+        )
+    ):
+        return HCB_METADATA_BY_CODE["MALAYSIA_JAKIM"]
+
+    if (
+        re.search(r"\bMUIS\b", upper_text)
+        or "MAJLIS UGAMA ISLAM" in upper_text
+        or "HALAL SINGAPURA" in upper_text
+        or (allow_country_origin and has_visual_seal and ("SINGAPURA" in upper_text or "SINGAPORE" in upper_text))
+    ):
+        return HCB_METADATA_BY_CODE["SINGAPORE_MUIS"]
+
+    if (
+        re.search(r"\bBPJPH\b", upper_text)
+        or re.search(r"\bLPPOM\b", upper_text)
+        or re.search(r"\bMUI\b", upper_text)
+        or "HALAL INDONESIA" in upper_text
+        or "MAJELIS ULAMA" in upper_text
+        or (
+            allow_country_origin
+            and has_visual_seal
+            and any(
+                m in upper_text
+                for m in (
+                    "INDONESIA", "JAKARTA", "SURABAYA", "BANDUNG", "TANGERANG",
+                    "BEKASI", "SIDOARJO", "DIPRODUKSI OLEH", "BPOM RI",
+                )
+            )
+        )
+    ):
+        return HCB_METADATA_BY_CODE["INDONESIA_BPJPH"]
+
+    if (
+        re.search(r"\bCICOT\b", upper_text)
+        or "CENTRAL ISLAMIC COUNCIL" in upper_text
+        or (
+            allow_country_origin
+            and has_visual_seal
+            and any(
+                m in upper_text
+                for m in ("THAILAND", "BANGKOK", "CHONBURI", "SAMUT PRAKAN", "PRODUCT OF THAILAND")
+            )
+        )
+    ):
+        return HCB_METADATA_BY_CODE["THAILAND_CICOT"]
+
+    return None
+
+
+def fuse_logo_and_ocr_evidence(logo_result: dict, extracted_text: str) -> dict:
+    """
+    Implements the Deliverable 5 Multi-Channel OCR-YOLO Evidence-Fusion Matrix:
+    - Channel 1: YOLOv8 Visual Seal Localizer & Primary Classifier (logo_result)
+    - Channel 2: High-Resolution Logo ROI Crop OCR + Polar Rim Unwrap (cropOcrText)
+    - Channel 3: Full-Label OCR & Certificate Number Extractor (extracted_text)
+    - Channel 4: Trusted Catalog Lookup (match_certifier_from_catalog)
+
+    Crucial Safety Guarantees:
+    1. Plain text 'HALAL' or HCB names NEVER fabricate logoDetected = True when YOLOv8 found no visual seal.
+    2. Text matching NEVER overwrites a high-confidence Invalid_Logo (counterfeit/unaccredited seal).
+    """
+    visual_detected = bool(logo_result.get("logoDetected", False))
+    is_invalid_logo = bool(logo_result.get("isInvalidLogo", False))
+    is_ambiguous_hcb = bool(logo_result.get("isAmbiguousHcb", False))
+    visual_conf = float(logo_result.get("logoConfidence", 0.0) or 0.0)
+    crop_ocr_text = str(logo_result.get("cropOcrText") or "").strip()
+    upper_label = (extracted_text or "").upper()
+    upper_crop = crop_ocr_text.upper()
+    combined_upper = f"{upper_crop} {upper_label}".strip()
+
+    has_plain_halal_word = bool(
+        "HALAL" in combined_upper
+        or "حلال" in (extracted_text or "")
+        or "حلال" in crop_ocr_text
+        or "حاال" in (extracted_text or "")
+    )
+
+    logo_result["textHalalClaim"] = has_plain_halal_word
+    logo_result["textClaimedBody"] = None
+
+    # 1. Counterfeit / Unaccredited Seal Guard: never allow OCR text to erase Invalid_Logo
+    if visual_detected and is_invalid_logo:
+        logo_result["sealStatus"] = "COUNTERFEIT_OR_UNACCREDITED_SEAL"
+        logo_result["evidenceSource"] = "yolo_invalid_logo_guard"
+        return logo_result
+
+    # 2. Match HCB evidence from Crop OCR (Channel 2), Full-Label OCR (Channel 3), and Catalog (Channel 4)
+    crop_hcb_match = _match_explicit_hcb_in_text(crop_ocr_text, allow_country_origin=False, has_visual_seal=visual_detected)
+    label_hcb_match = _match_explicit_hcb_in_text(extracted_text, allow_country_origin=True, has_visual_seal=visual_detected)
+
+    # Rim-keyword corroboration for YOLOv8's visual candidate when a seal is visually localized
+    rim_corroborated_match = None
+    if visual_detected:
+        vis_code = (logo_result.get("visualCandidateCode") or "").strip().upper()
+        rim_words = VISUAL_CANDIDATE_RIM_KEYWORDS.get(vis_code, [])
+        if vis_code in HCB_METADATA_BY_CODE and rim_words and any(w in combined_upper for w in rim_words):
+            rim_corroborated_match = HCB_METADATA_BY_CODE[vis_code]
+
+    catalog_hcb_match = match_certifier_from_catalog(combined_upper) if visual_detected else None
+
+    best_text_match = crop_hcb_match or label_hcb_match or rim_corroborated_match or catalog_hcb_match
+    evidence_channel = (
+        "yolo_plus_crop_ocr" if crop_hcb_match
+        else "yolo_plus_label_ocr" if label_hcb_match
+        else "yolo_plus_rim_keyword" if rim_corroborated_match
+        else "yolo_plus_catalog" if catalog_hcb_match
+        else "yolo_visual_only"
+    )
+
+    # 3. No Visual Seal Detected by YOLOv8 -> Never fabricate logoDetected = True!
+    if not visual_detected:
+        logo_result["logoDetected"] = False
+        logo_result["isInvalidLogo"] = False
+        if best_text_match:
+            _, _, c_label, _ = best_text_match
+            logo_result["textHalalClaim"] = True
+            logo_result["textClaimedBody"] = c_label
+            logo_result["sealStatus"] = "TEXT_CLAIM_ONLY_NO_SEAL"
+            logo_result["evidenceSource"] = "text_claim_without_visual_seal"
+        elif has_plain_halal_word:
+            logo_result["sealStatus"] = "TEXT_CLAIM_ONLY_NO_SEAL"
+            logo_result["evidenceSource"] = "plain_halal_word_without_visual_seal"
+        else:
+            logo_result["sealStatus"] = "NO_SEAL_DETECTED"
+            logo_result["evidenceSource"] = "none"
+        return logo_result
+
+    # 4. Visual Seal IS Detected by YOLOv8 (logoDetected == True)
+    current_logos = logo_result.get("detectedLogos") or []
+    base_box = current_logos[0]["box"] if current_logos else [0, 0, 0, 0]
+    base_norm = current_logos[0]["norm_box"] if current_logos else [0.25, 0.25, 0.75, 0.75]
+
+    if not is_ambiguous_hcb:
+        # High-confidence YOLOv8 prediction (>= 78%)
+        vis_code = (logo_result.get("visualCandidateCode") or "").strip().upper()
+        if crop_hcb_match and crop_hcb_match[0].upper() != vis_code:
+            # Explicit acronym read inside the high-res seal crop itself takes precedence
+            c_name, c_id, c_label, c_conf = crop_hcb_match
+            logo_result["logoBody"] = c_label
+            logo_result["logoConfidence"] = round(max(visual_conf, min(94.0, c_conf)), 1)
+            logo_result["sealStatus"] = "OCR_DISAMBIGUATED_SEAL"
+            logo_result["evidenceSource"] = "crop_ocr_override"
+        else:
+            logo_result["sealStatus"] = "VERIFIED_HCB_SEAL"
+            logo_result["evidenceSource"] = (
+                "yolo_high_conf_corroborated" if best_text_match else "yolo_high_conf"
+            )
+        return logo_result
+
+    # Moderate/Ambiguous YOLOv8 visual seal (35% <= conf < 78%) -> Disambiguate using Crop/Label/Catalog evidence
+    if best_text_match:
+        c_name, c_id, c_label, _ = best_text_match
+        # Calibrated fused confidence: combines visual localization score with textual corroboration
+        fused_conf = round(min(95.0, max(visual_conf + 18.0, 82.0)), 1)
+        logo_result["logoConfidence"] = fused_conf
+        logo_result["logoBody"] = c_label
+        logo_result["isAmbiguousHcb"] = False
+        logo_result["sealStatus"] = "OCR_DISAMBIGUATED_SEAL"
+        logo_result["evidenceSource"] = evidence_channel
+        logo_result["detectedLogos"] = [
+            {
+                "label": c_label,
+                "confidence": fused_conf,
+                "is_invalid": False,
+                "class_name": c_name,
+                "class_id": c_id,
+                "box": base_box,
+                "norm_box": base_norm,
+                "crop_ocr_text": crop_ocr_text,
+            }
+        ]
+    else:
+        logo_result["sealStatus"] = "DETECTED_SEAL_UNKNOWN_HCB"
+        logo_result["evidenceSource"] = "yolo_low_conf_uncorroborated"
+
+    return logo_result
+
+
+def explain_label_verdict(
+    flagged_items,
+    extracted_text: str,
+    logo_result: dict = None,
+    section_info: dict = None,
+):
     if not logo_result:
         logo_result = {}
-    logo_detected = logo_result.get("logoDetected", False)
-    is_invalid_logo = logo_result.get("isInvalidLogo", False)
+    if not section_info:
+        section_info = parse_label_sections(extracted_text)
+
+    logo_detected = bool(logo_result.get("logoDetected", False))
+    is_invalid_logo = bool(logo_result.get("isInvalidLogo", False))
+    is_ambiguous_hcb = bool(logo_result.get("isAmbiguousHcb", False))
     logo_body = logo_result.get("logoBody", "Unknown Logo")
     logo_confidence = logo_result.get("logoConfidence", 0.0)
+    seal_status = logo_result.get("sealStatus", "NO_SEAL_DETECTED")
+    text_halal_claim = bool(logo_result.get("textHalalClaim", False))
+    text_claimed_body = logo_result.get("textClaimedBody")
+    ingredient_status = section_info.get("ingredient_status", "MISSING_OR_UNREADABLE")
 
     # 1. Critical Counterfeit / Fake Logo Alert -> Red
-    if is_invalid_logo:
+    if is_invalid_logo or seal_status == "COUNTERFEIT_OR_UNACCREDITED_SEAL":
         return {
             "verdict": "Red",
             "riskLevel": "Suspected Fake Logo",
             "analysisSummary": (
-                "Warning: A suspected unauthorized, altered, or unverified halal certification logo "
+                "Warning: A suspected unauthorized, altered, or unaccredited halal certification mark "
                 "was detected on this packaging. Do not rely on this mark."
             ),
             "recommendations": [
@@ -424,11 +906,7 @@ def explain_label_verdict(flagged_items, extracted_text: str, logo_result: dict 
             ],
         }
 
-    statuses = [
-        str(item.get("status", "")).strip().lower()
-        for item in flagged_items
-    ]
-
+    statuses = [str(item.get("status", "")).strip().lower() for item in flagged_items]
     haram_count = statuses.count("haram")
     doubtful_count = (
         statuses.count("doubtful")
@@ -436,11 +914,11 @@ def explain_label_verdict(flagged_items, extracted_text: str, logo_result: dict 
         + statuses.count("needs_review")
     )
 
-    # 2. Prohibited Additives Detected -> Red
+    # 2. Prohibited Additives / Ingredients Detected -> Red
     if haram_count:
         summary_msg = f"Found {haram_count} prohibited ingredient(s) on the label. Avoid consuming this product."
         if logo_detected:
-            summary_msg += f" Note: Despite an apparent {logo_body} logo, prohibited ingredients were declared."
+            summary_msg += f" Note: Despite an apparent {logo_body} mark, prohibited ingredients were declared."
 
         return {
             "verdict": "Red",
@@ -453,7 +931,7 @@ def explain_label_verdict(flagged_items, extracted_text: str, logo_result: dict 
             ],
         }
 
-    # 3. Non-Product Guard: If no logo is detected and text lacks food label indicators (e.g. scanning a face or room)
+    # 3. Non-Product Guard: If no logo is detected and text lacks food label indicators
     if not is_food_label_content(extracted_text, flagged_items, logo_detected):
         return {
             "verdict": "Yellow",
@@ -471,9 +949,12 @@ def explain_label_verdict(flagged_items, extracted_text: str, logo_result: dict 
 
     # 4. Doubtful Additives Detected -> Yellow
     if doubtful_count:
-        summary_msg = f"Found {doubtful_count} doubtful ingredient(s) whose source (plant or animal) is not specified on the label."
+        summary_msg = (
+            f"Found {doubtful_count} doubtful ingredient(s) whose biological source (plant vs. animal) "
+            "requires halal certification verification."
+        )
         if logo_detected:
-            summary_msg += f" Recognized certification: {logo_body} ({logo_confidence}% confidence)."
+            summary_msg += f" Recognized certification seal: {logo_body} ({logo_confidence}% confidence)."
 
         return {
             "verdict": "Yellow",
@@ -486,32 +967,80 @@ def explain_label_verdict(flagged_items, extracted_text: str, logo_result: dict 
             ],
         }
 
-    # 5. Clean Ingredients + Accredited Halal Logo Verified -> Green
+    # 5. Visual Seal Detected, but Ingredient List Was Not Scanned Yet -> Yellow (Incomplete Scan)
+    if logo_detected and ingredient_status != "READABLE_PANEL":
+        return {
+            "verdict": "Yellow",
+            "riskLevel": "Seal Found - Scan Ingredients",
+            "analysisSummary": (
+                f"Detected {logo_body} ({logo_confidence}% confidence) on this side, "
+                "but no complete ingredient list was readable in this photo. "
+                "Tap '+ Scan Ingredient Side' to verify the back ingredient panel."
+            ),
+            "recommendations": [
+                "Use Multi-Angle Scan ('+ Scan Ingredient Side') to capture the ingredient list on the back.",
+                "A front logo scan alone cannot confirm that all declared ingredients are clean.",
+                "Ensure the ingredient declaration text is sharp and well-lit.",
+            ],
+        }
+
+    # 6. Visual Seal + Readable Clean Ingredients, but Certifying Body Is Ambiguous -> Yellow
+    if logo_detected and is_ambiguous_hcb:
+        return {
+            "verdict": "Yellow",
+            "riskLevel": "Seal Found - Certifier Unclear",
+            "analysisSummary": (
+                f"A Halal certification seal was localized ({logo_confidence}% confidence) and declared ingredients "
+                "appear free of prohibited substances, but the specific certifying body acronym/rim text was too small or blurry to confirm."
+            ),
+            "recommendations": [
+                "Move the camera closer to the Halal logo so the certifying body name on the seal rim can be read.",
+                "Or select the printed certifying body manually if clearly visible on the physical package.",
+            ],
+        }
+
+    # 7. Accredited Visual Seal Confirmed + Readable Clean Ingredient Panel -> Green
     if logo_detected:
         return {
             "verdict": "Green",
             "riskLevel": "Verified Halal",
             "analysisSummary": (
-                f"Accredited {logo_body} logo verified ({logo_confidence}% confidence). "
-                "All declared ingredients are clean."
+                f"Accredited {logo_body} seal verified ({logo_confidence}% confidence) and "
+                "the scanned ingredient panel contains no prohibited or doubtful substances."
             ),
             "recommendations": [
-                "Product exhibits accredited certification and clean ingredient declarations.",
+                "Product exhibits an accredited certification seal and clean ingredient declarations.",
                 "Always check product packaging expiration dates before purchase.",
             ],
         }
 
-    # 6. Clean Ingredients, but NO Logo Detected on this photo -> Yellow
+    # 8. Text-Only Halal Claim Without a Visual Certification Seal -> Yellow
+    if text_halal_claim:
+        claimed_note = f" ({text_claimed_body})" if text_claimed_body else ""
+        return {
+            "verdict": "Yellow",
+            "riskLevel": "Text Claim Only (No Seal)",
+            "analysisSummary": (
+                f"The label text mentions Halal certification{claimed_note} and declared ingredients appear clean, "
+                "but no visual Halal certification seal was detected in this photo."
+            ),
+            "recommendations": [
+                "Scan the side of the package displaying the official Halal certification seal.",
+                "Do not rely on plain text 'Halal' claims without an accredited certifying body seal.",
+            ],
+        }
+
+    # 9. Clean Ingredients, but NO Logo Detected on this photo -> Yellow
     return {
         "verdict": "Yellow",
         "riskLevel": "No Halal Logo Found",
         "analysisSummary": (
             "Ingredients appear free of prohibited additives, but no accredited Halal certification "
-            "logo was detected on this packaging. Check the other side for a Halal seal."
+            "logo was detected on this side of the packaging. Scan the front panel for a Halal seal."
         ),
         "recommendations": [
-            "Ingredient list appears free of known prohibited E-codes.",
-            "Verify if a Halal logo appears on the front panel or other sides of the packaging.",
+            "Ingredient list appears free of known prohibited E-codes and haram substances.",
+            "Tap '+ Scan Logo Side' to capture the Halal certification seal on the front of the package.",
             "Cross-reference brand name in the HalalVerify Product Catalog.",
         ],
     }
@@ -522,13 +1051,12 @@ def analyze_label_image(image_base64: str) -> dict:
 
     # Stage 1: Image Preprocessing in Volatile RAM
     t0 = time.time()
-    # (Image format checked and held in memory)
     prep_time = round((time.time() - t0) * 1000, 1)
 
-    # Stage 2: Fast Halal Logo Localization (Preloaded YOLO in RAM)
+    # Stage 2: Halal Logo Localization + High-Res ROI Crop OCR (Preloaded YOLOv8n ONNX in RAM)
     t_logo = time.time()
     try:
-        logo_result = detect_halal_logo(image_base64)
+        logo_result = detect_halal_logo(image_base64, run_crop_ocr=True)
     except Exception as err:
         logger.warning(f"Logo detection error: {err}")
         logo_result = None
@@ -539,272 +1067,112 @@ def analyze_label_image(image_base64: str) -> dict:
             "logoConfidence": 0.0,
             "logoBody": "Not Detected",
             "isInvalidLogo": False,
+            "cropOcrText": "",
             "detectedLogos": [],
         }
     logo_time = round((time.time() - t_logo) * 1000, 1)
 
     gc.collect()
 
-    # Stage 3: High-Speed Cloud Vision OCR Text Extraction
+    # Stage 3: Full-Label OCR Text Extraction (Cloud Vision Primary + RapidOCR Enhanced Fallback)
     t_ocr = time.time()
     try:
-        extracted_text = extract_text_from_image(image_base64)
+        ocr_meta = extract_text_with_metadata(image_base64)
+        extracted_text = ocr_meta.get("text", "")
+        ocr_engine_used = ocr_meta.get("engine", "RapidOCR (ONNX Runtime)")
+        ocr_mean_conf = ocr_meta.get("mean_confidence", 0.0)
     except Exception as err:
         logger.warning(f"OCR extraction error: {err}")
         extracted_text = ""
+        ocr_engine_used = "RapidOCR (ONNX Runtime)"
+        ocr_mean_conf = 0.0
     ocr_time = round((time.time() - t_ocr) * 1000, 1)
 
     gc.collect()
 
-    # Multi-Modal Consensus: Cross-reference visual detection with OCR text, country-of-origin, and catalog signatures
-    if extracted_text:
-        upper_text = extracted_text.upper()
-        has_halal_signal = bool(
-            logo_result.get("logoDetected")
-            or "HALAL" in upper_text
-            or "حلال" in extracted_text
-            or "حاال" in extracted_text
-        )
+    # Stage 3B: Multi-Channel OCR-YOLO Evidence Fusion
+    logo_result = fuse_logo_and_ocr_evidence(logo_result, extracted_text)
 
-        is_idcp_text = bool(
-            re.search(r"\bIDCP\b", upper_text)
-            or re.search(r"ISLAMIC\s+DA'?WAH\s+COUNCIL", upper_text)
-            or re.search(r"DA'?WAH\s+COUNCIL", upper_text)
-            or re.search(r"ISLAMIC\s+DAWAH", upper_text)
-            or "IDCP-HC" in upper_text
-            or "DAWAH" in upper_text
-        )
-        is_hdip_text = bool(
-            re.search(r"\bHDIP\b", upper_text)
-            or "HALAL DEVELOPMENT INSTITUTE" in upper_text
-        )
-        is_hiccip_text = bool(
-            re.search(r"\bHICCIP\b", upper_text)
-            or "HALAL INTERNATIONAL CHAMBER" in upper_text
-        )
-        is_mmhcb_text = bool(
-            re.search(r"\bMMHCB\b", upper_text)
-            or "MINDANAO MUSLIM HALAL" in upper_text
-        )
-        is_maslaha_text = bool(
-            re.search(r"\bMASLAHA\b", upper_text)
-            or "ADVOCACY FOR MUSLIM AFFAIRS" in upper_text
-        )
-        is_minha_text = bool(
-            re.search(r"\bMINHA\b", upper_text)
-            or "MINDANAO HALAL AUTHORITY" in upper_text
-        )
-        is_pucoi_text = bool(
-            re.search(r"\bPUCOI\b", upper_text)
-            or "PHILIPPINE ULAMA CONGRESS" in upper_text
-        )
-        is_ahip_text = bool(
-            re.search(r"\bAHIP\b", upper_text)
-            or "ALLIANCE FOR HALAL INTEGRITY" in upper_text
-        )
-        is_prime_text = bool(
-            re.search(r"\bPRIME\b", upper_text) and ("HALAL" in upper_text or "CERTIF" in upper_text)
-        )
-        is_fiqhi_text = bool(re.search(r"\bFIQHI\b", upper_text))
-        is_philcosed_text = bool(re.search(r"\bPHILCOSED\b", upper_text))
-        is_ncmf_text = bool(
-            re.search(r"\bNCMF\b", upper_text)
-            or "NATIONAL COMMISSION ON MUSLIM FILIPINOS" in upper_text
-        )
-        is_busc_text = bool(re.search(r"\bBUSC\b", upper_text) or "BANGSAMORO UNITY" in upper_text or "BASILAN ULAMA" in upper_text)
-        is_bpcc_text = bool(re.search(r"\bBPCC\b", upper_text) or "BANGSAMORO PROFESSIONAL" in upper_text or "BANGSAMORO CONSULTATIVE" in upper_text)
-
-        # Foreign Certifiers: Support both explicit acronyms AND graphic-only seals paired with country-of-origin markers
-        is_jakim_text = bool(
-            re.search(r"\bJAKIM\b", upper_text)
-            or "KEMAJUAN ISLAM MALAYSIA" in upper_text
-            or "HALAL MALAYSIA" in upper_text
-            or re.search(r"\bMS\s*1500\b", upper_text)
-            or (
-                has_halal_signal
-                and any(
-                    m in upper_text
-                    for m in (
-                        "MALAYSIA", "KUALA LUMPUR", "SELANGOR", "PENANG", "JOHOR",
-                        "SARAWAK", "SABAH", "SDN BHD", "SDN. BHD.", "BUATAN MALAYSIA",
-                    )
-                )
-            )
-        )
-        is_muis_text = bool(
-            re.search(r"\bMUIS\b", upper_text)
-            or "MAJLIS UGAMA ISLAM" in upper_text
-            or "HALAL SINGAPURA" in upper_text
-            or (has_halal_signal and ("SINGAPURA" in upper_text or "SINGAPORE" in upper_text))
-        )
-        is_bpjph_text = bool(
-            re.search(r"\bBPJPH\b", upper_text)
-            or re.search(r"\bLPPOM\b", upper_text)
-            or re.search(r"\bMUI\b", upper_text)
-            or "HALAL INDONESIA" in upper_text
-            or "MAJELIS ULAMA" in upper_text
-            or (
-                has_halal_signal
-                and any(
-                    m in upper_text
-                    for m in (
-                        "INDONESIA", "JAKARTA", "SURABAYA", "BANDUNG", "TANGERANG",
-                        "BEKASI", "SIDOARJO", "DIPRODUKSI OLEH", "BPOM RI",
-                    )
-                )
-            )
-        )
-        is_cicot_text = bool(
-            re.search(r"\bCICOT\b", upper_text)
-            or "CENTRAL ISLAMIC COUNCIL" in upper_text
-            or (
-                has_halal_signal
-                and any(
-                    m in upper_text
-                    for m in ("THAILAND", "BANGKOK", "CHONBURI", "SAMUT PRAKAN", "PRODUCT OF THAILAND")
-                )
-            )
-        )
-
-        # Ground truth correction: text printed on packaging takes precedence over ambiguous visual models
-        current_logos = logo_result.get("detectedLogos") or []
-        base_box = current_logos[0]["box"] if current_logos else [0, 0, 0, 0]
-        base_norm = current_logos[0]["norm_box"] if current_logos else [0.25, 0.25, 0.75, 0.75]
-
-        cert_match = None
-        if is_idcp_text:
-            cert_match = HCB_METADATA_BY_CODE["IDCP"]
-        elif is_hdip_text:
-            cert_match = HCB_METADATA_BY_CODE["HDIP"]
-        elif is_hiccip_text:
-            cert_match = HCB_METADATA_BY_CODE["HICCIP"]
-        elif is_mmhcb_text:
-            cert_match = HCB_METADATA_BY_CODE["MMHCB"]
-        elif is_maslaha_text:
-            cert_match = HCB_METADATA_BY_CODE["MASLAHA"]
-        elif is_minha_text:
-            cert_match = HCB_METADATA_BY_CODE["MINHA"]
-        elif is_pucoi_text:
-            cert_match = HCB_METADATA_BY_CODE["PUCOI"]
-        elif is_ahip_text:
-            cert_match = HCB_METADATA_BY_CODE["AHIP"]
-        elif is_prime_text:
-            cert_match = HCB_METADATA_BY_CODE["PRIME"]
-        elif is_fiqhi_text:
-            cert_match = HCB_METADATA_BY_CODE["FIQHI"]
-        elif is_philcosed_text:
-            cert_match = HCB_METADATA_BY_CODE["PHILCOSED"]
-        elif is_ncmf_text:
-            cert_match = HCB_METADATA_BY_CODE["NCMF_GENERAL"]
-        elif is_busc_text:
-            cert_match = HCB_METADATA_BY_CODE["BUSC"]
-        elif is_bpcc_text:
-            cert_match = HCB_METADATA_BY_CODE["BPCC"]
-        elif is_jakim_text:
-            cert_match = HCB_METADATA_BY_CODE["MALAYSIA_JAKIM"]
-        elif is_muis_text:
-            cert_match = HCB_METADATA_BY_CODE["SINGAPORE_MUIS"]
-        elif is_bpjph_text:
-            cert_match = HCB_METADATA_BY_CODE["INDONESIA_BPJPH"]
-        elif is_cicot_text:
-            cert_match = HCB_METADATA_BY_CODE["THAILAND_CICOT"]
-
-        # Corroborate moderate-confidence YOLOv8 visual candidate with partial rim text or Supabase Product Catalog
-        if not cert_match and logo_result.get("logoDetected"):
-            vis_code = (logo_result.get("visualCandidateCode") or "").strip().upper()
-            rim_words = VISUAL_CANDIDATE_RIM_KEYWORDS.get(vis_code, [])
-            if vis_code in HCB_METADATA_BY_CODE and rim_words and any(w in upper_text for w in rim_words):
-                cert_match = HCB_METADATA_BY_CODE[vis_code]
-            else:
-                cert_match = match_certifier_from_catalog(upper_text)
-
-        if cert_match:
-            c_name, c_id, c_label, c_conf = cert_match
-            logo_result["logoDetected"] = True
-            logo_result["logoConfidence"] = max(logo_result.get("logoConfidence", 0), c_conf)
-            logo_result["logoBody"] = c_label
-            logo_result["isInvalidLogo"] = False
-            logo_result["isAmbiguousHcb"] = False
-            logo_result["detectedLogos"] = [
-                {
-                    "label": c_label,
-                    "confidence": logo_result["logoConfidence"],
-                    "is_invalid": False,
-                    "class_name": c_name,
-                    "class_id": c_id,
-                    "box": base_box,
-                    "norm_box": base_norm,
-                }
-            ]
-        elif not logo_result.get("logoDetected") and ("HALAL CERTIFIED" in upper_text or "CERTIFIED HALAL" in upper_text or "HALAL" in upper_text or "حلال" in extracted_text):
-            logo_result["logoDetected"] = True
-            logo_result["logoConfidence"] = 90.0
-            logo_result["logoBody"] = "Recognized Halal Certification Seal"
-            logo_result["isInvalidLogo"] = False
-            logo_result["isAmbiguousHcb"] = True
-            logo_result["detectedLogos"] = [{"label": "Recognized Halal Certification Seal", "class_name": "Generic_Halal_Seal", "confidence": 90.0, "is_invalid": False, "box": [0,0,0,0], "norm_box": [0.25, 0.25, 0.75, 0.75]}]
-
-    # Stage 4: Relational Lexicon Cross-Matching against Database Additives
+    # Stage 4: Structural Ingredient Section Parsing + Multilingual & Fuzzy Additive Screening
     t_match = time.time()
+    section_info = parse_label_sections(extracted_text)
     flagged_items = match_additives_from_text(extracted_text)
     match_time = round((time.time() - t_match) * 1000, 1)
 
     # Stage 5: Hierarchical Decision Tree Classification
     t_decision = time.time()
-    verdict_details = explain_label_verdict(flagged_items, extracted_text, logo_result)
+    verdict_details = explain_label_verdict(flagged_items, extracted_text, logo_result, section_info)
     decision_time = round((time.time() - t_decision) * 1000, 1)
     total_latency = round((time.time() - t_start) * 1000, 1)
 
-    # Structured Intermediate Pipeline Stages for IPO Transparency
+    crop_ocr_note = (
+        f" | ROI Crop OCR: '{logo_result.get('cropOcrText')[:60]}'"
+        if logo_result.get("cropOcrText")
+        else ""
+    )
+
     pipeline_stages = [
         {
             "step": 1,
             "name": "Image Acquisition & Preprocessing",
-            "module": "OpenCV / Volatile Memory",
+            "module": "PIL / Volatile Memory",
             "status": "Success",
             "latencyMs": prep_time,
-            "details": "Base64 payload loaded into local volatile RAM. Image scaled and normalized."
+            "details": "Base64 payload validated in volatile RAM; aspect ratio preserved for multi-pass inference.",
         },
         {
             "step": 2,
-            "name": "Halal Logo Localization",
-            "module": "Ultralytics YOLOv8-Nano (CNN)",
-            "status": "Detected" if logo_result.get("logoDetected") else "None",
+            "name": "Halal Logo Localization & ROI Crop Analysis",
+            "module": "YOLOv8n ONNX + High-Res ROI Crop OCR",
+            "status": logo_result.get("sealStatus", "Detected" if logo_result.get("logoDetected") else "None"),
             "latencyMs": logo_time,
             "details": (
-                f"Localized: {logo_result.get('logoBody')} ({logo_result.get('logoConfidence')}%)"
+                f"Localized: {logo_result.get('logoBody')} ({logo_result.get('logoConfidence')}% | "
+                f"Source: {logo_result.get('evidenceSource', 'yolo')}){crop_ocr_note}"
                 if logo_result.get("logoDetected")
-                else "No recognized certification logo detected in visual frame."
-            )
+                else (
+                    f"No visual seal detected (Text claim only: {logo_result.get('textClaimedBody') or 'Halal text'})."
+                    if logo_result.get("textHalalClaim")
+                    else "No recognized certification logo detected in visual frame."
+                )
+            ),
         },
         {
             "step": 3,
-            "name": "Ingredient Label Text Extraction",
-            "module": "RapidOCR (ONNX Runtime)",
-            "status": "Success" if extracted_text else "No Text Found",
+            "name": "Ingredient Label Text Extraction & Section Isolation",
+            "module": ocr_engine_used,
+            "status": section_info.get("ingredient_status", "Success" if extracted_text else "No Text Found"),
             "latencyMs": ocr_time,
-            "details": f"Parsed {len(extracted_text)} characters from packaging label."
+            "details": (
+                f"Extracted {len(extracted_text)} chars (conf {round(ocr_mean_conf * 100)}%, "
+                f"ingredient panel: {section_info.get('ingredient_status')}, "
+                f"tokens: {section_info.get('ingredient_token_count')})."
+            ),
         },
         {
             "step": 4,
-            "name": "Chemical Additive Lexicon Screening",
-            "module": "Supabase PostgreSQL Lexicon (135 Additives)",
+            "name": "Multilingual & Chemical Additive Lexicon Screening",
+            "module": "Supabase Additives + EN/TL/MS Lexicon + Fuzzy OCR Matcher",
             "status": f"{len(flagged_items)} Flagged" if flagged_items else "Clean",
             "latencyMs": match_time,
             "details": (
-                f"Identified {len(flagged_items)} matching ingredient(s): {', '.join(f.get('ingredient', '') for f in flagged_items)}."
+                f"Identified {len(flagged_items)} matching ingredient(s): "
+                f"{', '.join(f.get('ingredient', '') for f in flagged_items)}."
                 if flagged_items
-                else "Screened against 135 E-numbers and chemical aliases. Zero prohibited additives matched."
-            )
+                else "Screened against E/INS numbers, chemical aliases, and EN/Tagalog/Malay haram lexicons. Zero prohibited items matched."
+            ),
         },
         {
             "step": 5,
-            "name": "Decision-Tree Compliance Classification",
-            "module": "Hierarchical Rule-Based Decision Engine",
+            "name": "Evidence-Fused Compliance Classification",
+            "module": "Tri-State Evidence Decision Engine",
             "status": verdict_details["verdict"],
             "latencyMs": decision_time,
-            "details": f"Evaluated logo authenticity and additive rulings -> Assigned {verdict_details['verdict']} State ({verdict_details['riskLevel']})."
-        }
+            "details": (
+                f"Fused Seal Status ({logo_result.get('sealStatus')}) + Ingredient Panel "
+                f"({section_info.get('ingredient_status')}) -> {verdict_details['verdict']} ({verdict_details['riskLevel']})."
+            ),
+        },
     ]
 
     return {
@@ -814,6 +1182,13 @@ def analyze_label_image(image_base64: str) -> dict:
         "isInvalidLogo": logo_result.get("isInvalidLogo", False),
         "isAmbiguousHcb": logo_result.get("isAmbiguousHcb", False),
         "visualCandidate": logo_result.get("visualCandidate"),
+        "sealStatus": logo_result.get("sealStatus", "NO_SEAL_DETECTED"),
+        "evidenceSource": logo_result.get("evidenceSource", "none"),
+        "cropOcrText": logo_result.get("cropOcrText", ""),
+        "textHalalClaim": logo_result.get("textHalalClaim", False),
+        "textClaimedBody": logo_result.get("textClaimedBody"),
+        "ingredientStatus": section_info.get("ingredient_status", "MISSING_OR_UNREADABLE"),
+        "ingredientTokenCount": section_info.get("ingredient_token_count", 0),
         "detectedLogos": logo_result.get("detectedLogos", []),
         "bestBox": logo_result.get("bestBox"),
         "imageWidth": logo_result.get("imageWidth"),
@@ -825,6 +1200,7 @@ def analyze_label_image(image_base64: str) -> dict:
         "analysisSummary": verdict_details["analysisSummary"],
         "recommendations": verdict_details["recommendations"],
         "ocrText": extracted_text,
+        "ocrEngine": ocr_engine_used,
         "pipelineStages": pipeline_stages,
         "totalLatencyMs": total_latency,
     }

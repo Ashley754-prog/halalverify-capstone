@@ -1,9 +1,12 @@
 import base64
-import logging
 import datetime
-import re
 from difflib import SequenceMatcher
+import ipaddress
+import logging
+import re
+import socket
 from typing import Any, Dict, Optional, Tuple
+from urllib.parse import urlparse
 
 import httpx
 from app.certificate_service import (
@@ -13,51 +16,60 @@ from app.certificate_service import (
     extract_expiration_date,
     fuzzy_match_score,
 )
+from app.logo_service import detect_halal_logo
 from app.ocr_service import extract_text_from_image, normalize_text
-from app.scan_service import is_ingredient_negated
+from app.scan_service import (
+    fuse_logo_and_ocr_evidence,
+    is_ingredient_negated,
+    match_additives_from_text,
+)
 from app.supabase_client import supabase
 
 logger = logging.getLogger(__name__)
 
 # Accredited Certifying Body Acronyms recognized by Philippine and International Halal authorities
+# Note: 'DTI' is intentionally excluded because DTI business name permits are not Halal certificates.
 ACCREDITED_HCB_CODES = {
     "IDCP", "HDIP", "MMHCB", "UCZP", "PUCOI", "BPCC", "AHIP",
     "HICCIP", "JAKIM", "MUIS", "PRIME", "FIQHI", "MASLAHA",
-    "PHILCOSED", "BUSC", "NCMF", "DTI", "MINHA"
+    "PHILCOSED", "BUSC", "NCMF", "MINHA", "BPJPH", "MUI",
+    "CICOT", "BARMM", "BHC", "PMUHC",
 }
 
 # Regex patterns for prohibited (Haram) ingredients in food & packaged products
 HARAM_INGREDIENT_PATTERNS = [
-    # Swine / Pork derivatives
-    (r"\b(pork\s+fat|pork\s+meat|pork\s+belly|pork|lard|bacon|ham|swine|porcine\s+gelatin|porcine|pig)\b", "Pork / Swine derivative"),
+    # Swine / Pork derivatives (English, Tagalog, Malay/Indonesian)
+    (
+        r"\b(pork\s+fat|pork\s+meat|pork\s+belly|pork\s+rind|pork|lard|bacon|ham|swine|"
+        r"porcine\s+gelatin|porcine|pig|karne\s+ng\s+baboy|taba\s+ng\s+baboy|mantika\s+ng\s+baboy|"
+        r"balat\s+ng\s+baboy|baboy|chicharon|daging\s+babi|lemak\s+babi|minyak\s+babi|babi)\b",
+        "Pork / Swine derivative",
+    ),
     # Alcohol and intoxicating liquors
-    (r"\b(ethyl\s+alcohol|ethanol|alcohol|red\s+wine|white\s+wine|wine|beer|rum|mirin|sake|khamr)\b", "Alcohol / Intoxicant"),
+    (
+        r"\b(ethyl\s+alcohol|ethanol|alcohol|alkohol|red\s+wine|white\s+wine|rice\s+wine|wine|"
+        r"beer|rum|brandy|whisky|whiskey|mirin|sake|soju|arak|alak|lambanog|khamr)\b",
+        "Alcohol / Intoxicant",
+    ),
     # Flowing blood
-    (r"\b(blood|animal\s+blood)\b", "Animal Blood"),
+    (r"\b(blood\s+plasma|animal\s+blood|blood|dugo)\b", "Animal Blood"),
 ]
 
 # Regex patterns for doubtful (Mashbooh) animal derivatives requiring official certification
 DOUBTFUL_INGREDIENT_PATTERNS = [
-    # Gelatin / misspellings / phonetic variants
     (r"\b(gelat[i|e]?n|geltin|gelatine|gelatin|animal\s+gelatin|edible\s+gelatin)\b", "Gelatin (Unspecified source)"),
-    # Animal enzymes & coagulants
     (r"\b(pepsin)\b", "Pepsin"),
     (r"\b(animal\s+rennet|rennet)\b", "Rennet"),
-    # Rendered animal fats
-    (r"\b(animal\s+tallow|tallow)\b", "Animal Tallow"),
+    (r"\b(lipase)\b", "Lipase Enzyme"),
+    (r"\b(animal\s+tallow|tallow|suet)\b", "Animal Tallow / Suet"),
     (r"\b(animal\s+shortening)\b", "Animal Shortening"),
     (r"\b(animal\s+fat)\b", "Animal Fat"),
     (r"\b(bone\s+char)\b", "Bone Char"),
-    # Insect extract dye
     (r"\b(carmine|cochineal|carminic\s+acid|natural\s+red\s+4|e120)\b", "Carmine / Cochineal (E120)"),
-    # Gelatin E-number
+    (r"\b(shellac|confectioner'?s\s+glaze|e904)\b", "Shellac (E904)"),
+    (r"\b(l[-\s]?cysteine|e920)\b", "L-Cysteine (E920)"),
     (r"\b(e\s*441)\b", "Gelatin (E441)"),
 ]
-
-
-import ipaddress
-import socket
-from urllib.parse import urlparse
 
 
 def is_safe_public_url(url_str: str) -> bool:
@@ -85,7 +97,6 @@ def is_safe_public_url(url_str: str) -> bool:
             ):
                 return False
         except ValueError:
-            # Hostname is a domain name; resolve and verify none of its IPs are internal
             addr_info = socket.getaddrinfo(hostname, None)
             for item in addr_info:
                 ip_str = item[4][0]
@@ -113,14 +124,12 @@ def fetch_image_base64_from_url(url: str, timeout: float = 6.0) -> Optional[str]
 
     trimmed = url.strip()
 
-    # Handle Data URI
     if trimmed.startswith("data:image"):
         parts = trimmed.split(",", 1)
         if len(parts) == 2:
             return parts[1]
         return None
 
-    # Handle HTTP/HTTPS URL with SSRF check
     if (trimmed.startswith("http://") or trimmed.startswith("https://")) and is_safe_public_url(trimmed):
         try:
             with httpx.Client(timeout=timeout, follow_redirects=True) as client:
@@ -142,17 +151,15 @@ def is_dummy_or_sequential_phone(phone_str: str) -> bool:
     if len(digits) < 7:
         return True
 
-    # Test for identical repeating digits in subscriber portion
     subscriber_digits = digits[-7:]
     if len(set(subscriber_digits)) == 1:
         return True
 
-    # Common dummy sequences
     dummy_patterns = [
         "1234567", "7654321", "0123456", "6543210",
         "12345678", "87654321", "123456789", "987654321",
         "0000000", "1111111", "2222222", "3333333",
-        "4444444", "5555555"
+        "4444444", "5555555",
     ]
     for pattern in dummy_patterns:
         if pattern in digits:
@@ -186,7 +193,6 @@ def verify_url_liveness(url: str, timeout: float = 2.5) -> Tuple[bool, str]:
             if resp.status_code in [200, 301, 302, 307, 308]:
                 return True, f"Link active (HTTP {resp.status_code})"
             elif resp.status_code in [401, 403]:
-                # Major social platforms (Facebook, Instagram) return 403 or redirect to login when probed without session
                 domain_match = re.findall(r"https?://(?:www\.)?([^/]+)", trimmed)
                 dom = domain_match[0].lower() if domain_match else ""
                 if any(k in dom for k in ["facebook.com", "instagram.com", "google.com", "maps.app.goo.gl"]):
@@ -218,7 +224,6 @@ def parse_date_safe(date_str: Optional[str]) -> Optional[datetime.date]:
         except ValueError:
             continue
 
-    # Try ISO timestamp
     try:
         return datetime.date.fromisoformat(clean[:10])
     except Exception:
@@ -239,7 +244,7 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
     cert_url = payload.get("certificate_url")
     address = (payload.get("address") or "").strip()
     city = (payload.get("city") or "Zamboanga City").strip()
-    raw_tier = (payload.get("halal_tier") or "").strip().lower()
+    raw_tier = (payload.get("halal_tier") or payload.get("verification_tier") or "").strip().lower()
     if not raw_tier:
         notes_and_status = f"{payload.get('halal_status') or ''} {payload.get('admin_notes') or ''}".lower()
         if "muslim-owned" in notes_and_status or "muslim_owned" in notes_and_status:
@@ -280,7 +285,13 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
     has_social_link = False
     live_note = ""
     if social_url:
-        is_known_platform = bool(re.match(r"^https?://(www\.)?(facebook\.com|fb\.com|instagram\.com|google\.com/maps|maps\.app\.goo\.gl|[\w\-\.]+\.[\w]{2,})", social_url, re.IGNORECASE))
+        is_known_platform = bool(
+            re.match(
+                r"^https?://(www\.)?(facebook\.com|fb\.com|instagram\.com|google\.com/maps|maps\.app.goo\.gl|[\w\-\.]+\.[\w]{2,})",
+                social_url,
+                re.IGNORECASE,
+            )
+        )
         if is_known_platform:
             is_alive, live_note = verify_url_liveness(social_url)
             if is_alive:
@@ -291,7 +302,6 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
             reasons.append("Social media URL has unrecognized domain structure")
 
     # 3. Local Zamboanga Geofence Check
-    # HalalVerify is localized to Zamboanga City. Entries located outside municipal bounds must be flagged.
     raw_address = address.lower()
     raw_city = (payload.get("city") or "").lower().strip()
 
@@ -323,14 +333,14 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
         r"\bzamboanga\s+sibugay\b",
     ]
 
-    has_outside_location = any(re.search(pat, raw_address) for pat in NON_ZAMBOANGA_PATTERNS) or \
-                           any(re.search(pat, raw_city) for pat in NON_ZAMBOANGA_PATTERNS)
+    has_outside_location = any(re.search(pat, raw_address) for pat in NON_ZAMBOANGA_PATTERNS) or any(
+        re.search(pat, raw_city) for pat in NON_ZAMBOANGA_PATTERNS
+    )
 
     if has_outside_location:
         is_zamboanga = False
         reasons.append("Address is located outside Zamboanga City jurisdiction (HalalVerify is localized to Zamboanga City)")
     else:
-        # Check if address contains Zamboanga City or recognized Zamboanga barangays/streets/landmarks
         zambo_patterns = (
             r"\bzamboanga\s+city\b|\bzamboanga\b|"
             r"\btetuan\b|\bcanelar\b|\bpasonanca\b|\bsanta\s+maria\b|\bsta\.?\s*maria\b|"
@@ -356,10 +366,12 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
     # 4. Duplicate Listing Prevention
     is_duplicate = False
     try:
-        existing_res = supabase.table("establishments").select("id, name, address").limit(200).execute()
+        existing_res = supabase.table("establishments").select("id, name, address").limit(500).execute()
         if existing_res.data:
             norm_input = normalize_text(name).lower()
             for est in existing_res.data:
+                if payload.get("id") and str(est.get("id")) == str(payload.get("id")):
+                    continue
                 norm_existing = normalize_text(est.get("name", "")).lower()
                 sim = SequenceMatcher(None, norm_input, norm_existing).ratio()
                 if sim >= 0.88 and len(norm_input) > 3:
@@ -393,37 +405,44 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
     parsed_expiry = parse_date_safe(expiry_str)
     is_expired = False
     hcb_matched = False
+    ocr_corroborated_hcb = False
+    name_matched_in_cert = False
     hcb_name = "Not specified"
 
     if halal_tier == "halal_certified":
-        # Accredited Certifying Body Check (35 pts)
+        matched_hcb_code = None
+
+        if ocr_text:
+            upper_ocr = ocr_text.upper()
+            for code in ACCREDITED_HCB_CODES:
+                if re.search(rf"\b{re.escape(code)}\b", upper_ocr):
+                    hcb_matched = True
+                    ocr_corroborated_hcb = True
+                    hcb_name = f"Accredited Body ({code})"
+                    matched_hcb_code = code
+                    break
+
+        if not ocr_corroborated_hcb and cert_no:
+            upper_cert = cert_no.upper()
+            for code in ACCREDITED_HCB_CODES:
+                if code in upper_cert:
+                    hcb_matched = True
+                    ocr_corroborated_hcb = True
+                    hcb_name = f"Accredited Body ({code})"
+                    matched_hcb_code = code
+                    break
+
         if hcb_id:
             try:
                 hcb_res = supabase.table("certifying_bodies").select("id, name, code").eq("id", hcb_id).execute()
                 if hcb_res.data:
                     hcb_matched = True
                     hcb_name = hcb_res.data[0].get("name", "Accredited HCB")
+                    db_code = (hcb_res.data[0].get("code") or "").strip().upper()
+                    if db_code and ocr_text and db_code in ocr_text.upper():
+                        ocr_corroborated_hcb = True
             except Exception:
                 pass
-
-        matched_hcb_code = None
-        if not hcb_matched and cert_no:
-            upper_cert = cert_no.upper()
-            for code in ACCREDITED_HCB_CODES:
-                if code in upper_cert:
-                    hcb_matched = True
-                    hcb_name = f"Accredited Body ({code})"
-                    matched_hcb_code = code
-                    break
-
-        if not hcb_matched and ocr_text:
-            upper_ocr = ocr_text.upper()
-            for code in ACCREDITED_HCB_CODES:
-                if code in upper_ocr:
-                    hcb_matched = True
-                    hcb_name = f"Accredited Body ({code})"
-                    matched_hcb_code = code
-                    break
 
         if not hcb_id and matched_hcb_code:
             try:
@@ -434,9 +453,13 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
             except Exception:
                 pass
 
-        if hcb_matched:
+        if hcb_matched and ocr_corroborated_hcb:
             score += 35
-            audit_notes.append(f"Accredited Halal Certifying Body confirmed: {hcb_name} (+35 pts)")
+            audit_notes.append(f"Accredited Halal Certifying Body corroborated on certificate: {hcb_name} (+35 pts)")
+        elif hcb_matched:
+            score += 15
+            audit_notes.append(f"Certifying body selected ({hcb_name}), awaiting document OCR corroboration (+15 pts)")
+            reasons.append("Selected certifying body could not be corroborated in certificate document OCR")
         else:
             reasons.append("No accredited Halal Certifying Body (HCB) verified on document")
 
@@ -457,17 +480,22 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
             normalized_ocr = normalize_text(ocr_text).lower()
             if normalized_name in normalized_ocr:
                 score += 20
+                name_matched_in_cert = True
                 audit_notes.append("Establishment name match confirmed in certificate document (+20 pts)")
             else:
                 similarity = fuzzy_match_score(name, ocr_text)
                 if similarity >= 0.70:
                     score += 20
+                    name_matched_in_cert = True
                     audit_notes.append(f"Establishment name strong fuzzy match ({int(similarity*100)}%) (+20 pts)")
                 elif similarity >= 0.50:
                     score += 10
+                    name_matched_in_cert = True
                     audit_notes.append(f"Establishment name partial fuzzy match ({int(similarity*100)}%) (+10 pts)")
                 else:
                     reasons.append("Establishment name not clearly found in certificate document")
+        else:
+            reasons.append("Certificate document text not available to confirm establishment holder name")
 
         # Jurisdiction Check (10 pts)
         if is_zamboanga:
@@ -490,18 +518,27 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
                 f"FATAL INVARIANT FAILED: Certified claim blocked from auto-approval (Confidence: 0%). "
                 f"Issues: {'; '.join(reasons)}."
             )
-        elif score >= 75 and bool(cert_url):
+        elif (
+            score >= 80
+            and bool(cert_url)
+            and bool(cert_no)
+            and bool(parsed_expiry and parsed_expiry >= today)
+            and ocr_corroborated_hcb
+            and name_matched_in_cert
+        ):
             is_auto_approved = True
             final_status = "verified"
             summary_note = (
                 f"AI VERIFIED & PUBLISHED: Halal Certified establishment authenticated (Confidence: {score}%). "
-                f"Accredited HCB: {hcb_name}. Expiry: {parsed_expiry.isoformat() if parsed_expiry else 'Active'}."
+                f"Accredited HCB: {hcb_name}. Cert #: {cert_no}. Expiry: {parsed_expiry.isoformat()}."
             )
         else:
             is_auto_approved = False
             final_status = "needs_review"
             if not cert_url:
                 reasons.append("Certificate photo not uploaded for automated OCR verification")
+            if not cert_no:
+                reasons.append("Certificate number missing or unreadable")
             summary_note = (
                 f"AI AUDITED & QUEUED: Halal Certified claim scored {score}% audit readiness. "
                 f"Accredited HCB: {hcb_name}. Expiry: {parsed_expiry.isoformat() if parsed_expiry else 'N/A'}. "
@@ -518,7 +555,6 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
             else "Vegetarian / Vegan"
         )
 
-        # Completeness scoring for community listing (up to 100 pts)
         if is_zamboanga:
             score += 25
             audit_notes.append("Jurisdiction verified: Located within Zamboanga City (+25 pts)")
@@ -526,7 +562,6 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
             score += 20
             audit_notes.append(f"Active contact number validated: {contact_phone} (+20 pts)")
 
-        # Mandatory Visual Evidence for Community Auto-Acceptance
         has_photo = bool(payload.get("logo_url") or payload.get("certificate_url"))
         if has_photo:
             score += 20
@@ -547,14 +582,12 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
             score += 10
             audit_notes.append(f"Guest amenities declared: {', '.join(amenities)} (+10 pts)")
 
-        # Community tier auto-acceptance
-        # Strict Guardrails: Must be within Zamboanga, valid non-dummy phone, no duplicates, AND must have photo evidence!
         is_community_approved = (
-            (score >= 65) and
-            is_zamboanga and
-            is_valid_phone and
-            (not is_duplicate) and
-            has_photo
+            (score >= 65)
+            and is_zamboanga
+            and is_valid_phone
+            and (not is_duplicate)
+            and has_photo
         )
         if is_community_approved:
             is_auto_approved = True
@@ -578,6 +611,7 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
         "score": score,
         "status": final_status,
         "halal_tier": halal_tier,
+        "verification_tier": halal_tier,
         "verified_at": now_iso if is_auto_approved else None,
         "verified_by": None,
         "certificate_number": cert_no,
@@ -592,6 +626,8 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
             "is_valid_phone": is_valid_phone,
             "is_zamboanga": is_zamboanga,
             "hcb_matched": hcb_matched,
+            "ocr_corroborated_hcb": ocr_corroborated_hcb,
+            "name_matched_in_cert": name_matched_in_cert,
             "hcb_name": hcb_name,
             "is_expired": is_expired,
             "notes": audit_notes,
@@ -603,16 +639,17 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
 def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
     """
     Automated AI verification engine for submitted packaged products.
-    Evaluates packaging OCR text, chemical additives, certificate credentials, and brand matching.
+    Evaluates YOLOv8 logo detection, packaging OCR text, chemical additives,
+    certificate credentials, duplicate checks, and brand matching.
     """
     name = (payload.get("name") or "").strip()
     brand = (payload.get("brand") or "").strip() or None
     cert_no = (payload.get("certificate_no") or "").strip() or None
     expiry_str = payload.get("expiry_date")
     hcb_id = payload.get("certifying_body_id")
-    ingredients = (payload.get("ingredients_summary") or "").strip()
-    image_url = payload.get("image_url")
-    raw_tier = (payload.get("halal_tier") or "").strip().lower()
+    ingredients = (payload.get("ingredients_summary") or payload.get("ingredients_text") or "").strip()
+    image_url = payload.get("image_url") or payload.get("front_label_url")
+    raw_tier = (payload.get("halal_tier") or payload.get("verification_tier") or "").strip().lower()
     if not raw_tier:
         notes_and_status = f"{payload.get('status') or ''} {payload.get('admin_notes') or ''} {payload.get('source') or ''}".lower()
         if "pork-free" in notes_and_status or "pork_free" in notes_and_status:
@@ -630,11 +667,17 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
     haram_found = []
     doubtful_found = []
     ocr_text = ""
+    logo_result = {"logoDetected": False, "isInvalidLogo": False, "logoConfidence": 0.0, "logoBody": "Not Detected"}
 
-    # 0. OCR Packaging Photo Extraction (if product image uploaded)
+    # 0. YOLOv8 Logo Detection + Packaging OCR Extraction (if product image uploaded)
     if image_url:
         img_b64 = fetch_image_base64_from_url(image_url)
         if img_b64:
+            try:
+                logo_result = detect_halal_logo(img_b64, run_crop_ocr=True) or logo_result
+            except Exception as logo_err:
+                logger.info("[AutoVerify] Product logo detection notice: %s", logo_err)
+
             try:
                 ocr_text = extract_text_from_image(img_b64) or ""
                 if ocr_text:
@@ -649,13 +692,33 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
             except Exception as ocr_err:
                 logger.info("[AutoVerify] Product OCR processing notice: %s", ocr_err)
 
-    effective_ingredients = f"{ingredients} {ocr_text}".strip()
+            try:
+                logo_result = fuse_logo_and_ocr_evidence(logo_result, ocr_text)
+            except Exception:
+                pass
 
-    # 1. Ingredient & Chemical Additive Screening
-    # Screen across product name, brand, ingredient declaration, and OCR packaging text
+    # Duplicate check against existing products
+    is_duplicate = False
+    try:
+        existing_prod_res = supabase.table("products").select("id, name, brand").limit(400).execute()
+        if existing_prod_res.data and name:
+            norm_target = normalize_text(f"{brand or ''} {name}").lower()
+            for prod in existing_prod_res.data:
+                if payload.get("id") and str(prod.get("id")) == str(payload.get("id")):
+                    continue
+                norm_cand = normalize_text(f"{prod.get('brand') or ''} {prod.get('name') or ''}").lower()
+                sim = SequenceMatcher(None, norm_target, norm_cand).ratio()
+                if sim >= 0.92 and len(norm_target) >= 5:
+                    is_duplicate = True
+                    reasons.append(f"Potential duplicate product in catalog ('{prod.get('name')}', {int(sim*100)}% match)")
+                    break
+    except Exception:
+        pass
+
+    effective_ingredients = f"{ingredients} {ocr_text}".strip()
     screened_text = f"{name} {brand or ''} {effective_ingredients}".lower()
 
-    # A. Prohibited (Haram) Regex Scan
+    # 1. Ingredient & Chemical Additive Screening (Unified with Scanner 4-Stage Matcher)
     for pattern, label in HARAM_INGREDIENT_PATTERNS:
         match = re.search(pattern, screened_text, re.IGNORECASE)
         if match:
@@ -663,7 +726,6 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
             if not is_ingredient_negated(matched_term, screened_text):
                 haram_found.append(f"{label} ('{matched_term}')")
 
-    # B. Doubtful Animal Derivative Regex Scan (Gelatin, Rennet, Pepsin, Tallow, etc.)
     for pattern, label in DOUBTFUL_INGREDIENT_PATTERNS:
         match = re.search(pattern, screened_text, re.IGNORECASE)
         if match:
@@ -671,32 +733,19 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
             if not is_ingredient_negated(matched_term, screened_text):
                 doubtful_found.append(f"{label} ('{matched_term}')")
 
-    # C. Database Additives Table Scan
     if effective_ingredients:
         try:
-            additives_res = supabase.table("additives").select("code, name, status").execute()
-            additives = additives_res.data or []
-            upper_ing = effective_ingredients.upper()
-            for add in additives:
-                code = (add.get("code") or "").upper()
-                add_name = (add.get("name") or "").upper()
-                status = (add.get("status") or "").lower()
-
-                code_hit = bool(code and code in upper_ing)
-                name_hit = bool(add_name and len(add_name) > 3 and add_name in upper_ing)
-
-                if code_hit or name_hit:
-                    match_display = f"{code} ({add.get('name')})" if code else add.get("name")
-                    if status == "haram":
-                        if match_display not in haram_found:
-                            haram_found.append(match_display)
-                    elif status == "doubtful":
-                        if match_display not in doubtful_found:
-                            doubtful_found.append(match_display)
+            scanner_flags = match_additives_from_text(effective_ingredients)
+            for item in scanner_flags:
+                st = str(item.get("status") or "").strip().lower()
+                disp = f"{item.get('ingredient')} ('{item.get('matched_text')}')"
+                if st == "haram":
+                    haram_found.append(disp)
+                elif st in ("doubtful", "needs review", "needs_review"):
+                    doubtful_found.append(disp)
         except Exception as add_err:
             logger.info("[AutoVerify] Additive screening notice: %s", add_err)
 
-    # Deduplicate findings
     haram_found = list(dict.fromkeys(haram_found))
     doubtful_found = list(dict.fromkeys(doubtful_found))
 
@@ -705,23 +754,58 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
     parsed_expiry = parse_date_safe(expiry_str)
     is_expired = False
     hcb_matched = False
+    evidence_corroborated_hcb = False
     hcb_name = "Not specified"
+    is_invalid_logo = bool(logo_result.get("isInvalidLogo"))
+    visual_logo_detected = bool(logo_result.get("logoDetected") and not is_invalid_logo)
+
+    if is_invalid_logo:
+        reasons.append("YOLOv8 detected an unaccredited or suspected counterfeit Halal logo on the packaging photo")
 
     if halal_tier == "halal_certified":
-        # Formally Certified Packaged Product
+        matched_hcb_code = None
+        cert_body_input = (payload.get("certifying_body") or payload.get("source") or "").strip().upper()
 
-        # Accredited HCB Check (35 pts)
+        # Check 2A: Corroborate HCB from YOLOv8 visual seal, certificate number, or OCR text
+        if visual_logo_detected and not logo_result.get("isAmbiguousHcb"):
+            hcb_matched = True
+            evidence_corroborated_hcb = True
+            hcb_name = logo_result.get("logoBody") or "Verified Visual HCB Seal"
+            vis_code = (logo_result.get("visualCandidateCode") or "").strip().upper()
+            if vis_code in ACCREDITED_HCB_CODES:
+                matched_hcb_code = vis_code
+
+        if not evidence_corroborated_hcb and cert_no:
+            upper_cert = cert_no.upper()
+            for code in ACCREDITED_HCB_CODES:
+                if code in upper_cert:
+                    hcb_matched = True
+                    evidence_corroborated_hcb = True
+                    hcb_name = f"Accredited Body ({code})"
+                    matched_hcb_code = code
+                    break
+
+        if not evidence_corroborated_hcb and ocr_text:
+            upper_ocr = ocr_text.upper()
+            for code in ACCREDITED_HCB_CODES:
+                if re.search(rf"\b{re.escape(code)}\b", upper_ocr):
+                    hcb_matched = True
+                    evidence_corroborated_hcb = True
+                    hcb_name = f"Accredited Body ({code})"
+                    matched_hcb_code = code
+                    break
+
+        # Check 2B: User-selected HCB dropdown (claim only unless corroborated by visual logo or cert/OCR)
         if hcb_id:
             try:
                 hcb_res = supabase.table("certifying_bodies").select("id, name, code").eq("id", hcb_id).execute()
                 if hcb_res.data:
                     hcb_matched = True
                     hcb_name = hcb_res.data[0].get("name", "Accredited HCB")
+                    if visual_logo_detected:
+                        evidence_corroborated_hcb = True
             except Exception:
                 pass
-
-        matched_hcb_code = None
-        cert_body_input = (payload.get("certifying_body") or payload.get("source") or "").strip().upper()
 
         if not hcb_matched and cert_body_input:
             for code in ACCREDITED_HCB_CODES:
@@ -734,27 +818,11 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
             if matched_hcb_code:
                 hcb_matched = True
                 hcb_name = f"Accredited Body ({matched_hcb_code})"
+                if visual_logo_detected:
+                    evidence_corroborated_hcb = True
             elif payload.get("certifying_body") and cert_body_input != "OTHER":
                 hcb_matched = True
                 hcb_name = f"Certifying Body ({payload.get('certifying_body')})"
-
-        if not hcb_matched and cert_no:
-            upper_cert = cert_no.upper()
-            for code in ACCREDITED_HCB_CODES:
-                if code in upper_cert:
-                    hcb_matched = True
-                    hcb_name = f"Accredited Body ({code})"
-                    matched_hcb_code = code
-                    break
-
-        if not hcb_matched and ocr_text:
-            upper_ocr = ocr_text.upper()
-            for code in ACCREDITED_HCB_CODES:
-                if code in upper_ocr:
-                    hcb_matched = True
-                    hcb_name = f"Accredited Body ({code})"
-                    matched_hcb_code = code
-                    break
 
         if not hcb_id and matched_hcb_code:
             try:
@@ -765,13 +833,19 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
             except Exception:
                 pass
 
-        if hcb_matched:
+        if hcb_matched and evidence_corroborated_hcb:
             score += 35
-            audit_notes.append(f"Accredited Halal Certifying Body confirmed: {hcb_name} (+35 pts)")
+            audit_notes.append(f"Accredited Halal Certifying Body corroborated by visual seal/OCR: {hcb_name} (+35 pts)")
+        elif hcb_matched:
+            score += 15
+            audit_notes.append(
+                f"Certifying body claimed in form ({hcb_name}), but no visual Halal seal or certificate number was detected on the photo (+15 pts)"
+            )
+            reasons.append("Claimed certifying body was not corroborated by YOLOv8 logo detection or label OCR")
         else:
             reasons.append("No accredited Halal Certifying Body verified")
 
-        # Expiry / Packaging Evidence Check (30 pts)
+        # Expiry / Visual Seal Evidence Check (30 pts)
         if parsed_expiry:
             if parsed_expiry >= today:
                 score += 30
@@ -779,26 +853,42 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
             else:
                 is_expired = True
                 reasons.append(f"Certificate has expired on {parsed_expiry.isoformat()} (-30 pts)")
+        elif visual_logo_detected:
+            score += 25
+            audit_notes.append(
+                f"YOLOv8 localized Halal certification seal on packaging ({logo_result.get('logoConfidence')}% confidence) (+25 pts)"
+            )
         elif image_url:
-            score += 20
-            audit_notes.append("Product packaging photo attached for seal verification (+20 pts)")
+            score += 10
+            audit_notes.append("Packaging photo attached, but no Halal certification seal was detected by YOLOv8 (+10 pts)")
+            reasons.append("No Halal certification seal detected on uploaded product photo")
         else:
             reasons.append("Neither certificate expiry date nor packaging photo provided")
 
         # Chemical Additive Screening (35 pts)
         if haram_found:
             reasons.append(f"Prohibited (Haram) additives detected: {', '.join(haram_found)}")
-        elif doubtful_found and hcb_matched and not is_expired:
+        elif not effective_ingredients:
+            reasons.append("No ingredient declaration or readable label text provided for additive screening")
+        elif doubtful_found and evidence_corroborated_hcb and not is_expired:
             score += 35
-            audit_notes.append(f"Additive screening: Ingredients ({', '.join(doubtful_found)}) authenticated under {hcb_name} certification (+35 pts)")
+            audit_notes.append(
+                f"Additive screening: Ingredients ({', '.join(doubtful_found)}) authenticated under corroborated {hcb_name} certification (+35 pts)"
+            )
         elif doubtful_found:
-            reasons.append(f"Doubtful additives detected without verified certification: {', '.join(doubtful_found)}")
+            reasons.append(f"Doubtful additives detected without corroborated certification: {', '.join(doubtful_found)}")
         else:
             score += 35
-            audit_notes.append("Chemical screening: Zero prohibited (Haram) additives detected (+35 pts)")
+            audit_notes.append("Chemical screening: Zero prohibited (Haram) additives detected across declared ingredients (+35 pts)")
 
-        # Invariant checks
-        has_fatal_prod_flaw = is_expired or bool(haram_found) or (not hcb_matched) or (bool(doubtful_found) and not hcb_matched)
+        has_fatal_prod_flaw = (
+            is_expired
+            or is_invalid_logo
+            or is_duplicate
+            or bool(haram_found)
+            or (not hcb_matched)
+            or (bool(doubtful_found) and not evidence_corroborated_hcb)
+        )
         if has_fatal_prod_flaw:
             score = 0
             is_auto_approved = False
@@ -807,7 +897,12 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
                 f"FATAL INVARIANT FAILED: Product blocked from auto-approval (Confidence: 0%). "
                 f"Issues: {'; '.join(reasons)}"
             )
-        elif score >= 70 and (bool(image_url) or bool(cert_no)):
+        elif (
+            score >= 80
+            and evidence_corroborated_hcb
+            and bool(effective_ingredients)
+            and (visual_logo_detected or (bool(cert_no) and bool(parsed_expiry and parsed_expiry >= today)))
+        ):
             is_auto_approved = True
             final_status = "VERIFIED"
             summary_note = (
@@ -819,22 +914,21 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
             final_status = "PENDING_VERIFICATION"
             summary_note = (
                 f"AI AUDITED & QUEUED: Halal Certified claim scored {score}% audit readiness. "
-                f"Accredited HCB: {hcb_name}. Additives clean. "
-                f"Queued for administrative confirmation."
+                f"Claimed HCB: {hcb_name}. Queued for administrative confirmation."
             )
 
     else:
         # Declared Pork-Free or Vegetarian/Vegan (Self-Declared Community Tier)
         tier_label = "Pork-Free Declared" if halal_tier == "pork_free_declared" else "Vegetarian / Vegan"
 
-        # Check fatal invariants: Prohibited (Haram) ingredients or Doubtful animal derivatives
-        if haram_found:
+        if haram_found or is_invalid_logo:
             score = 0
             is_auto_approved = False
             final_status = "PENDING_VERIFICATION"
-            reasons.append(f"Prohibited (Haram) ingredient detected: {', '.join(haram_found)}")
+            if haram_found:
+                reasons.append(f"Prohibited (Haram) ingredient detected: {', '.join(haram_found)}")
             summary_note = (
-                f"FATAL INVARIANT FAILED: Prohibited ingredient detected in {tier_label} (Confidence: 0%). "
+                f"FATAL INVARIANT FAILED: Prohibited ingredient or invalid seal detected in {tier_label} (Confidence: 0%). "
                 f"Issues: {'; '.join(reasons)}"
             )
         elif doubtful_found:
@@ -850,7 +944,6 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
                 f"Community self-declaration cannot verify animal origin without official Halal certificate."
             )
         else:
-            # Clean ingredients - calculate community scoring (up to 100 pts)
             if effective_ingredients:
                 score += 40
                 audit_notes.append("Chemical screening: Zero prohibited or doubtful ingredients detected (+40 pts)")
@@ -868,8 +961,7 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
                 score += 20
                 audit_notes.append(f"Brand / maker name provided: {brand} (+20 pts)")
 
-            # Auto-approval guardrails: score >= 70, ingredients declared/extracted, packaging photo attached
-            is_auto_approved = (score >= 70) and bool(effective_ingredients) and has_prod_photo
+            is_auto_approved = (score >= 75) and bool(effective_ingredients) and has_prod_photo and (not is_duplicate)
             final_status = (
                 "Pork-Free Declared" if halal_tier == "pork_free_declared" else "Vegetarian / Vegan"
             ) if is_auto_approved else "PENDING_VERIFICATION"
@@ -886,6 +978,7 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
         "score": score,
         "status": final_status,
         "halal_tier": halal_tier,
+        "verification_tier": halal_tier,
         "verified_at": now_iso if is_auto_approved else None,
         "verified_by": None,
         "certificate_no": cert_no,
@@ -897,6 +990,11 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
             "halal_tier": halal_tier,
             "submitter_role": submitter_role,
             "hcb_matched": hcb_matched,
+            "evidence_corroborated_hcb": evidence_corroborated_hcb,
+            "visual_logo_detected": visual_logo_detected,
+            "logo_confidence": logo_result.get("logoConfidence", 0.0),
+            "logo_body": logo_result.get("logoBody"),
+            "is_duplicate": is_duplicate,
             "is_expired": is_expired,
             "haram_additives": haram_found,
             "doubtful_additives": doubtful_found,
