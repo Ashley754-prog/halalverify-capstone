@@ -4,14 +4,16 @@ import {
     ShieldAlert,
     AlertTriangle,
     CheckCircle2,
-    FileText,
     RefreshCw,
     Flag,
     ChevronDown,
+    ChevronUp,
     Layers,
     PlusCircle,
     ChevronRight,
-    Package
+    Package,
+    ScanSearch,
+    Camera,
 } from 'lucide-react';
 import { simplifyHalalText, simplifyStatus } from '../../utils/textFormatters';
 
@@ -87,19 +89,20 @@ export const LabelResultsSheet = ({
     selectedImage = null,
     isLoading,
     onReset,
-    onRetry,
+    onRetry = null,
     onClose,
     onViewChange,
     onScanSecondary,
     onContributeProduct,
 }) => {
     const [touchStartY, setTouchStartY] = useState(null);
-    const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [croppedLogoUrl, setCroppedLogoUrl] = useState(null);
     const [manualHcbOverride, setManualHcbOverride] = useState('');
+    const [showDetails, setShowDetails] = useState(false);
 
     useEffect(() => {
         setManualHcbOverride('');
+        setShowDetails(false);
     }, [scanResult]);
 
     const referenceLogoSrc = resolveReferenceLogoSrc(scanResult, manualHcbOverride);
@@ -235,106 +238,52 @@ export const LabelResultsSheet = ({
                         </div>
                     )}
 
-                    {!isLoading && scanResult && (
-                        <div className="space-y-3.5">
-                            {/* 1. Certifying Body / Seal Status (Centered at Top) */}
-                            <div
-                                className={`rounded-2xl border p-4 text-center flex flex-col items-center justify-center gap-2.5 transition ${
-                                    scanResult.logoDetected
-                                        ? scanResult.isInvalidLogo
-                                            ? 'bg-red-950/40 border-red-500/40'
-                                            : 'bg-slate-800/90 border-emerald-500/40 shadow-lg shadow-emerald-950/20'
-                                        : 'bg-slate-800/80 border-slate-700'
-                                }`}
-                            >
-                                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                                    Certifying Body / Seal
-                                </span>
+                    {!isLoading && scanResult && scanResult.riskLevel === 'No Product Detected' ? (
+                        <div className="space-y-4 py-2">
+                            <div className="rounded-2xl border border-slate-700 bg-slate-800/80 p-5 text-center flex flex-col items-center justify-center gap-3">
+                                <div className="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-700 flex items-center justify-center text-slate-400 shadow-inner">
+                                    <ScanSearch size={32} />
+                                </div>
+                                <div className="space-y-1 max-w-sm">
+                                    <h4 className="text-base font-bold text-white">No Food Label Detected</h4>
+                                    <p className="text-xs text-slate-300 leading-relaxed">
+                                        The camera could not find an ingredient declaration or Halal logo in this photo.
+                                    </p>
+                                </div>
 
-                                {scanResult.logoDetected ? (
-                                    <>
-                                        {/* Centered Identified Logo Picture */}
-                                        {displayedLogoSrc ? (
-                                            <div
-                                                className={`w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white p-1.5 flex items-center justify-center overflow-hidden shadow-md border-2 ${
-                                                    scanResult.isInvalidLogo
-                                                        ? 'border-red-500/70'
-                                                        : 'border-emerald-400/70'
-                                                }`}
-                                            >
-                                                <img
-                                                    src={displayedLogoSrc}
-                                                    alt={scanResult.logoBody || 'Detected Halal Seal'}
-                                                    className="w-full h-full object-contain rounded-xl"
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div
-                                                className={`w-16 h-16 rounded-2xl flex items-center justify-center border ${
-                                                    scanResult.isInvalidLogo
-                                                        ? 'bg-red-500/15 border-red-500/40 text-red-400'
-                                                        : 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
-                                                }`}
-                                            >
-                                                {scanResult.isInvalidLogo ? <ShieldAlert size={30} /> : <ShieldCheck size={30} />}
-                                            </div>
-                                        )}
+                                <div className="w-full text-left bg-slate-900/80 border border-slate-700/80 rounded-xl p-3.5 space-y-1.5 text-xs text-slate-300">
+                                    <span className="font-semibold text-slate-200 block text-[11px] uppercase tracking-wider">
+                                        Tips for a successful scan:
+                                    </span>
+                                    <ul className="space-y-1.5 text-[11px] text-slate-400">
+                                        <li className="flex items-start gap-1.5">
+                                            <span className="text-emerald-400 font-bold">•</span>
+                                            <span>Point camera directly at the printed ingredient list on the back or side.</span>
+                                        </li>
+                                        <li className="flex items-start gap-1.5">
+                                            <span className="text-emerald-400 font-bold">•</span>
+                                            <span>Hold steady and tap the screen on the printed text to focus.</span>
+                                        </li>
+                                        <li className="flex items-start gap-1.5">
+                                            <span className="text-emerald-400 font-bold">•</span>
+                                            <span>Turn on the flashlight if lighting is dim or shadowy.</span>
+                                        </li>
+                                    </ul>
+                                </div>
 
-                                        <div className="space-y-1.5 max-w-xs w-full">
-                                            <strong className="text-white font-bold text-sm sm:text-base block leading-snug">
-                                                {activeLogoBody}
-                                            </strong>
-                                            {scanResult.isAmbiguousHcb && !manualHcbOverride && (
-                                                <p className="text-[11px] text-slate-300 leading-snug">
-                                                    Graphic Halal seal localized. Because this seal does not display clear English letters, select the certifying body below if visible on the box.
-                                                </p>
-                                            )}
-                                            {scanResult.logoConfidence > 0 && (
-                                                <span
-                                                    className={`inline-flex items-center gap-1 font-mono text-[11px] px-2.5 py-0.5 rounded-full border ${
-                                                        scanResult.isInvalidLogo
-                                                            ? 'text-red-200 bg-red-900/60 border-red-500/40'
-                                                            : 'text-emerald-300 bg-emerald-900/60 border-emerald-500/35'
-                                                    }`}
-                                                >
-                                                    {scanResult.isInvalidLogo ? <ShieldAlert size={12} /> : <ShieldCheck size={12} />}
-                                                    <span>{manualHcbOverride ? 'Confirmed by User' : `${scanResult.logoConfidence}% match`}</span>
-                                                </span>
-                                            )}
-                                            {!scanResult.isInvalidLogo && (
-                                                <div className="pt-1">
-                                                    <select
-                                                        value={manualHcbOverride}
-                                                        onChange={(e) => setManualHcbOverride(e.target.value)}
-                                                        aria-label="Confirm or override detected Halal certifying body"
-                                                        className="w-full max-w-[260px] mx-auto rounded-xl bg-slate-900/90 border border-slate-600/80 text-slate-200 text-[11px] font-medium px-2.5 py-1.5 focus:outline-none focus:border-emerald-400 cursor-pointer"
-                                                    >
-                                                        {ACCREDITED_HCB_OPTIONS.map((opt) => (
-                                                            <option key={opt.label} value={opt.value}>
-                                                                {opt.value ? `Certifier: ${opt.label}` : 'Graphic Seal? Select Certifying Body...'}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </>
-                                ) : (
-                                    <>
-                                        {/* Centered Neutral Shield when No Logo Detected */}
-                                        <div className="w-14 h-14 rounded-2xl bg-slate-700/50 border border-slate-600/60 flex items-center justify-center text-slate-400 shadow-inner">
-                                            <ShieldCheck size={26} />
-                                        </div>
-                                        <div className="space-y-0.5">
-                                            <strong className="text-white font-semibold text-xs sm:text-sm block">
-                                                No accredited logo detected on this panel
-                                            </strong>
-                                        </div>
-                                    </>
-                                )}
+                                <button
+                                    type="button"
+                                    onClick={onReset}
+                                    className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg active:scale-95 transition cursor-pointer"
+                                >
+                                    <Camera size={15} />
+                                    <span>Retake Photo</span>
+                                </button>
                             </div>
-
-                            {/* 2. Primary Verdict Card (Halal Status) */}
+                        </div>
+                    ) : !isLoading && scanResult ? (
+                        <div className="space-y-3.5">
+                            {/* 1. Primary Verdict Card (Halal Status) */}
                             <div
                                 className={`p-4 rounded-2xl border flex items-center justify-between gap-3 ${
                                     scanResult.verdict === 'Green'
@@ -374,39 +323,91 @@ export const LabelResultsSheet = ({
                                 </div>
                             </div>
 
-                            {/* Consumer & Regulatory Disclaimer for Doubtful / Unverified Results */}
-                            {scanResult.verdict === 'Yellow' && scanResult.riskLevel !== 'No Product Detected' && (
-                                <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-500/35 text-amber-200/95 text-[11px] leading-relaxed space-y-1">
-                                    <div className="flex items-center gap-1.5 font-bold text-amber-300 text-xs">
-                                        <AlertTriangle size={14} className="text-amber-400 shrink-0" />
-                                        <span>Consumer Discretion &amp; Advisory Disclaimer</span>
-                                    </div>
-                                    <p>
-                                        This result is an automated decision-support screening based on visible packaging data and does not constitute a formal Islamic legal ruling (Fatwa). Because active Halal certification or the exact plant vs. animal origin of certain ingredients could not be confirmed from the label alone, consumption is at the consumer&apos;s own discretion. In accordance with Islamic dietary precaution (Ihtiyat) and RA 10817, consumers are advised to verify directly with the manufacturer or abstain if in doubt.
-                                    </p>
-                                </div>
-                            )}
-
                             {/* Server Sleeping / Offline Fallback Notice */}
-                            {scanResult.analysisSummary?.toLowerCase().includes('offline') && (
-                                <div className="p-3.5 rounded-2xl bg-amber-950/70 border border-amber-500/50 text-amber-100 text-xs space-y-2">
+                            {scanResult.analysisSummary?.toLowerCase().includes('offline') && onRetry && (
+                                <div className="p-3 rounded-xl bg-amber-950/70 border border-amber-500/50 text-amber-100 text-xs space-y-2">
                                     <div className="flex items-center gap-2 font-bold text-amber-300">
-                                        <AlertTriangle size={15} className="shrink-0 text-amber-400" />
+                                        <AlertTriangle size={14} className="shrink-0 text-amber-400" />
                                         <span>Cloud AI Server Was Asleep</span>
                                     </div>
                                     <p className="text-[11px] text-amber-200/90 leading-relaxed">
-                                        Render free containers take ~30s to wake up on the first scan. The server is now awake and ready!
+                                        Render free containers take ~30s to wake up on the first scan. The server is now awake!
                                     </p>
-                                    {onRetry && (
-                                        <button
-                                            type="button"
-                                            onClick={onRetry}
-                                            className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:scale-95 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-sm"
+                                    <button
+                                        type="button"
+                                        onClick={onRetry}
+                                        className="w-full py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                                    >
+                                        <RefreshCw size={13} className="shrink-0" />
+                                        <span>Retry Scan Now (Server Awake)</span>
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* 2. Certifying Body / Seal Status */}
+                            {scanResult.logoDetected ? (
+                                <div
+                                    className={`rounded-2xl border p-3.5 text-center flex flex-col items-center justify-center gap-2 transition ${
+                                        scanResult.isInvalidLogo
+                                            ? 'bg-red-950/40 border-red-500/40'
+                                            : 'bg-slate-800/90 border-emerald-500/40 shadow-lg shadow-emerald-950/20'
+                                    }`}
+                                >
+                                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                                        Accredited Halal Seal
+                                    </span>
+
+                                    {displayedLogoSrc ? (
+                                        <div
+                                            className={`w-16 h-16 rounded-2xl bg-white p-1.5 flex items-center justify-center overflow-hidden shadow-md border-2 ${
+                                                scanResult.isInvalidLogo
+                                                    ? 'border-red-500/70'
+                                                    : 'border-emerald-400/70'
+                                            }`}
                                         >
-                                            <RefreshCw size={13} className="shrink-0" />
-                                            <span>Retry Scan Now (Server Awake)</span>
-                                        </button>
+                                            <img
+                                                src={displayedLogoSrc}
+                                                alt={scanResult.logoBody || 'Detected Halal Seal'}
+                                                className="w-full h-full object-contain rounded-xl"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div
+                                            className={`w-14 h-14 rounded-2xl flex items-center justify-center border ${
+                                                scanResult.isInvalidLogo
+                                                    ? 'bg-red-500/15 border-red-500/40 text-red-400'
+                                                    : 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
+                                            }`}
+                                        >
+                                            {scanResult.isInvalidLogo ? <ShieldAlert size={26} /> : <ShieldCheck size={26} />}
+                                        </div>
                                     )}
+
+                                    <div className="space-y-1 max-w-xs w-full">
+                                        <strong className="text-white font-bold text-sm block leading-snug">
+                                            {activeLogoBody}
+                                        </strong>
+                                        {scanResult.logoConfidence > 0 && (
+                                            <span
+                                                className={`inline-flex items-center gap-1 font-mono text-[10px] px-2 py-0.5 rounded-full border ${
+                                                    scanResult.isInvalidLogo
+                                                        ? 'text-red-200 bg-red-900/60 border-red-500/40'
+                                                        : 'text-emerald-300 bg-emerald-900/60 border-emerald-500/35'
+                                                }`}
+                                            >
+                                                {scanResult.isInvalidLogo ? <ShieldAlert size={11} /> : <ShieldCheck size={11} />}
+                                                <span>{manualHcbOverride ? 'Confirmed by User' : `${scanResult.logoConfidence}% match`}</span>
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/70 flex items-center justify-between text-xs text-slate-400">
+                                    <span className="flex items-center gap-1.5">
+                                        <ShieldCheck size={14} className="text-slate-500" />
+                                        <span>No Halal logo seal on this side</span>
+                                    </span>
+                                    <span className="text-[10px] text-slate-500">Screened by ingredient list</span>
                                 </div>
                             )}
 
@@ -457,11 +458,6 @@ export const LabelResultsSheet = ({
                                                     );
                                                 })}
                                             </div>
-                                        ) : scanResult.riskLevel === 'No Product Detected' ? (
-                                            <div className="p-2.5 bg-slate-800/50 border border-slate-700/60 rounded-lg text-xs text-slate-400 flex items-center gap-2">
-                                                <FileText size={15} className="text-slate-500 shrink-0" />
-                                                <span>No ingredient label detected in this photo.</span>
-                                            </div>
                                         ) : (
                                             <div className="p-2.5 bg-emerald-950/40 border border-emerald-500/30 rounded-lg text-xs text-emerald-300 flex items-center gap-2">
                                                 <CheckCircle2 size={15} className="text-emerald-400 shrink-0" />
@@ -472,127 +468,11 @@ export const LabelResultsSheet = ({
                                 );
                             })()}
 
-                            {/* 4. Optional Multi-Angle or Wrap-Around Continuation */}
-                            {scanResult.riskLevel === 'No Product Detected' ? (
-                                <div className="p-3 bg-amber-950/30 border border-amber-500/30 rounded-xl space-y-1.5 text-xs text-amber-200">
-                                    <p className="font-semibold flex items-center gap-1.5 text-amber-300">
-                                        <AlertTriangle size={14} className="text-amber-400 shrink-0" />
-                                        <span>How to get an accurate scan</span>
-                                    </p>
-                                    <p className="text-[11px] text-amber-100/80 leading-relaxed">
-                                        Point your camera directly at the packaging showing either the list of ingredients or an accredited Halal logo. Ensure the text is clear, well-lit, and not blurry.
-                                    </p>
-                                </div>
-                            ) : isMultiPart ? (
-                                /* Multi-Part Already Captured View */
-                                <div className="p-3 bg-slate-800/80 border border-slate-700 rounded-xl space-y-2.5">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Layers size={14} className="text-emerald-400" />
-                                            <span className="text-xs font-semibold text-emerald-300">
-                                                Multi-Section Fusion ({totalImages} Panels Combined)
-                                            </span>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => onScanSecondary?.('continue-ingredients')}
-                                            className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
-                                        >
-                                            <PlusCircle size={12} />
-                                            <span>Add Part {totalImages + 1}</span>
-                                        </button>
-                                    </div>
-
-                                    {scanResult.images && scanResult.images.length > 1 && (
-                                        <div className="flex items-center gap-2 pt-1 border-t border-slate-700/60">
-                                            {scanResult.images.map((img, idx) => (
-                                                <button
-                                                    key={idx}
-                                                    type="button"
-                                                    onClick={() => setSelectedImageIndex(idx)}
-                                                    className={`relative w-12 h-12 rounded-lg overflow-hidden border-2 transition ${
-                                                        selectedImageIndex === idx
-                                                            ? 'border-emerald-400 ring-2 ring-emerald-500/40'
-                                                            : 'border-slate-700 opacity-60'
-                                                    }`}
-                                                >
-                                                    <img src={img} alt={`Part ${idx + 1}`} className="w-full h-full object-cover" />
-                                                    <span className="absolute bottom-0 right-0 px-1 text-[8px] font-bold bg-black/80 text-white rounded-tl">
-                                                        Part {idx + 1}
-                                                    </span>
-                                                </button>
-                                            ))}
-                                            <span className="text-[11px] text-slate-400 ml-1">
-                                                All panels combined & evaluated together
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                /* Single Capture Actions: Optional helper prompt */
-                                <div className="p-3 bg-slate-800/70 border border-slate-700 rounded-xl space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider block">
-                                            Optional Packaging Panels
-                                        </span>
-                                        <span className="text-[10px] text-slate-400">
-                                            (Optional — single photo is already evaluated)
-                                        </span>
-                                    </div>
-
-                                    {/* Action 1: Long Ingredients Continuation */}
-                                    <button
-                                        type="button"
-                                        onClick={() => onScanSecondary?.('continue-ingredients')}
-                                        className="w-full p-2.5 rounded-lg bg-slate-800 hover:bg-slate-750 border border-slate-700 text-left flex items-center justify-between gap-2 group transition"
-                                    >
-                                        <div className="flex items-center gap-2.5 min-w-0">
-                                            <div className="w-8 h-8 rounded-md bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
-                                                <Layers size={16} />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="text-xs font-semibold text-white group-hover:text-emerald-300 transition">
-                                                    + Scan Continuing Ingredients (Optional Part 2)
-                                                </p>
-                                                <p className="text-[11px] text-slate-400 truncate">
-                                                    Only if ingredients wrap around or continue on another side
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <ChevronRight size={15} className="text-slate-500 group-hover:text-emerald-400 transition" />
-                                    </button>
-
-                                    {/* Action 2: Scan Logo (If not yet found) */}
-                                    {!scanResult.logoDetected && (
-                                        <button
-                                            type="button"
-                                            onClick={() => onScanSecondary?.('logo')}
-                                            className="w-full p-2.5 rounded-lg bg-slate-800 hover:bg-slate-750 border border-slate-700 text-left flex items-center justify-between gap-2 group transition"
-                                        >
-                                            <div className="flex items-center gap-2.5 min-w-0">
-                                                <div className="w-8 h-8 rounded-md bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0">
-                                                    <ShieldCheck size={16} />
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <p className="text-xs font-semibold text-white group-hover:text-blue-300 transition">
-                                                        + Scan Halal Logo (Front Panel)
-                                                    </p>
-                                                    <p className="text-[11px] text-slate-400 truncate">
-                                                        Optional: Check for an accredited logo seal on the front
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <ChevronRight size={15} className="text-slate-500 group-hover:text-blue-400 transition" />
-                                        </button>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* 5. Recommendations / Next Steps */}
+                            {/* 4. Recommendations / Next Steps */}
                             {scanResult.recommendations && scanResult.recommendations.length > 0 && (
-                                <div className="bg-slate-800/80 border border-slate-700 rounded-xl p-3.5 space-y-2">
+                                <div className="bg-slate-800/80 border border-slate-700 rounded-xl p-3.5 space-y-1.5">
                                     <span className="text-xs font-bold uppercase tracking-wider text-slate-300 block">
-                                        Next Steps
+                                        Guidance
                                     </span>
                                     <ul className="space-y-1.5 text-xs text-slate-300">
                                         {scanResult.recommendations.map((rec, idx) => (
@@ -605,41 +485,143 @@ export const LabelResultsSheet = ({
                                 </div>
                             )}
 
-                            {/* 6. Catalog Bridge & Contribute Product */}
-                            {scanResult.riskLevel !== 'No Product Detected' && (
-                                <div className="space-y-2">
-                                    {scanResult.statusColor !== 'red' && onContributeProduct && (
-                                        <button
-                                            type="button"
-                                            onClick={() => onContributeProduct({ ...scanResult, logoBody: activeLogoBody })}
-                                            className="w-full py-2.5 px-3.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-xs cursor-pointer"
-                                        >
-                                            <PlusCircle size={15} className="text-sky-400 shrink-0" />
-                                            <span>+ Add This Scanned Product to Public Catalog</span>
-                                        </button>
-                                    )}
+                            {/* 5. Collapsible Accordion: Details & Optional Panels */}
+                            <div className="border border-slate-700/80 rounded-xl overflow-hidden bg-slate-800/40">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowDetails(!showDetails)}
+                                    className="w-full p-3 text-left flex items-center justify-between text-xs font-semibold text-slate-300 hover:text-white transition cursor-pointer"
+                                >
+                                    <span>Details & Optional Multi-Panel Scans</span>
+                                    {showDetails ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                                </button>
 
-                                    {scanResult.riskLevel === 'No Halal Logo Found' && (
-                                        <button
-                                            type="button"
-                                            onClick={() => onViewChange?.('products')}
-                                            className="w-full py-2.5 px-3.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 font-semibold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-xs cursor-pointer"
-                                        >
-                                            <Package size={14} className="text-emerald-400 shrink-0" />
-                                            <span>Check Brand in Verified Products Catalog</span>
-                                        </button>
-                                    )}
-                                </div>
-                            )}
+                                {showDetails && (
+                                    <div className="p-3 pt-0 border-t border-slate-700/60 space-y-3 animate-in fade-in duration-200">
+                                        {/* Multi-Section or Long Ingredients Continuation */}
+                                        {isMultiPart ? (
+                                            <div className="p-3 bg-slate-800/90 border border-slate-700 rounded-xl space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs font-semibold text-emerald-300 flex items-center gap-1.5">
+                                                        <Layers size={13} className="text-emerald-400" />
+                                                        Multi-Section Fusion ({totalImages} Panels)
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onScanSecondary?.('continue-ingredients')}
+                                                        className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+                                                    >
+                                                        <PlusCircle size={12} />
+                                                        <span>Add Part {totalImages + 1}</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-2 pt-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onScanSecondary?.('continue-ingredients')}
+                                                    className="w-full p-2.5 rounded-lg bg-slate-800 hover:bg-slate-750 border border-slate-700 text-left flex items-center justify-between gap-2 transition"
+                                                >
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <Layers size={15} className="text-emerald-400 shrink-0" />
+                                                        <div className="min-w-0">
+                                                            <p className="text-xs font-semibold text-white">
+                                                                + Scan Continuing Ingredients (Part 2)
+                                                            </p>
+                                                            <p className="text-[10px] text-slate-400 truncate">
+                                                                If ingredients wrap around the packaging
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <ChevronRight size={14} className="text-slate-500" />
+                                                </button>
 
-                            {/* 8. Footer Actions */}
+                                                {!scanResult.logoDetected && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onScanSecondary?.('logo')}
+                                                        className="w-full p-2.5 rounded-lg bg-slate-800 hover:bg-slate-750 border border-slate-700 text-left flex items-center justify-between gap-2 transition"
+                                                    >
+                                                        <div className="flex items-center gap-2 min-w-0">
+                                                            <ShieldCheck size={15} className="text-sky-400 shrink-0" />
+                                                            <div className="min-w-0">
+                                                                <p className="text-xs font-semibold text-white">
+                                                                    + Scan Halal Logo (Front Panel)
+                                                                </p>
+                                                                <p className="text-[10px] text-slate-400 truncate">
+                                                                    Check for an accredited seal on the front
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <ChevronRight size={14} className="text-slate-500" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Certifier Override Dropdown (if seal was ambiguous) */}
+                                        {scanResult.logoDetected && !scanResult.isInvalidLogo && (
+                                            <div className="space-y-1 pt-1">
+                                                <label className="text-[11px] font-semibold text-slate-400 block">
+                                                    Confirm Certifying Body:
+                                                </label>
+                                                <select
+                                                    value={manualHcbOverride}
+                                                    onChange={(e) => setManualHcbOverride(e.target.value)}
+                                                    className="w-full rounded-xl bg-slate-900 border border-slate-700 text-slate-200 text-xs p-2 focus:outline-none focus:border-emerald-400"
+                                                >
+                                                    {ACCREDITED_HCB_OPTIONS.map((opt) => (
+                                                        <option key={opt.label} value={opt.value}>
+                                                            {opt.value ? `Certifier: ${opt.label}` : 'Auto-Detected Certifier'}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
+
+                                        {/* Advisory Disclaimer */}
+                                        <div className="p-2.5 rounded-lg bg-slate-900/60 border border-slate-700/60 text-[10px] text-slate-400 leading-relaxed">
+                                            Automated decision-support screening based on visible packaging. Consumers are advised to check packaging seals or abstain if in doubt.
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 6. Catalog Bridge & Contribute */}
+                            <div className="space-y-2 pt-1">
+                                {scanResult.statusColor !== 'red' && onContributeProduct && (
+                                    <button
+                                        type="button"
+                                        onClick={() => onContributeProduct({ ...scanResult, logoBody: activeLogoBody })}
+                                        className="w-full py-2.5 px-3.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-xs cursor-pointer"
+                                    >
+                                        <PlusCircle size={15} className="text-sky-400 shrink-0" />
+                                        <span>+ Add This Scanned Product to Public Catalog</span>
+                                    </button>
+                                )}
+
+                                {scanResult.riskLevel === 'No Halal Logo Found' && (
+                                    <button
+                                        type="button"
+                                        onClick={() => onViewChange?.('products')}
+                                        className="w-full py-2.5 px-3.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 font-semibold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-xs cursor-pointer"
+                                    >
+                                        <Package size={14} className="text-emerald-400 shrink-0" />
+                                        <span>Check Brand in Verified Products Catalog</span>
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* 7. Footer Actions */}
                             <div className="pt-2 flex flex-wrap gap-2">
                                 <button
                                     type="button"
                                     onClick={onReset}
-                                    className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg active:scale-95 transition"
+                                    className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg active:scale-95 transition cursor-pointer"
                                 >
-                                    <RefreshCw size={14} /> {scanResult.riskLevel === 'No Product Detected' ? 'Scan Food Product' : 'Scan Next Product'}
+                                    <RefreshCw size={14} />
+                                    <span>Scan Next Product</span>
                                 </button>
                                 <button
                                     type="button"
@@ -673,13 +655,14 @@ export const LabelResultsSheet = ({
                                             evidenceUrl: scanResult.images?.[0] || ''
                                         });
                                     }}
-                                    className="py-2.5 px-3.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold text-xs border border-slate-700 flex items-center justify-center gap-1.5 active:scale-95 transition"
+                                    className="py-2.5 px-3.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold text-xs border border-slate-700 flex items-center justify-center gap-1.5 active:scale-95 transition cursor-pointer"
                                 >
-                                    <Flag size={13} /> Report
+                                    <Flag size={13} />
+                                    <span>Report</span>
                                 </button>
                             </div>
                         </div>
-                    )}
+                    ) : null}
                 </div>
             </div>
         </div>

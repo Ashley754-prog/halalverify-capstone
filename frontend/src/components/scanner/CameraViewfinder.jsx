@@ -62,8 +62,21 @@ export const CameraViewfinder = ({
         if (scannerMode === 'label' && scanResult) {
             const verdict = (scanResult.verdict || '').toLowerCase();
             const risk = (scanResult.riskLevel || '').toLowerCase();
+            const isNoProduct =
+                risk.includes('no product') ||
+                risk.includes('not detected') ||
+                risk.includes('unrecognized') ||
+                risk.includes('unverified');
             const isHaram = verdict === 'red' || risk.includes('haram') || risk.includes('prohibit');
             const isHalal = verdict === 'green' || risk.includes('halal') || risk.includes('verified');
+
+            if (isNoProduct) {
+                return {
+                    statusLabel: 'No Label Detected',
+                    themeClasses: 'bg-slate-800/95 hover:bg-slate-750 text-slate-200 border-slate-700 shadow-slate-950/60',
+                    icon: <ScanSearch size={14} className="text-slate-400 shrink-0" />,
+                };
+            }
 
             if (isHaram) {
                 return {
