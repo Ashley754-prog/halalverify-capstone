@@ -221,12 +221,14 @@ def match_certifier_from_catalog(upper_text: str):
             continue
 
         cert_no = (item.get("certificate_no") or "").strip().upper()
-        if cert_no and len(cert_no) >= 5 and cert_no in upper_text:
+        if cert_no and len(cert_no) >= 6 and cert_no in upper_text:
             return HCB_METADATA_BY_CODE[cb_code]
 
+        brand = (item.get("brand") or "").strip().upper()
         p_name = (item.get("name") or "").strip().upper()
-        if p_name and len(p_name) >= 8 and p_name in upper_text:
-            return HCB_METADATA_BY_CODE[cb_code]
+        if brand and len(brand) >= 4 and p_name and len(p_name) >= 10:
+            if brand in upper_text and p_name in upper_text:
+                return HCB_METADATA_BY_CODE[cb_code]
 
     return None
 
@@ -916,9 +918,10 @@ def explain_label_verdict(
 
     # 2. Prohibited Additives / Ingredients Detected -> Red
     if haram_count:
-        summary_msg = f"Found {haram_count} prohibited ingredient(s) on the label. Avoid consuming this product."
+        item_label = "1 prohibited ingredient" if haram_count == 1 else f"{haram_count} prohibited ingredients"
+        summary_msg = f"Detected {item_label} on the label. Avoid consuming this product."
         if logo_detected:
-            summary_msg += f" Note: Despite an apparent {logo_body} mark, prohibited ingredients were declared."
+            summary_msg += f" Note: Prohibited ingredients were declared despite an apparent {logo_body} mark."
 
         return {
             "verdict": "Red",
@@ -949,21 +952,20 @@ def explain_label_verdict(
 
     # 4. Doubtful Additives Detected -> Yellow
     if doubtful_count:
+        item_label = "1 ingredient requires" if doubtful_count == 1 else f"{doubtful_count} ingredients require"
         summary_msg = (
-            f"Found {doubtful_count} doubtful ingredient(s) whose biological source (plant vs. animal) "
-            "requires halal certification verification."
+            f"Screened ingredient list. {item_label} source verification (plant vs. animal origin)."
         )
         if logo_detected:
-            summary_msg += f" Recognized certification seal: {logo_body} ({logo_confidence}% confidence)."
+            summary_msg += f" Recognized seal: {logo_body} ({logo_confidence}% match)."
 
         return {
             "verdict": "Yellow",
             "riskLevel": "Doubtful Ingredient",
             "analysisSummary": summary_msg,
             "recommendations": [
-                "Verify the specific source of the flagged additive with the manufacturer.",
-                "Check whether the product is covered by an accredited certifying body's active manifest.",
-                "If unsure, abstain from consumption pending clarification.",
+                "Verify the biological source of the flagged additive with the manufacturer.",
+                "Check whether the product is covered by an accredited certifying body.",
             ],
         }
 
@@ -973,13 +975,11 @@ def explain_label_verdict(
             "verdict": "Yellow",
             "riskLevel": "Seal Found - Scan Ingredients",
             "analysisSummary": (
-                f"Detected {logo_body} ({logo_confidence}% confidence) on this side, "
-                "but no complete ingredient list was readable in this photo. "
-                "Tap '+ Scan Ingredient Side' to verify the back ingredient panel."
+                f"Detected {logo_body} ({logo_confidence}% match) on this side, "
+                "but no complete ingredient list was readable in this photo."
             ),
             "recommendations": [
-                "Use Multi-Angle Scan ('+ Scan Ingredient Side') to capture the ingredient list on the back.",
-                "A front logo scan alone cannot confirm that all declared ingredients are clean.",
+                "Open Details below to scan the ingredient list on the back of the package.",
                 "Ensure the ingredient declaration text is sharp and well-lit.",
             ],
         }
@@ -990,12 +990,11 @@ def explain_label_verdict(
             "verdict": "Yellow",
             "riskLevel": "Seal Found - Certifier Unclear",
             "analysisSummary": (
-                f"A Halal certification seal was localized ({logo_confidence}% confidence) and declared ingredients "
-                "appear free of prohibited substances, but the specific certifying body acronym/rim text was too small or blurry to confirm."
+                f"A Halal certification seal was localized ({logo_confidence}% match) and declared ingredients "
+                "appear clean, but the certifying body text on the seal rim was too small or blurry to confirm."
             ),
             "recommendations": [
-                "Move the camera closer to the Halal logo so the certifying body name on the seal rim can be read.",
-                "Or select the printed certifying body manually if clearly visible on the physical package.",
+                "Move the camera closer to the Halal logo so the certifying body name on the seal rim can be read clearly.",
             ],
         }
 

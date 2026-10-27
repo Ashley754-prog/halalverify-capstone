@@ -57,7 +57,7 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
     const existingImages = firstScan.images || (firstImage ? [firstImage] : []);
     const newImages = secondScan.images || (secondImage ? [secondImage] : []);
     const combinedImages = [...existingImages, ...newImages].filter((img, idx, arr) => arr.indexOf(img) === idx);
-    const totalPanels = combinedImages.length || 2;
+    const totalPanels = Math.max(2, combinedImages.length);
 
     // 3. Combine and deduplicate OCR text + check cross-panel HCB disambiguation
     const text1 = (firstScan.ocrText || "").trim();
@@ -121,9 +121,10 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
     } else if (haramCount > 0) {
         verdict = "Red";
         riskLevel = "Prohibited (Not Halal)";
-        analysisSummary = `Multi-panel inspection (${totalPanels} sections) screened ingredients and detected ${haramCount} prohibited ingredient(s).`;
+        const itemLabel = haramCount === 1 ? "1 prohibited ingredient" : `${haramCount} prohibited ingredients`;
+        analysisSummary = `Detected ${itemLabel} across the scanned packaging.`;
         if (logoDetected) {
-            analysisSummary += ` Note: Prohibited ingredients were flagged despite the presence of a ${logoBody} logo seal.`;
+            analysisSummary += ` Note: Prohibited ingredients were flagged despite the presence of a ${logoBody} mark.`;
         }
         recommendations = [
             "Avoid consuming this product.",
@@ -133,33 +134,34 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
     } else if (doubtfulCount > 0) {
         verdict = "Yellow";
         riskLevel = "Doubtful Ingredient";
-        analysisSummary = `Multi-panel inspection (${totalPanels} sections) screened ingredients and flagged ${doubtfulCount} doubtful ingredient(s) requiring source clarification.`;
+        const itemLabel = doubtfulCount === 1 ? "1 ingredient requires" : `${doubtfulCount} ingredients require`;
+        analysisSummary = `Screened ${totalPanels} packaging panels. ${itemLabel} source verification (plant vs. animal origin).`;
         if (logoDetected) {
-            analysisSummary += ` Accredited certification: ${logoBody} (${logoConfidence}% confidence).`;
+            analysisSummary += ` Recognized seal: ${logoBody} (${logoConfidence}% match).`;
         }
         recommendations = [
-            "Verify the specific source of the flagged additive with the manufacturer.",
-            "Check whether the batch is covered by the certifying body's active manifest."
+            "Verify the biological source of the flagged additive with the manufacturer.",
+            "Check whether the product is covered by the certifying body."
         ];
     } else if (logoDetected && !hasReadableIngredients) {
         verdict = "Yellow";
         riskLevel = "Seal Found - Scan Ingredients";
-        analysisSummary = `Detected ${logoBody} (${logoConfidence}% confidence) across ${totalPanels} panels, but a complete ingredient list was not readable yet. Capture a clearer photo of the back ingredient panel to complete verification.`;
+        analysisSummary = `Detected ${logoBody} (${logoConfidence}% match), but a complete ingredient list was not readable yet. Capture a clearer photo of the back ingredient panel.`;
         recommendations = [
-            "Tap '+ Scan Continuing Ingredients' and point the camera directly at the back ingredient list.",
+            "Point the camera directly at the back ingredient list.",
             "Ensure the ingredient text is flat, in focus, and free of glare."
         ];
     } else if (logoDetected && isAmbiguousHcb) {
         verdict = "Yellow";
         riskLevel = "Seal Found - Certifier Unclear";
-        analysisSummary = `A Halal seal was localized (${logoConfidence}% confidence) and ingredients across ${totalPanels} panels are clean, but the specific certifying body name on the seal rim could not be confirmed.`;
+        analysisSummary = `A Halal seal was localized (${logoConfidence}% match) and ingredients are clean, but the certifying body name on the seal rim could not be confirmed.`;
         recommendations = [
-            "Capture a closer, well-lit shot of the Halal seal or select the printed certifying body if clearly legible on the package."
+            "Capture a closer, well-lit shot of the Halal seal so the certifying body text on the rim can be read."
         ];
     } else if (logoDetected && hasReadableIngredients) {
         verdict = "Green";
         riskLevel = "Verified Halal";
-        analysisSummary = `All ${totalPanels} packaging panels verified! Accredited ${logoBody} seal confirmed (${logoConfidence}% match), and 0 prohibited or doubtful food additives found across screened ingredient declarations.`;
+        analysisSummary = `Accredited ${logoBody} seal confirmed (${logoConfidence}% match) with no prohibited or doubtful additives found across ${totalPanels} scanned panels.`;
         recommendations = [
             "Product exhibits accredited certification and clean ingredient declarations.",
             "Always check product packaging expiration dates before purchase."
@@ -167,17 +169,17 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
     } else if (combinedOcrText.length > 0) {
         verdict = "Yellow";
         riskLevel = "No Halal Logo Found";
-        analysisSummary = `OCR screened ingredients across ${totalPanels} packaging panels and found zero matching prohibited additives, but no visual Halal certification seal was detected.`;
+        analysisSummary = `Screened ingredients across ${totalPanels} panels and found no prohibited additives, but no official Halal certification seal was detected.`;
         recommendations = [
-            "Ingredient list appears free of known prohibited E-codes.",
+            "Ingredient list appears free of known prohibited additives.",
             "Capture the side of the packaging showing the official Halal certification seal."
         ];
     } else {
         verdict = "Yellow";
         riskLevel = "No Product Detected";
-        analysisSummary = `Neither food ingredient text nor an accredited halal certification logo could be identified across the ${totalPanels} captured packaging panels.`;
+        analysisSummary = `Neither food ingredient text nor an accredited halal certification logo could be identified in the captured photos.`;
         recommendations = [
-            "Upload a clearer, well-lit photo focusing on the ingredient label or certification seal.",
+            "Take a clearer, well-lit photo focusing on the ingredient label or certification seal.",
             "Ensure the packaging is flat and glare-free."
         ];
     }

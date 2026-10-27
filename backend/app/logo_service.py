@@ -366,6 +366,17 @@ def detect_halal_logo(image_input, run_crop_ocr: bool = True) -> Dict:
             bx2 = max(0.0, min(float(orig_w), float(box[2])))
             by2 = max(0.0, min(float(orig_h), float(box[3])))
 
+            bw = bx2 - bx1
+            bh = by2 - by1
+            if bw < 10.0 or bh < 10.0:
+                continue
+
+            # Aspect Ratio Guard: Accredited Halal seals are circular, oval, octagonal, or square.
+            # Reject elongated rectangular boxes (e.g. text banners, nutrition columns, barcodes).
+            aspect_ratio = bw / max(bh, 1.0)
+            if aspect_ratio > 1.9 or aspect_ratio < 0.52:
+                continue
+
             normalized_box = [round(bx1, 2), round(by1, 2), round(bx2, 2), round(by2, 2)]
             norm_pct_box = [
                 max(0.0, min(1.0, round(bx1 / orig_w, 4))),
@@ -419,6 +430,48 @@ def detect_halal_logo(image_input, run_crop_ocr: bool = True) -> Dict:
         if run_crop_ocr and not has_invalid and top_logo.get("box"):
             crop_ocr_text = _crop_logo_roi_for_ocr(image, top_logo["box"])
             top_logo["crop_ocr_text"] = crop_ocr_text
+
+            # False-Positive Table & Paragraph Guard:
+            # Reject boxes that encompass nutrition facts tables, ingredient lists, or large non-seal panels.
+            crop_lower = (crop_ocr_text or "").lower()
+            table_terms = (
+                "total fat", "saturated", "trans fat", "cholesterol", "sodium",
+                "carbohydrate", "dietary fiber", "sugars", "protein", "kcal",
+                "calories", "nutrition", "serving", "reni", "amount per",
+                "modified food", "starch", "vinegar", "iodized salt", "emulsifier",
+                "lactic acid", "flavor enhancer", "sweetener", "aspartame",
+                "beta-carotene", "disodium", "edta", "storage instruction",
+                "manufactured by", "consumer engagement", "keep in a cool",
+                "ingredients", "sangkap", "komposisi", "allergen",
+            )
+            seal_corroboration_terms = (
+                "halal", "حلال", "حاال", "idcp", "hdip", "ncmf", "jakim", "muis",
+                "bpjph", "lppom", "mui", "cicot", "hiccip", "mmhcb", "busc", "bpcc",
+                "minha", "pucoi", "maslaha", "prime", "fiqhi", "philcosed", "ahip",
+                "islamic", "dawah", "da'wah", "ulama", "muslim",
+            )
+            has_table_text = any(t in crop_lower for t in table_terms)
+            has_seal_text = any(s in crop_lower for s in seal_corroboration_terms)
+
+            tb = top_logo["box"]
+            box_area_ratio = ((tb[2] - tb[0]) * (tb[3] - tb[1])) / max(float(orig_w * orig_h), 1.0)
+            crop_word_count = len(crop_lower.split())
+
+            if (
+                has_table_text
+                or (crop_word_count >= 10 and not has_seal_text)
+                or (box_area_ratio > 0.20 and max(orig_w, orig_h) >= 320 and not has_seal_text)
+            ):
+                return {
+                    "logoDetected": False,
+                    "logoConfidence": 0.0,
+                    "logoBody": "No Halal Logo Detected",
+                    "isInvalidLogo": False,
+                    "cropOcrText": "",
+                    "detectedLogos": [],
+                    "imageWidth": orig_w,
+                    "imageHeight": orig_h,
+                }
 
         if is_ambiguous_hcb:
             best_logo_body = "Recognized Halal Certification Seal"

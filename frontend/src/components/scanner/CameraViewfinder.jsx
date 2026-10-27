@@ -165,7 +165,7 @@ export const CameraViewfinder = ({
                     />
                 )}
 
-                {/* 2. Captured Photo Preview */}
+                {/* 2. Captured Photo Preview (Clean, no cluttered bounding boxes) */}
                 {selectedImage && !isCapturing && (
                     <div className="absolute inset-0 w-full h-full bg-slate-950 flex items-center justify-center overflow-hidden">
                         <img
@@ -173,44 +173,6 @@ export const CameraViewfinder = ({
                             alt="Captured Frame"
                             className="w-full h-full object-contain"
                         />
-
-                        {/* Visual Bounding Box Overlay */}
-                        {scanResult?.detectedLogos && scanResult.detectedLogos.length > 0 && (
-                            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                                <div className="relative w-full h-full">
-                                    {scanResult.detectedLogos.map((logo, idx) => {
-                                        if (!logo.norm_box || logo.norm_box.length < 4) return null;
-                                        const [x1, y1, x2, y2] = logo.norm_box;
-                                        const isInvalid = logo.label === 'Invalid_logo' || scanResult.isInvalidLogo;
-                                        return (
-                                            <div
-                                                key={idx}
-                                                style={{
-                                                    left: `${x1 * 100}%`,
-                                                    top: `${y1 * 100}%`,
-                                                    width: `${(x2 - x1) * 100}%`,
-                                                    height: `${(y2 - y1) * 100}%`
-                                                }}
-                                                className={`absolute border-2 rounded transition-all ${
-                                                    isInvalid
-                                                        ? 'border-red-500 bg-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.7)] animate-pulse'
-                                                        : 'border-emerald-400 bg-emerald-400/20 shadow-[0_0_20px_rgba(16,185,129,0.7)]'
-                                                }`}
-                                            >
-                                                <div
-                                                    className={`absolute -top-7 left-0 px-2 py-0.5 rounded text-[10px] font-bold text-white uppercase tracking-wider whitespace-nowrap shadow-md flex items-center gap-1 ${
-                                                        isInvalid ? 'bg-red-600' : 'bg-emerald-600'
-                                                    }`}
-                                                >
-                                                    {isInvalid ? <ShieldAlert size={12} /> : <ShieldCheck size={12} />}
-                                                    {logo.label}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
                     </div>
                 )}
 
@@ -248,34 +210,6 @@ export const CameraViewfinder = ({
                     >
                         <div className="relative w-12 h-12 border-2 border-emerald-400 rounded-full flex items-center justify-center animate-pulse">
                             <Crosshair size={16} className="text-emerald-300" />
-                        </div>
-                    </div>
-                )}
-
-                {/* 4.5. Live Viewfinder Framing Guide Overlay (Corner Brackets) */}
-                {isCapturing && !selectedImage && (
-                    <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-6">
-                        <div
-                            className={`relative transition-all duration-300 flex flex-col items-center justify-end pb-3 ${
-                                scannerMode === 'cert'
-                                    ? 'w-[78%] max-w-xs h-[62%] max-h-80'
-                                    : 'w-[86%] max-w-md h-[46%] max-h-60'
-                            }`}
-                        >
-                            {/* Top-Left Bracket */}
-                            <div className="absolute top-0 left-0 w-7 h-7 border-t-2 border-l-2 border-emerald-400/80 rounded-tl-xl shadow-[0_0_10px_rgba(16,185,129,0.25)]" />
-                            {/* Top-Right Bracket */}
-                            <div className="absolute top-0 right-0 w-7 h-7 border-t-2 border-r-2 border-emerald-400/80 rounded-tr-xl shadow-[0_0_10px_rgba(16,185,129,0.25)]" />
-                            {/* Bottom-Left Bracket */}
-                            <div className="absolute bottom-0 left-0 w-7 h-7 border-b-2 border-l-2 border-emerald-400/80 rounded-bl-xl shadow-[0_0_10px_rgba(16,185,129,0.25)]" />
-                            {/* Bottom-Right Bracket */}
-                            <div className="absolute bottom-0 right-0 w-7 h-7 border-b-2 border-r-2 border-emerald-400/80 rounded-br-xl shadow-[0_0_10px_rgba(16,185,129,0.25)]" />
-
-                            <span className="px-2.5 py-0.5 rounded-full bg-slate-950/60 border border-slate-800/80 text-[10px] font-medium text-emerald-300/90 backdrop-blur-xs">
-                                {scannerMode === 'cert'
-                                    ? 'Align Halal Certificate inside frame'
-                                    : 'Align Ingredient List or Halal Logo inside frame'}
-                            </span>
                         </div>
                     </div>
                 )}
@@ -365,11 +299,9 @@ export const CameraViewfinder = ({
                     )}
                 </div>
 
-
-
-                {/* 7. Bottom Shutter & Controls */}
+                {/* 6. Bottom Shutter & Controls */}
                 <div className="relative z-20 flex flex-col items-center gap-2 p-4 pt-1 bg-gradient-to-t from-slate-950/95 via-slate-950/60 to-transparent">
-                    {/* Senior UX: Result Quick-Access Pill (Natural flex flow, dynamic verdict colors, never blocks shutter) */}
+                    {/* Result Quick-Access Pill */}
                     {badgeData && onOpenResultsSheet && (
                         <div className="w-full flex justify-center pb-1 animate-in fade-in slide-in-from-bottom-2 duration-200">
                             <button
@@ -447,13 +379,6 @@ export const CameraViewfinder = ({
                             <div className="w-11 h-11" />
                         )}
                     </div>
-
-                    {/* Multi-Section Helpful Hint */}
-                    {scannerMode === 'label' && (
-                        <p className="text-[11px] text-slate-400 text-center font-normal pt-1">
-                            Long packaging? Take Part 1, then tap <strong className="text-emerald-400 font-semibold">+ Scan Next Section</strong> to combine.
-                        </p>
-                    )}
                 </div>
 
                 {/* Hidden File Picker */}
