@@ -11,6 +11,8 @@ import {
     X,
     Navigation,
     ShieldCheck,
+    UtensilsCrossed,
+    Phone,
 } from 'lucide-react';
 import Toast from '../components/ui/Toast';
 import AuthPromptModal from '../components/submissions/AuthPromptModal';
@@ -61,6 +63,7 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
     const [selectedStatus, setSelectedStatus] = useState('all');
     const [selectedDistrict, setSelectedDistrict] = useState('all');
     const [selectedRadius, setSelectedRadius] = useState('all');
+    const [selectedAmenity, setSelectedAmenity] = useState('all');
     const [searchQuery, setSearchQuery] = useState(initialSearchQuery || '');
 
     useEffect(() => {
@@ -381,7 +384,24 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                     est.type?.toLowerCase().includes(searchQuery.toLowerCase());
                 const district = resolveZamboangaDistrict(est);
                 const matchesDistrict = selectedDistrict === 'all' || district.id === selectedDistrict;
-                return matchesQuery && matchesDistrict;
+
+                let matchesAmenity = true;
+                if (selectedAmenity === 'prayer_space') {
+                    matchesAmenity = Boolean(
+                        est.has_prayer_space ||
+                        est.description?.toLowerCase().includes('prayer') ||
+                        est.description?.toLowerCase().includes('musalah') ||
+                        (Array.isArray(est.amenities) && est.amenities.some(a => String(a).toLowerCase().includes('prayer')))
+                    );
+                } else if (selectedAmenity === 'alcohol_free') {
+                    matchesAmenity = Boolean(
+                        est.is_alcohol_free ||
+                        est.description?.toLowerCase().includes('alcohol') ||
+                        (Array.isArray(est.amenities) && est.amenities.some(a => String(a).toLowerCase().includes('alcohol')))
+                    );
+                }
+
+                return matchesQuery && matchesDistrict && matchesAmenity;
             })
             .sort((a, b) => {
                 if (a.distance_km != null && b.distance_km != null) {
@@ -389,7 +409,7 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                 }
                 return 0;
             });
-    }, [establishments, searchQuery, selectedDistrict]);
+    }, [establishments, searchQuery, selectedDistrict, selectedAmenity]);
 
     useEffect(() => {
         const map = mapInstanceRef.current;
@@ -692,6 +712,89 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                 </div>
             </div>
 
+            {/* Quick One-Tap Filter Pills Row */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 shrink-0 select-none">
+                <button
+                    type="button"
+                    onClick={() => { setSelectedStatus('all'); setSelectedAmenity('all'); }}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                        selectedStatus === 'all' && selectedAmenity === 'all'
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                    }`}
+                >
+                    All Venues
+                </button>
+                <button
+                    type="button"
+                    onClick={() => { setSelectedStatus('verified'); setSelectedAmenity('all'); }}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                        selectedStatus === 'verified'
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                    }`}
+                >
+                    Halal Certified
+                </button>
+                <button
+                    type="button"
+                    onClick={() => { setSelectedStatus('muslim_owned'); setSelectedAmenity('all'); }}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                        selectedStatus === 'muslim_owned'
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                    }`}
+                >
+                    Muslim-Owned
+                </button>
+                <button
+                    type="button"
+                    onClick={() => { setSelectedStatus('muslim_friendly'); setSelectedAmenity('all'); }}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                        selectedStatus === 'muslim_friendly'
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                    }`}
+                >
+                    Muslim-Friendly
+                </button>
+                <button
+                    type="button"
+                    onClick={() => { setSelectedStatus('vegetarian_vegan'); setSelectedAmenity('all'); }}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                        selectedStatus === 'vegetarian_vegan'
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                    }`}
+                >
+                    Plant-Based
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setSelectedAmenity(selectedAmenity === 'prayer_space' ? 'all' : 'prayer_space')}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
+                        selectedAmenity === 'prayer_space'
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                    }`}
+                >
+                    <Compass size={12} />
+                    <span>Prayer Area</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setSelectedAmenity(selectedAmenity === 'alcohol_free' ? 'all' : 'alcohol_free')}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
+                        selectedAmenity === 'alcohol_free'
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                    }`}
+                >
+                    <ShieldCheck size={12} />
+                    <span>Alcohol-Free</span>
+                </button>
+            </div>
+
             {/* Segmented View Tabs for Mobile & Tablet */}
             <div className="flex lg:hidden bg-slate-100 p-1 rounded-xl border border-slate-200/80 gap-1 shrink-0 shadow-inner">
                 <button
@@ -868,25 +971,64 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                                 );
                             })()}
 
-                            {/* Card Actions: View Full Details & Directions */}
-                            <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+                            {/* Popular Dishes / Menu Highlights Preview */}
+                            {(() => {
+                                const dishes = (activePreviewEst.associated_products?.map(p => p.name) || [])
+                                    .concat(activePreviewEst.product_names?.split(',').map(s => s.trim()).filter(Boolean) || []);
+                                const uniqueDishes = Array.from(new Set(dishes)).filter(Boolean);
+                                if (uniqueDishes.length === 0) return null;
+                                return (
+                                    <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                                        <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 shrink-0">
+                                            <UtensilsCrossed size={11} className="text-emerald-600" />
+                                            <span>Menu:</span>
+                                        </span>
+                                        {uniqueDishes.slice(0, 3).map((dish) => (
+                                            <span
+                                                key={dish}
+                                                className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-medium truncate max-w-[120px]"
+                                            >
+                                                {dish}
+                                            </span>
+                                        ))}
+                                        {uniqueDishes.length > 3 && (
+                                            <span className="text-[10px] text-slate-400 font-semibold">
+                                                +{uniqueDishes.length - 3} more
+                                            </span>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+
+                            {/* Card Actions: View Full Details, Call, & Directions */}
+                            <div className="flex items-center gap-1.5 pt-1 border-t border-slate-100">
                                 <button
                                     type="button"
                                     onClick={() => setSelectedEstablishment(activePreviewEst)}
-                                    className="flex-1 py-1.5 px-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-98"
+                                    className="flex-1 py-1.5 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center justify-center gap-1 shadow-xs active:scale-98 cursor-pointer"
                                 >
                                     <Store size={13} />
-                                    <span>View Full Details</span>
+                                    <span>Details</span>
                                 </button>
+                                {(activePreviewEst.contact_number || activePreviewEst.phone) && (
+                                    <a
+                                        href={`tel:${activePreviewEst.contact_number || activePreviewEst.phone}`}
+                                        className="py-1.5 px-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold transition flex items-center justify-center gap-1 shrink-0"
+                                        title="Call establishment"
+                                    >
+                                        <Phone size={12} className="text-emerald-600" />
+                                        <span>Call</span>
+                                    </a>
+                                )}
                                 {activePreviewEst.latitude && activePreviewEst.longitude && (
                                     <a
                                         href={`https://www.google.com/maps/dir/?api=1&destination=${activePreviewEst.latitude},${activePreviewEst.longitude}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="py-1.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition flex items-center justify-center gap-1 shrink-0"
+                                        className="py-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition flex items-center justify-center gap-1 shrink-0"
                                         title="Get directions in Google Maps"
                                     >
-                                        <Navigation size={13} className="text-blue-600" />
+                                        <Navigation size={12} className="text-blue-600" />
                                         <span>Directions</span>
                                     </a>
                                 )}
@@ -905,6 +1047,7 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                         setSelectedStatus('all');
                         setSelectedDistrict('all');
                         setSelectedRadius('all');
+                        setSelectedAmenity('all');
                         setSearchQuery('');
                     }}
                     userLocation={userLocation}
