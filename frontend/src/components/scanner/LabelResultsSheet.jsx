@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
     ShieldCheck,
     ShieldAlert,
@@ -52,7 +52,6 @@ const resolveReferenceLogoSrc = (scanResult) => {
 
 export const LabelResultsSheet = ({
     scanResult,
-    selectedImage = null,
     isLoading,
     onReset,
     onRetry = null,
@@ -61,51 +60,13 @@ export const LabelResultsSheet = ({
     onScanSecondary,
 }) => {
     const [touchStartY, setTouchStartY] = useState(null);
-    const [croppedLogoUrl, setCroppedLogoUrl] = useState(null);
 
-    const referenceLogoSrc = resolveReferenceLogoSrc(scanResult);
-
-    // Fallback: crop the detected logo region from the camera scan if no static reference graphic matches
-    useEffect(() => {
-        if (!scanResult?.logoDetected || referenceLogoSrc) {
-            setCroppedLogoUrl(null);
-            return;
-        }
-        const box = scanResult.detectedLogos?.[0]?.norm_box || scanResult.bestBox;
-        const sourceImg = selectedImage || scanResult.images?.[0];
-        if (!box || box.length < 4 || !sourceImg) {
-            setCroppedLogoUrl(null);
-            return;
-        }
-
-        let isCancelled = false;
-        const img = new Image();
-        img.onload = () => {
-            if (isCancelled) return;
-            try {
-                const [x1, y1, x2, y2] = box;
-                const sx = Math.max(0, Math.floor(x1 * img.width));
-                const sy = Math.max(0, Math.floor(y1 * img.height));
-                const sw = Math.max(1, Math.floor((x2 - x1) * img.width));
-                const sh = Math.max(1, Math.floor((y2 - y1) * img.height));
-                const canvas = document.createElement('canvas');
-                canvas.width = sw;
-                canvas.height = sh;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
-                setCroppedLogoUrl(canvas.toDataURL('image/jpeg', 0.9));
-            } catch {
-                setCroppedLogoUrl(null);
-            }
-        };
-        img.src = sourceImg;
-
-        return () => {
-            isCancelled = true;
-        };
-    }, [scanResult, selectedImage, referenceLogoSrc]);
-
-    const displayedLogoSrc = referenceLogoSrc || croppedLogoUrl;
+    const displayedLogoSrc = resolveReferenceLogoSrc(scanResult);
+    const hasVerifiedSeal = Boolean(
+        scanResult?.logoDetected &&
+        (Number(scanResult?.logoConfidence || 0) >= 65 || scanResult?.isInvalidLogo) &&
+        scanResult?.logoBody !== 'Recognized Halal Certification Seal'
+    );
 
     const handleTouchStart = (e) => {
         setTouchStartY(e.touches[0].clientY);
@@ -241,7 +202,7 @@ export const LabelResultsSheet = ({
                     ) : !isLoading && scanResult ? (
                         <div className="space-y-3">
                             {/* 1. Certifying Body / Halal Seal Hero Card (Placed #1 ABOVE Halal Status per Mock Defense revision) */}
-                            {scanResult.logoDetected ? (
+                            {hasVerifiedSeal ? (
                                 <div
                                     className={`relative overflow-hidden rounded-2xl border p-4 flex items-center gap-3.5 transition ${
                                         scanResult.isInvalidLogo

@@ -267,6 +267,58 @@ _ALLERGEN_HEADERS = (
     r"\b(?:allergen\s+information|allergen\s+advice|allergens?|contains\s*:|may\s+contain(?:\s+traces\s+of)?)\b"
 )
 
+_NUTRITION_LINE_PATTERNS = re.compile(
+    r"(?:"
+    r"\bnutrition\s+(?:facts?|information)\b|"
+    r"\bamount\s+per\s+serving\b|"
+    r"\bservings?\s+per\s+(?:container|pack)\b|"
+    r"\bserving\s+size\b|"
+    r"\bcalories(?:\s+from\s+fat)?\s*\d*|"
+    r"\b(?:total|saturated|trans|polyunsaturated|monounsaturated)\s+fat\b|"
+    r"\bcholesterol\s*\d*\s*m?g?\b|"
+    r"\b(?:sodium|potassium|calcium|iron|magnesium|zinc|phosphorus)\s+\d+\s*(?:mg|mcg|g|%)\b|"
+    r"\b(?:total\s+)?carbohydrate\s*\d*\s*g?\b|"
+    r"\bdietary\s+fiber\b|"
+    r"\b(?:total\s+|added\s+)?sugars?\s+\d+\s*g\b|"
+    r"\bprotein\s+\d+\s*g\b|"
+    r"\bvitamin\s+[a-z0-9]+\s+\d*|"
+    r"\bpercent\s+daily\s+values?\b|"
+    r"\b%\s*(?:daily\s+value|reni|pdri|dv)\b"
+    r")",
+    flags=re.IGNORECASE,
+)
+
+
+def _strip_nutrition_facts(text: str) -> str:
+    """
+    Removes Nutrition Facts table lines and nutrient-with-dosage declarations
+    (e.g. 'Sodium 250mg', 'Potassium 50mg', 'Calcium 38mg', 'Total Fat 7g')
+    so nutrition tables never trigger false-positive ingredient/additive matches.
+    """
+    if not text or not text.strip():
+        return ""
+
+    # First strip quantitative nutrient measurements anywhere in text (e.g. "Sodium 250mg", "Calcium 4%")
+    cleaned = re.sub(
+        r"\b(?:sodium|potassium|calcium|iron|magnesium|zinc|phosphorus|cholesterol|calories|protein|fat|sugars?|carbohydrate)\s*[:\-]?\s*\d+(?:\.\d+)?\s*(?:mg|mcg|kcal|g|%)\b",
+        " ",
+        text,
+        flags=re.IGNORECASE,
+    )
+
+    kept_lines = []
+    for line in cleaned.splitlines():
+        # If a line has an explicit INGREDIENTS header, always keep the part starting from INGREDIENTS
+        ing_hdr = re.search(_INGREDIENT_SECTION_HEADERS, line, flags=re.IGNORECASE)
+        if ing_hdr:
+            kept_lines.append(line[ing_hdr.start():])
+            continue
+        if _NUTRITION_LINE_PATTERNS.search(line):
+            continue
+        kept_lines.append(line)
+
+    return "\n".join(kept_lines)
+
 COMMON_INGREDIENT_TOKENS = {
     "water", "sugar", "salt", "flour", "wheat", "oil", "palm", "vegetable", "corn",
     "starch", "milk", "powder", "soy", "soya", "lecithin", "cocoa", "butter", "fat",
@@ -383,11 +435,20 @@ def match_additives_from_text(extracted_text: str):
         return []
 
     sections = parse_label_sections(extracted_text)
-    # Screen primarily the isolated ingredients section, but also check full text so nothing is missed if headers are malformed
-    primary_text = sections["ingredients_section"] or extracted_text
-    detected_codes = find_e_numbers(extracted_text)
-    normalized_text = normalize_text(extracted_text)
-    normalized_ing_tokens = normalize_text(primary_text).split()
+    # Strictly isolate the ingredients section when an explicit 'INGREDIENTS:' header is found,
+    # and always strip Nutrition Facts lines so nutrient declarations (e.g. Sodium 250mg, Potassium, Calcium)
+    # never trigger false-positive ingredient/additive matches.
+    if sections.get("has_explicit_header") and sections.get("ingredients_section"):
+        screening_text = _strip_nutrition_facts(sections["ingredients_section"])
+    else:
+        screening_text = _strip_nutrition_facts(sections["ingredients_section"] or extracted_text)
+
+    if not screening_text.strip():
+        screening_text = _strip_nutrition_facts(extracted_text)
+
+    detected_codes = find_e_numbers(screening_text)
+    normalized_text = normalize_text(screening_text)
+    normalized_ing_tokens = normalized_text.split()
 
     additives = get_all_additives()
 
@@ -570,12 +631,29 @@ def find_additive_alias_match(code, name: str, normalized_text: str):
     return matched
 
 
+GENERIC_NON_SPECIFIC_ADDITIVE_TERMS = {
+    "sodium", "potassium", "calcium", "magnesium", "iron", "zinc", "phosphorus",
+    "fatty acids", "fatty acid", "salts", "salts of fatty acids", "acid", "acids",
+    "esters", "ester", "oxide", "hydroxide", "carbonate", "phosphate", "sulfate",
+    "sulphate", "chloride", "extract", "color", "colour", "flavor", "flavour",
+    "natural", "protein", "sugar", "sugars", "starch", "oil", "water", "milk",
+    "cheese", "butter", "fat", "fats", "gum", "wax", "food", "emulsifier",
+    "stabilizer", "preservative", "antioxidant", "potassium and calcium salts of fatty acids",
+}
+
+
 def build_additive_match_terms(code, name: str):
     terms = []
 
     if name:
         terms.append(name)
-        terms.extend(re.split(r"[/(),;]", name))
+        # Never split on commas ',' because chemical names like
+        # "Sodium, Potassium and Calcium Salts of Fatty Acids" (E470a)
+        # would otherwise split into the standalone generic word "Sodium"!
+        for part in re.split(r"[/()]", name):
+            part_clean = part.strip()
+            if len(part_clean) >= 5:
+                terms.append(part_clean)
 
     if code:
         terms.extend(ADDITIVE_ALIASES.get(code.upper(), []))
@@ -584,6 +662,9 @@ def build_additive_match_terms(code, name: str):
     for term in terms:
         term = term.strip()
         if len(term) < 3:
+            continue
+        norm_term = normalize_text(term)
+        if not norm_term or norm_term in GENERIC_NON_SPECIFIC_ADDITIVE_TERMS:
             continue
         if term not in cleaned_terms:
             cleaned_terms.append(term)
@@ -842,7 +923,7 @@ def fuse_logo_and_ocr_evidence(logo_result: dict, extracted_text: str) -> dict:
             )
         return logo_result
 
-    # Moderate/Ambiguous YOLOv8 visual seal (35% <= conf < 78%) -> Disambiguate using Crop/Label/Catalog evidence
+    # Moderate/Ambiguous YOLOv8 visual seal (65% <= conf < 78%) -> Disambiguate using Crop/Label/Catalog evidence
     if best_text_match:
         c_name, c_id, c_label, _ = best_text_match
         # Calibrated fused confidence: combines visual localization score with textual corroboration
@@ -865,8 +946,15 @@ def fuse_logo_and_ocr_evidence(logo_result: dict, extracted_text: str) -> dict:
             }
         ]
     else:
-        logo_result["sealStatus"] = "DETECTED_SEAL_UNKNOWN_HCB"
-        logo_result["evidenceSource"] = "yolo_low_conf_uncorroborated"
+        # Reject uncorroborated < 78% visual detections so nutrition tables, borders, or non-Halal graphics
+        # never display a false "Recognized Halal Certification Seal".
+        logo_result["logoDetected"] = False
+        logo_result["logoConfidence"] = 0.0
+        logo_result["logoBody"] = "No Halal Logo Detected"
+        logo_result["isAmbiguousHcb"] = False
+        logo_result["detectedLogos"] = []
+        logo_result["sealStatus"] = "NO_SEAL_DETECTED"
+        logo_result["evidenceSource"] = "rejected_uncorroborated_low_conf"
 
     return logo_result
 
