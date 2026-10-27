@@ -262,7 +262,7 @@ def detect_halal_logo(image_input, run_crop_ocr: bool = True) -> Dict:
         orig_w, orig_h = image.size
 
         # Pass 1: Global Letterboxed Frame
-        b1, s1, c1 = _run_yolo_onnx_pass(session, image, 0.0, 0.0, conf_threshold=0.65)
+        b1, s1, c1 = _run_yolo_onnx_pass(session, image, 0.0, 0.0, conf_threshold=0.38)
         max_conf1 = float(np.max(s1)) if len(s1) > 0 else 0.0
 
         b2, s2, c2 = np.empty((0, 4)), np.empty(0), np.empty(0)
@@ -277,7 +277,7 @@ def detect_halal_logo(image_input, run_crop_ocr: bool = True) -> Dict:
             px = (pad_dim - sw) // 2
             py = (pad_dim - sh) // 2
             bg.paste(scaled_img, (px, py))
-            b2_raw, s2, c2 = _run_yolo_onnx_pass(session, bg, 0.0, 0.0, conf_threshold=0.65)
+            b2_raw, s2, c2 = _run_yolo_onnx_pass(session, bg, 0.0, 0.0, conf_threshold=0.38)
             if len(b2_raw) > 0:
                 bx1 = (b2_raw[:, 0] - px) / scale
                 by1 = (b2_raw[:, 1] - py) / scale
@@ -293,7 +293,7 @@ def detect_halal_logo(image_input, run_crop_ocr: bool = True) -> Dict:
             crop_x = (orig_w - crop_dim) / 2.0
             crop_y = (orig_h - crop_dim) / 2.0
             center_roi = image.crop((crop_x, crop_y, crop_x + crop_dim, crop_y + crop_dim))
-            b3, s3, c3 = _run_yolo_onnx_pass(session, center_roi, crop_x, crop_y, conf_threshold=0.65)
+            b3, s3, c3 = _run_yolo_onnx_pass(session, center_roi, crop_x, crop_y, conf_threshold=0.38)
 
         # Select candidate detections based on best detection context
         if max_conf1 >= 0.75:

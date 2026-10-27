@@ -923,8 +923,29 @@ def fuse_logo_and_ocr_evidence(logo_result: dict, extracted_text: str) -> dict:
             )
         return logo_result
 
-    # Moderate/Ambiguous YOLOv8 visual seal (65% <= conf < 78%) -> Disambiguate using Crop/Label/Catalog evidence
-    if best_text_match:
+    # Moderate/Visual YOLOv8 seal -> Corroborate using Visual Class, Crop OCR, Label OCR, or Catalog
+    vis_code = (logo_result.get("visualCandidateCode") or "").strip().upper()
+    if vis_code in HCB_METADATA_BY_CODE and visual_conf >= 42.0:
+        c_name, c_id, c_label, _ = HCB_METADATA_BY_CODE[vis_code]
+        fused_conf = round(min(96.0, visual_conf + (15.0 if best_text_match else 0.0)), 1)
+        logo_result["logoConfidence"] = fused_conf
+        logo_result["logoBody"] = c_label
+        logo_result["isAmbiguousHcb"] = False
+        logo_result["sealStatus"] = "VERIFIED_HCB_SEAL"
+        logo_result["evidenceSource"] = evidence_channel if best_text_match else "yolo_visual_candidate"
+        logo_result["detectedLogos"] = [
+            {
+                "label": c_label,
+                "confidence": fused_conf,
+                "is_invalid": False,
+                "class_name": c_name,
+                "class_id": c_id,
+                "box": base_box,
+                "norm_box": base_norm,
+                "crop_ocr_text": crop_ocr_text,
+            }
+        ]
+    elif best_text_match:
         c_name, c_id, c_label, _ = best_text_match
         # Calibrated fused confidence: combines visual localization score with textual corroboration
         fused_conf = round(min(95.0, max(visual_conf + 18.0, 82.0)), 1)
@@ -945,9 +966,26 @@ def fuse_logo_and_ocr_evidence(logo_result: dict, extracted_text: str) -> dict:
                 "crop_ocr_text": crop_ocr_text,
             }
         ]
+    elif has_plain_halal_word and visual_conf >= 40.0:
+        logo_result["logoConfidence"] = round(visual_conf, 1)
+        logo_result["logoBody"] = "Halal Certification Seal"
+        logo_result["isAmbiguousHcb"] = False
+        logo_result["sealStatus"] = "HALAL_SEAL_VERIFIED"
+        logo_result["evidenceSource"] = "yolo_plus_halal_word"
+        logo_result["detectedLogos"] = [
+            {
+                "label": "Halal Certification Seal",
+                "confidence": round(visual_conf, 1),
+                "is_invalid": False,
+                "class_name": "Halal_Seal",
+                "class_id": 0,
+                "box": base_box,
+                "norm_box": base_norm,
+                "crop_ocr_text": crop_ocr_text,
+            }
+        ]
     else:
-        # Reject uncorroborated < 78% visual detections so nutrition tables, borders, or non-Halal graphics
-        # never display a false "Recognized Halal Certification Seal".
+        # Reject uncorroborated low-confidence visual detections (e.g. table lines or random graphics)
         logo_result["logoDetected"] = False
         logo_result["logoConfidence"] = 0.0
         logo_result["logoBody"] = "No Halal Logo Detected"
@@ -980,19 +1018,18 @@ def explain_label_verdict(
     text_claimed_body = logo_result.get("textClaimedBody")
     ingredient_status = section_info.get("ingredient_status", "MISSING_OR_UNREADABLE")
 
-    # 1. Critical Counterfeit / Fake Logo Alert -> Red
+    # 1. Unaccredited / Unverified Certification Mark -> Yellow
     if is_invalid_logo or seal_status == "COUNTERFEIT_OR_UNACCREDITED_SEAL":
         return {
-            "verdict": "Red",
-            "riskLevel": "Suspected Fake Logo",
+            "verdict": "Yellow",
+            "riskLevel": "Unaccredited Certification Mark",
             "analysisSummary": (
-                "Warning: A suspected unauthorized, altered, or unaccredited halal certification mark "
-                "was detected on this packaging. Do not rely on this mark."
+                "Notice: An unaccredited or unrecognized certification mark was detected on this packaging. "
+                "Under Philippine Halal standards, only accredited certifying bodies (e.g. IDCP, HDIP, NCMF) are officially verified."
             ),
             "recommendations": [
-                "Do not purchase or consume without independent halal authority verification.",
-                "Report this suspected counterfeit mark to Philippine Halal authorities (NCMF / accredited HCBs).",
-                "Cross-check manufacturer in the HalalVerify Product Catalog.",
+                "Verify certification credentials with an accredited certifying body.",
+                "Cross-check this product in the HalalVerify Product Catalog.",
             ],
         }
 

@@ -64,8 +64,7 @@ export const LabelResultsSheet = ({
     const displayedLogoSrc = resolveReferenceLogoSrc(scanResult);
     const hasVerifiedSeal = Boolean(
         scanResult?.logoDetected &&
-        (Number(scanResult?.logoConfidence || 0) >= 65 || scanResult?.isInvalidLogo) &&
-        scanResult?.logoBody !== 'Recognized Halal Certification Seal'
+        (Number(scanResult?.logoConfidence || 0) >= 35 || scanResult?.isInvalidLogo)
     );
 
     const handleTouchStart = (e) => {
@@ -264,7 +263,7 @@ export const LabelResultsSheet = ({
                                                     }`}
                                                 >
                                                     {scanResult.isInvalidLogo ? (
-                                                        <span>Unrecognized Mark ({scanResult.logoConfidence}%)</span>
+                                                        <span>Unaccredited Mark ({scanResult.logoConfidence}%)</span>
                                                     ) : (
                                                         <span>Accredited Seal · {scanResult.logoConfidence}% Match</span>
                                                     )}
@@ -421,22 +420,47 @@ export const LabelResultsSheet = ({
                                 );
                             })()}
 
-                            {/* 4. Multi-Section Continuation (Compact 1-Line Action) */}
+                            {/* 4. Multi-Section Continuation & Captured Photos Gallery */}
                             {onScanSecondary && (
                                 isMultiPart ? (
-                                    <div className="p-2.5 bg-slate-800/70 border border-slate-700/80 rounded-xl flex items-center justify-between gap-2">
-                                        <span className="text-xs font-medium text-emerald-300 flex items-center gap-1.5">
-                                            <Layers size={14} className="text-emerald-400 shrink-0" />
-                                            <span>Combined {totalImages} packaging sections</span>
-                                        </span>
-                                        <button
-                                            type="button"
-                                            onClick={() => onScanSecondary('continue-ingredients')}
-                                            className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer"
-                                        >
-                                            <PlusCircle size={12} />
-                                            <span>Scan Part {totalImages + 1}</span>
-                                        </button>
+                                    <div className="bg-slate-800/70 border border-slate-700/80 rounded-xl p-3 space-y-2.5">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-xs font-semibold text-emerald-300 flex items-center gap-1.5">
+                                                <Layers size={14} className="text-emerald-400 shrink-0" />
+                                                <span>Combined {totalImages} packaging sections</span>
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => onScanSecondary('continue-ingredients')}
+                                                className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer"
+                                            >
+                                                <PlusCircle size={12} />
+                                                <span>Scan Part {totalImages + 1}</span>
+                                            </button>
+                                        </div>
+
+                                        {/* Captured Packaging Photos Gallery */}
+                                        {Array.isArray(scanResult.images) && scanResult.images.length > 0 && (
+                                            <div className="pt-1 border-t border-slate-700/60">
+                                                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+                                                    {scanResult.images.map((imgSrc, idx) => (
+                                                        <div
+                                                            key={idx}
+                                                            className="relative w-14 h-14 rounded-lg overflow-hidden border border-slate-700 bg-slate-950 shrink-0 shadow-xs"
+                                                        >
+                                                            <img
+                                                                src={imgSrc}
+                                                                alt={`Section ${idx + 1}`}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                            <span className="absolute bottom-0 inset-x-0 bg-slate-950/85 text-[8px] text-center font-bold text-emerald-300 py-0.5">
+                                                                Part {idx + 1}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <button

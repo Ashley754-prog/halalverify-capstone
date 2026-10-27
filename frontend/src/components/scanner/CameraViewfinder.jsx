@@ -217,38 +217,70 @@ export const CameraViewfinder = ({
                 {/* 5. Minimal Top HUD (Instruction, Flashlight & Camera Flip) */}
                 <div className="relative z-20 p-3 bg-gradient-to-b from-slate-950/80 via-slate-950/30 to-transparent">
                     {fusionState?.active ? (
-                        /* Multi-Part / Continuing Capture Banner */
+                        /* Multi-Part / Continuing Capture Banner with Flash & Rotate Controls */
                         <div className="w-full p-2.5 rounded-xl bg-slate-900/95 border border-emerald-500/50 backdrop-blur-md shadow-lg flex items-center justify-between gap-2 animate-in fade-in slide-in-from-top-2">
-                            <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="flex items-center gap-2 min-w-0">
                                 <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
                                     <Layers size={15} className="animate-pulse" />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-xs font-bold text-emerald-300 leading-tight">
+                                    <p className="text-xs font-bold text-emerald-300 leading-tight truncate">
                                         {fusionState.target === 'continue-ingredients'
                                             ? `Part ${fusionState.step || 2}: Continuing Ingredients`
                                             : fusionState.target === 'ingredients'
                                             ? 'Part 2: Scan Ingredients List'
                                             : 'Part 2: Scan Halal Logo Seal'}
                                     </p>
-                                    <p className="text-[11px] text-slate-400 truncate">
-                                        Point camera at the remaining text or logo
+                                    <p className="text-[10px] text-slate-400 truncate">
+                                        Point camera at remaining text or seal
                                     </p>
                                 </div>
                             </div>
-                            {onCancelFusion && (
+                            <div className="flex items-center gap-1.5 shrink-0">
+                                {isCapturing && toggleTorch && (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleTorch();
+                                        }}
+                                        className={`p-1.5 rounded-lg border backdrop-blur-md transition shadow-xs active:scale-95 cursor-pointer ${
+                                            torchOn
+                                                ? 'bg-amber-500 text-slate-950 border-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.5)]'
+                                                : 'bg-slate-800/90 border-slate-700 text-slate-300 hover:text-white'
+                                        }`}
+                                        title={torchOn ? 'Turn off flashlight' : 'Turn on flashlight'}
+                                        aria-label={torchOn ? 'Turn off flashlight' : 'Turn on flashlight'}
+                                    >
+                                        <Zap size={14} className={torchOn ? 'fill-slate-950' : ''} />
+                                    </button>
+                                )}
                                 <button
                                     type="button"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        onCancelFusion();
+                                        toggleCamera();
                                     }}
-                                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold shrink-0 border border-slate-700 active:scale-95 transition"
-                                    title="Return to verification results"
+                                    className="p-1.5 rounded-lg bg-slate-800/90 border border-slate-700 text-slate-300 hover:text-white backdrop-blur-md transition shadow-xs active:rotate-180 duration-300 cursor-pointer"
+                                    title="Switch front/rear camera"
+                                    aria-label="Switch front/rear camera"
                                 >
-                                    Back to Results
+                                    <SwitchCamera size={14} />
                                 </button>
-                            )}
+                                {onCancelFusion && (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onCancelFusion();
+                                        }}
+                                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-200 text-[11px] font-semibold border border-slate-700 active:scale-95 transition cursor-pointer"
+                                        title="Return to verification results"
+                                    >
+                                        Back
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     ) : (
                         /* Standard Guidance Pill, Flashlight & Camera Flip */
