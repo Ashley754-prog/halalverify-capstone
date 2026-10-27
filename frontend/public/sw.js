@@ -1,4 +1,4 @@
-const CACHE_NAME = "halalverify-cache-v6";
+const CACHE_NAME = "halalverify-cache-v7";
 const ASSETS_TO_CACHE = [
     "/",
     "/index.html",
