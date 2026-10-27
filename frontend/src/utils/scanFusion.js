@@ -41,7 +41,7 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
         ? secondScan
         : firstScan;
 
-    const logoDetected = Boolean(firstHasLogo || secondHasLogo);
+    let logoDetected = Boolean(firstHasLogo || secondHasLogo);
     const isInvalidLogo = Boolean(firstScan.isInvalidLogo || secondScan.isInvalidLogo);
     let isAmbiguousHcb = logoDetected
         ? Boolean(
@@ -64,12 +64,13 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
     const text2 = (secondScan.ocrText || "").trim();
     const combinedOcrText = [text1, text2].filter(Boolean).join("\n---\n");
 
-    if (logoDetected && !isInvalidLogo && isAmbiguousHcb && combinedOcrText) {
+    if (!isInvalidLogo && combinedOcrText && (!logoDetected || isAmbiguousHcb)) {
         const matchedHcb = CROSS_PANEL_HCB_PATTERNS.find((p) => p.regex.test(combinedOcrText));
         if (matchedHcb) {
+            logoDetected = true;
             logoBody = matchedHcb.label;
             isAmbiguousHcb = false;
-            logoConfidence = Math.min(95, Math.max(logoConfidence + 18, 82));
+            logoConfidence = Math.min(95, Math.max(logoConfidence + 18, 88.5));
         }
     }
 
@@ -110,12 +111,11 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
     let recommendations;
 
     if (isInvalidLogo) {
-        verdict = "Red";
-        riskLevel = "Suspected Fake Logo";
-        analysisSummary = "Warning: A suspected unauthorized or counterfeit halal certification mark was detected across scanned panels. Do not rely on this packaging.";
+        verdict = "Yellow";
+        riskLevel = "Unaccredited Certification Mark";
+        analysisSummary = "Notice: An unaccredited or unrecognized certification mark was detected across scanned panels. Under Philippine Halal standards, only accredited certifying bodies (e.g. IDCP, HDIP, NCMF) are officially verified.";
         recommendations = [
-            "Do not consume or purchase without independent Islamic authority confirmation.",
-            "Report this counterfeit seal using the Report Issue button.",
+            "Verify certification credentials with an accredited certifying body.",
             "Cross-reference the manufacturer in the HalalVerify Product Catalog."
         ];
     } else if (haramCount > 0) {

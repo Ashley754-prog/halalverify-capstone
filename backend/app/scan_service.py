@@ -845,7 +845,7 @@ def fuse_logo_and_ocr_evidence(logo_result: dict, extracted_text: str) -> dict:
     combined_upper = f"{upper_crop} {upper_label}".strip()
 
     has_plain_halal_word = bool(
-        "HALAL" in combined_upper
+        any(w in combined_upper for w in ("HALAL", "SALAL", "AALAL", "HALAZ", "IIALAL"))
         or "حلال" in (extracted_text or "")
         or "حلال" in crop_ocr_text
         or "حاال" in (extracted_text or "")
@@ -862,6 +862,7 @@ def fuse_logo_and_ocr_evidence(logo_result: dict, extracted_text: str) -> dict:
 
     # 2. Match HCB evidence from Crop OCR (Channel 2), Full-Label OCR (Channel 3), and Catalog (Channel 4)
     crop_hcb_match = _match_explicit_hcb_in_text(crop_ocr_text, allow_country_origin=False, has_visual_seal=visual_detected)
+    explicit_label_hcb_match = _match_explicit_hcb_in_text(extracted_text, allow_country_origin=False, has_visual_seal=True)
     label_hcb_match = _match_explicit_hcb_in_text(extracted_text, allow_country_origin=True, has_visual_seal=visual_detected)
 
     # Rim-keyword corroboration for YOLOv8's visual candidate when a seal is visually localized
@@ -874,6 +875,7 @@ def fuse_logo_and_ocr_evidence(logo_result: dict, extracted_text: str) -> dict:
 
     catalog_hcb_match = match_certifier_from_catalog(combined_upper) if visual_detected else None
 
+    explicit_hcb_match = crop_hcb_match or explicit_label_hcb_match
     best_text_match = crop_hcb_match or label_hcb_match or rim_corroborated_match or catalog_hcb_match
     evidence_channel = (
         "yolo_plus_crop_ocr" if crop_hcb_match
@@ -883,8 +885,34 @@ def fuse_logo_and_ocr_evidence(logo_result: dict, extracted_text: str) -> dict:
         else "yolo_visual_only"
     )
 
-    # 3. No Visual Seal Detected by YOLOv8 -> Never fabricate logoDetected = True!
+    # 3. When YOLOv8 missed a small/monochrome seal on packaging, check if OCR read an explicit accredited HCB seal acronym
     if not visual_detected:
+        if explicit_hcb_match:
+            c_name, c_id, c_label, _ = explicit_hcb_match
+            fused_conf = 89.5 if has_plain_halal_word else 86.0
+            logo_result["logoDetected"] = True
+            logo_result["isInvalidLogo"] = False
+            logo_result["isAmbiguousHcb"] = False
+            logo_result["logoConfidence"] = fused_conf
+            logo_result["logoBody"] = c_label
+            logo_result["textHalalClaim"] = True
+            logo_result["textClaimedBody"] = c_label
+            logo_result["sealStatus"] = "OCR_DISAMBIGUATED_SEAL"
+            logo_result["evidenceSource"] = "ocr_explicit_hcb_seal"
+            logo_result["detectedLogos"] = [
+                {
+                    "label": c_label,
+                    "confidence": fused_conf,
+                    "is_invalid": False,
+                    "class_name": c_name,
+                    "class_id": c_id,
+                    "box": [0, 0, 0, 0],
+                    "norm_box": [0.25, 0.25, 0.75, 0.75],
+                    "crop_ocr_text": crop_ocr_text,
+                }
+            ]
+            return logo_result
+
         logo_result["logoDetected"] = False
         logo_result["isInvalidLogo"] = False
         if best_text_match:
