@@ -6,7 +6,6 @@ import {
     ExternalLink,
     MapPin,
     AlertTriangle,
-    Sparkles,
 } from 'lucide-react';
 import { getSafeUrl } from '../../utils/security';
 
@@ -99,12 +98,12 @@ export default function VerificationQueueTabs({
                                         </div>
                                     </div>
 
-                                    {/* AI Pre-Check Audit Indicator */}
+                                    {/* Pre-Check Audit Indicator */}
                                     {est.admin_notes && est.admin_notes.includes('AI AUTO-APPROVED') && (
                                         <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-2 text-[11px] font-bold text-emerald-800 flex items-center justify-between">
                                             <span className="flex items-center gap-1.5">
-                                                <Sparkles size={13} className="text-emerald-600 shrink-0" />
-                                                AI Pre-Approved (High Match)
+                                                <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
+                                                Pre-Approved (High Match)
                                             </span>
                                             <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full font-bold">70%+</span>
                                         </div>
@@ -113,7 +112,7 @@ export default function VerificationQueueTabs({
                                         <div className="rounded-lg bg-amber-50 border border-amber-200 p-2 text-[11px] font-bold text-amber-800 flex items-center justify-between">
                                             <span className="flex items-center gap-1.5 truncate">
                                                 <AlertTriangle size={13} className="text-amber-600 shrink-0" />
-                                                AI Audit: Manual Review Needed
+                                                Manual Review Needed
                                             </span>
                                         </div>
                                     )}
@@ -144,9 +143,9 @@ export default function VerificationQueueTabs({
                                             disabled={autoVerifyingId === est.id}
                                             onClick={() => handleAutoVerifyEstablishment(est.id, true)}
                                             className="py-2 px-3 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition flex items-center justify-center gap-1 shrink-0"
-                                            title="Run instant AI OCR & Auto-Approve if valid"
+                                            title="Run certificate check & Auto-Approve if valid"
                                         >
-                                            <Sparkles size={13} className={autoVerifyingId === est.id ? 'animate-spin text-emerald-600' : ''} />
+                                            <CheckCircle2 size={13} className={autoVerifyingId === est.id ? 'animate-spin text-emerald-600' : ''} />
                                             <span className="hidden sm:inline">Auto-Verify</span>
                                         </button>
                                     )}
@@ -220,10 +219,10 @@ export default function VerificationQueueTabs({
                                         disabled={autoVerifyingId === prod.id}
                                         onClick={() => handleAutoVerifyProduct(prod.id, true)}
                                         className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition flex items-center gap-1"
-                                        title="Screen additives and certifying credentials using AI"
+                                        title="Screen additives and certifying credentials"
                                     >
-                                        <Sparkles size={12} className={autoVerifyingId === prod.id ? 'animate-spin text-emerald-600' : ''} />
-                                        <span>AI Check</span>
+                                        <ShieldCheck size={12} className={autoVerifyingId === prod.id ? 'animate-spin text-emerald-600' : ''} />
+                                        <span>Auto-Check</span>
                                     </button>
                                     <button
                                         type="button"

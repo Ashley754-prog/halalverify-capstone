@@ -8,11 +8,15 @@ class EstablishmentVerifyRequest(BaseModel):
     certificate_number: Optional[str] = Field(None, description="Updated certificate number if corrected")
     expiry_date: Optional[str] = Field(None, description="Updated certificate expiry date")
     certifying_body_id: Optional[str] = Field(None, description="Assigned certifying body ID")
+    name: Optional[str] = Field(None, description="Corrected establishment name")
+    address: Optional[str] = Field(None, description="Corrected establishment address")
 
 
 class ProductVerifyRequest(BaseModel):
     status: str = Field(..., description="Approval status: 'VERIFIED' or 'REJECTED'")
     admin_notes: Optional[str] = Field(None, description="Administrative audit notes")
+    name: Optional[str] = Field(None, description="Corrected product name")
+    brand: Optional[str] = Field(None, description="Corrected product brand")
 
 
 class ReportResolveRequest(BaseModel):

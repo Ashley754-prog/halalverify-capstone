@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
     ShieldCheck,
     Store,
@@ -11,17 +12,35 @@ import {
     RotateCw,
     MapPin,
     AlertTriangle,
-    Sparkles,
     UtensilsCrossed,
     Phone,
     Globe,
     Compass,
+    Copy,
+    Check,
+    Clock,
+    X,
 } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { getSafeUrl } from '../../utils/security';
 
+function formatSystemNotice(rawNote) {
+    if (!rawNote) return null;
+    const text = String(rawNote).trim();
+    if (!text.startsWith('FATAL INVARIANT') && !text.startsWith('[AI ')) {
+        return null;
+    }
+    return text
+        .replace(/^FATAL INVARIANT FAILED:\s*/i, '')
+        .replace(/\(Confidence:\s*\d+%\)\.?\s*/i, '')
+        .replace(/^\[AI [^\]]+\]\s*/i, '')
+        .split('|')[0]
+        .trim();
+}
+
 export default function VerificationInspectionModal({
     inspectingItem,
+    setInspectingItem,
     inspectingType,
     closeInspection,
     processingId,
@@ -48,10 +67,72 @@ export default function VerificationInspectionModal({
     setNewMenuItemName,
     addingMenuItem,
     handleAddMenuItem,
+    handleDeleteMenuItem,
     adminNotes,
     setAdminNotes,
 }) {
+    const [selectedImageTab, setSelectedImageTab] = useState('primary');
+    const [copiedCert, setCopiedCert] = useState(false);
+
     if (!inspectingItem) return null;
+
+    const imagesList = [];
+    if (inspectingItem.certificate_url) {
+        imagesList.push({
+            id: 'cert',
+            type: 'primary',
+            label: 'Certificate Document',
+            url: inspectingItem.certificate_url,
+        });
+    }
+    if (inspectingItem.logo_url || inspectingItem.image_url) {
+        imagesList.push({
+            id: 'signage',
+            type: 'storefront',
+            label: inspectingType === 'product' ? 'Packaging Photo' : 'Storefront Photo',
+            url: inspectingItem.logo_url || inspectingItem.image_url,
+        });
+    }
+
+    const currentActiveImg =
+        selectedImageTab === 'storefront' && imagesList.find((img) => img.type === 'storefront')
+            ? imagesList.find((img) => img.type === 'storefront')?.url
+            : imagesList[0]?.url || null;
+
+    const handleCopyCert = () => {
+        const textToCopy = certNumber || inspectingItem.certificate_no || inspectingItem.certificate_number;
+        if (!textToCopy) return;
+        navigator.clipboard.writeText(textToCopy);
+        setCopiedCert(true);
+        setTimeout(() => setCopiedCert(false), 2000);
+    };
+
+    const handleQuickAddNote = (tagText) => {
+        setAdminNotes((prev) => {
+            const trimmed = (prev || '').trim();
+            if (!trimmed) return tagText;
+            if (trimmed.includes(tagText)) return prev;
+            return `${trimmed}; ${tagText}`;
+        });
+    };
+
+    const systemNotice = formatSystemNotice(inspectingItem.admin_notes);
+    const hasPrayerSpace = Boolean(
+        inspectingItem.has_prayer_space ||
+            (inspectingItem.description &&
+                (inspectingItem.description.toLowerCase().includes('prayer') ||
+                    inspectingItem.description.toLowerCase().includes('musalah'))) ||
+            (Array.isArray(inspectingItem.amenities) &&
+                inspectingItem.amenities.some((a) => String(a).toLowerCase().includes('prayer')))
+    );
+    const hasAlcoholFree = Boolean(
+        inspectingItem.is_alcohol_free ||
+            (inspectingItem.description && inspectingItem.description.toLowerCase().includes('alcohol')) ||
+            (Array.isArray(inspectingItem.amenities) &&
+                inspectingItem.amenities.some((a) => String(a).toLowerCase().includes('alcohol')))
+    );
+    const contactPhone = inspectingItem.phone || inspectingItem.contact_number;
+    const webLink = inspectingItem.source_url || inspectingItem.social_media_url;
 
     return (
         <Modal
@@ -61,69 +142,52 @@ export default function VerificationInspectionModal({
             title={
                 <div className="space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                        <span className="inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 tracking-wider uppercase">
-                            <ShieldCheck size={12} className="text-amber-600" />
-                            {inspectingType === 'product' ? 'Product Verification Workflow' : 'Document Verification Workflow'}
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                            <Clock size={12} className="text-amber-600" />
+                            Pending Review
                         </span>
                         <span className="text-xs text-slate-400 font-mono">
                             ID: {inspectingItem.id}
                         </span>
                     </div>
+
                     <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
                         {inspectingItem.name}
                     </h2>
                 </div>
             }
             description={
-                inspectingType === 'product' ? (
-                    <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap pt-0.5">
-                        <span className="inline-flex items-center gap-1 font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
-                            <Package size={11} className="text-slate-500" />
-                            {inspectingItem.category || 'Food Item'}
-                        </span>
-                        {inspectingItem.brand && (
-                            <>
-                                <span>•</span>
-                                <span>Brand: <strong className="text-slate-700">{inspectingItem.brand}</strong></span>
-                            </>
-                        )}
-                        <span>•</span>
-                        <span>Venue: <strong className="text-slate-700">{inspectingItem.establishments?.name || 'Standalone / Packaged'}</strong></span>
-                        {inspectingItem.created_at && (
-                            <>
-                                <span>•</span>
-                                <span>Received: {new Date(inspectingItem.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                            </>
-                        )}
-                    </div>
-                ) : (
-                    <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap pt-0.5">
-                        <span className="inline-flex items-center gap-1 font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
-                            <Store size={11} className="text-slate-500" />
-                            {inspectingItem.source?.includes('Owner') || inspectingItem.submitter_role === 'owner' ? 'Business Owner / Staff' : 'Customer / Scout'}
-                        </span>
-                        <span>•</span>
-                        <span>Submitted by: <strong className="font-mono text-slate-700">{inspectingItem.submitted_by || 'Anonymous Contributor'}</strong></span>
-                        <span>•</span>
-                        <span className="inline-flex items-center gap-1 text-slate-600">
-                            <MapPin size={12} className="text-slate-400" />
-                            {inspectingItem.address || inspectingItem.city || 'Zamboanga City'}
-                        </span>
-                        {inspectingItem.created_at && (
-                            <>
-                                <span>•</span>
-                                <span>Received: {new Date(inspectingItem.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                            </>
-                        )}
-                    </div>
-                )
+                <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap pt-0.5">
+                    <span className="inline-flex items-center gap-1 font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
+                        {inspectingType === 'product' ? <Package size={11} /> : <Store size={11} />}
+                        {inspectingType === 'product' ? (inspectingItem.category || 'Food Item') : (inspectingItem.type || 'Restaurant')}
+                    </span>
+                    <span>•</span>
+                    <span className="inline-flex items-center gap-1 text-slate-600">
+                        <MapPin size={12} className="text-slate-400" />
+                        {inspectingItem.address || inspectingItem.city || 'Zamboanga City'}
+                    </span>
+                    {inspectingItem.created_at && (
+                        <>
+                            <span>•</span>
+                            <span>
+                                Submitted:{' '}
+                                {new Date(inspectingItem.created_at).toLocaleDateString(undefined, {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                })}
+                            </span>
+                        </>
+                    )}
+                </div>
             }
             footer={
                 <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-3">
                     <button
                         type="button"
                         onClick={closeInspection}
-                        className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition"
+                        className="w-full sm:w-auto px-4 py-2.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition cursor-pointer"
                     >
                         Cancel
                     </button>
@@ -132,8 +196,12 @@ export default function VerificationInspectionModal({
                         <button
                             type="button"
                             disabled={processingId === inspectingItem.id}
-                            onClick={() => inspectingType === 'product' ? handleVerifyProduct(inspectingItem, 'REJECTED') : handleVerifyEstablishment('REJECTED')}
-                            className="flex-1 sm:flex-none px-4 py-2.5 text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+                            onClick={() =>
+                                inspectingType === 'product'
+                                    ? handleVerifyProduct(inspectingItem, 'REJECTED')
+                                    : handleVerifyEstablishment('REJECTED')
+                            }
+                            className="flex-1 sm:flex-none px-4 py-2.5 text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
                         >
                             <XCircle size={15} />
                             <span>Reject Submission</span>
@@ -141,8 +209,12 @@ export default function VerificationInspectionModal({
                         <button
                             type="button"
                             disabled={processingId === inspectingItem.id}
-                            onClick={() => inspectingType === 'product' ? handleVerifyProduct(inspectingItem, 'VERIFIED') : handleVerifyEstablishment(selectedStatus)}
-                            className="flex-1 sm:flex-none px-5 py-2.5 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
+                            onClick={() =>
+                                inspectingType === 'product'
+                                    ? handleVerifyProduct(inspectingItem, 'VERIFIED')
+                                    : handleVerifyEstablishment(selectedStatus)
+                            }
+                            className="flex-1 sm:flex-none px-5 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
                         >
                             <CheckCircle2 size={15} />
                             <span>
@@ -156,7 +228,7 @@ export default function VerificationInspectionModal({
                                     ? 'Approve as Muslim-Friendly'
                                     : selectedStatus === 'vegetarian_vegan'
                                     ? 'Approve as Plant-Based'
-                                    : 'Approve & Publish to Registry'}
+                                    : 'Approve & Publish'}
                             </span>
                         </button>
                     </div>
@@ -164,34 +236,31 @@ export default function VerificationInspectionModal({
             }
         >
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch pb-1">
-                {/* Left Column: Certificate / Photo Document Viewer */}
-                <div className="lg:col-span-6 xl:col-span-7 flex flex-col rounded-2xl bg-slate-900 border border-slate-800 p-4 text-slate-200 shadow-inner min-h-[420px] lg:min-h-[520px]">
-                    <div className="flex items-center justify-between text-xs pb-3 border-b border-slate-800 shrink-0">
+                {/* Left Column: Clean Document & Photo Viewer */}
+                <div className="lg:col-span-6 flex flex-col rounded-2xl bg-slate-900 border border-slate-800 p-4 text-slate-200 min-h-[420px] lg:min-h-[520px]">
+                    <div className="flex items-center justify-between text-xs pb-3 border-b border-slate-800 shrink-0 gap-2">
                         <span className="font-bold text-slate-200 flex items-center gap-2">
                             <FileText size={15} className="text-emerald-400" />
-                            <span>
-                                {inspectingItem.certificate_url
-                                    ? 'Physical Document Preview'
-                                    : inspectingItem.logo_url || inspectingItem.image_url
-                                    ? (inspectingType === 'product' ? 'Packaging / Label Photo' : 'Storefront / Signboard Photo')
-                                    : 'Physical Document Preview'}
-                            </span>
+                            <span>Submitted Photo / Document</span>
                         </span>
-                        {(inspectingItem.certificate_url || inspectingItem.logo_url || inspectingItem.image_url) && (
-                            <div className="flex items-center gap-1.5 bg-slate-800/80 p-1 rounded-lg border border-slate-700/60">
+
+                        {currentActiveImg && (
+                            <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
                                 <button
                                     type="button"
                                     onClick={() => setZoomLevel((z) => Math.max(0.6, z - 0.2))}
-                                    className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-700 transition"
+                                    className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-700 transition cursor-pointer"
                                     title="Zoom Out"
                                 >
                                     <ZoomOut size={13} />
                                 </button>
-                                <span className="text-[11px] font-mono px-1 text-slate-300">{Math.round(zoomLevel * 100)}%</span>
+                                <span className="text-[11px] font-mono px-1 text-slate-300">
+                                    {Math.round(zoomLevel * 100)}%
+                                </span>
                                 <button
                                     type="button"
                                     onClick={() => setZoomLevel((z) => Math.min(2.5, z + 0.2))}
-                                    className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-700 transition"
+                                    className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-700 transition cursor-pointer"
                                     title="Zoom In"
                                 >
                                     <ZoomIn size={13} />
@@ -199,14 +268,15 @@ export default function VerificationInspectionModal({
                                 <button
                                     type="button"
                                     onClick={() => setRotation((r) => (r + 90) % 360)}
-                                    className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-700 transition"
+                                    className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-700 transition cursor-pointer"
                                     title="Rotate 90°"
                                 >
                                     <RotateCw size={13} />
                                 </button>
-                                {getSafeUrl(inspectingItem.certificate_url || inspectingItem.logo_url || inspectingItem.image_url) && (
+
+                                {getSafeUrl(currentActiveImg) && (
                                     <a
-                                        href={getSafeUrl(inspectingItem.certificate_url || inspectingItem.logo_url || inspectingItem.image_url)}
+                                        href={getSafeUrl(currentActiveImg)}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="p-1 rounded text-emerald-400 hover:text-emerald-300 hover:bg-slate-700 transition ml-0.5"
@@ -219,447 +289,410 @@ export default function VerificationInspectionModal({
                         )}
                     </div>
 
-                    <div className="flex-1 mt-3 flex items-center justify-center overflow-hidden bg-slate-950/80 rounded-xl relative border border-slate-800/80">
-                        {(inspectingItem.certificate_url || inspectingItem.logo_url || inspectingItem.image_url) ? (
+                    <div className="flex-1 mt-3 flex items-center justify-center overflow-hidden bg-slate-950 rounded-xl relative border border-slate-800 min-h-[340px]">
+                        {currentActiveImg ? (
                             <img
-                                src={inspectingItem.certificate_url || inspectingItem.logo_url || inspectingItem.image_url}
-                                alt={inspectingItem.certificate_url ? 'Submitted Certificate' : inspectingType === 'product' ? 'Product Packaging Photo' : 'Storefront or Signboard Photo'}
+                                src={currentActiveImg}
+                                alt="Submitted verification evidence"
                                 style={{
                                     transform: `scale(${zoomLevel}) rotate(${rotation}deg)`,
                                     transition: 'transform 0.15s ease',
                                 }}
-                                className="max-h-[480px] w-full object-contain cursor-grab select-none p-2"
+                                className="max-h-[440px] w-full object-contain cursor-grab select-none p-2"
                             />
                         ) : (
-                            <div className="text-center p-8 max-w-sm mx-auto space-y-3">
-                                <div className="w-14 h-14 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center mx-auto text-slate-400">
-                                    <FileText size={26} className="text-slate-400" />
+                            <div className="text-center p-8 max-w-sm mx-auto space-y-2">
+                                <div className="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center mx-auto text-slate-400">
+                                    <FileText size={22} />
                                 </div>
-                                <h4 className="text-sm font-bold text-slate-200">No Document or Photo Attached</h4>
+                                <h4 className="text-sm font-bold text-slate-200">No Photo Attached</h4>
                                 <p className="text-xs text-slate-400 leading-relaxed">
-                                    {inspectingType === 'product'
-                                        ? 'The contributor registered this product without uploading a digital scan of a certificate or packaging photo.'
-                                        : 'The contributor registered this establishment without uploading a digital scan of a certificate or storefront signboard.'}
+                                    No certificate or storefront photo was uploaded with this submission.
                                 </p>
                             </div>
                         )}
                     </div>
+
+                    {imagesList.length > 1 && (
+                        <div className="mt-3 pt-3 border-t border-slate-800 flex items-center gap-2">
+                            {imagesList.map((img) => (
+                                <button
+                                    key={img.id}
+                                    type="button"
+                                    onClick={() => setSelectedImageTab(img.type)}
+                                    className={`px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+                                        selectedImageTab === img.type
+                                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                            : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                                    }`}
+                                >
+                                    <FileText size={12} />
+                                    <span>{img.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
-                {/* Right Column: Submitted Metadata Audit Form */}
-                <div className="lg:col-span-6 xl:col-span-5 flex flex-col space-y-4">
-                    {inspectingType === 'product' ? (
-                        <>
-                            {/* AI Document / Additive Screening Panel */}
-                            <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50/80 via-teal-50/60 to-white p-3.5 space-y-2.5 shadow-xs">
-                                <div className="flex items-center justify-between gap-2">
-                                    <span className="text-xs font-black uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
-                                        <Sparkles size={14} className="text-emerald-600" />
-                                        AI Additive & Cert Screening
-                                    </span>
-                                    <button
-                                        type="button"
-                                        disabled={autoVerifyingId === inspectingItem.id}
-                                        onClick={() => handleAutoVerifyProduct(inspectingItem.id, false)}
-                                        className="text-xs font-bold text-emerald-800 bg-white hover:bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-300 transition flex items-center gap-1.5 shadow-xs disabled:opacity-50"
-                                    >
-                                        <Sparkles size={13} className={autoVerifyingId === inspectingItem.id ? 'animate-spin text-emerald-600' : ''} />
-                                        <span>{autoVerifyingId === inspectingItem.id ? 'Screening...' : 'Scan & Screen Product'}</span>
-                                    </button>
-                                </div>
-                                <p className="text-xs text-slate-600 leading-relaxed">
-                                    Screen listed ingredients against the chemical additives database and verify certifying body credentials.
-                                </p>
+                {/* Right Column: Clean Review Form */}
+                <div className="lg:col-span-6 flex flex-col space-y-4">
+                    {/* System Review Notice (if auto-approval was skipped) */}
+                    {systemNotice && (
+                        <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900 flex items-start gap-2.5">
+                            <AlertTriangle size={15} className="text-amber-600 shrink-0 mt-0.5" />
+                            <div>
+                                <span className="font-bold block">Why this needs manual review:</span>
+                                <span className="text-amber-800 leading-relaxed">{systemNotice}</span>
+                            </div>
+                        </div>
+                    )}
 
-                                {aiEvalResult && (
-                                    <div className="mt-2 rounded-xl bg-white p-3 border border-emerald-200 text-xs space-y-2 shadow-xs">
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-bold text-slate-700">AI Confidence:</span>
-                                            <span className={`px-2.5 py-0.5 rounded-full font-black text-xs ${
-                                                aiEvalResult.score >= 70 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                                            }`}>
-                                                {aiEvalResult.score}% Match
-                                            </span>
-                                        </div>
-                                        <div>
-                                            {aiEvalResult.is_auto_approved ? (
-                                                <span className="text-emerald-700 font-bold flex items-center gap-1.5">
-                                                    <CheckCircle2 size={14} /> High Confidence: Clean additive screening and valid cert.
-                                                </span>
-                                            ) : (
-                                                <span className="text-amber-700 font-bold flex items-center gap-1.5">
-                                                    <AlertTriangle size={14} /> Notice: {aiEvalResult.audit_trail?.reasons?.[0] || 'Manual audit required.'}
-                                                </span>
-                                            )}
-                                        </div>
-                                        {aiEvalResult.audit_trail?.notes && aiEvalResult.audit_trail.notes.length > 0 && (
-                                            <ul className="text-[11px] text-slate-500 list-disc list-inside space-y-0.5 pt-1.5 border-t border-slate-100">
-                                                {aiEvalResult.audit_trail.notes.map((note, idx) => (
-                                                    <li key={idx} className="truncate">{note}</li>
-                                                ))}
-                                            </ul>
-                                        )}
-                                    </div>
+                    {/* Optional Document Auto-Fill Helper */}
+                    {(inspectingItem.certificate_url || inspectingType === 'product') && (
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 flex items-center justify-between gap-3">
+                            <div className="text-xs">
+                                <span className="font-bold text-slate-800 block">
+                                    {inspectingType === 'product' ? 'Ingredient & Credential Check' : 'Auto-Read Certificate Details'}
+                                </span>
+                                <span className="text-[11px] text-slate-500">
+                                    {inspectingType === 'product'
+                                        ? 'Check ingredients against the food additives list'
+                                        : 'Extract certificate number and expiry date from the photo'}
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                disabled={autoVerifyingId === inspectingItem.id}
+                                onClick={() => {
+                                    if (inspectingType === 'product') {
+                                        handleAutoVerifyProduct(inspectingItem.id, false);
+                                    } else {
+                                        handleAutoVerifyEstablishment(inspectingItem.id, false);
+                                    }
+                                }}
+                                className="shrink-0 text-xs font-bold text-emerald-800 bg-white hover:bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-300 transition disabled:opacity-50 cursor-pointer"
+                            >
+                                {autoVerifyingId === inspectingItem.id ? 'Scanning...' : 'Scan & Auto-Fill'}
+                            </button>
+                        </div>
+                    )}
+
+                    {aiEvalResult && (
+                        <div className="rounded-xl bg-white p-3 border border-emerald-200 text-xs space-y-1">
+                            <p className="font-bold text-slate-800 flex items-center gap-1.5">
+                                {aiEvalResult.is_auto_approved ? (
+                                    <CheckCircle2 size={14} className="text-emerald-600" />
+                                ) : (
+                                    <AlertTriangle size={14} className="text-amber-600" />
+                                )}
+                                <span>
+                                    {aiEvalResult.is_auto_approved ? 'Credentials Verified' : 'Review Notice'} (Score: {aiEvalResult.score}%)
+                                </span>
+                            </p>
+                            <p className="text-[11px] text-slate-600">
+                                {aiEvalResult.audit_trail?.reasons?.[0] || 'Details extracted from submission.'}
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Submitted Details Summary */}
+                    <div className="rounded-xl bg-white border border-slate-200 p-4 space-y-3 text-xs">
+                        <span className="font-bold text-slate-800 text-xs block border-b border-slate-100 pb-2">
+                            {inspectingType === 'product' ? 'Product Information' : 'Establishment Information'}
+                        </span>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label className="text-slate-400 block text-[11px] mb-1">
+                                    Name (Editable)
+                                </label>
+                                <input
+                                    type="text"
+                                    value={inspectingItem.name || ''}
+                                    onChange={(e) =>
+                                        setInspectingItem?.((prev) =>
+                                            prev ? { ...prev, name: e.target.value } : prev
+                                        )
+                                    }
+                                    className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-bold text-slate-900 bg-slate-50/60 focus:bg-white focus:border-emerald-500 focus:outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-slate-400 block text-[11px] mb-1">
+                                    {inspectingType === 'product' ? 'Brand (Editable)' : 'Category'}
+                                </label>
+                                {inspectingType === 'product' ? (
+                                    <input
+                                        type="text"
+                                        value={inspectingItem.brand || ''}
+                                        placeholder="Unbranded"
+                                        onChange={(e) =>
+                                            setInspectingItem?.((prev) =>
+                                                prev ? { ...prev, brand: e.target.value } : prev
+                                            )
+                                        }
+                                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-800 bg-slate-50/60 focus:bg-white focus:border-emerald-500 focus:outline-none"
+                                    />
+                                ) : (
+                                    <span className="font-semibold text-slate-800 block py-1.5">
+                                        {inspectingItem.type || 'Restaurant'}
+                                    </span>
                                 )}
                             </div>
-
-                            {/* Product Profile Card */}
-                            <div className="rounded-2xl bg-white border border-slate-200 p-4 space-y-3 shadow-xs">
-                                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                                    <span className="font-black text-slate-800 uppercase tracking-wider text-xs flex items-center gap-1.5">
-                                        <Package size={14} className="text-emerald-600" />
-                                        Product Specifications
+                            <div>
+                                <label className="text-slate-400 block text-[11px] mb-1">
+                                    {inspectingType === 'product' ? 'Location' : 'Address (Editable)'}
+                                </label>
+                                {inspectingType === 'product' ? (
+                                    <span className="font-semibold text-slate-800 block py-1.5">
+                                        {inspectingItem.address || inspectingItem.city || 'Zamboanga City'}
                                     </span>
-                                    <span className="text-[11px] font-semibold text-slate-400">
-                                        Contributed Details
-                                    </span>
-                                </div>
+                                ) : (
+                                    <input
+                                        type="text"
+                                        value={inspectingItem.address || ''}
+                                        placeholder="Zamboanga City"
+                                        onChange={(e) =>
+                                            setInspectingItem?.((prev) =>
+                                                prev ? { ...prev, address: e.target.value } : prev
+                                            )
+                                        }
+                                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-800 bg-slate-50/60 focus:bg-white focus:border-emerald-500 focus:outline-none"
+                                    />
+                                )}
+                            </div>
+                            <div>
+                                <span className="text-slate-400 block text-[11px] mb-1">Contact Phone</span>
+                                {contactPhone ? (
+                                    <a href={`tel:${contactPhone}`} className="font-semibold text-emerald-700 hover:underline flex items-center gap-1 py-1.5">
+                                        <Phone size={11} />
+                                        {contactPhone}
+                                    </a>
+                                ) : (
+                                    <span className="text-slate-400 block py-1.5">Not provided</span>
+                                )}
+                            </div>
+                        </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                                    <div>
-                                        <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Product Name</span>
-                                        <span className="font-bold text-slate-900">{inspectingItem.name}</span>
-                                    </div>
-                                    <div>
-                                        <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Brand Name</span>
-                                        <span className="font-semibold text-slate-800">{inspectingItem.brand || 'Unbranded / N/A'}</span>
-                                    </div>
-                                    <div>
-                                        <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Category</span>
-                                        <span className="font-semibold text-slate-800">{inspectingItem.category || 'Food Item'}</span>
-                                    </div>
-                                    <div>
-                                        <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Venue / Establishment</span>
-                                        <span className="font-semibold text-slate-800">{inspectingItem.establishments?.name || 'Standalone / Packaged'}</span>
-                                    </div>
-                                    <div>
-                                        <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Submitted By</span>
-                                        <span className="font-mono text-slate-700 truncate block">{inspectingItem.submitted_by || inspectingItem.source || 'Community Contributor'}</span>
-                                    </div>
-                                </div>
+                        {webLink && (
+                            <div className="pt-1">
+                                <span className="text-slate-400 block text-[11px] mb-1">Website / Social Link</span>
+                                <a
+                                    href={getSafeUrl(webLink)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs font-semibold text-emerald-700 hover:underline flex items-center gap-1.5 truncate"
+                                >
+                                    <Globe size={12} className="shrink-0" />
+                                    <span className="truncate">{webLink}</span>
+                                    <ExternalLink size={11} className="shrink-0" />
+                                </a>
+                            </div>
+                        )}
 
-                                <div>
-                                    <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider mb-1">Ingredients Summary</span>
-                                    <p className="text-xs text-slate-800 bg-slate-50 p-2.5 rounded-xl border border-slate-200 leading-relaxed font-mono">
-                                        {inspectingItem.ingredients_summary || 'No ingredients summary provided.'}
-                                    </p>
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-xs">
-                                    <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
-                                        <span className="text-[10px] font-bold uppercase text-slate-400 block">Cert Number</span>
-                                        <span className="font-mono font-bold text-slate-800 text-xs truncate block">{inspectingItem.certificate_no || inspectingItem.certificate_number || 'None'}</span>
-                                    </div>
-                                    <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
-                                        <span className="text-[10px] font-bold uppercase text-slate-400 block">Expiry Date</span>
-                                        <span className="font-mono font-bold text-slate-800 text-xs block">{inspectingItem.expiry_date || 'N/A'}</span>
-                                    </div>
-                                    <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
-                                        <span className="text-[10px] font-bold uppercase text-slate-400 block">Certifier</span>
-                                        <span className="font-bold text-slate-800 text-xs truncate block">{inspectingItem.certifying_bodies?.code || inspectingItem.source || 'N/A'}</span>
-                                    </div>
+                        {inspectingType !== 'product' && (hasPrayerSpace || hasAlcoholFree) && (
+                            <div className="pt-1">
+                                <span className="text-slate-400 block text-[11px] mb-1">Amenities</span>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {hasPrayerSpace && (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                            <Compass size={11} />
+                                            Prayer Space (Musalah)
+                                        </span>
+                                    )}
+                                    {hasAlcoholFree && (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                            <ShieldCheck size={11} />
+                                            Alcohol-Free
+                                        </span>
+                                    )}
                                 </div>
                             </div>
-                        </>
-                    ) : (
-                        <>
-                            {/* AI Document Auto-Detection Panel */}
-                            {inspectingItem.certificate_url && (
-                                <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50/80 via-teal-50/60 to-white p-3.5 space-y-2.5 shadow-xs">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <span className="text-xs font-black uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
-                                            <Sparkles size={14} className="text-emerald-600" />
-                                            AI Auto-Detection & OCR Assist
-                                        </span>
+                        )}
+                    </div>
+
+                    {/* Verification & Classification Fields */}
+                    <div className="rounded-xl bg-white border border-slate-200 p-4 space-y-3.5">
+                        <span className="font-bold text-slate-800 text-xs block border-b border-slate-100 pb-2">
+                            Verification Details
+                        </span>
+
+                        {inspectingType !== 'product' && (
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                    Halal Classification Tier
+                                </label>
+                                <select
+                                    value={selectedStatus}
+                                    onChange={(e) => setSelectedStatus(e.target.value)}
+                                    className="w-full rounded-xl border border-slate-300 p-2 text-xs font-semibold text-slate-800 bg-white focus:border-emerald-500 focus:outline-none"
+                                >
+                                    <option value="verified">Formally Halal Certified</option>
+                                    <option value="muslim_owned">Muslim-Owned Kitchen (Pork-Free)</option>
+                                    <option value="muslim_friendly">Muslim-Friendly Venue</option>
+                                    <option value="vegetarian_vegan">Vegetarian / Vegan</option>
+                                </select>
+                            </div>
+                        )}
+
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                Certifying Body (Optional for Community Tiers)
+                            </label>
+                            <select
+                                value={selectedHcbId}
+                                onChange={(e) => setSelectedHcbId(e.target.value)}
+                                className="w-full rounded-xl border border-slate-300 p-2 text-xs font-semibold text-slate-800 bg-white focus:border-emerald-500 focus:outline-none"
+                            >
+                                <option value="">Select Certifying Body...</option>
+                                {certifyingBodies.map((cb) => (
+                                    <option key={cb.id} value={cb.id}>
+                                        {cb.code} - {cb.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="block text-xs font-semibold text-slate-700">
+                                        Certificate Number
+                                    </label>
+                                    {(certNumber || inspectingItem.certificate_number || inspectingItem.certificate_no) && (
                                         <button
                                             type="button"
-                                            disabled={autoVerifyingId === inspectingItem.id}
-                                            onClick={() => handleAutoVerifyEstablishment(inspectingItem.id, false)}
-                                            className="text-xs font-bold text-emerald-800 bg-white hover:bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-300 transition flex items-center gap-1.5 shadow-xs disabled:opacity-50"
+                                            onClick={handleCopyCert}
+                                            className="text-[10px] text-emerald-600 hover:text-emerald-700 font-semibold flex items-center gap-1 cursor-pointer"
                                         >
-                                            <Sparkles size={13} className={autoVerifyingId === inspectingItem.id ? 'animate-spin text-emerald-600' : ''} />
-                                            <span>{autoVerifyingId === inspectingItem.id ? 'Scanning Document...' : 'Scan & Auto-Fill Form'}</span>
+                                            {copiedCert ? <Check size={11} /> : <Copy size={11} />}
+                                            <span>{copiedCert ? 'Copied' : 'Copy'}</span>
                                         </button>
-                                    </div>
-                                    <p className="text-xs text-slate-600 leading-relaxed">
-                                        Run AI inspection to automatically extract the certificate number, expiration date, and certifying body from the image.
-                                    </p>
-
-                                    {aiEvalResult && (
-                                        <div className="mt-2 rounded-xl bg-white p-3 border border-emerald-200 text-xs space-y-2 shadow-xs">
-                                            <div className="flex items-center justify-between">
-                                                <span className="font-bold text-slate-700">AI Confidence:</span>
-                                                <span className={`px-2.5 py-0.5 rounded-full font-black text-xs ${
-                                                    aiEvalResult.score >= 70 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                                                }`}>
-                                                    {aiEvalResult.score}% Match
-                                                </span>
-                                            </div>
-                                            <div>
-                                                {aiEvalResult.is_auto_approved ? (
-                                                    <span className="text-emerald-700 font-bold flex items-center gap-1.5">
-                                                        <CheckCircle2 size={14} /> High Confidence: Active & accredited certificate verified.
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-amber-700 font-bold flex items-center gap-1.5">
-                                                        <AlertTriangle size={14} /> Notice: {aiEvalResult.audit_trail?.reasons?.[0] || 'Manual confirmation required.'}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            {aiEvalResult.audit_trail?.notes && aiEvalResult.audit_trail.notes.length > 0 && (
-                                                <ul className="text-[11px] text-slate-500 list-disc list-inside space-y-0.5 pt-1.5 border-t border-slate-100">
-                                                    {aiEvalResult.audit_trail.notes.map((note, idx) => (
-                                                        <li key={idx} className="truncate">{note}</li>
-                                                    ))}
-                                                </ul>
-                                            )}
-                                        </div>
                                     )}
                                 </div>
-                            )}
-
-                            {/* Submitted Business Profile Card */}
-                            {(() => {
-                                const hasPrayerSpace = Boolean(
-                                    inspectingItem.has_prayer_space ||
-                                    (inspectingItem.description && (inspectingItem.description.toLowerCase().includes('prayer') || inspectingItem.description.toLowerCase().includes('musalah'))) ||
-                                    (Array.isArray(inspectingItem.amenities) && inspectingItem.amenities.some((a) => String(a).toLowerCase().includes('prayer')))
-                                );
-                                const hasAlcoholFree = Boolean(
-                                    inspectingItem.is_alcohol_free ||
-                                    (inspectingItem.description && inspectingItem.description.toLowerCase().includes('alcohol')) ||
-                                    (Array.isArray(inspectingItem.amenities) && inspectingItem.amenities.some((a) => String(a).toLowerCase().includes('alcohol')))
-                                );
-                                const contactPhone = inspectingItem.phone || inspectingItem.contact_number;
-                                const webLink = inspectingItem.source_url || inspectingItem.social_media_url;
-                                const submitterRole = (inspectingItem.source?.includes('Owner') || inspectingItem.submitter_role === 'owner')
-                                    ? 'Business Owner / Staff'
-                                    : 'Customer / Community Scout';
-
-                                return (
-                                    <div className="rounded-2xl bg-white border border-slate-200 p-4 space-y-3 shadow-xs">
-                                        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                                            <span className="font-black text-slate-800 uppercase tracking-wider text-xs flex items-center gap-1.5">
-                                                <Store size={14} className="text-emerald-600" />
-                                                Submitted Business Profile
-                                            </span>
-                                            <span className="text-[11px] font-semibold text-slate-400">
-                                                Contributed Details
-                                            </span>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                                            <div>
-                                                <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Business Name</span>
-                                                <span className="font-bold text-slate-900">{inspectingItem.name}</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Venue Category</span>
-                                                <span className="font-semibold text-slate-800">{inspectingItem.type || 'Restaurant'}</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Submitter Role</span>
-                                                <span className="font-semibold text-slate-800">{submitterRole}</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Contact Phone</span>
-                                                {contactPhone ? (
-                                                    <a href={`tel:${contactPhone}`} className="font-semibold text-emerald-700 hover:underline flex items-center gap-1">
-                                                        <Phone size={11} className="text-emerald-600" />
-                                                        {contactPhone}
-                                                    </a>
-                                                ) : (
-                                                    <span className="text-slate-400 italic">Not provided</span>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider mb-1">Physical Address</span>
-                                            <p className="text-xs text-slate-800 bg-slate-50 p-2.5 rounded-xl border border-slate-200 flex items-start gap-1.5">
-                                                <MapPin size={13} className="text-emerald-600 shrink-0 mt-0.5" />
-                                                <span>{inspectingItem.address || inspectingItem.city || 'Zamboanga City'}</span>
-                                            </p>
-                                        </div>
-
-                                        {webLink && (
-                                            <div>
-                                                <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider mb-1">Facebook / Web Link</span>
-                                                <a
-                                                    href={getSafeUrl(webLink)}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-xs font-semibold text-emerald-700 hover:underline flex items-center gap-1.5 bg-emerald-50/60 p-2 rounded-xl border border-emerald-200/80 truncate"
-                                                >
-                                                    <Globe size={13} className="text-emerald-600 shrink-0" />
-                                                    <span className="truncate">{webLink}</span>
-                                                    <ExternalLink size={11} className="shrink-0 text-emerald-500 ml-auto" />
-                                                </a>
-                                            </div>
-                                        )}
-
-                                        <div>
-                                            <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider mb-1">Declared Guest Amenities</span>
-                                            <div className="flex flex-wrap gap-2">
-                                                {hasPrayerSpace && (
-                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                                                        <Compass size={13} className="text-emerald-600" />
-                                                        Dedicated Prayer Space (Musalah)
-                                                    </span>
-                                                )}
-                                                {hasAlcoholFree && (
-                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                                                        <ShieldCheck size={13} className="text-emerald-600" />
-                                                        100% Alcohol-Free Premises
-                                                    </span>
-                                                )}
-                                                {!hasPrayerSpace && !hasAlcoholFree && (
-                                                    <span className="text-xs text-slate-400 italic">No special guest amenities declared.</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })()}
-
-                            {/* Credentials Cross-Match Form Card */}
-                            <div className="rounded-2xl bg-white border border-slate-200 p-4 space-y-3.5 shadow-xs">
-                                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                                    <span className="font-black text-slate-800 uppercase tracking-wider text-xs">
-                                        Cross-Match & Assign Credentials
-                                    </span>
-                                    <span className="text-[11px] font-semibold text-slate-400">
-                                        Official Certification Data
-                                    </span>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                                        Approved Halal Classification Tier
-                                    </label>
-                                    <select
-                                        value={selectedStatus}
-                                        onChange={(e) => setSelectedStatus(e.target.value)}
-                                        className="w-full rounded-xl border border-slate-300 p-2.5 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition"
-                                    >
-                                        <option value="verified">Formally Halal Certified (With Accredited HCB)</option>
-                                        <option value="muslim_owned">Muslim-Owned Kitchen (Pork-Free)</option>
-                                        <option value="muslim_friendly">Muslim-Friendly Venue (Pork-Free Selections)</option>
-                                        <option value="vegetarian_vegan">Vegetarian / Vegan Kitchen (Plant-Based)</option>
-                                    </select>
-                                    {selectedStatus !== 'verified' && (
-                                        <p className="text-[11px] text-sky-700 bg-sky-50 border border-sky-200 rounded-lg p-2 mt-1.5">
-                                            This establishment will be published under the Community & Lifestyle directory. An official certificate number is optional.
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                                        Accredited Halal Body (HCB)
-                                    </label>
-                                    <select
-                                        value={selectedHcbId}
-                                        onChange={(e) => setSelectedHcbId(e.target.value)}
-                                        className="w-full rounded-xl border border-slate-300 p-2.5 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition"
-                                    >
-                                        <option value="">Select Certifying Body...</option>
-                                        {certifyingBodies.map((cb) => (
-                                            <option key={cb.id} value={cb.id}>
-                                                {cb.code} : {cb.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                                            Certificate No.
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={certNumber}
-                                            onChange={(e) => setCertNumber(e.target.value)}
-                                            placeholder="e.g. UCZP-ZAM-2024"
-                                            className="w-full rounded-xl border border-slate-300 p-2.5 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                                            Expiration Date
-                                        </label>
-                                        <input
-                                            type="date"
-                                            value={expiryDate}
-                                            onChange={(e) => setExpiryDate(e.target.value)}
-                                            className="w-full rounded-xl border border-slate-300 p-2.5 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition"
-                                        />
-                                    </div>
-                                </div>
+                                <input
+                                    type="text"
+                                    value={certNumber}
+                                    onChange={(e) => setCertNumber(e.target.value)}
+                                    placeholder="e.g. IDCP-ZC-2025"
+                                    className="w-full rounded-xl border border-slate-300 p-2 text-xs font-mono text-slate-800 bg-white focus:border-emerald-500 focus:outline-none"
+                                />
                             </div>
 
-                            {/* Submitted Menu Items & Specialties */}
-                            <div className="rounded-2xl bg-white border border-slate-200 p-4 space-y-2.5 shadow-xs">
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                    Expiry Date
+                                </label>
+                                <input
+                                    type="date"
+                                    value={expiryDate}
+                                    onChange={(e) => setExpiryDate(e.target.value)}
+                                    className="w-full rounded-xl border border-slate-300 p-2 text-xs text-slate-800 bg-white focus:border-emerald-500 focus:outline-none"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Menu Highlights & Dishes */}
+                        {inspectingType !== 'product' && (
+                            <div className="pt-2 border-t border-slate-100 space-y-2">
                                 <div className="flex items-center justify-between">
-                                    <span className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                                    <span className="font-semibold text-slate-700 text-xs flex items-center gap-1.5">
                                         <UtensilsCrossed size={13} className="text-emerald-600" />
-                                        Menu Highlights & Specialties
+                                        Menu Highlights & Dishes
                                     </span>
-                                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                                        {(inspectingItem.associated_products?.length || 0)} Dishes
+                                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                                        {inspectingItem.associated_products?.length || 0} Dishes
                                     </span>
                                 </div>
 
                                 {inspectingItem.associated_products && inspectingItem.associated_products.length > 0 ? (
-                                    <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pr-1 pt-1">
-                                        {inspectingItem.associated_products.map((p) => (
-                                            <span key={p.id || p.name} className="text-[11px] bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg font-medium text-slate-700 flex items-center gap-1">
-                                                <CheckCircle2 size={11} className="text-emerald-600" />
-                                                {p.name}
+                                    <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+                                        {inspectingItem.associated_products.map((p, idx) => (
+                                            <span
+                                                key={p.id || `${p.name}-${idx}`}
+                                                className="text-[11px] bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg font-medium text-slate-700 flex items-center gap-1.5"
+                                            >
+                                                <CheckCircle2 size={11} className="text-emerald-600 shrink-0" />
+                                                <span>{p.name}</span>
+                                                {handleDeleteMenuItem && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteMenuItem(p)}
+                                                        className="text-slate-400 hover:text-red-500 transition cursor-pointer ml-0.5"
+                                                        title={`Remove ${p.name}`}
+                                                    >
+                                                        <X size={12} />
+                                                    </button>
+                                                )}
                                             </span>
                                         ))}
                                     </div>
                                 ) : (
-                                    <p className="text-[11px] text-slate-400 italic">No menu items itemized yet.</p>
+                                    <p className="text-[11px] text-slate-400">No menu items listed yet.</p>
                                 )}
 
-                                {/* Admin quick-add menu item */}
-                                <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
+                                <div className="flex items-center gap-2 pt-1">
                                     <input
                                         type="text"
                                         value={newMenuItemName}
                                         onChange={(e) => setNewMenuItemName(e.target.value)}
-                                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddMenuItem(); } }}
-                                        placeholder="Itemize dish (e.g. KangKong Chips)..."
-                                        className="flex-1 rounded-xl border border-slate-300 p-2 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                handleAddMenuItem();
+                                            }
+                                        }}
+                                        placeholder="Add a dish (e.g. Beef Satti)..."
+                                        className="flex-1 rounded-xl border border-slate-300 p-2 text-xs text-slate-800 bg-white focus:border-emerald-500 focus:outline-none"
                                     />
                                     <button
                                         type="button"
                                         disabled={addingMenuItem || !newMenuItemName.trim()}
                                         onClick={handleAddMenuItem}
-                                        className="px-3 py-2 rounded-xl text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition disabled:opacity-50"
+                                        className="px-3 py-2 rounded-xl text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition disabled:opacity-50 cursor-pointer"
                                     >
                                         {addingMenuItem ? 'Adding...' : '+ Add'}
                                     </button>
                                 </div>
                             </div>
+                        )}
 
-                            {/* Admin Notes */}
-                            <div className="rounded-2xl bg-white border border-slate-200 p-4 space-y-2 shadow-xs">
-                                <label className="block font-bold text-slate-800 text-xs">
-                                    Administrative Audit Notes
+                        {/* Admin Notes */}
+                        <div className="pt-2 border-t border-slate-100 space-y-2">
+                            <div className="flex items-center justify-between">
+                                <label className="block font-semibold text-slate-700 text-xs">
+                                    Admin Notes (Optional)
                                 </label>
-                                <textarea
-                                    rows={3}
-                                    value={adminNotes}
-                                    onChange={(e) => setAdminNotes(e.target.value)}
-                                    placeholder="Record verification rationale or notes on authenticity..."
-                                    className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition resize-none"
-                                />
+                                <span className="text-[10px] text-slate-400">Quick tags</span>
                             </div>
-                        </>
-                    )}
+
+                            <div className="flex flex-wrap gap-1.5">
+                                {[
+                                    'Valid Certificate',
+                                    'Verified Kitchen Signage',
+                                    'Cross-checked Database',
+                                    'Pork-Free Declared',
+                                ].map((tag) => (
+                                    <button
+                                        key={tag}
+                                        type="button"
+                                        onClick={() => handleQuickAddNote(tag)}
+                                        className="text-[10px] font-medium text-slate-600 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200 px-2 py-0.5 rounded-md transition cursor-pointer"
+                                    >
+                                        + {tag}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <textarea
+                                rows={2}
+                                value={adminNotes}
+                                onChange={(e) => setAdminNotes(e.target.value)}
+                                placeholder="Add optional verification notes..."
+                                className="w-full rounded-xl border border-slate-300 p-2 text-xs text-slate-800 bg-white focus:border-emerald-500 focus:outline-none resize-none"
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
         </Modal>

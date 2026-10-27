@@ -160,6 +160,10 @@ def verify_establishment(
         update_fields["expiry_date"] = payload.expiry_date.strip()
     if payload.certifying_body_id:
         update_fields["certifying_body_id"] = payload.certifying_body_id.strip()
+    if payload.name and payload.name.strip():
+        update_fields["name"] = payload.name.strip()
+    if payload.address and payload.address.strip():
+        update_fields["address"] = payload.address.strip()
 
     res = (
         supabase.table("establishments")
@@ -214,6 +218,10 @@ def verify_product(
         "verified_at": now_iso,
         "verified_by": str(user_id) if user_id else None,
     }
+    if payload.name and payload.name.strip():
+        update_fields["name"] = payload.name.strip()
+    if payload.brand is not None and payload.brand.strip():
+        update_fields["brand"] = payload.brand.strip()
 
     res = (
         supabase.table("products")

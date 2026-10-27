@@ -5,7 +5,6 @@ import {
     Package,
     Flag,
     RefreshCw,
-    Sparkles,
     ChevronRight,
     BarChart2,
 } from 'lucide-react';
@@ -114,7 +113,12 @@ export default function VerificationQueue({ onViewChange }) {
     const openInspection = (item, type = 'establishment') => {
         setInspectingType(type);
         setInspectingItem(item);
-        setAdminNotes(item.admin_notes || '');
+        const rawNotes = (item.admin_notes || '').trim();
+        const isMachineDiagnostic =
+            rawNotes.startsWith('FATAL INVARIANT') ||
+            rawNotes.startsWith('[AI ') ||
+            rawNotes.startsWith('Classification Tier:');
+        setAdminNotes(isMachineDiagnostic ? '' : rawNotes);
         setCertNumber(item.certificate_number || item.certificate_no || '');
         setExpiryDate(item.expiry_date || '');
         setSelectedHcbId(item.certifying_body_id || '');
@@ -147,35 +151,99 @@ export default function VerificationQueue({ onViewChange }) {
 
     const handleAddMenuItem = async () => {
         if (!newMenuItemName.trim() || !inspectingItem?.id) return;
+        const dishName = newMenuItemName.trim();
         try {
             setAddingMenuItem(true);
             const { data: sessionData } = await supabase.auth.getSession();
             const userId = sessionData?.session?.user?.id || null;
             const newProd = {
-                name: newMenuItemName.trim(),
+                name: dishName,
                 establishment_id: inspectingItem.id,
                 category: 'Food & Beverage',
                 status: 'VERIFIED',
                 submitted_by: userId,
                 source: inspectingItem.source || 'Admin Itemized Menu Dish',
             };
-            const { data, error } = await supabase.from('products').insert(newProd).select();
-            if (!error && data?.[0]) {
-                setInspectingItem(prev => ({
-                    ...prev,
-                    associated_products: [...(prev.associated_products || []), data[0]]
-                }));
-                setNewMenuItemName('');
-                setToast({
-                    visible: true,
-                    message: `Added "${newMenuItemName.trim()}" to establishment menu.`,
-                    type: 'success',
+
+            let createdItem = null;
+            try {
+                const res = await authFetch(`${API_BASE_URL}/api/v1/products`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newProd),
                 });
+                if (res.ok) {
+                    const json = await res.json();
+                    createdItem = json.data || { ...newProd, id: `local-${Date.now()}` };
+                }
+            } catch (apiErr) {
+                console.warn('Backend add dish notice:', apiErr);
             }
+
+            if (!createdItem) {
+                const { data, error } = await supabase.from('products').insert(newProd).select();
+                if (!error && data?.[0]) {
+                    createdItem = data[0];
+                } else {
+                    createdItem = { ...newProd, id: `local-${Date.now()}` };
+                }
+            }
+
+            setInspectingItem(prev => ({
+                ...prev,
+                associated_products: [...(prev.associated_products || []), createdItem]
+            }));
+            setEstablishments(prev => prev.map(est =>
+                est.id === inspectingItem.id
+                    ? { ...est, associated_products: [...(est.associated_products || []), createdItem] }
+                    : est
+            ));
+            setNewMenuItemName('');
+            setToast({
+                visible: true,
+                message: `Added "${dishName}" to menu highlights.`,
+                type: 'success',
+            });
         } catch (err) {
             console.error('Failed to add menu item:', err);
         } finally {
             setAddingMenuItem(false);
+        }
+    };
+
+    const handleDeleteMenuItem = async (productToRemove) => {
+        if (!productToRemove || !inspectingItem?.id) return;
+        const prodId = productToRemove.id;
+        const prodName = productToRemove.name;
+
+        setInspectingItem(prev => ({
+            ...prev,
+            associated_products: (prev.associated_products || []).filter(
+                p => (prodId ? p.id !== prodId : p.name !== prodName)
+            ),
+        }));
+        setEstablishments(prev => prev.map(est =>
+            est.id === inspectingItem.id
+                ? {
+                    ...est,
+                    associated_products: (est.associated_products || []).filter(
+                        p => (prodId ? p.id !== prodId : p.name !== prodName)
+                    ),
+                }
+                : est
+        ));
+
+        if (prodId && !String(prodId).startsWith('local-')) {
+            try {
+                const res = await authFetch(`${API_BASE_URL}/api/v1/products/${prodId}`, {
+                    method: 'DELETE',
+                });
+                if (!res.ok) {
+                    await supabase.from('products').delete().eq('id', prodId);
+                }
+            } catch {
+                await supabase.from('products').delete().eq('id', prodId);
+            }
         }
     };
 
@@ -208,7 +276,9 @@ export default function VerificationQueue({ onViewChange }) {
                     if (evalData.certificate_number) setCertNumber(evalData.certificate_number);
                     if (evalData.expiry_date) setExpiryDate(evalData.expiry_date);
                     if (evalData.certifying_body_id) setSelectedHcbId(evalData.certifying_body_id);
-                    if (evalData.admin_notes) setAdminNotes(evalData.admin_notes);
+                    if (evalData.admin_notes && !evalData.admin_notes.startsWith('FATAL INVARIANT') && !evalData.admin_notes.startsWith('[AI ')) {
+                        setAdminNotes(evalData.admin_notes);
+                    }
                 }
 
                 if (data.is_auto_approved && autoApprove) {
@@ -318,6 +388,8 @@ export default function VerificationQueue({ onViewChange }) {
                     certificate_number: certNumber || undefined,
                     expiry_date: expiryDate || undefined,
                     certifying_body_id: selectedHcbId || undefined,
+                    name: inspectingItem.name || undefined,
+                    address: inspectingItem.address || undefined,
                 }),
             });
 
@@ -327,6 +399,8 @@ export default function VerificationQueue({ onViewChange }) {
                 const { error: sbErr } = await supabase
                     .from('establishments')
                     .update({
+                        name: inspectingItem.name,
+                        address: inspectingItem.address,
                         halal_status: status.toLowerCase(),
                         admin_notes: adminNotes,
                         certificate_number: certNumber || inspectingItem.certificate_number,
@@ -361,14 +435,22 @@ export default function VerificationQueue({ onViewChange }) {
                 try {
                     const { data: sessionData } = await supabase.auth.getSession();
                     const userId = sessionData?.session?.user?.id || null;
-                    await supabase.from('products').insert({
+                    const newProd = {
                         name: newMenuItemName.trim(),
                         establishment_id: estId,
                         category: 'Food & Beverage',
                         status: 'VERIFIED',
                         submitted_by: userId,
                         source: inspectingItem.source || 'Admin Itemized Menu Dish',
+                    };
+                    const prodRes = await authFetch(`${API_BASE_URL}/api/v1/products`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(newProd),
                     });
+                    if (!prodRes.ok) {
+                        await supabase.from('products').insert(newProd);
+                    }
                     setNewMenuItemName('');
                 } catch (addErr) {
                     console.warn('Auto-save pending menu item notice:', addErr);
@@ -401,7 +483,12 @@ export default function VerificationQueue({ onViewChange }) {
             const res = await authFetch(`${API_BASE_URL}/api/v1/admin/products/${product.id}/verify`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: status }),
+                body: JSON.stringify({
+                    status: status,
+                    admin_notes: adminNotes || undefined,
+                    name: product.name || undefined,
+                    brand: product.brand || undefined,
+                }),
             });
 
             if (!res.ok) {
@@ -409,6 +496,8 @@ export default function VerificationQueue({ onViewChange }) {
                 const { error } = await supabase
                     .from('products')
                     .update({
+                        name: product.name,
+                        brand: product.brand,
                         status: status.toUpperCase(),
                         verified_at: new Date().toISOString(),
                         verified_by: session?.user?.id || null,
@@ -504,11 +593,11 @@ export default function VerificationQueue({ onViewChange }) {
                             type="button"
                             onClick={handleAutoVerifyAll}
                             disabled={autoVerifyingAll || (establishments.length === 0 && products.length === 0)}
-                            className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white transition flex items-center gap-1 text-xs font-bold shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Automatically run OCR & HCB validation across all pending submissions"
+                            className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1 text-xs font-bold shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Automatically validate pending submissions against the HCB registry"
                         >
-                            <Sparkles size={13} className={autoVerifyingAll ? 'animate-spin' : ''} />
-                            <span>{autoVerifyingAll ? 'Auditing...' : 'Auto-Verify'}</span>
+                            <ShieldCheck size={13} className={autoVerifyingAll ? 'animate-spin' : ''} />
+                            <span>{autoVerifyingAll ? 'Checking...' : 'Auto-Verify'}</span>
                         </button>
 
                         <button
@@ -602,11 +691,11 @@ export default function VerificationQueue({ onViewChange }) {
                         type="button"
                         onClick={handleAutoVerifyAll}
                         disabled={autoVerifyingAll || (establishments.length === 0 && products.length === 0)}
-                        className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white transition flex items-center gap-1.5 text-xs font-bold shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Automatically run OCR & HCB validation across all pending submissions"
+                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 text-xs font-bold shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Automatically validate pending submissions against the HCB registry"
                     >
-                        <Sparkles size={14} className={autoVerifyingAll ? 'animate-spin' : ''} />
-                        <span>{autoVerifyingAll ? 'Auditing All...' : 'Auto-Verify All (AI)'}</span>
+                        <ShieldCheck size={14} className={autoVerifyingAll ? 'animate-spin' : ''} />
+                        <span>{autoVerifyingAll ? 'Checking All...' : 'Auto-Verify All'}</span>
                     </button>
 
                     <button
@@ -650,6 +739,7 @@ export default function VerificationQueue({ onViewChange }) {
 
             <VerificationInspectionModal
                 inspectingItem={inspectingItem}
+                setInspectingItem={setInspectingItem}
                 inspectingType={inspectingType}
                 closeInspection={closeInspection}
                 processingId={processingId}
@@ -676,6 +766,7 @@ export default function VerificationQueue({ onViewChange }) {
                 setNewMenuItemName={setNewMenuItemName}
                 addingMenuItem={addingMenuItem}
                 handleAddMenuItem={handleAddMenuItem}
+                handleDeleteMenuItem={handleDeleteMenuItem}
                 adminNotes={adminNotes}
                 setAdminNotes={setAdminNotes}
             />
