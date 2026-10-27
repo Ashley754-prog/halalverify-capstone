@@ -40,6 +40,20 @@ const PRODUCT_CATEGORIES = [
     'Restaurant & Catering Menu',
 ];
 
+const QUICK_CATEGORIES = [
+    { label: 'All Items', value: 'All Categories' },
+    { label: 'Food & Beverage', value: 'Food & Beverage' },
+    { label: 'Bakery & Biscuits', value: 'Bakery & Biscuits' },
+    { label: 'Spices & Seasonings', value: 'Spices & Seasonings' },
+    { label: 'Dairy & Milk', value: 'Dairy & Milk' },
+    { label: 'Canned Fish & Meat', value: 'Canned Fish & Meat' },
+    { label: 'Instant Noodles & Pasta', value: 'Instant Noodles & Pasta' },
+    { label: 'Snacks & Chips', value: 'Snacks & Chips' },
+    { label: 'Beverages', value: 'Beverages' },
+    { label: 'Cooking Oils & Fats', value: 'Cooking Oils & Fats' },
+    { label: 'Restaurant & Catering', value: 'Restaurant & Catering Menu' },
+];
+
 const PRODUCT_STATUSES = [
     'All Statuses',
     'Halal',
@@ -364,7 +378,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         setCurrentPage(1);
         if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
         searchDebounceRef.current = setTimeout(() => {
-            loadData(1, val, selectedCategory, selectedStatus, selectedCertifier);
+            loadData(1, val, selectedCategory, selectedStatus, selectedCertifier, selectedDistrict);
         }, 350);
     };
 
@@ -374,7 +388,41 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         filtersRef.current.page = 1;
         setCurrentPage(1);
         if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-        loadData(1, '', selectedCategory, selectedStatus, selectedCertifier);
+        loadData(1, '', selectedCategory, selectedStatus, selectedCertifier, selectedDistrict);
+    };
+
+    const handleCategorySelect = (cat) => {
+        setSelectedCategory(cat);
+        filtersRef.current.category = cat;
+        filtersRef.current.page = 1;
+        setCurrentPage(1);
+        loadData(1, searchQuery, cat, selectedStatus, selectedCertifier, selectedDistrict);
+    };
+
+    const handleClearFilter = (filterType) => {
+        if (filterType === 'search') {
+            handleClearSearch();
+        } else if (filterType === 'category') {
+            handleCategorySelect('All Categories');
+        } else if (filterType === 'status') {
+            setSelectedStatus('All Statuses');
+            filtersRef.current.status = 'All Statuses';
+            filtersRef.current.page = 1;
+            setCurrentPage(1);
+            loadData(1, searchQuery, selectedCategory, 'All Statuses', selectedCertifier, selectedDistrict);
+        } else if (filterType === 'certifier') {
+            setSelectedCertifier('ALL');
+            filtersRef.current.certifier = 'ALL';
+            filtersRef.current.page = 1;
+            setCurrentPage(1);
+            loadData(1, searchQuery, selectedCategory, selectedStatus, 'ALL', selectedDistrict);
+        } else if (filterType === 'district') {
+            setSelectedDistrict('all');
+            filtersRef.current.district = 'all';
+            filtersRef.current.page = 1;
+            setCurrentPage(1);
+            loadData(1, searchQuery, selectedCategory, selectedStatus, selectedCertifier, 'all');
+        }
     };
 
     const showToast = (message, type = 'success') => {
@@ -499,7 +547,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
 
             showToast(isEdit ? 'Product updated successfully' : 'Product added successfully', 'success');
             closeModal();
-            loadData(currentPage, searchQuery, selectedCategory, selectedStatus, selectedCertifier);
+            loadData(currentPage, searchQuery, selectedCategory, selectedStatus, selectedCertifier, selectedDistrict);
         } catch (err) {
             console.error(err);
             showToast(err.message || 'Error saving product', 'error');
@@ -524,7 +572,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
 
             showToast('Product removed from catalog', 'success');
             closeModal();
-            loadData(currentPage, searchQuery, selectedCategory, selectedStatus, selectedCertifier);
+            loadData(currentPage, searchQuery, selectedCategory, selectedStatus, selectedCertifier, selectedDistrict);
         } catch (err) {
             console.error(err);
             showToast(err.message || 'Error deleting product', 'error');
@@ -543,7 +591,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         if (newPage < 1 || newPage > totalPages || newPage === currentPage) return;
         setCurrentPage(newPage);
         filtersRef.current.page = newPage;
-        loadData(newPage, searchQuery, selectedCategory, selectedStatus, selectedCertifier);
+        loadData(newPage, searchQuery, selectedCategory, selectedStatus, selectedCertifier, selectedDistrict);
         window.scrollTo({ top: 120, behavior: 'smooth' });
     };
 
@@ -608,7 +656,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                     if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-                                    loadData(1, searchQuery, selectedCategory, selectedStatus, selectedCertifier);
+                                    loadData(1, searchQuery, selectedCategory, selectedStatus, selectedCertifier, selectedDistrict);
                                 }
                             }}
                             placeholder="Search by product name, brand, manufacturer, or certificate #..."
@@ -639,6 +687,27 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                     </button>
                 </div>
 
+                {/* Fast 1-Tap Category Pills */}
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 select-none -mx-1 px-1">
+                    {QUICK_CATEGORIES.map((cat) => {
+                        const isSelected = selectedCategory === cat.value;
+                        return (
+                            <button
+                                key={cat.value}
+                                type="button"
+                                onClick={() => handleCategorySelect(cat.value)}
+                                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                                    isSelected
+                                        ? 'bg-emerald-600 text-white shadow-xs'
+                                        : 'bg-slate-100 hover:bg-slate-200/80 text-slate-600'
+                                }`}
+                            >
+                                {cat.label}
+                            </button>
+                        );
+                    })}
+                </div>
+
                 {/* Filter Tags */}
                 <div className="flex flex-wrap sm:flex-nowrap gap-2 sm:gap-2.5 items-center pt-2 border-t border-slate-100 text-xs">
                     <div className="flex items-center gap-1 text-slate-500 font-medium shrink-0">
@@ -654,7 +723,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                             filtersRef.current.category = val;
                             filtersRef.current.page = 1;
                             setCurrentPage(1);
-                            loadData(1, searchQuery, val, selectedStatus, selectedCertifier);
+                            loadData(1, searchQuery, val, selectedStatus, selectedCertifier, selectedDistrict);
                         }}
                         className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500"
                     >
@@ -674,7 +743,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                             filtersRef.current.status = val;
                             filtersRef.current.page = 1;
                             setCurrentPage(1);
-                            loadData(1, searchQuery, selectedCategory, val, selectedCertifier);
+                            loadData(1, searchQuery, selectedCategory, val, selectedCertifier, selectedDistrict);
                         }}
                         className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500"
                     >
@@ -733,11 +802,11 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                         <button
                             type="button"
                             onClick={handleResetFilters}
-                            className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] text-slate-600 font-semibold transition shrink-0"
+                            className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] text-slate-600 font-semibold transition shrink-0 cursor-pointer"
                             title="Reset all search and filter conditions"
                         >
                             <RotateCcw size={12} />
-                            <span>Reset Filters</span>
+                            <span>Reset</span>
                         </button>
                     )}
 
@@ -746,6 +815,60 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                         <strong className="text-slate-700">{totalItems}</strong> products
                     </span>
                 </div>
+
+                {/* Active Filter Chips */}
+                {isFilterActive && (
+                    <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-slate-100 text-xs">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Active:</span>
+                        {searchQuery && (
+                            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md text-[11px] font-medium">
+                                Search: &quot;{searchQuery}&quot;
+                                <button type="button" onClick={() => handleClearFilter('search')} className="hover:text-emerald-950 cursor-pointer">
+                                    <X size={12} />
+                                </button>
+                            </span>
+                        )}
+                        {selectedCategory !== 'All Categories' && (
+                            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md text-[11px] font-medium">
+                                {selectedCategory}
+                                <button type="button" onClick={() => handleClearFilter('category')} className="hover:text-emerald-950 cursor-pointer">
+                                    <X size={12} />
+                                </button>
+                            </span>
+                        )}
+                        {selectedStatus !== 'All Statuses' && (
+                            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md text-[11px] font-medium">
+                                Status: {selectedStatus}
+                                <button type="button" onClick={() => handleClearFilter('status')} className="hover:text-emerald-950 cursor-pointer">
+                                    <X size={12} />
+                                </button>
+                            </span>
+                        )}
+                        {selectedCertifier !== 'ALL' && (
+                            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md text-[11px] font-medium">
+                                Certifier: {selectedCertifier}
+                                <button type="button" onClick={() => handleClearFilter('certifier')} className="hover:text-emerald-950 cursor-pointer">
+                                    <X size={12} />
+                                </button>
+                            </span>
+                        )}
+                        {selectedDistrict !== 'all' && (
+                            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md text-[11px] font-medium">
+                                District: {ZAMBOANGA_DISTRICTS.find(d => d.id === selectedDistrict)?.shortLabel || selectedDistrict}
+                                <button type="button" onClick={() => handleClearFilter('district')} className="hover:text-emerald-950 cursor-pointer">
+                                    <X size={12} />
+                                </button>
+                            </span>
+                        )}
+                        <button
+                            type="button"
+                            onClick={handleResetFilters}
+                            className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 underline underline-offset-2 ml-1 cursor-pointer"
+                        >
+                            Clear all
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Error Message */}

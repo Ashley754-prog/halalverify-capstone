@@ -79,7 +79,10 @@ export default function ProductCard({
     const evidenceUrl = getSafeUrl(product.image_url);
 
     return (
-        <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 p-3 sm:p-5 mb-4 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-3 sm:space-y-4 min-w-0">
+        <div
+            style={{ contentVisibility: 'auto', containIntrinsicSize: '0 260px' }}
+            className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 p-3 sm:p-5 mb-4 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-3 sm:space-y-4 min-w-0"
+        >
             <div className="space-y-2 sm:space-y-3">
                 {/* Header: Brand & Status Badge */}
                 <div className="flex items-start justify-between gap-2">
