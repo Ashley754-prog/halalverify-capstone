@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     ShieldCheck,
     ShieldAlert,
@@ -17,8 +17,42 @@ import {
 } from 'lucide-react';
 import { simplifyHalalText, simplifyStatus } from '../../utils/textFormatters';
 
+const CERTIFIER_LOGO_MAP = [
+    { keys: ['idcp', 'philippines2', 'da\'wah', 'dawah'], src: '/logos/IDCP.jpg' },
+    { keys: ['hdip', 'philippines3', 'halal development institute'], src: '/logos/HDIP.jpg' },
+    { keys: ['ncmf', 'national_halal_logo', 'philippines1', 'national halal seal', 'dti'], src: '/logos/NCMF.jpg' },
+    { keys: ['hiccip'], src: '/logos/HICCIP.png' },
+    { keys: ['prime'], src: '/logos/PRIME.png' },
+    { keys: ['minha', 'mindanao halal authority'], src: '/logos/MinHA.png' },
+    { keys: ['philcosed'], src: '/logos/Philcosed.png' },
+    { keys: ['ahip'], src: '/logos/AHIP.png' },
+    { keys: ['bpcc'], src: '/logos/BPCC.png' },
+    { keys: ['busc'], src: '/logos/BUSC.png' },
+    { keys: ['fiqhi'], src: '/logos/FIQHI.png' },
+    { keys: ['maslaha'], src: '/logos/MASLAHA.png' },
+    { keys: ['mmhcb'], src: '/logos/MMHCB.png' },
+    { keys: ['pucoi'], src: '/logos/PUCOI.png' },
+    { keys: ['invalid', 'counterfeit', 'unrecognized'], src: '/logos/Invalid_Logo.png' },
+];
+
+const resolveReferenceLogoSrc = (scanResult) => {
+    if (!scanResult?.logoDetected || scanResult.isAmbiguousHcb) return null;
+    const rawClass = (scanResult.detectedLogos?.[0]?.class_name || '').toLowerCase();
+    const rawLabel = (scanResult.detectedLogos?.[0]?.label || '').toLowerCase();
+    const bodyText = (scanResult.logoBody || '').toLowerCase();
+    const combined = `${rawClass} ${rawLabel} ${bodyText}`;
+
+    for (const item of CERTIFIER_LOGO_MAP) {
+        if (item.keys.some((k) => combined.includes(k))) {
+            return item.src;
+        }
+    }
+    return null;
+};
+
 export const LabelResultsSheet = ({
     scanResult,
+    selectedImage = null,
     isLoading,
     onReset,
     onRetry = null,
@@ -27,6 +61,51 @@ export const LabelResultsSheet = ({
     onScanSecondary,
 }) => {
     const [touchStartY, setTouchStartY] = useState(null);
+    const [croppedLogoUrl, setCroppedLogoUrl] = useState(null);
+
+    const referenceLogoSrc = resolveReferenceLogoSrc(scanResult);
+
+    // Fallback: crop the detected logo region from the camera scan if no static reference graphic matches
+    useEffect(() => {
+        if (!scanResult?.logoDetected || referenceLogoSrc) {
+            setCroppedLogoUrl(null);
+            return;
+        }
+        const box = scanResult.detectedLogos?.[0]?.norm_box || scanResult.bestBox;
+        const sourceImg = selectedImage || scanResult.images?.[0];
+        if (!box || box.length < 4 || !sourceImg) {
+            setCroppedLogoUrl(null);
+            return;
+        }
+
+        let isCancelled = false;
+        const img = new Image();
+        img.onload = () => {
+            if (isCancelled) return;
+            try {
+                const [x1, y1, x2, y2] = box;
+                const sx = Math.max(0, Math.floor(x1 * img.width));
+                const sy = Math.max(0, Math.floor(y1 * img.height));
+                const sw = Math.max(1, Math.floor((x2 - x1) * img.width));
+                const sh = Math.max(1, Math.floor((y2 - y1) * img.height));
+                const canvas = document.createElement('canvas');
+                canvas.width = sw;
+                canvas.height = sh;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+                setCroppedLogoUrl(canvas.toDataURL('image/jpeg', 0.9));
+            } catch {
+                setCroppedLogoUrl(null);
+            }
+        };
+        img.src = sourceImg;
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [scanResult, selectedImage, referenceLogoSrc]);
+
+    const displayedLogoSrc = referenceLogoSrc || croppedLogoUrl;
 
     const handleTouchStart = (e) => {
         setTouchStartY(e.touches[0].clientY);
@@ -161,7 +240,109 @@ export const LabelResultsSheet = ({
                         </div>
                     ) : !isLoading && scanResult ? (
                         <div className="space-y-3">
-                            {/* 1. Primary Verdict Card (Always #1 at the top) */}
+                            {/* 1. Certifying Body / Halal Seal Hero Card (Placed #1 ABOVE Halal Status per Mock Defense revision) */}
+                            {scanResult.logoDetected ? (
+                                <div
+                                    className={`relative overflow-hidden rounded-2xl border p-4 flex items-center gap-3.5 transition ${
+                                        scanResult.isInvalidLogo
+                                            ? 'bg-gradient-to-br from-red-950/70 via-slate-900 to-slate-900 border-red-500/40'
+                                            : 'bg-gradient-to-br from-emerald-950/50 via-slate-800/90 to-slate-900 border-emerald-500/35 shadow-lg shadow-emerald-950/20'
+                                    }`}
+                                >
+                                    {/* Circular Medallion Emblem (Clips rectangular borders into a sleek circular seal) */}
+                                    <div className="relative shrink-0">
+                                        <div
+                                            className={`w-16 h-16 rounded-full p-0.5 flex items-center justify-center shadow-md ${
+                                                scanResult.isInvalidLogo
+                                                    ? 'bg-gradient-to-b from-red-400 to-red-600 ring-4 ring-red-500/15'
+                                                    : 'bg-gradient-to-b from-emerald-400 to-emerald-600 ring-4 ring-emerald-500/15'
+                                            }`}
+                                        >
+                                            {displayedLogoSrc ? (
+                                                <div className="w-full h-full rounded-full overflow-hidden bg-slate-900 flex items-center justify-center">
+                                                    <img
+                                                        src={displayedLogoSrc}
+                                                        alt={scanResult.logoBody || 'Detected Halal Seal'}
+                                                        className="w-full h-full object-cover scale-125"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center">
+                                                    {scanResult.isInvalidLogo ? (
+                                                        <ShieldAlert size={28} className="text-red-400" />
+                                                    ) : (
+                                                        <ShieldCheck size={28} className="text-emerald-400" />
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div
+                                            className={`absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center border-2 border-slate-900 ${
+                                                scanResult.isInvalidLogo ? 'bg-red-500 text-white' : 'bg-emerald-500 text-slate-950'
+                                            }`}
+                                        >
+                                            {scanResult.isInvalidLogo ? <ShieldAlert size={11} /> : <CheckCircle2 size={12} strokeWidth={3} />}
+                                        </div>
+                                    </div>
+
+                                    {/* Authority Details */}
+                                    <div className="min-w-0 flex-1 space-y-1">
+                                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
+                                            Certifying Body / Seal
+                                        </span>
+                                        <strong className="text-white font-bold text-sm sm:text-base leading-snug block break-words">
+                                            {scanResult.logoBody}
+                                        </strong>
+                                        {scanResult.logoConfidence > 0 && (
+                                            <div className="pt-0.5">
+                                                <span
+                                                    className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${
+                                                        scanResult.isInvalidLogo
+                                                            ? 'text-red-200 bg-red-900/60 border-red-500/40'
+                                                            : 'text-emerald-300 bg-emerald-950/80 border-emerald-500/35'
+                                                    }`}
+                                                >
+                                                    {scanResult.isInvalidLogo ? (
+                                                        <span>Unrecognized Mark ({scanResult.logoConfidence}%)</span>
+                                                    ) : (
+                                                        <span>Accredited Seal · {scanResult.logoConfidence}% Match</span>
+                                                    )}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="rounded-2xl border border-slate-700/80 bg-slate-800/70 p-3.5 flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className="w-11 h-11 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-slate-400 shrink-0">
+                                            <ShieldCheck size={20} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
+                                                Certifying Body / Seal
+                                            </span>
+                                            <p className="text-xs sm:text-sm font-bold text-slate-200 truncate">
+                                                No Halal Seal on This Side
+                                            </p>
+                                            <p className="text-[11px] text-slate-400 truncate">
+                                                Screened using printed ingredient list
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {onScanSecondary && (
+                                        <button
+                                            type="button"
+                                            onClick={() => onScanSecondary('logo')}
+                                            className="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 text-xs font-semibold shrink-0 transition cursor-pointer"
+                                        >
+                                            + Scan Seal
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* 2. Primary Verdict Card (Halal Status) */}
                             <div
                                 className={`p-4 rounded-2xl border flex items-center justify-between gap-3 ${
                                     scanResult.verdict === 'Green'
@@ -219,65 +400,6 @@ export const LabelResultsSheet = ({
                                         <RefreshCw size={13} className="shrink-0" />
                                         <span>Retry Scan Now (Server Awake)</span>
                                     </button>
-                                </div>
-                            )}
-
-                            {/* 2. Modern Horizontal Certifying Body Badge (No boxy white borders, read-only) */}
-                            {scanResult.logoDetected ? (
-                                <div
-                                    className={`rounded-xl border p-3 flex items-center justify-between gap-3 ${
-                                        scanResult.isInvalidLogo
-                                            ? 'bg-red-950/40 border-red-500/40'
-                                            : 'bg-slate-800/90 border-emerald-500/35'
-                                    }`}
-                                >
-                                    <div className="flex items-center gap-3 min-w-0">
-                                        <div
-                                            className={`w-10 h-10 rounded-xl flex items-center justify-center border shrink-0 ${
-                                                scanResult.isInvalidLogo
-                                                    ? 'bg-red-500/15 border-red-500/40 text-red-400'
-                                                    : 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
-                                            }`}
-                                        >
-                                            {scanResult.isInvalidLogo ? <ShieldAlert size={20} /> : <ShieldCheck size={20} />}
-                                        </div>
-                                        <div className="min-w-0">
-                                            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
-                                                {scanResult.isInvalidLogo ? 'Unrecognized Seal' : 'Accredited Halal Seal'}
-                                            </span>
-                                            <strong className="text-white font-bold text-xs sm:text-sm block truncate">
-                                                {scanResult.logoBody}
-                                            </strong>
-                                        </div>
-                                    </div>
-
-                                    {scanResult.logoConfidence > 0 && (
-                                        <span
-                                            className={`shrink-0 inline-flex items-center gap-1 font-mono text-[10px] px-2.5 py-1 rounded-full border ${
-                                                scanResult.isInvalidLogo
-                                                    ? 'text-red-200 bg-red-900/60 border-red-500/40'
-                                                    : 'text-emerald-300 bg-emerald-950/80 border-emerald-500/35'
-                                            }`}
-                                        >
-                                            {scanResult.logoConfidence}% match
-                                        </span>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/70 flex items-center justify-between gap-2 text-xs text-slate-300">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <ShieldCheck size={15} className="text-slate-500 shrink-0" />
-                                        <span className="truncate text-slate-400">No Halal seal on this side</span>
-                                    </div>
-                                    {onScanSecondary && (
-                                        <button
-                                            type="button"
-                                            onClick={() => onScanSecondary('logo')}
-                                            className="px-2.5 py-1 rounded-lg bg-slate-700/80 hover:bg-slate-700 text-emerald-300 text-[11px] font-semibold shrink-0 transition cursor-pointer"
-                                        >
-                                            + Scan Front Seal
-                                        </button>
-                                    )}
                                 </div>
                             )}
 
@@ -384,7 +506,15 @@ export const LabelResultsSheet = ({
                                 </button>
                             )}
 
-                            {/* 5. Footer Actions */}
+                            {/* 5. Concise 2-Sentence Advisory Disclaimer Card */}
+                            <div className="p-3 rounded-xl bg-slate-800/50 border border-slate-700/70 flex items-start gap-2.5 text-[11px] text-slate-300 leading-relaxed">
+                                <Info size={14} className="text-slate-400 shrink-0 mt-0.5" />
+                                <p>
+                                    <strong className="text-slate-200 font-semibold">Advisory Disclaimer:</strong> This result is an automated screening based on visible packaging text and certification seals. Please verify the physical seal on the package or abstain if in doubt.
+                                </p>
+                            </div>
+
+                            {/* 6. Footer Actions */}
                             <div className="pt-1 flex flex-wrap gap-2">
                                 <button
                                     type="button"
@@ -432,12 +562,6 @@ export const LabelResultsSheet = ({
                                     <span>Report</span>
                                 </button>
                             </div>
-
-                            {/* 6. Modern 1-Line Subtle Advisory Caption */}
-                            <p className="text-[10px] text-slate-500 text-center flex items-center justify-center gap-1 pt-0.5">
-                                <Info size={11} className="shrink-0 text-slate-500" />
-                                <span>Automated packaging check · Verify physical seal if in doubt.</span>
-                            </p>
                         </div>
                     ) : null}
                 </div>
