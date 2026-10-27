@@ -459,8 +459,8 @@ def detect_halal_logo(image_input, run_crop_ocr: bool = True) -> Dict:
 
             if (
                 has_table_text
-                or (crop_word_count >= 10 and not has_seal_text)
-                or (box_area_ratio > 0.20 and max(orig_w, orig_h) >= 320 and not has_seal_text)
+                or (crop_word_count >= 15 and not has_seal_text)
+                or (box_area_ratio > 0.40 and crop_word_count >= 10 and not has_seal_text)
             ):
                 return {
                     "logoDetected": False,
