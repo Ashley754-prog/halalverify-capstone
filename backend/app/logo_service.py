@@ -497,7 +497,7 @@ def detect_halal_logo(image_input, run_crop_ocr: bool = True) -> Dict:
 
     except Exception as e:
         logger.error(f"Error during logo detection inference: {e}")
-        return _empty_logo_result(f"Error: {str(e)}")
+        return _empty_logo_result("Inference processing error")
 
 
 def _empty_logo_result(reason: str) -> Dict:

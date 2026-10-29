@@ -407,7 +407,7 @@ def get_analytics_trends(
         }
     except Exception as e:
         logger.error("Error in analytics trends: %s", e)
-        raise HTTPException(status_code=500, detail=f"Failed to generate analytics trends: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate analytics trends")
 
 
 @router.get("/analytics/reports-summary")
@@ -454,7 +454,7 @@ def get_reports_summary(user: dict = Depends(require_admin)):
         }
     except Exception as e:
         logger.error("Error in reports summary: %s", e)
-        raise HTTPException(status_code=500, detail=f"Failed to fetch reports summary: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch reports summary")
 
 
 # ==========================================================
@@ -489,7 +489,8 @@ def list_admin_additives(
             ]
         return {"success": True, "data": data}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch additives: {str(e)}")
+        logger.error("Failed to fetch additives: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to fetch additives")
 
 
 @router.post("/additives")
@@ -515,7 +516,8 @@ def create_admin_additive(additive: AdditiveCreate, user: dict = Depends(require
             raise HTTPException(status_code=400, detail="Failed to create additive")
         return {"success": True, "data": res.data[0]}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create additive: {str(e)}")
+        logger.error("Failed to create additive: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to create additive")
 
 
 @router.put("/additives/{additive_id}")
@@ -545,7 +547,8 @@ def update_admin_additive(additive_id: str, additive: AdditiveUpdate, user: dict
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to update additive: {str(e)}")
+        logger.error("Failed to update additive: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to update additive")
 
 
 @router.delete("/additives/{additive_id}")
@@ -561,7 +564,8 @@ def delete_admin_additive(additive_id: str, user: dict = Depends(require_admin))
         res = supabase.table("additives").delete().eq("id", additive_id).execute()
         return {"success": True, "data": {"id": additive_id, "deleted": True}}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to delete additive: {str(e)}")
+        logger.error("Failed to delete additive: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to delete additive")
 
 
 @router.get("/hcb-registry")
@@ -579,7 +583,8 @@ def list_admin_hcb_registry(
         res = req.execute()
         return {"success": True, "data": res.data or []}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch HCB registry: {str(e)}")
+        logger.error("Failed to fetch HCB registry: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to fetch HCB registry")
 
 
 @router.post("/hcb-registry")
@@ -598,7 +603,8 @@ def create_admin_hcb_entry(hcb: HcbRegistryCreate, user: dict = Depends(require_
             raise HTTPException(status_code=400, detail="Failed to create HCB registry entry")
         return {"success": True, "data": res.data[0]}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create HCB entry: {str(e)}")
+        logger.error("Failed to create HCB entry: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to create HCB entry")
 
 
 @router.put("/hcb-registry/{hcb_id}")
@@ -623,7 +629,8 @@ def update_admin_hcb_entry(hcb_id: str, hcb: HcbRegistryUpdate, user: dict = Dep
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to update HCB entry: {str(e)}")
+        logger.error("Failed to update HCB entry: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to update HCB entry")
 
 
 @router.delete("/hcb-registry/{hcb_id}")
@@ -640,7 +647,8 @@ def delete_admin_hcb_entry(hcb_id: str, user: dict = Depends(require_admin)):
         res = supabase.table("certifying_bodies").delete().eq("id", hcb_id).execute()
         return {"success": True, "data": {"id": hcb_id, "deleted": True}}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to delete HCB entry: {str(e)}")
+        logger.error("Failed to delete HCB entry: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to delete HCB entry")
 
 
 # ---------------------------------------------------------------------------

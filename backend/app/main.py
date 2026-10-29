@@ -32,7 +32,16 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="HalalVerify API", version="0.1.0", lifespan=lifespan)
+enable_docs = os.getenv("ENABLE_DOCS", "false").lower() in ("true", "1", "yes")
+
+app = FastAPI(
+    title="HalalVerify API",
+    version="0.1.0",
+    lifespan=lifespan,
+    docs_url="/docs" if enable_docs else None,
+    redoc_url="/redoc" if enable_docs else None,
+    openapi_url="/openapi.json" if enable_docs else None,
+)
 
 
 # ---------------------------------------------------------------------------

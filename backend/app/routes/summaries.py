@@ -1,4 +1,5 @@
 from app.auth import get_current_user, require_admin
+from app.supabase_client import supabase
 from app.utils.db_helpers import count_by_status, fetch_table_rows
 from fastapi import APIRouter, Depends
 
@@ -7,6 +8,15 @@ router = APIRouter(tags=["summaries"])
 
 @router.get("/dashboard-summary")
 def get_dashboard_summary(user: dict = Depends(get_current_user)):
+    user_id = getattr(user, "id", None) or (user.get("id") if isinstance(user, dict) else None)
+    is_admin = False
+    if user_id:
+        try:
+            profile_res = supabase.table("profiles").select("role").eq("id", user_id).single().execute()
+            is_admin = (profile_res.data or {}).get("role") == "admin"
+        except Exception:
+            is_admin = False
+
     additives = fetch_table_rows("additives")
     establishments = fetch_table_rows("establishments")
     products = fetch_table_rows("products")
@@ -14,8 +24,13 @@ def get_dashboard_summary(user: dict = Depends(get_current_user)):
     scan_history = fetch_table_rows("scan_history")
     issue_reports = fetch_table_rows("issue_reports")
 
-    label_scans = [scan for scan in scan_history if scan.get("mode") == "label"]
-    certificate_scans = [scan for scan in scan_history if scan.get("mode") == "certificate"]
+    # Regular users only see their own scan history; admins view system-wide scans
+    scoped_scans = scan_history if is_admin else [
+        s for s in scan_history if str(s.get("user_id") or "") == str(user_id)
+    ]
+
+    label_scans = [scan for scan in scoped_scans if scan.get("mode") == "label"]
+    certificate_scans = [scan for scan in scoped_scans if scan.get("mode") == "certificate"]
     flagged_additives = [
         item for item in additives
         if item.get("status") in ["Haram", "Doubtful", "Needs Review"]
@@ -29,7 +44,7 @@ def get_dashboard_summary(user: dict = Depends(get_current_user)):
         "success": True,
         "data": {
             "totals": {
-                "scans": len(scan_history),
+                "scans": len(scoped_scans),
                 "label_scans": len(label_scans),
                 "certificate_scans": len(certificate_scans),
                 "additives": len(additives),
@@ -37,16 +52,16 @@ def get_dashboard_summary(user: dict = Depends(get_current_user)):
                 "establishments": len(establishments),
                 "products": len(products),
                 "manufacturers": len(manufacturers),
-                "open_reports": len(open_reports),
+                "open_reports": len(open_reports) if is_admin else 0,
             },
             "breakdowns": {
-                "scan_verdicts": count_by_status(scan_history, "verdict"),
+                "scan_verdicts": count_by_status(scoped_scans, "verdict"),
                 "additive_statuses": count_by_status(additives, "status"),
                 "establishment_statuses": count_by_status(establishments, "halal_status"),
                 "product_statuses": count_by_status(products, "status"),
-                "report_statuses": count_by_status(issue_reports, "status"),
+                "report_statuses": count_by_status(issue_reports, "status") if is_admin else {},
             },
-            "latest_scans": scan_history[:5],
+            "latest_scans": scoped_scans[:5],
         },
     }
 

@@ -41,9 +41,9 @@ export async function ensureUserProfile(user) {
                 email: email,
                 full_name: fullName,
                 role: 'user',
-            }, { onConflict: 'id' })
+            }, { onConflict: 'id', ignoreDuplicates: true })
             .select('role')
-            .single();
+            .maybeSingle();
 
         if (!upsertError && newProfile?.role) {
             return newProfile.role;

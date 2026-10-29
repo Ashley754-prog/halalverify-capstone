@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 
 class AdditiveCreate(BaseModel):
@@ -92,20 +92,30 @@ class EstablishmentUpdate(BaseModel):
 
 
 class EstablishmentSubmissionRequest(BaseModel):
-    name: str
-    type: Optional[str] = "Restaurant"
-    address: str
-    city: Optional[str] = "Zamboanga City"
-    halal_tier: Optional[str] = "halal_certified"  # halal_certified, muslim_owned, muslim_friendly, vegetarian_vegan
-    contact_number: Optional[str] = None
-    social_media_url: Optional[str] = None
-    submitter_role: Optional[str] = "community"  # owner, community
-    certifying_body_id: Optional[str] = None
-    certificate_number: Optional[str] = None
-    expiry_date: Optional[str] = None
-    certificate_url: Optional[str] = None
-    logo_url: Optional[str] = None
+    name: str = Field(..., max_length=255)
+    type: Optional[str] = Field("Restaurant", max_length=100)
+    address: str = Field(..., max_length=500)
+    city: Optional[str] = Field("Zamboanga City", max_length=100)
+    halal_tier: Optional[str] = Field("halal_certified", max_length=50)  # halal_certified, muslim_owned, muslim_friendly, vegetarian_vegan
+    contact_number: Optional[str] = Field(None, max_length=50)
+    social_media_url: Optional[str] = Field(None, max_length=2048)
+    submitter_role: Optional[str] = Field("community", max_length=50)  # owner, community
+    certifying_body_id: Optional[str] = Field(None, max_length=100)
+    certificate_number: Optional[str] = Field(None, max_length=150)
+    expiry_date: Optional[str] = Field(None, max_length=50)
+    certificate_url: Optional[str] = Field(None, max_length=4096)
+    logo_url: Optional[str] = Field(None, max_length=4096)
     amenities: Optional[list[str]] = None
     product_names: Optional[list[str]] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+
+    @field_validator("social_media_url", "certificate_url", "logo_url")
+    @classmethod
+    def validate_safe_urls(cls, v: Optional[str]) -> Optional[str]:
+        if not v:
+            return None
+        v_clean = v.strip()
+        if not (v_clean.startswith("http://") or v_clean.startswith("https://") or v_clean.startswith("data:image/")):
+            raise ValueError("URL must use http, https, or safe data URI")
+        return v_clean
