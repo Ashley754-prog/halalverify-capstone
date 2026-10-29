@@ -301,17 +301,12 @@ export const LabelResultsSheet = ({
                                             <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
                                                 Certifying Body / Seal
                                             </span>
-                                            <p className="text-xs sm:text-sm font-bold text-slate-200 truncate">
-                                                No Halal Seal on This Side
+                                            <p className="text-xs sm:text-sm font-bold text-slate-200">
+                                                No Halal Seal Detected
                                             </p>
-                                            <button
-                                                type="button"
-                                                onClick={() => setSelectedHcbProfile(getHcbProfile(null))}
-                                                className="text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-0.5 pt-0.5 cursor-pointer"
-                                            >
-                                                <span>Accredited HCB Directory</span>
-                                                <ChevronRight size={10} />
-                                            </button>
+                                            <p className="text-[11px] text-slate-400 truncate">
+                                                Screened using printed ingredient list
+                                            </p>
                                         </div>
                                     </div>
                                     {onScanSecondary && (
@@ -504,7 +499,7 @@ export const LabelResultsSheet = ({
                             )}
 
                             {/* Optional Catalog Lookup Shortcut if no logo was found */}
-                            {scanResult.riskLevel === 'No Halal Logo Found' && (
+                            {(scanResult.riskLevel === 'No Halal Logo Found' || scanResult.riskLevel === 'Halal-Compliant Ingredients') && (
                                 <button
                                     type="button"
                                     onClick={() => onViewChange?.('products')}

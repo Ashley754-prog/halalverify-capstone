@@ -1109,8 +1109,6 @@ def explain_label_verdict(
         summary_msg = (
             f"Screened ingredient list. {item_label} source verification (plant vs. animal origin)."
         )
-        if logo_detected:
-            summary_msg += f" Recognized seal: {logo_body} ({logo_confidence}% match)."
 
         return {
             "verdict": "Yellow",
@@ -1185,14 +1183,13 @@ def explain_label_verdict(
     # 9. Clean Ingredients, but NO Logo Detected on this photo -> Yellow
     return {
         "verdict": "Yellow",
-        "riskLevel": "No Halal Logo Found",
+        "riskLevel": "Halal-Compliant Ingredients",
         "analysisSummary": (
-            "Ingredients appear free of prohibited additives, but no accredited Halal certification "
-            "logo was detected on this side of the packaging. Scan the front panel for a Halal seal."
+            "Screened ingredient declaration contains no prohibited or doubtful additives."
         ),
         "recommendations": [
             "Ingredient list appears free of known prohibited E-codes and haram substances.",
-            "Tap '+ Scan Logo Side' to capture the Halal certification seal on the front of the package.",
+            "Tap '+ Scan Seal' to capture the Halal certification seal on the front of the package.",
             "Cross-reference brand name in the HalalVerify Product Catalog.",
         ],
     }

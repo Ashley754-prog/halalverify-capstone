@@ -149,9 +149,6 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
         riskLevel = "Doubtful Ingredient";
         const itemLabel = doubtfulCount === 1 ? "1 ingredient requires" : `${doubtfulCount} ingredients require`;
         analysisSummary = `Screened ${totalPanels} packaging panels. ${itemLabel} source verification (plant vs. animal origin).`;
-        if (logoDetected) {
-            analysisSummary += ` Recognized seal: ${logoBody} (${logoConfidence}% match).`;
-        }
         recommendations = [
             "Verify the biological source of the flagged additive with the manufacturer.",
             "Check whether the product is covered by the certifying body."
@@ -181,8 +178,8 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
         ];
     } else if (combinedOcrText.length > 0) {
         verdict = "Yellow";
-        riskLevel = "No Halal Logo Found";
-        analysisSummary = `Screened ingredients across ${totalPanels} panels and found no prohibited additives, but no official Halal certification seal was detected.`;
+        riskLevel = "Halal-Compliant Ingredients";
+        analysisSummary = `Screened ingredients across ${totalPanels} panels and found no prohibited or doubtful additives.`;
         recommendations = [
             "Ingredient list appears free of known prohibited additives.",
             "Capture the side of the packaging showing the official Halal certification seal."
