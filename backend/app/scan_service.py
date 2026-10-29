@@ -953,7 +953,7 @@ def fuse_logo_and_ocr_evidence(logo_result: dict, extracted_text: str) -> dict:
 
     # Moderate/Visual YOLOv8 seal -> Corroborate using Visual Class, Crop OCR, Label OCR, or Catalog
     vis_code = (logo_result.get("visualCandidateCode") or "").strip().upper()
-    if vis_code in HCB_METADATA_BY_CODE and visual_conf >= 42.0:
+    if vis_code in HCB_METADATA_BY_CODE and visual_conf >= 35.0:
         c_name, c_id, c_label, _ = HCB_METADATA_BY_CODE[vis_code]
         fused_conf = round(min(96.0, visual_conf + (15.0 if best_text_match else 0.0)), 1)
         logo_result["logoConfidence"] = fused_conf

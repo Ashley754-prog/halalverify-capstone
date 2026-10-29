@@ -16,6 +16,8 @@ import {
     Info,
 } from 'lucide-react';
 import { simplifyHalalText, simplifyStatus } from '../../utils/textFormatters';
+import { CertifyingBodyDetailModal } from './CertifyingBodyDetailModal';
+import { getHcbProfile } from '../../data/hcbDirectory';
 
 const CERTIFIER_LOGO_MAP = [
     { keys: ['idcp', 'philippines2', 'da\'wah', 'dawah'], src: '/logos/IDCP.jpg' },
@@ -60,6 +62,7 @@ export const LabelResultsSheet = ({
     onScanSecondary,
 }) => {
     const [touchStartY, setTouchStartY] = useState(null);
+    const [selectedHcbProfile, setSelectedHcbProfile] = useState(null);
 
     const displayedLogoSrc = resolveReferenceLogoSrc(scanResult);
     const hasVerifiedSeal = Boolean(
@@ -203,11 +206,21 @@ export const LabelResultsSheet = ({
                             {/* 1. Certifying Body / Halal Seal Hero Card (Placed #1 ABOVE Halal Status per Mock Defense revision) */}
                             {hasVerifiedSeal ? (
                                 <div
-                                    className={`relative overflow-hidden rounded-2xl border p-4 flex items-center gap-3.5 transition ${
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => setSelectedHcbProfile(getHcbProfile(scanResult))}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            setSelectedHcbProfile(getHcbProfile(scanResult));
+                                        }
+                                    }}
+                                    className={`relative overflow-hidden rounded-2xl border p-4 flex items-center gap-3.5 transition cursor-pointer select-none group focus:outline-hidden focus:ring-2 ${
                                         scanResult.isInvalidLogo
-                                            ? 'bg-gradient-to-br from-red-950/70 via-slate-900 to-slate-900 border-red-500/40'
-                                            : 'bg-gradient-to-br from-emerald-950/50 via-slate-800/90 to-slate-900 border-emerald-500/35 shadow-lg shadow-emerald-950/20'
+                                            ? 'bg-gradient-to-br from-red-950/70 via-slate-900 to-slate-900 border-red-500/40 hover:border-red-400/70 focus:ring-red-400'
+                                            : 'bg-gradient-to-br from-emerald-950/50 via-slate-800/90 to-slate-900 border-emerald-500/35 hover:border-emerald-400/60 shadow-lg shadow-emerald-950/20 focus:ring-emerald-400'
                                     }`}
+                                    aria-label={`View authority details for ${scanResult.logoBody || 'Certifying Body'}`}
                                 >
                                     {/* Circular Medallion Emblem (Clips rectangular borders into a sleek circular seal) */}
                                     <div className="relative shrink-0">
@@ -247,10 +260,16 @@ export const LabelResultsSheet = ({
 
                                     {/* Authority Details */}
                                     <div className="min-w-0 flex-1 space-y-1">
-                                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
-                                            Certifying Body / Seal
-                                        </span>
-                                        <strong className="text-white font-bold text-sm sm:text-base leading-snug block break-words">
+                                        <div className="flex items-center justify-between gap-1">
+                                            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
+                                                Certifying Body / Seal
+                                            </span>
+                                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-400 group-hover:text-emerald-300 transition">
+                                                <span>Authority Profile</span>
+                                                <ChevronRight size={11} className="transition group-hover:translate-x-0.5" />
+                                            </span>
+                                        </div>
+                                        <strong className="text-white font-bold text-sm sm:text-base leading-snug block break-words group-hover:text-emerald-200 transition">
                                             {scanResult.logoBody}
                                         </strong>
                                         {scanResult.logoConfidence > 0 && (
@@ -285,9 +304,14 @@ export const LabelResultsSheet = ({
                                             <p className="text-xs sm:text-sm font-bold text-slate-200 truncate">
                                                 No Halal Seal on This Side
                                             </p>
-                                            <p className="text-[11px] text-slate-400 truncate">
-                                                Screened using printed ingredient list
-                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedHcbProfile(getHcbProfile(null))}
+                                                className="text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-0.5 pt-0.5 cursor-pointer"
+                                            >
+                                                <span>Accredited HCB Directory</span>
+                                                <ChevronRight size={10} />
+                                            </button>
                                         </div>
                                     </div>
                                     {onScanSecondary && (
@@ -551,6 +575,14 @@ export const LabelResultsSheet = ({
                     ) : null}
                 </div>
             </div>
+
+            {/* Certifying Body Detail & Verification Modal */}
+            {selectedHcbProfile && (
+                <CertifyingBodyDetailModal
+                    profile={selectedHcbProfile}
+                    onClose={() => setSelectedHcbProfile(null)}
+                />
+            )}
         </div>
     );
 };

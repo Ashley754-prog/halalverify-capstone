@@ -74,6 +74,19 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
         }
     }
 
+    // Recover specific HCB if candidate code was detected but label was left generic
+    if (logoDetected && !isInvalidLogo && (isAmbiguousHcb || logoBody.includes("Recognized Halal Certification Seal") || logoBody === "Halal Certification Seal")) {
+        const candidate = bestLogoScan.visualCandidateCode || bestLogoScan.visualCandidate || firstScan.visualCandidateCode || secondScan.visualCandidateCode;
+        if (candidate && candidate !== "Generic_Halal_Seal") {
+            const matchedCandidate = CROSS_PANEL_HCB_PATTERNS.find((p) => p.regex.test(candidate));
+            if (matchedCandidate) {
+                logoBody = matchedCandidate.label;
+                isAmbiguousHcb = false;
+                logoConfidence = Math.max(logoConfidence, 86.0);
+            }
+        }
+    }
+
     const combinedTokenCount = Number(firstScan.ingredientTokenCount || 0) + Number(secondScan.ingredientTokenCount || 0);
     const hasReadableIngredients = Boolean(
         firstScan.ingredientStatus === "READABLE_PANEL" ||
