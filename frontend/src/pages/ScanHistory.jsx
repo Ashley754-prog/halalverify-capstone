@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { RefreshCw, AlertTriangle, Layers } from 'lucide-react';
+import { RefreshCw, AlertTriangle, Layers, Lock } from 'lucide-react';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
 import { simplifyStatus } from '../utils/textFormatters';
@@ -24,6 +24,7 @@ export const ScanHistory = ({ userRole, onViewChange }) => {
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState('');
     const [selectedScan, setSelectedScan] = useState(null);
+    const [isGuest, setIsGuest] = useState(false);
 
     const isAdmin = userRole === 'admin';
 
@@ -37,16 +38,29 @@ export const ScanHistory = ({ userRole, onViewChange }) => {
 
             setError('');
 
-            // 1. Direct Supabase Query (Fast ~100ms response)
+            const { data: { session } } = await supabase.auth.getSession();
+            const currentUserId = session?.user?.id;
+
+            // Non-authenticated guest users cannot view other people's cloud scans
+            if (!isAdmin && !currentUserId) {
+                setScanHistory([]);
+                setIsGuest(true);
+                setLoading(false);
+                setRefreshing(false);
+                return;
+            }
+
+            setIsGuest(false);
+
+            // 1. Direct Supabase Query (Fast ~100ms response scoped to user or admin)
             try {
-                const { data: { session } } = await supabase.auth.getSession();
                 const buildQuery = (columns) => {
                     let q = supabase
                         .from('scan_history')
                         .select(columns)
                         .order('created_at', { ascending: false });
-                    if (!isAdmin && session?.user?.id) {
-                        q = q.eq('user_id', session.user.id);
+                    if (!isAdmin && currentUserId) {
+                        q = q.eq('user_id', currentUserId);
                     }
                     return q;
                 };
@@ -156,83 +170,115 @@ export const ScanHistory = ({ userRole, onViewChange }) => {
     return (
         <div className="p-3 sm:p-6 md:p-8 space-y-4 sm:space-y-6 flex-1 max-w-7xl mx-auto w-full">
             {/* Quick KPI Summary Strip */}
-            <ScanMetricsCards stats={stats} />
+            {!isGuest && <ScanMetricsCards stats={stats} />}
 
-            {/* Filter and Search Bar Controls */}
-            <ScanFilterBar
-                modeFilter={modeFilter}
-                setModeFilter={setModeFilter}
-                verdictFilter={verdictFilter}
-                setVerdictFilter={setVerdictFilter}
-                search={search}
-                setSearch={setSearch}
-                refreshing={refreshing}
-                onRefresh={() => fetchScanHistory(false)}
-                isAdmin={isAdmin}
-            />
-
-            {loading && (
-                <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-500 space-y-3 shadow-xs">
-                    <RefreshCw size={24} className="animate-spin text-emerald-600 mx-auto" />
-                    <p className="text-xs sm:text-sm font-semibold text-slate-700">Loading your scan records...</p>
+            {isGuest && !loading ? (
+                <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center max-w-lg mx-auto space-y-4 shadow-sm my-6">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+                        <Lock size={22} />
+                    </div>
+                    <div>
+                        <h3 className="text-base sm:text-lg font-bold text-slate-900">Personal Scan History</h3>
+                        <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm mx-auto">
+                            Sign in to automatically sync and access your verified product and ingredient scans across your devices.
+                        </p>
+                    </div>
+                    <div className="flex items-center justify-center gap-3 pt-2">
+                        <button
+                            type="button"
+                            onClick={() => onViewChange?.('login')}
+                            className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-sm transition cursor-pointer active:scale-95"
+                        >
+                            Sign In / Register
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => onViewChange?.('scanner')}
+                            className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs sm:text-sm transition cursor-pointer active:scale-95"
+                        >
+                            Start New Scan
+                        </button>
+                    </div>
                 </div>
-            )}
+            ) : (
+                <>
+                    {/* Filter and Search Bar Controls */}
+                    <ScanFilterBar
+                        modeFilter={modeFilter}
+                        setModeFilter={setModeFilter}
+                        verdictFilter={verdictFilter}
+                        setVerdictFilter={setVerdictFilter}
+                        search={search}
+                        setSearch={setSearch}
+                        refreshing={refreshing}
+                        onRefresh={() => fetchScanHistory(false)}
+                        isAdmin={isAdmin}
+                    />
 
-            {error && (
-                <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs sm:text-sm font-semibold text-rose-700 flex items-center gap-2">
-                    <AlertTriangle size={16} className="shrink-0 text-rose-600" />
-                    <span>{error}</span>
-                </div>
-            )}
-
-            {/* Mobile View: Modern Card Feed (Screens < 768px) */}
-            {!loading && (
-                <div className="block md:hidden space-y-3">
-                    {filtered.map((item) => (
-                        <ScanMobileCard
-                            key={item.id}
-                            item={item}
-                            onClick={setSelectedScan}
-                        />
-                    ))}
-
-                    {filtered.length === 0 && (
-                        <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-400 space-y-3">
-                            <Layers size={28} className="mx-auto text-slate-300" />
-                            <p className="text-xs sm:text-sm font-semibold text-slate-600">No scan records match your criteria.</p>
-                            <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-                                <button
-                                    type="button"
-                                    onClick={handleClearFilters}
-                                    className="text-xs font-bold text-emerald-600 hover:text-emerald-700 underline"
-                                >
-                                    Clear search & filters
-                                </button>
-                                {onViewChange && (
-                                    <>
-                                        <span className="text-slate-300">&bull;</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => onViewChange('scanner')}
-                                            className="text-xs font-bold text-emerald-600 hover:text-emerald-700 underline"
-                                        >
-                                            Launch Scanner
-                                        </button>
-                                    </>
-                                )}
-                            </div>
+                    {loading && (
+                        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-500 space-y-3 shadow-xs">
+                            <RefreshCw size={24} className="animate-spin text-emerald-600 mx-auto" />
+                            <p className="text-xs sm:text-sm font-semibold text-slate-700">Loading your scan records...</p>
                         </div>
                     )}
-                </div>
-            )}
 
-            {/* Desktop View: High-Density Responsive Table (Screens >= 768px) */}
-            {!loading && (
-                <ScanDesktopTable
-                    items={filtered}
-                    onSelectItem={setSelectedScan}
-                    onClearFilters={handleClearFilters}
-                />
+                    {error && (
+                        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs sm:text-sm font-semibold text-rose-700 flex items-center gap-2">
+                            <AlertTriangle size={16} className="shrink-0 text-rose-600" />
+                            <span>{error}</span>
+                        </div>
+                    )}
+
+                    {/* Mobile View: Modern Card Feed (Screens < 768px) */}
+                    {!loading && (
+                        <div className="block md:hidden space-y-3">
+                            {filtered.map((item) => (
+                                <ScanMobileCard
+                                    key={item.id}
+                                    item={item}
+                                    onClick={setSelectedScan}
+                                />
+                            ))}
+
+                            {filtered.length === 0 && (
+                                <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-400 space-y-3">
+                                    <Layers size={28} className="mx-auto text-slate-300" />
+                                    <p className="text-xs sm:text-sm font-semibold text-slate-600">No scan records match your criteria.</p>
+                                    <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                                        <button
+                                            type="button"
+                                            onClick={handleClearFilters}
+                                            className="text-xs font-bold text-emerald-600 hover:text-emerald-700 underline"
+                                        >
+                                            Clear search & filters
+                                        </button>
+                                        {onViewChange && (
+                                            <>
+                                                <span className="text-slate-300">&bull;</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onViewChange('scanner')}
+                                                    className="text-xs font-bold text-emerald-600 hover:text-emerald-700 underline"
+                                                >
+                                                    Launch Scanner
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Desktop View: High-Density Responsive Table (Screens >= 768px) */}
+                    {!loading && (
+                        <ScanDesktopTable
+                            items={filtered}
+                            onSelectItem={setSelectedScan}
+                            onClearFilters={handleClearFilters}
+                        />
+                    )}
+                </>
             )}
 
             {/* Scan Inspection & Audit Detail Modal */}

@@ -1,6 +1,5 @@
-
 import { useEffect, useState } from 'react';
-import { Home, LayoutDashboard, Camera, Package, MapPin, BookOpen, Clock, Flag, BarChart2, Settings, LogOut, LogIn, Menu, ShieldCheck } from 'lucide-react';
+import { Home, LayoutDashboard, Camera, Package, MapPin, BookOpen, Clock, Flag, BarChart2, Info, LogOut, LogIn, Menu, ShieldCheck } from 'lucide-react';
 import NavItem from '../ui/NavItem';
 import { supabase } from '../../lib/supabaseClient';
 
@@ -77,7 +76,7 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                     <button
                         type="button"
                         onClick={toggleSidebar}
-                        className="inline-flex items-center justify-center rounded-xl p-2 text-slate-300 transition hover:bg-slate-800 hover:text-white focus:outline-none"
+                        className="inline-flex items-center justify-center rounded-xl p-2 text-slate-300 transition hover:bg-slate-800 hover:text-white focus:outline-none cursor-pointer"
                         aria-label={isOpen ? 'Close sidebar' : 'Open sidebar'}
                     >
                         {isOpen ? <Menu size={20} className="md:hidden" /> : null}
@@ -207,14 +206,14 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                         <NavItem 
                             collapsed={!isOpen} 
                             active={currentView === 'settings'} 
-                            icon={<Settings size={18} />} 
-                            label="Settings" 
+                            icon={<Info size={18} />} 
+                            label="About & Settings" 
                             onClick={() => handleNavClick('settings')} 
                         />
                         {userRole ? (
                             <button
                                 onClick={onSignOut}
-                                className={`w-full flex items-center rounded-xl transition-all ${
+                                className={`w-full flex items-center rounded-xl transition-all cursor-pointer ${
                                     isOpen ? 'gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-950/30' : 'justify-center p-3 text-red-400 hover:bg-slate-800'
                                 }`}
                                 title="Sign Out"
@@ -225,7 +224,7 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                         ) : (
                             <button
                                 onClick={() => handleNavClick('login')}
-                                className={`w-full flex items-center rounded-xl transition-all ${
+                                className={`w-full flex items-center rounded-xl transition-all cursor-pointer ${
                                     isOpen ? 'gap-3 px-4 py-3 text-sm text-emerald-400 hover:bg-emerald-950/30 font-semibold' : 'justify-center p-3 text-emerald-400 hover:bg-slate-800'
                                 }`}
                                 title="Sign In"
@@ -251,21 +250,21 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                 >
                     <button
                         type="button"
-                        onClick={() => onViewChange('dashboard')}
-                        className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-xl transition ${
-                            currentView === 'dashboard'
+                        onClick={() => onViewChange('landing')}
+                        className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-xl transition cursor-pointer ${
+                            currentView === 'landing'
                                 ? 'text-emerald-400 font-bold'
                                 : 'text-slate-400 hover:text-slate-200 font-medium'
                         }`}
                     >
-                        <LayoutDashboard size={18} />
+                        <Home size={18} />
                         <span className="text-[10px] leading-tight">Home</span>
                     </button>
 
                     <button
                         type="button"
                         onClick={() => onViewChange('products')}
-                        className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-xl transition ${
+                        className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-xl transition cursor-pointer ${
                             currentView === 'products'
                                 ? 'text-emerald-400 font-bold'
                                 : 'text-slate-400 hover:text-slate-200 font-medium'
@@ -278,7 +277,7 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                     <button
                         type="button"
                         onClick={() => onViewChange('scanner')}
-                        className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-2xl font-bold text-xs shadow-lg transition active:scale-95 ${
+                        className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-2xl font-bold text-xs shadow-lg transition active:scale-95 cursor-pointer ${
                             currentView === 'scanner'
                                 ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white ring-2 ring-emerald-400/40 shadow-emerald-900/50'
                                 : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-emerald-950/50'
@@ -291,7 +290,7 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                     <button
                         type="button"
                         onClick={() => onViewChange('map')}
-                        className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-xl transition ${
+                        className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-xl transition cursor-pointer ${
                             currentView === 'map'
                                 ? 'text-emerald-400 font-bold'
                                 : 'text-slate-400 hover:text-slate-200 font-medium'
@@ -304,7 +303,7 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                     <button
                         type="button"
                         onClick={() => onViewChange('registry')}
-                        className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-xl transition ${
+                        className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-xl transition cursor-pointer ${
                             currentView === 'registry'
                                 ? 'text-emerald-400 font-bold'
                                 : 'text-slate-400 hover:text-slate-200 font-medium'

@@ -4,7 +4,8 @@ import {
     MapPin, 
     Plus, 
     Award,
-    Store
+    Store,
+    ExternalLink
 } from 'lucide-react';
 
 import Toast from '../components/ui/Toast';
@@ -659,7 +660,7 @@ export const Registry = ({ userRole, onViewChange }) => {
                     }`}
                 >
                     <MapPin size={14} className={`shrink-0 ${registryMode === 'establishments' ? 'text-emerald-600' : 'text-slate-400'}`} />
-                    <span className="truncate"><span className="hidden sm:inline">Venues & </span>Directory</span>
+                    <span className="truncate"><span className="hidden sm:inline">Regulatory </span>Audits (Venues)</span>
                     <span className={`text-[9px] sm:text-[10px] font-mono px-1 sm:px-1.5 py-0.2 rounded-full shrink-0 ${
                         registryMode === 'establishments' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200/80 text-slate-600'
                     }`}>
@@ -714,7 +715,29 @@ export const Registry = ({ userRole, onViewChange }) => {
 
             {/* TAB 3: ESTABLISHMENTS LEDGER */}
             {registryMode === 'establishments' && (
-                <EstablishmentsRegistryTab
+                <div className="space-y-3 sm:space-y-4 flex-1 flex flex-col min-h-0">
+                    <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-sky-50 border border-emerald-200/80 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs shrink-0">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                <MapPin size={18} />
+                            </div>
+                            <div>
+                                <h4 className="text-xs sm:text-sm font-bold text-slate-800">Looking for nearby dining on the GPS Map?</h4>
+                                <p className="text-[11px] sm:text-xs text-slate-500">This registry records formal regulatory audit documents. For live distances, menus, and directions, open the Establishments Map.</p>
+                            </div>
+                        </div>
+                        {onViewChange && (
+                            <button
+                                type="button"
+                                onClick={() => onViewChange('map')}
+                                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs transition shrink-0 cursor-pointer active:scale-95"
+                            >
+                                <span>Open Interactive Map</span>
+                                <ExternalLink size={13} />
+                            </button>
+                        )}
+                    </div>
+                    <EstablishmentsRegistryTab
                     establishments={establishments}
                     localSearch={localSearch}
                     setLocalSearch={setLocalSearch}
@@ -723,6 +746,7 @@ export const Registry = ({ userRole, onViewChange }) => {
                     onDeleteEstablishment={handleDeleteEstablishment}
                     onReportEstablishment={handleReportEstablishment}
                 />
+                </div>
             )}
 
             {/* UNIFIED RECORD MODAL */}

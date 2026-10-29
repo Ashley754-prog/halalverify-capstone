@@ -15,16 +15,27 @@ def get_scan_history(user: dict = Depends(get_current_user)):
         profile_res = supabase.table("profiles").select("role").eq("id", user_id).single().execute()
         is_admin = (profile_res.data or {}).get("role") == "admin"
 
-    builder = (
-        supabase
-        .table("scan_history")
-        .select("*, scan_flagged_items(*)")
-        .order("created_at", desc=True)
-    )
-
-    # Non-admins only view their own scan history
-    if not is_admin and user_id:
-        builder = builder.eq("user_id", str(user_id))
+    # Non-admins must have a valid user_id and can only view their own scan history
+    if not is_admin:
+        if not user_id:
+            return {
+                "success": True,
+                "data": [],
+            }
+        builder = (
+            supabase
+            .table("scan_history")
+            .select("*, scan_flagged_items(*)")
+            .eq("user_id", str(user_id))
+            .order("created_at", desc=True)
+        )
+    else:
+        builder = (
+            supabase
+            .table("scan_history")
+            .select("*, scan_flagged_items(*)")
+            .order("created_at", desc=True)
+        )
 
     response = builder.execute()
 
@@ -32,4 +43,3 @@ def get_scan_history(user: dict = Depends(get_current_user)):
         "success": True,
         "data": response.data or [],
     }
-
