@@ -12,7 +12,7 @@ export default function LandingMarketingSections({ onViewChange }) {
   return (
     <>
       {/* Core Features Grid */}
-      <section id="features" className="py-10 sm:py-20 bg-slate-900/60 border-t border-slate-800">
+      <section id="features" className="py-10 sm:py-20 bg-slate-900/60 border-t border-slate-800 scroll-mt-20 sm:scroll-mt-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-16">
             <h2 className="text-xs sm:text-sm font-bold uppercase tracking-[0.25em] text-emerald-400">
@@ -111,7 +111,7 @@ export default function LandingMarketingSections({ onViewChange }) {
       </section>
 
       {/* How It Works Section */}
-      <section id="how-it-works" className="py-10 sm:py-20">
+      <section id="how-it-works" className="py-10 sm:py-20 scroll-mt-20 sm:scroll-mt-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-16">
             <h2 className="text-xs sm:text-sm font-bold uppercase tracking-[0.25em] text-emerald-400">
@@ -194,7 +194,7 @@ export default function LandingMarketingSections({ onViewChange }) {
       `}</style>
 
       {/* Recognized Certifiers & Scope Section */}
-      <section id="certifiers" className="py-10 sm:py-20 bg-slate-900/60 border-t border-slate-800">
+      <section id="certifiers" className="py-10 sm:py-20 bg-slate-900/60 border-t border-slate-800 scroll-mt-20 sm:scroll-mt-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-xs sm:text-sm font-bold uppercase tracking-[0.25em] text-emerald-400">

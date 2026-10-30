@@ -13,6 +13,7 @@ import {
   Building2,
   Plus,
   Menu,
+  ArrowUp,
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import ContributionModal from '../components/submissions/ContributionModal';
@@ -28,6 +29,7 @@ export default function LandingPage({ onViewChange, userRole }) {
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [initialContributionTab, setInitialContributionTab] = useState('establishment');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   const handleOpenContribution = (tab = 'establishment') => {
     setInitialContributionTab(tab);
@@ -39,6 +41,14 @@ export default function LandingPage({ onViewChange, userRole }) {
   };
 
   const searchDebounceRef = useRef(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 350);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -147,9 +157,9 @@ export default function LandingPage({ onViewChange, userRole }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#0e1625] text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white overflow-x-hidden w-full max-w-full">
+    <div className="min-h-screen bg-[#0e1625] text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white overflow-x-clip w-full max-w-full">
       {/* Top Navigation Bar */}
-      <header className="sticky top-0 z-50 w-full border-b border-slate-800/80 bg-[#0e1625]/95 backdrop-blur-md">
+      <header className="sticky top-0 z-50 w-full border-b border-slate-800/80 bg-[#0e1625]/95 backdrop-blur-md shadow-md shadow-black/20 transition-all">
         <div className="max-w-7xl mx-auto flex items-center justify-between h-16 sm:h-20 px-4 sm:px-6 lg:px-8">
           <div
             className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0"
@@ -598,6 +608,19 @@ export default function LandingPage({ onViewChange, userRole }) {
         onNavigate={(v) => onViewChange(v)}
         actionTitle="Contribute to Registry"
       />
+
+      {/* Floating Back to Top Button */}
+      {showBackToTop && (
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-6 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xl shadow-emerald-950/60 transition-all duration-200 hover:bg-emerald-500 hover:scale-105 active:scale-95 border border-emerald-400/40 focus:outline-hidden focus:ring-2 focus:ring-emerald-400"
+          aria-label="Scroll back to top"
+          title="Scroll back to top"
+        >
+          <ArrowUp size={20} strokeWidth={2.5} />
+        </button>
+      )}
     </div>
   );
 }
