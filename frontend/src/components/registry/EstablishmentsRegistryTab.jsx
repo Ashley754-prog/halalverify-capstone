@@ -1,5 +1,17 @@
-import { useState } from 'react';
-import { Database, Search, Pencil, Trash2, Flag, MapPin, Compass, ShieldCheck, ExternalLink } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import {
+    Database,
+    Search,
+    Pencil,
+    Trash2,
+    Flag,
+    MapPin,
+    Compass,
+    ShieldCheck,
+    ExternalLink,
+    ChevronLeft,
+    ChevronRight,
+} from 'lucide-react';
 import { getStatusConfig, ZAMBOANGA_DISTRICTS, resolveZamboangaDistrict } from '../../data/constants';
 import { getSafeUrl } from '../../utils/security';
 
@@ -14,6 +26,8 @@ export default function EstablishmentsRegistryTab({
 }) {
     const [statusFilter, setStatusFilter] = useState('all');
     const [districtFilter, setDistrictFilter] = useState('all');
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 8;
 
     const filteredEstablishments = establishments.filter((shop) => {
         const matchesSearch =
@@ -43,6 +57,39 @@ export default function EstablishmentsRegistryTab({
         }
         return true;
     });
+
+    // Reset pagination to page 1 whenever filters or search query change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [districtFilter, statusFilter, localSearch]);
+
+    // Pagination calculations
+    const totalItems = filteredEstablishments.length;
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
+    const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+    const startIndex = (safeCurrentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
+    const paginatedEstablishments = filteredEstablishments.slice(startIndex, endIndex);
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+    };
+
+    const getPageNumbers = () => {
+        const pages = [];
+        if (totalPages <= 5) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+        } else {
+            if (safeCurrentPage <= 3) {
+                pages.push(1, 2, 3, 4, '...', totalPages);
+            } else if (safeCurrentPage >= totalPages - 2) {
+                pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+            } else {
+                pages.push(1, '...', safeCurrentPage - 1, safeCurrentPage, safeCurrentPage + 1, '...', totalPages);
+            }
+        }
+        return pages;
+    };
 
     return (
         <div className="bg-white p-3 sm:p-6 rounded-2xl shadow-sm border border-slate-200 w-full">
@@ -98,9 +145,8 @@ export default function EstablishmentsRegistryTab({
                 </div>
             </div>
 
-
             {/* Establishments Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 pb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 pb-2">
                 {filteredEstablishments.length === 0 ? (
                     <div className="col-span-full text-center py-12 text-slate-400">
                         <Database size={32} className="mx-auto text-slate-300 mb-2" />
@@ -112,13 +158,13 @@ export default function EstablishmentsRegistryTab({
                                 setStatusFilter('all');
                                 setDistrictFilter('all');
                             }}
-                            className="text-xs text-emerald-700 font-bold hover:underline mt-2 inline-block"
+                            className="text-xs text-emerald-700 font-bold hover:underline mt-2 inline-block cursor-pointer"
                         >
                             Reset filters
                         </button>
                     </div>
                 ) : (
-                    filteredEstablishments.map((shop) => {
+                    paginatedEstablishments.map((shop) => {
                         const statusConfig = getStatusConfig(shop);
                         const districtInfo = resolveZamboangaDistrict(shop);
                         const evidenceUrl = getSafeUrl(shop.certificate_url || shop.logo_url);
@@ -137,7 +183,7 @@ export default function EstablishmentsRegistryTab({
                         return (
                             <div
                                 key={shop.id}
-                                className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between gap-3.5 h-full hover:border-slate-300 hover:bg-white transition shadow-xs"
+                                className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between gap-2.5 sm:gap-3 h-full hover:border-slate-300 hover:bg-white transition shadow-xs"
                             >
                                 <div className="space-y-1.5">
                                     <div className="flex justify-between items-start gap-2">
@@ -154,74 +200,50 @@ export default function EstablishmentsRegistryTab({
                                                 </span>
                                             )}
                                         </div>
-                                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full shrink-0 border ${statusConfig.badgeBg}`}>
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 border ${statusConfig.badgeBg}`}>
                                             {statusConfig.label}
                                         </span>
                                     </div>
                                     <h4 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">
                                         {shop.name}
                                     </h4>
-                                    <p className="text-xs text-slate-500 flex items-start gap-1">
-                                        <MapPin size={12} className="text-slate-400 shrink-0 mt-0.5" />
-                                        <span className="line-clamp-2">{shop.address || 'Zamboanga City'}</span>
+                                    <p className="text-xs text-slate-500 flex items-center gap-1 min-w-0" title={shop.address || 'Zamboanga City'}>
+                                        <MapPin size={12} className="text-slate-400 shrink-0" />
+                                        <span className="truncate">{shop.address || 'Zamboanga City'}</span>
                                     </p>
                                 </div>
 
-                                {/* Dynamic, Meaningful Metadata Box */}
+                                {/* Dynamic, Compact Single-Row Metadata Box */}
                                 {isFormallyCertified ? (
-                                    <div className="grid grid-cols-2 text-xs bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-100/80 font-mono text-slate-600">
-                                        <div className="flex flex-col">
-                                            <span className="text-[9px] uppercase tracking-wider text-slate-400 mb-0.5 font-sans font-bold">Cert ID</span>
-                                            <span className="font-bold text-slate-800 text-[11px] sm:text-xs truncate">{shop.certificate_number}</span>
+                                    <div className="flex items-center justify-between text-xs bg-emerald-50/60 px-2.5 py-1.5 rounded-xl border border-emerald-100 font-mono text-slate-600">
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                            <span className="text-[9px] uppercase tracking-wider text-slate-400 font-sans font-bold shrink-0">Cert ID:</span>
+                                            <span className="font-bold text-slate-800 text-[11px] sm:text-xs truncate">{shop.certificate_number || 'N/A'}</span>
                                         </div>
-                                        <div className="flex flex-col text-right">
-                                            <span className="text-[9px] uppercase tracking-wider text-slate-400 mb-0.5 font-sans font-bold">Expiry Date</span>
+                                        <div className="flex items-center gap-1.5 shrink-0 pl-2">
+                                            <span className="text-[9px] uppercase tracking-wider text-slate-400 font-sans font-bold">Expires:</span>
                                             <span className="font-bold text-emerald-800 text-[11px] sm:text-xs">{shop.expiry_date || 'Active'}</span>
                                         </div>
                                     </div>
                                 ) : statusConfig.key === 'muslim_owned' ? (
-                                    <div className="grid grid-cols-2 text-xs bg-sky-50/70 p-2.5 rounded-xl border border-sky-100 font-sans text-slate-600">
-                                        <div className="flex flex-col">
-                                            <span className="text-[9px] uppercase tracking-wider text-sky-600 font-bold mb-0.5">Kitchen Standard</span>
-                                            <span className="font-bold text-slate-800 text-[11px] sm:text-xs">Pork-Free Kitchen</span>
-                                        </div>
-                                        <div className="flex flex-col text-right">
-                                            <span className="text-[9px] uppercase tracking-wider text-sky-600 font-bold mb-0.5">Classification</span>
-                                            <span className="font-bold text-sky-800 text-[11px] sm:text-xs">Muslim-Owned</span>
-                                        </div>
+                                    <div className="flex items-center justify-between text-xs bg-sky-50/70 px-2.5 py-1.5 rounded-xl border border-sky-100 font-sans text-slate-600">
+                                        <span className="text-[11px] sm:text-xs font-semibold text-slate-700">Pork-Free Kitchen</span>
+                                        <span className="font-bold text-sky-800 text-[11px] sm:text-xs">Muslim-Owned</span>
                                     </div>
                                 ) : statusConfig.key === 'muslim_friendly' ? (
-                                    <div className="grid grid-cols-2 text-xs bg-indigo-50/70 p-2.5 rounded-xl border border-indigo-100 font-sans text-slate-600">
-                                        <div className="flex flex-col">
-                                            <span className="text-[9px] uppercase tracking-wider text-indigo-600 font-bold mb-0.5">Accommodations</span>
-                                            <span className="font-bold text-slate-800 text-[11px] sm:text-xs">Halal Options</span>
-                                        </div>
-                                        <div className="flex flex-col text-right">
-                                            <span className="text-[9px] uppercase tracking-wider text-indigo-600 font-bold mb-0.5">Kitchen</span>
-                                            <span className="font-bold text-indigo-800 text-[11px] sm:text-xs">Pork-Free</span>
-                                        </div>
+                                    <div className="flex items-center justify-between text-xs bg-indigo-50/70 px-2.5 py-1.5 rounded-xl border border-indigo-100 font-sans text-slate-600">
+                                        <span className="text-[11px] sm:text-xs font-semibold text-slate-700">Halal Options</span>
+                                        <span className="font-bold text-indigo-800 text-[11px] sm:text-xs">Pork-Free</span>
                                     </div>
                                 ) : statusConfig.key === 'vegetarian_vegan' ? (
-                                    <div className="grid grid-cols-2 text-xs bg-teal-50/70 p-2.5 rounded-xl border border-teal-100 font-sans text-slate-600">
-                                        <div className="flex flex-col">
-                                            <span className="text-[9px] uppercase tracking-wider text-teal-600 font-bold mb-0.5">Dietary Standard</span>
-                                            <span className="font-bold text-slate-800 text-[11px] sm:text-xs">Plant-Based</span>
-                                        </div>
-                                        <div className="flex flex-col text-right">
-                                            <span className="text-[9px] uppercase tracking-wider text-teal-600 font-bold mb-0.5">Meat Standard</span>
-                                            <span className="font-bold text-teal-800 text-[11px] sm:text-xs">Zero Meat</span>
-                                        </div>
+                                    <div className="flex items-center justify-between text-xs bg-teal-50/70 px-2.5 py-1.5 rounded-xl border border-teal-100 font-sans text-slate-600">
+                                        <span className="text-[11px] sm:text-xs font-semibold text-slate-700">Plant-Based Diet</span>
+                                        <span className="font-bold text-teal-800 text-[11px] sm:text-xs">Zero Meat</span>
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-2 text-xs bg-amber-50/70 p-2.5 rounded-xl border border-amber-200/70 font-sans text-slate-600">
-                                        <div className="flex flex-col">
-                                            <span className="text-[9px] uppercase tracking-wider text-amber-700 font-bold mb-0.5">Review Standing</span>
-                                            <span className="font-bold text-amber-900 text-[11px] sm:text-xs">Pending Review</span>
-                                        </div>
-                                        <div className="flex flex-col text-right">
-                                            <span className="text-[9px] uppercase tracking-wider text-amber-700 font-bold mb-0.5">Source</span>
-                                            <span className="font-bold text-slate-700 text-[11px] sm:text-xs truncate">{shop.source || 'Community'}</span>
-                                        </div>
+                                    <div className="flex items-center justify-between text-xs bg-amber-50/70 px-2.5 py-1.5 rounded-xl border border-amber-200/70 font-sans text-slate-600">
+                                        <span className="text-[11px] sm:text-xs font-semibold text-amber-900">Pending Review</span>
+                                        <span className="font-bold text-slate-700 text-[11px] sm:text-xs truncate max-w-[120px]">{shop.source || 'Community'}</span>
                                     </div>
                                 )}
 
@@ -235,7 +257,7 @@ export default function EstablishmentsRegistryTab({
                                                 className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-100/80 hover:bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-md transition"
                                             >
                                                 <ShieldCheck size={11} className="text-emerald-700" />
-                                                <span>View Certificate Evidence</span>
+                                                <span>Evidence</span>
                                                 <ExternalLink size={10} />
                                             </a>
                                         )}
@@ -259,13 +281,13 @@ export default function EstablishmentsRegistryTab({
                                     <div className="flex gap-2 pt-1 border-t border-slate-200/60">
                                         <button 
                                             onClick={() => onOpenModal('edit-establishment', shop)} 
-                                            className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 py-1.5 rounded-lg transition-colors shadow-2xs"
+                                            className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 py-1.5 rounded-lg transition-colors shadow-2xs cursor-pointer"
                                         >
                                             <Pencil size={12} /> Edit
                                         </button>
                                         <button 
                                             onClick={() => onDeleteEstablishment(shop)} 
-                                            className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 py-1.5 rounded-lg transition-colors shadow-2xs"
+                                            className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 py-1.5 rounded-lg transition-colors shadow-2xs cursor-pointer"
                                         >
                                             <Trash2 size={12} /> Delete
                                         </button>
@@ -275,7 +297,7 @@ export default function EstablishmentsRegistryTab({
                                         <button
                                             type="button"
                                             onClick={() => onReportEstablishment(shop)}
-                                            className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-amber-700 bg-white hover:bg-amber-50 border border-slate-200 py-1.5 rounded-lg transition"
+                                            className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-amber-700 bg-white hover:bg-amber-50 border border-slate-200 py-1.5 rounded-lg transition cursor-pointer"
                                             title="Report issue or flag establishment"
                                         >
                                             <Flag size={12} className="text-amber-500" />
@@ -288,6 +310,70 @@ export default function EstablishmentsRegistryTab({
                     })
                 )}
             </div>
+
+            {/* Pagination Controls */}
+            {totalItems > 0 && (
+                <div className="pt-3 pb-1 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="text-xs text-slate-500 font-medium text-center sm:text-left">
+                        Showing <strong className="font-semibold text-slate-700">{totalItems === 0 ? 0 : startIndex + 1}</strong>–<strong className="font-semibold text-slate-700">{endIndex}</strong> of <strong className="font-semibold text-slate-700">{totalItems}</strong> audit records
+                    </div>
+
+                    {totalPages > 1 && (
+                        <div className="flex items-center gap-1 sm:gap-1.5">
+                            <button
+                                type="button"
+                                onClick={() => handlePageChange(safeCurrentPage - 1)}
+                                disabled={safeCurrentPage === 1}
+                                className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1 transition ${
+                                    safeCurrentPage === 1
+                                        ? 'border-slate-200 text-slate-300 cursor-not-allowed bg-slate-50'
+                                        : 'border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300 cursor-pointer'
+                                }`}
+                                aria-label="Previous Page"
+                            >
+                                <ChevronLeft size={16} />
+                                <span className="hidden sm:inline">Prev</span>
+                            </button>
+
+                            {getPageNumbers().map((p, idx) =>
+                                p === '...' ? (
+                                    <span key={`ellipsis-${idx}`} className="px-2 py-1 text-slate-400 select-none text-xs">
+                                        ...
+                                    </span>
+                                ) : (
+                                    <button
+                                        key={p}
+                                        type="button"
+                                        onClick={() => handlePageChange(p)}
+                                        className={`w-8 h-8 rounded-lg text-xs font-bold transition cursor-pointer ${
+                                            safeCurrentPage === p
+                                                ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30'
+                                                : 'text-slate-700 hover:bg-slate-100 border border-transparent hover:border-slate-200'
+                                        }`}
+                                    >
+                                        {p}
+                                    </button>
+                                )
+                            )}
+
+                            <button
+                                type="button"
+                                onClick={() => handlePageChange(safeCurrentPage + 1)}
+                                disabled={safeCurrentPage === totalPages}
+                                className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1 transition ${
+                                    safeCurrentPage === totalPages
+                                        ? 'border-slate-200 text-slate-300 cursor-not-allowed bg-slate-50'
+                                        : 'border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300 cursor-pointer'
+                                }`}
+                                aria-label="Next Page"
+                            >
+                                <span className="hidden sm:inline">Next</span>
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
