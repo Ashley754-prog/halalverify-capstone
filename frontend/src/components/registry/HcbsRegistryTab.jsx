@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Award, Search, Building2, Globe, ShieldCheck, Calendar, FileText, ExternalLink, Pencil, Trash2 } from 'lucide-react';
 import Pagination from '../ui/Pagination';
 import EmptyState from '../ui/EmptyState';
+import SearchBar from '../ui/SearchBar';
 
 function HcbCategoryIcon({ isGov, isIntl, isLocal }) {
     return (
@@ -80,16 +81,13 @@ export default function HcbsRegistryTab({
                         <option value="International Authority">International</option>
                     </select>
 
-                    <div className="relative flex-1 md:w-64">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                        <input
-                            type="text"
-                            placeholder="Search code, name..."
-                            value={hcbSearch}
-                            onChange={(e) => setHcbSearch(e.target.value)}
-                            className="w-full h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 text-xs focus:outline-none focus:border-emerald-500 transition"
-                        />
-                    </div>
+                    <SearchBar
+                        value={hcbSearch}
+                        onChange={setHcbSearch}
+                        placeholder="Search code, name..."
+                        className="flex-1 md:w-64"
+                        size="sm"
+                    />
                 </div>
             </div>
 

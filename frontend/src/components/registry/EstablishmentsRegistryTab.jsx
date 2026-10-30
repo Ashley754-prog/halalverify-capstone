@@ -14,6 +14,7 @@ import { getStatusConfig, ZAMBOANGA_DISTRICTS, resolveZamboangaDistrict } from '
 import { getSafeUrl } from '../../utils/security';
 import Pagination from '../ui/Pagination';
 import EmptyState from '../ui/EmptyState';
+import SearchBar from '../ui/SearchBar';
 
 export default function EstablishmentsRegistryTab({
     establishments,
@@ -116,16 +117,13 @@ export default function EstablishmentsRegistryTab({
                         {isAdmin && <option value="needs_review">Pending Review</option>}
                     </select>
 
-                    <div className="relative col-span-2 md:col-span-1 md:w-72">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                        <input
-                            type="text"
-                            placeholder="Search name, street, cuisine..."
-                            value={localSearch}
-                            onChange={(e) => setLocalSearch(e.target.value)}
-                            className="w-full h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 text-xs focus:outline-none focus:border-emerald-500 transition"
-                        />
-                    </div>
+                    <SearchBar
+                        value={localSearch}
+                        onChange={setLocalSearch}
+                        placeholder="Search name, street, cuisine..."
+                        className="col-span-2 md:col-span-1 md:w-72"
+                        size="sm"
+                    />
                 </div>
             </div>
 

@@ -1,4 +1,3 @@
-
 import {
     Store,
     Loader2,
@@ -9,6 +8,7 @@ import {
     ShieldCheck,
 } from 'lucide-react';
 import { getStatusConfig, resolveZamboangaDistrict } from '../../data/constants';
+import EmptyState from '../ui/EmptyState';
 
 export default function EstablishmentsSidebarList({
     filteredList,
@@ -43,17 +43,14 @@ export default function EstablishmentsSidebarList({
 
                 <div className="flex-1 min-h-0 overflow-y-auto space-y-2.5 pr-1">
                     {filteredList.length === 0 ? (
-                        <div className="text-center py-10 px-4 text-slate-400 space-y-2">
-                            <Store size={28} className="mx-auto text-slate-300" />
-                            <p className="text-xs font-semibold">No establishments match your filters.</p>
-                            <button
-                                type="button"
-                                onClick={onResetFilters}
-                                className="text-xs text-emerald-700 font-bold hover:underline"
-                            >
-                                Reset all filters
-                            </button>
-                        </div>
+                        <EmptyState
+                            icon={Store}
+                            title="No establishments match your filters"
+                            description="Try adjusting your status, district, radius, or search keywords."
+                            resetText="Reset All Filters"
+                            onReset={onResetFilters}
+                            className="p-6"
+                        />
                     ) : (
                         filteredList.map((est, index) => {
                             const statusConfig = getStatusConfig(est);

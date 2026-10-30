@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Database, Search, Pencil, Trash2, ExternalLink } from 'lucide-react';
 import Pagination from '../ui/Pagination';
 import EmptyState from '../ui/EmptyState';
+import SearchBar from '../ui/SearchBar';
 
 const getAuthorityInfo = (item) => {
     const text = `${item.reason || ''} ${item.source_description || ''}`.toLowerCase();
@@ -101,16 +102,13 @@ export default function AdditivesRegistryTab({
                         <option value="Synthetic">Synthetic</option>
                     </select>
 
-                    <div className="relative col-span-2 md:col-span-1 md:w-64">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                        <input
-                            type="text"
-                            placeholder="Search code or additive..."
-                            value={dictSearch}
-                            onChange={(e) => setDictSearch(e.target.value)}
-                            className="w-full h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 text-xs focus:outline-none focus:border-emerald-500 transition"
-                        />
-                    </div>
+                    <SearchBar
+                        value={dictSearch}
+                        onChange={setDictSearch}
+                        placeholder="Search code or additive..."
+                        className="col-span-2 md:col-span-1 md:w-64"
+                        size="sm"
+                    />
                 </div>
             </div>
 

@@ -15,6 +15,7 @@ import {
 import { getSafeUrl } from '../../utils/security';
 import Pagination from '../ui/Pagination';
 import EmptyState from '../ui/EmptyState';
+import SearchBar from '../ui/SearchBar';
 
 export default function VerificationQueueTabs({
     activeTab,
@@ -69,19 +70,16 @@ export default function VerificationQueueTabs({
                         </p>
                     </div>
 
-                    <div className="relative w-full sm:w-64">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                        <input
-                            type="text"
-                            placeholder="Filter venues by name..."
-                            value={search}
-                            onChange={(e) => {
-                                setSearch(e.target.value);
-                                setPage(1);
-                            }}
-                            className="w-full h-8.5 bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 text-xs focus:outline-none focus:border-emerald-500 transition"
-                        />
-                    </div>
+                    <SearchBar
+                        value={search}
+                        onChange={(val) => {
+                            setSearch(val);
+                            setPage(1);
+                        }}
+                        placeholder="Filter venues by name..."
+                        className="w-full sm:w-64"
+                        size="sm"
+                    />
                 </div>
 
                 {filtered.length === 0 ? (
@@ -245,19 +243,16 @@ export default function VerificationQueueTabs({
                         </p>
                     </div>
 
-                    <div className="relative w-full sm:w-64">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                        <input
-                            type="text"
-                            placeholder="Filter products by name..."
-                            value={search}
-                            onChange={(e) => {
-                                setSearch(e.target.value);
-                                setPage(1);
-                            }}
-                            className="w-full h-8.5 bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 text-xs focus:outline-none focus:border-emerald-500 transition"
-                        />
-                    </div>
+                    <SearchBar
+                        value={search}
+                        onChange={(val) => {
+                            setSearch(val);
+                            setPage(1);
+                        }}
+                        placeholder="Filter products by name..."
+                        className="w-full sm:w-64"
+                        size="sm"
+                    />
                 </div>
 
                 {filtered.length === 0 ? (
@@ -379,19 +374,16 @@ export default function VerificationQueueTabs({
                         </p>
                     </div>
 
-                    <div className="relative w-full sm:w-64">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                        <input
-                            type="text"
-                            placeholder="Filter reports by keyword..."
-                            value={search}
-                            onChange={(e) => {
-                                setSearch(e.target.value);
-                                setPage(1);
-                            }}
-                            className="w-full h-8.5 bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 text-xs focus:outline-none focus:border-emerald-500 transition"
-                        />
-                    </div>
+                    <SearchBar
+                        value={search}
+                        onChange={(val) => {
+                            setSearch(val);
+                            setPage(1);
+                        }}
+                        placeholder="Filter reports by keyword..."
+                        className="w-full sm:w-64"
+                        size="sm"
+                    />
                 </div>
 
                 {filtered.length === 0 ? (
