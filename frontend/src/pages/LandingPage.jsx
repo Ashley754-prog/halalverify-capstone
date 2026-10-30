@@ -29,6 +29,7 @@ export default function LandingPage({ onViewChange, userRole }) {
   const [initialContributionTab, setInitialContributionTab] = useState('establishment');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('');
+  const [scrollProgress, setScrollProgress] = useState(0);
 
   const handleOpenContribution = (tab = 'establishment') => {
     setInitialContributionTab(tab);
@@ -41,54 +42,77 @@ export default function LandingPage({ onViewChange, userRole }) {
 
   const searchDebounceRef = useRef(null);
   const landingScrollRef = useRef(null);
+  const programmaticScrollRef = useRef(false);
+  const programmaticScrollTimerRef = useRef(null);
 
-  // Scrollspy: dynamically highlight the active section in topbar as user scrolls
+  // Scrollspy & Scroll Progress: dynamically track active section and topbar progress beam
   useEffect(() => {
     const container = landingScrollRef.current;
     if (!container) return;
 
     const handleScroll = () => {
       const scrollTop = container.scrollTop;
+      const maxScroll = Math.max(1, container.scrollHeight - container.clientHeight);
+      const progress = Math.min(100, Math.max(0, (scrollTop / maxScroll) * 100));
+      setScrollProgress(scrollTop > 10 ? progress : 0);
+
+      // Skip intermediate section overrides during click-triggered smooth scrolling
+      if (programmaticScrollRef.current) return;
+
       const headerOffset = window.innerWidth >= 640 ? 80 : 64;
 
-      // When near top (hero / search area), clear active section
-      if (scrollTop < 200) {
+      if (scrollTop < 180) {
         setActiveSection('');
         return;
       }
 
-      // When near bottom of page, highlight certifiers
-      if (container.scrollHeight - scrollTop - container.clientHeight < 50) {
+      if (container.scrollHeight - scrollTop - container.clientHeight < 40) {
         setActiveSection('certifiers');
         return;
       }
 
       const sections = ['features', 'how-it-works', 'certifiers'];
-      let matched = '';
+      const viewportCenter = headerOffset + (window.innerHeight - headerOffset) / 2;
+      let closestId = '';
+      let closestDistance = Infinity;
 
       for (const id of sections) {
         const el = document.getElementById(id);
         if (el) {
           const rect = el.getBoundingClientRect();
-          if (rect.top <= headerOffset + window.innerHeight * 0.45 && rect.bottom >= headerOffset + 60) {
-            matched = id;
+          const sectionCenter = rect.top + rect.height / 2;
+          const distance = Math.abs(sectionCenter - viewportCenter);
+          if (distance < closestDistance) {
+            closestDistance = distance;
+            closestId = id;
           }
         }
       }
 
-      if (matched) {
-        setActiveSection(matched);
+      if (closestId) {
+        setActiveSection(closestId);
       }
     };
 
     container.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
-    return () => container.removeEventListener('scroll', handleScroll);
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      if (programmaticScrollTimerRef.current) {
+        clearTimeout(programmaticScrollTimerRef.current);
+      }
+    };
   }, []);
 
   const handleScrollToTop = () => {
     setIsMobileMenuOpen(false);
     setActiveSection('');
+    programmaticScrollRef.current = true;
+    if (programmaticScrollTimerRef.current) clearTimeout(programmaticScrollTimerRef.current);
+    programmaticScrollTimerRef.current = setTimeout(() => {
+      programmaticScrollRef.current = false;
+    }, 650);
+
     if (landingScrollRef.current) {
       landingScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -102,6 +126,12 @@ export default function LandingPage({ onViewChange, userRole }) {
     if (e) e.preventDefault();
     setIsMobileMenuOpen(false);
     setActiveSection(sectionId);
+    programmaticScrollRef.current = true;
+    if (programmaticScrollTimerRef.current) clearTimeout(programmaticScrollTimerRef.current);
+    programmaticScrollTimerRef.current = setTimeout(() => {
+      programmaticScrollRef.current = false;
+    }, 650);
+
     const container = landingScrollRef.current;
     const target = document.getElementById(sectionId);
     if (container && target) {
@@ -262,64 +292,60 @@ export default function LandingPage({ onViewChange, userRole }) {
             </div>
           </div>
 
-          <nav className="hidden lg:flex items-center gap-1.5 xl:gap-3 text-xs xl:text-sm font-medium whitespace-nowrap">
-            <a
-              href="#features"
-              onClick={(e) => handleScrollToSection(e, 'features')}
-              className={`relative px-3 py-1.5 rounded-lg transition-all duration-200 whitespace-nowrap shrink-0 ${
-                activeSection === 'features'
-                  ? 'text-emerald-300 font-bold bg-emerald-500/15 border border-emerald-500/30 shadow-xs shadow-emerald-950/40'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
-              }`}
-            >
-              Features
-              {activeSection === 'features' && (
-                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-emerald-400 rounded-full" />
-              )}
-            </a>
-            <a
-              href="#how-it-works"
-              onClick={(e) => handleScrollToSection(e, 'how-it-works')}
-              className={`relative px-3 py-1.5 rounded-lg transition-all duration-200 whitespace-nowrap shrink-0 ${
-                activeSection === 'how-it-works'
-                  ? 'text-emerald-300 font-bold bg-emerald-500/15 border border-emerald-500/30 shadow-xs shadow-emerald-950/40'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
-              }`}
-            >
-              How It Works
-              {activeSection === 'how-it-works' && (
-                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-emerald-400 rounded-full" />
-              )}
-            </a>
-            <a
-              href="#certifiers"
-              onClick={(e) => handleScrollToSection(e, 'certifiers')}
-              className={`relative px-3 py-1.5 rounded-lg transition-all duration-200 whitespace-nowrap shrink-0 ${
-                activeSection === 'certifiers'
-                  ? 'text-emerald-300 font-bold bg-emerald-500/15 border border-emerald-500/30 shadow-xs shadow-emerald-950/40'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
-              }`}
-            >
-              Certifiers
-              {activeSection === 'certifiers' && (
-                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-emerald-400 rounded-full" />
-              )}
-            </a>
-            <button
-              onClick={() => onViewChange('products')}
-              className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition font-medium whitespace-nowrap shrink-0"
-            >
-              Catalog
-            </button>
-            <button
-              onClick={() => onViewChange('map')}
-              className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition font-medium whitespace-nowrap shrink-0"
-            >
-              Map
-            </button>
+          <nav className="hidden lg:flex items-center gap-2 text-xs xl:text-sm font-medium whitespace-nowrap">
+            {/* Glassmorphic Segmented Navigation Dock */}
+            <div className="flex items-center gap-1 rounded-full bg-slate-900/90 border border-slate-800/90 p-1 shadow-inner backdrop-blur-xl">
+              {[
+                { id: 'features', label: 'Features' },
+                { id: 'how-it-works', label: 'How It Works' },
+                { id: 'certifiers', label: 'Certifiers' },
+              ].map((item) => {
+                const isActive = activeSection === item.id;
+                return (
+                  <a
+                    key={item.id}
+                    href={`#${item.id}`}
+                    onClick={(e) => handleScrollToSection(e, item.id)}
+                    className={`relative flex items-center gap-2 px-3.5 py-1.5 rounded-full transition-all duration-300 whitespace-nowrap shrink-0 ${
+                      isActive
+                        ? 'bg-gradient-to-r from-emerald-500/25 via-emerald-500/15 to-teal-500/25 text-white font-bold border border-emerald-400/50 shadow-[0_0_20px_rgba(16,185,129,0.28)]'
+                        : 'text-slate-300 hover:text-white hover:bg-slate-800/60 border border-transparent'
+                    }`}
+                  >
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full transition-all duration-300 ${
+                        isActive
+                          ? 'bg-emerald-400 shadow-[0_0_8px_#34d399] scale-110'
+                          : 'bg-transparent scale-0 w-0'
+                      }`}
+                    />
+                    <span>{item.label}</span>
+                    {isActive && (
+                      <span className="absolute -bottom-[1px] left-1/2 -translate-x-1/2 w-1/2 h-[2px] bg-gradient-to-r from-transparent via-emerald-300 to-transparent rounded-full" />
+                    )}
+                  </a>
+                );
+              })}
+
+              <div className="h-4 w-[1px] bg-slate-800 mx-0.5" />
+
+              <button
+                onClick={() => onViewChange('products')}
+                className="px-3 py-1.5 rounded-full text-slate-300 hover:text-white hover:bg-slate-800/60 transition font-medium whitespace-nowrap shrink-0"
+              >
+                Catalog
+              </button>
+              <button
+                onClick={() => onViewChange('map')}
+                className="px-3 py-1.5 rounded-full text-slate-300 hover:text-white hover:bg-slate-800/60 transition font-medium whitespace-nowrap shrink-0"
+              >
+                Map
+              </button>
+            </div>
+
             <button
               onClick={() => handleOpenContribution('establishment')}
-              className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 xl:px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:text-emerald-200 transition active:scale-95 shadow-xs whitespace-nowrap shrink-0 ml-1"
+              className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:text-emerald-200 transition active:scale-95 shadow-xs whitespace-nowrap shrink-0"
               title="Submit an establishment or product to the registry"
             >
               <Plus size={13} strokeWidth={2.5} className="text-emerald-400" />
@@ -356,6 +382,18 @@ export default function LandingPage({ onViewChange, userRole }) {
           </div>
 
           <div className="flex items-center gap-2 lg:hidden">
+            {activeSection && (
+              <span className="hidden xs:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/90 border border-emerald-500/40 text-[10px] font-bold text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] animate-pulse" />
+                <span>
+                  {activeSection === 'features'
+                    ? 'Features'
+                    : activeSection === 'how-it-works'
+                    ? 'How It Works'
+                    : 'Certifiers'}
+                </span>
+              </span>
+            )}
             <button
               onClick={() => onViewChange('scanner')}
               className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 px-3 py-1.5 text-xs font-bold text-white shadow-md shadow-emerald-900/40 transition active:scale-95"
@@ -486,6 +524,14 @@ export default function LandingPage({ onViewChange, userRole }) {
             </div>
           </div>
         )}
+
+        {/* Live Topbar Scroll Progress Beam */}
+        <div className="h-[2px] w-full bg-transparent overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-300 shadow-[0_0_10px_rgba(52,211,153,0.7)] transition-all duration-150 ease-out"
+            style={{ width: `${scrollProgress}%` }}
+          />
+        </div>
       </header>
 
       {/* Hero Section */}
@@ -732,6 +778,7 @@ export default function LandingPage({ onViewChange, userRole }) {
         onViewChange={onViewChange}
         onScrollToTop={handleScrollToTop}
         userRole={userRole}
+        activeSection={activeSection}
       />
 
       <ContributionModal
