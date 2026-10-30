@@ -13,7 +13,7 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
       {/* Core Features Grid */}
       <section
         id="features"
-        className="min-h-[calc(100dvh-4rem)] sm:min-h-[calc(100dvh-5rem)] flex flex-col justify-center py-8 sm:py-12 bg-slate-900/60 border-t border-slate-800 scroll-mt-16 sm:scroll-mt-20"
+        className="sm:min-h-[calc(100dvh-5rem)] sm:flex sm:flex-col sm:justify-center py-10 sm:py-12 bg-slate-900/60 border-t border-slate-800 scroll-mt-16 sm:scroll-mt-20"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-10">
@@ -123,7 +123,7 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
       {/* How It Works Section */}
       <section
         id="how-it-works"
-        className="min-h-[calc(100dvh-4rem)] sm:min-h-[calc(100dvh-5rem)] flex flex-col justify-center py-8 sm:py-12 border-t border-slate-800/80 scroll-mt-16 sm:scroll-mt-20"
+        className="sm:min-h-[calc(100dvh-5rem)] sm:flex sm:flex-col sm:justify-center py-10 sm:py-12 border-t border-slate-800/80 scroll-mt-16 sm:scroll-mt-20"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-10">
@@ -212,7 +212,7 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
       {/* Recognized Certifiers & Scope Section */}
       <section
         id="certifiers"
-        className="min-h-[calc(100dvh-4rem)] sm:min-h-[calc(100dvh-5rem)] flex flex-col justify-center py-8 sm:py-12 bg-slate-900/60 border-t border-slate-800 scroll-mt-16 sm:scroll-mt-20"
+        className="sm:min-h-[calc(100dvh-5rem)] sm:flex sm:flex-col sm:justify-center py-10 sm:py-12 bg-slate-900/60 border-t border-slate-800 scroll-mt-16 sm:scroll-mt-20"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="max-w-3xl mx-auto text-center">
@@ -268,7 +268,7 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                       href={body.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-3 inline-flex items-center justify-center gap-1 rounded-lg border border-emerald-700/70 px-2 py-1.5 text-[9px] font-bold text-emerald-300 transition hover:border-emerald-500 hover:bg-emerald-950 sm:text-[10px]"
+                      className="mt-3 inline-flex items-center justify-center gap-1 rounded-lg border border-emerald-700/70 px-2 py-1.5 text-xs font-bold text-emerald-300 transition hover:border-emerald-500 hover:bg-emerald-950"
                     >
                       Official Website <ExternalLink size={11} />
                     </a>
@@ -305,7 +305,7 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                       href={body.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-3 inline-flex items-center justify-center gap-1 rounded-lg border border-emerald-700/70 px-2 py-1.5 text-[9px] font-bold text-emerald-300 transition hover:border-emerald-500 hover:bg-emerald-950 sm:text-[10px]"
+                      className="mt-3 inline-flex items-center justify-center gap-1 rounded-lg border border-emerald-700/70 px-2 py-1.5 text-xs font-bold text-emerald-300 transition hover:border-emerald-500 hover:bg-emerald-950"
                     >
                       Official Website <ExternalLink size={11} />
                     </a>

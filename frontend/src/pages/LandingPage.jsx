@@ -120,36 +120,46 @@ export default function LandingPage({ onViewChange, userRole }) {
 
   const handleScrollToSection = (e, sectionId) => {
     if (e) e.preventDefault();
+    const wasMobileMenuOpen = isMobileMenuOpen;
     setIsMobileMenuOpen(false);
     setActiveSection(sectionId);
     programmaticScrollRef.current = true;
     if (programmaticScrollTimerRef.current) clearTimeout(programmaticScrollTimerRef.current);
-    programmaticScrollTimerRef.current = setTimeout(() => {
-      programmaticScrollRef.current = false;
-    }, 650);
 
-    const container = landingScrollRef.current;
-    const target = document.getElementById(sectionId);
-    if (container && target) {
-      const isDesktop = window.innerWidth >= 640;
-      const headerOffset = isDesktop ? 80 : 64;
-      const containerRect = container.getBoundingClientRect();
-      const targetRect = target.getBoundingClientRect();
-      const sectionTopInScroll = container.scrollTop + (targetRect.top - containerRect.top);
-      const visibleViewportHeight = container.clientHeight - headerOffset;
-      const sectionHeight = target.offsetHeight;
+    const performScroll = () => {
+      const container = landingScrollRef.current;
+      const target = document.getElementById(sectionId);
+      if (container && target) {
+        const isDesktop = window.innerWidth >= 640;
+        const headerOffset = isDesktop ? 80 : 64;
+        const containerRect = container.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        const sectionTopInScroll = container.scrollTop + (targetRect.top - containerRect.top);
+        const visibleViewportHeight = container.clientHeight - headerOffset;
+        const sectionHeight = target.offsetHeight;
 
-      let scrollTarget = sectionTopInScroll - headerOffset;
-      if (isDesktop) {
-        const sectionCenterInScroll = sectionTopInScroll + sectionHeight / 2;
-        const visibleCenterOffset = headerOffset + visibleViewportHeight / 2;
-        scrollTarget = sectionCenterInScroll - visibleCenterOffset;
+        let scrollTarget = sectionTopInScroll - headerOffset;
+        if (isDesktop && sectionHeight < visibleViewportHeight) {
+          const sectionCenterInScroll = sectionTopInScroll + sectionHeight / 2;
+          const visibleCenterOffset = headerOffset + visibleViewportHeight / 2;
+          scrollTarget = sectionCenterInScroll - visibleCenterOffset;
+        }
+
+        container.scrollTo({
+          top: Math.max(0, scrollTarget),
+          behavior: 'smooth',
+        });
       }
 
-      container.scrollTo({
-        top: Math.max(0, scrollTarget),
-        behavior: 'smooth',
-      });
+      programmaticScrollTimerRef.current = setTimeout(() => {
+        programmaticScrollRef.current = false;
+      }, 700);
+    };
+
+    if (wasMobileMenuOpen) {
+      setTimeout(performScroll, 75);
+    } else {
+      performScroll();
     }
   };
 
@@ -399,35 +409,38 @@ export default function LandingPage({ onViewChange, userRole }) {
                 <a
                   href="#features"
                   onClick={(e) => handleScrollToSection(e, 'features')}
-                  className={`px-3 py-2.5 rounded-xl transition ${
+                  className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition ${
                     activeSection === 'features'
                       ? 'text-emerald-400 font-bold'
                       : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
                   }`}
                 >
-                  Features
+                  <span>Features</span>
+                  <Sparkles size={16} className={activeSection === 'features' ? 'text-emerald-400' : 'text-slate-400'} />
                 </a>
                 <a
                   href="#how-it-works"
                   onClick={(e) => handleScrollToSection(e, 'how-it-works')}
-                  className={`px-3 py-2.5 rounded-xl transition ${
+                  className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition ${
                     activeSection === 'how-it-works'
                       ? 'text-emerald-400 font-bold'
                       : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
                   }`}
                 >
-                  How It Works
+                  <span>How It Works</span>
+                  <CheckCircle2 size={16} className={activeSection === 'how-it-works' ? 'text-emerald-400' : 'text-slate-400'} />
                 </a>
                 <a
                   href="#certifiers"
                   onClick={(e) => handleScrollToSection(e, 'certifiers')}
-                  className={`px-3 py-2.5 rounded-xl transition ${
+                  className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition ${
                     activeSection === 'certifiers'
                       ? 'text-emerald-400 font-bold'
                       : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
                   }`}
                 >
-                  Certifiers
+                  <span>Certifiers</span>
+                  <ShieldCheck size={16} className={activeSection === 'certifiers' ? 'text-emerald-400' : 'text-slate-400'} />
                 </a>
                 <button
                   onClick={() => {
