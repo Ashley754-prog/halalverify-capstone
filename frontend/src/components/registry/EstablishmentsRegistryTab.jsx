@@ -9,8 +9,7 @@ import {
     Compass,
     ShieldCheck,
     ExternalLink,
-    ChevronLeft,
-    ChevronRight,
+    ChevronDown,
 } from 'lucide-react';
 import { getStatusConfig, ZAMBOANGA_DISTRICTS, resolveZamboangaDistrict } from '../../data/constants';
 import { getSafeUrl } from '../../utils/security';
@@ -26,8 +25,9 @@ export default function EstablishmentsRegistryTab({
 }) {
     const [statusFilter, setStatusFilter] = useState('all');
     const [districtFilter, setDistrictFilter] = useState('all');
-    const [currentPage, setCurrentPage] = useState(1);
-    const ITEMS_PER_PAGE = 8;
+    const INITIAL_COUNT = 8;
+    const LOAD_INCREMENT = 8;
+    const [visibleCount, setVisibleCount] = useState(INITIAL_COUNT);
 
     const filteredEstablishments = establishments.filter((shop) => {
         const matchesSearch =
@@ -58,37 +58,17 @@ export default function EstablishmentsRegistryTab({
         return true;
     });
 
-    // Reset pagination to page 1 whenever filters or search query change
+    // Reset visible count to initial batch whenever filters or search query change
     useEffect(() => {
-        setCurrentPage(1);
+        setVisibleCount(INITIAL_COUNT);
     }, [districtFilter, statusFilter, localSearch]);
 
-    // Pagination calculations
     const totalItems = filteredEstablishments.length;
-    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
-    const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
-    const startIndex = (safeCurrentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
-    const paginatedEstablishments = filteredEstablishments.slice(startIndex, endIndex);
+    const visibleEstablishments = filteredEstablishments.slice(0, visibleCount);
+    const remainingCount = Math.max(0, totalItems - visibleCount);
 
-    const handlePageChange = (page) => {
-        setCurrentPage(page);
-    };
-
-    const getPageNumbers = () => {
-        const pages = [];
-        if (totalPages <= 5) {
-            for (let i = 1; i <= totalPages; i++) pages.push(i);
-        } else {
-            if (safeCurrentPage <= 3) {
-                pages.push(1, 2, 3, 4, '...', totalPages);
-            } else if (safeCurrentPage >= totalPages - 2) {
-                pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
-            } else {
-                pages.push(1, '...', safeCurrentPage - 1, safeCurrentPage, safeCurrentPage + 1, '...', totalPages);
-            }
-        }
-        return pages;
+    const handleLoadMore = () => {
+        setVisibleCount((prev) => prev + LOAD_INCREMENT);
     };
 
     return (
@@ -164,7 +144,7 @@ export default function EstablishmentsRegistryTab({
                         </button>
                     </div>
                 ) : (
-                    paginatedEstablishments.map((shop) => {
+                    visibleEstablishments.map((shop) => {
                         const statusConfig = getStatusConfig(shop);
                         const districtInfo = resolveZamboangaDistrict(shop);
                         const evidenceUrl = getSafeUrl(shop.certificate_url || shop.logo_url);
@@ -172,12 +152,12 @@ export default function EstablishmentsRegistryTab({
                         const hasPrayer = Boolean(
                             shop.has_prayer_space ||
                             (shop.description && (shop.description.toLowerCase().includes('prayer') || shop.description.toLowerCase().includes('musalah'))) ||
-                            (Array.isArray(shop.amenities) && shop.amenities.some(a => String(a).toLowerCase().includes('prayer')))
+                            (Array.isArray(shop.amenities) && shop.amenities.some((a) => String(a).toLowerCase().includes('prayer')))
                         );
                         const hasAlcoholFree = Boolean(
                             shop.is_alcohol_free ||
                             (shop.description && shop.description.toLowerCase().includes('alcohol')) ||
-                            (Array.isArray(shop.amenities) && shop.amenities.some(a => String(a).toLowerCase().includes('alcohol')))
+                            (Array.isArray(shop.amenities) && shop.amenities.some((a) => String(a).toLowerCase().includes('alcohol')))
                         );
 
                         return (
@@ -200,7 +180,7 @@ export default function EstablishmentsRegistryTab({
                                                 </span>
                                             )}
                                         </div>
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 border ${statusConfig.badgeBg}`}>
+                                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full shrink-0 border ${statusConfig.badgeBg}`}>
                                             {statusConfig.label}
                                         </span>
                                     </div>
@@ -279,14 +259,14 @@ export default function EstablishmentsRegistryTab({
                                 {/* Card Actions */}
                                 {isAdmin ? (
                                     <div className="flex gap-2 pt-1 border-t border-slate-200/60">
-                                        <button 
-                                            onClick={() => onOpenModal('edit-establishment', shop)} 
+                                        <button
+                                            onClick={() => onOpenModal('edit-establishment', shop)}
                                             className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 py-1.5 rounded-lg transition-colors shadow-2xs cursor-pointer"
                                         >
                                             <Pencil size={12} /> Edit
                                         </button>
-                                        <button 
-                                            onClick={() => onDeleteEstablishment(shop)} 
+                                        <button
+                                            onClick={() => onDeleteEstablishment(shop)}
                                             className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 py-1.5 rounded-lg transition-colors shadow-2xs cursor-pointer"
                                         >
                                             <Trash2 size={12} /> Delete
@@ -311,67 +291,28 @@ export default function EstablishmentsRegistryTab({
                 )}
             </div>
 
-            {/* Pagination Controls */}
+            {/* Progressive Load More Footer */}
             {totalItems > 0 && (
-                <div className="pt-3 pb-1 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <div className="text-xs text-slate-500 font-medium text-center sm:text-left">
-                        Showing <strong className="font-semibold text-slate-700">{totalItems === 0 ? 0 : startIndex + 1}</strong>–<strong className="font-semibold text-slate-700">{endIndex}</strong> of <strong className="font-semibold text-slate-700">{totalItems}</strong> audit records
-                    </div>
+                <div className="pt-4 pb-2 border-t border-slate-200/80 flex flex-col items-center justify-center gap-2.5">
+                    <p className="text-xs text-slate-500 font-medium text-center">
+                        Showing <strong className="font-semibold text-slate-700">{visibleEstablishments.length}</strong> of{' '}
+                        <strong className="font-semibold text-slate-700">{totalItems}</strong> audit records
+                    </p>
 
-                    {totalPages > 1 && (
-                        <div className="flex items-center gap-1 sm:gap-1.5">
-                            <button
-                                type="button"
-                                onClick={() => handlePageChange(safeCurrentPage - 1)}
-                                disabled={safeCurrentPage === 1}
-                                className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1 transition ${
-                                    safeCurrentPage === 1
-                                        ? 'border-slate-200 text-slate-300 cursor-not-allowed bg-slate-50'
-                                        : 'border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300 cursor-pointer'
-                                }`}
-                                aria-label="Previous Page"
-                            >
-                                <ChevronLeft size={16} />
-                                <span className="hidden sm:inline">Prev</span>
-                            </button>
-
-                            {getPageNumbers().map((p, idx) =>
-                                p === '...' ? (
-                                    <span key={`ellipsis-${idx}`} className="px-2 py-1 text-slate-400 select-none text-xs">
-                                        ...
-                                    </span>
-                                ) : (
-                                    <button
-                                        key={p}
-                                        type="button"
-                                        onClick={() => handlePageChange(p)}
-                                        className={`w-8 h-8 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                            safeCurrentPage === p
-                                                ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30'
-                                                : 'text-slate-700 hover:bg-slate-100 border border-transparent hover:border-slate-200'
-                                        }`}
-                                    >
-                                        {p}
-                                    </button>
-                                )
-                            )}
-
-                            <button
-                                type="button"
-                                onClick={() => handlePageChange(safeCurrentPage + 1)}
-                                disabled={safeCurrentPage === totalPages}
-                                className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1 transition ${
-                                    safeCurrentPage === totalPages
-                                        ? 'border-slate-200 text-slate-300 cursor-not-allowed bg-slate-50'
-                                        : 'border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300 cursor-pointer'
-                                }`}
-                                aria-label="Next Page"
-                            >
-                                <span className="hidden sm:inline">Next</span>
-                                <ChevronRight size={16} />
-                            </button>
-                        </div>
-                    )}
+                    {remainingCount > 0 ? (
+                        <button
+                            type="button"
+                            onClick={handleLoadMore}
+                            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-sm transition active:scale-95 cursor-pointer"
+                        >
+                            <span>Load More Establishments ({remainingCount} remaining)</span>
+                            <ChevronDown size={15} />
+                        </button>
+                    ) : totalItems > INITIAL_COUNT ? (
+                        <p className="text-xs text-emerald-600 font-semibold bg-emerald-50 border border-emerald-200/60 px-3 py-1 rounded-full">
+                            All {totalItems} establishments loaded
+                        </p>
+                    ) : null}
                 </div>
             )}
         </div>

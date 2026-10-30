@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { RefreshCw, AlertTriangle, Layers, Lock } from 'lucide-react';
+import { RefreshCw, AlertTriangle, Layers, Lock, ChevronDown } from 'lucide-react';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
 import { simplifyStatus } from '../utils/textFormatters';
@@ -25,8 +25,13 @@ export const ScanHistory = ({ userRole, onViewChange }) => {
     const [error, setError] = useState('');
     const [selectedScan, setSelectedScan] = useState(null);
     const [isGuest, setIsGuest] = useState(false);
+    const [visibleMobileCount, setVisibleMobileCount] = useState(10);
 
     const isAdmin = userRole === 'admin';
+
+    useEffect(() => {
+        setVisibleMobileCount(10);
+    }, [modeFilter, verdictFilter, search]);
 
     const fetchScanHistory = useCallback(async (showFullLoading = false) => {
         try {

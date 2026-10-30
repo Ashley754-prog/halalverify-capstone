@@ -1,5 +1,5 @@
-
-import { Database, Search, Pencil, Trash2, ExternalLink } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Database, Search, Pencil, Trash2, ExternalLink, ChevronDown } from 'lucide-react';
 
 const getAuthorityInfo = (item) => {
     const text = `${item.reason || ''} ${item.source_description || ''}`.toLowerCase();
@@ -24,18 +24,37 @@ export default function AdditivesRegistryTab({
     onOpenModal,
     onDeleteAdditive,
 }) {
-    const filteredAdditives = additives.filter(item => {
-        const matchesSearch = (item.code || '').toLowerCase().includes(dictSearch.toLowerCase()) ||
+    const INITIAL_COUNT = 16;
+    const LOAD_INCREMENT = 16;
+    const [visibleCount, setVisibleCount] = useState(INITIAL_COUNT);
+
+    const filteredAdditives = additives.filter((item) => {
+        const matchesSearch =
+            (item.code || '').toLowerCase().includes(dictSearch.toLowerCase()) ||
             (item.name || '').toLowerCase().includes(dictSearch.toLowerCase()) ||
             (item.source_description || '').toLowerCase().includes(dictSearch.toLowerCase());
-        
-        const matchesStatus = additiveStatusFilter === 'all' || 
+
+        const matchesStatus =
+            additiveStatusFilter === 'all' ||
             (item.status || '').toLowerCase() === additiveStatusFilter.toLowerCase();
-        const matchesOrigin = additiveOriginFilter === 'all' || 
+        const matchesOrigin =
+            additiveOriginFilter === 'all' ||
             (item.origin && item.origin.toLowerCase().includes(additiveOriginFilter.toLowerCase()));
 
         return matchesSearch && matchesStatus && matchesOrigin;
     });
+
+    useEffect(() => {
+        setVisibleCount(INITIAL_COUNT);
+    }, [dictSearch, additiveStatusFilter, additiveOriginFilter]);
+
+    const totalItems = filteredAdditives.length;
+    const visibleAdditives = filteredAdditives.slice(0, visibleCount);
+    const remainingCount = Math.max(0, totalItems - visibleCount);
+
+    const handleLoadMore = () => {
+        setVisibleCount((prev) => prev + LOAD_INCREMENT);
+    };
 
     return (
         <div className="bg-white p-3 sm:p-6 rounded-2xl shadow-sm border border-slate-200 w-full">
@@ -49,12 +68,13 @@ export default function AdditivesRegistryTab({
                     </p>
                 </div>
 
-                <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full md:w-auto">
+                <div className="grid grid-cols-2 md:flex md:items-center gap-2 w-full md:w-auto">
                     {/* Status Filter */}
                     <select
                         value={additiveStatusFilter}
                         onChange={(e) => setAdditiveStatusFilter(e.target.value)}
-                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer flex-1 sm:flex-none"
+                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full md:w-auto"
+                        aria-label="Filter by chemical compliance status"
                     >
                         <option value="all">All Statuses</option>
                         <option value="Halal">Halal</option>
@@ -66,7 +86,8 @@ export default function AdditivesRegistryTab({
                     <select
                         value={additiveOriginFilter}
                         onChange={(e) => setAdditiveOriginFilter(e.target.value)}
-                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer flex-1 sm:flex-none"
+                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full md:w-auto"
+                        aria-label="Filter by chemical origin"
                     >
                         <option value="all">All Origins</option>
                         <option value="Plant">Plant</option>
@@ -75,7 +96,7 @@ export default function AdditivesRegistryTab({
                         <option value="Synthetic">Synthetic</option>
                     </select>
 
-                    <div className="relative w-full sm:w-60">
+                    <div className="relative col-span-2 md:col-span-1 md:w-64">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                         <input
                             type="text"
@@ -88,12 +109,14 @@ export default function AdditivesRegistryTab({
                 </div>
             </div>
 
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 pb-4">
-                {filteredAdditives.map((item) => (
-                    <div key={item.id || item.code} className="bg-slate-50 border border-slate-100 rounded-xl p-4 sm:p-5 flex flex-col justify-between h-full gap-3 sm:gap-4 hover:border-slate-300 transition shadow-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 pb-2">
+                {visibleAdditives.map((item) => (
+                    <div
+                        key={item.id || item.code}
+                        className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 sm:p-4 flex flex-col justify-between h-full gap-2.5 sm:gap-3 hover:border-slate-300 transition shadow-xs"
+                    >
                         <div className="flex justify-between items-start">
-                            <span className="text-xs font-mono font-bold bg-slate-200 text-slate-800 px-2.5 py-1 rounded-md border border-slate-300">
+                            <span className="text-xs font-mono font-bold bg-slate-200 text-slate-800 px-2.5 py-0.5 rounded-md border border-slate-300">
                                 {item.code}
                             </span>
                             <div className="flex items-center gap-1.5">
@@ -102,25 +125,27 @@ export default function AdditivesRegistryTab({
                                         {item.origin}
                                     </span>
                                 )}
-                                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
-                                    item.status === 'Haram'
-                                        ? 'bg-red-50 text-red-600 border border-red-200'
-                                        : item.status === 'Halal'
+                                <span
+                                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                                        item.status === 'Haram'
+                                            ? 'bg-red-50 text-red-600 border border-red-200'
+                                            : item.status === 'Halal'
                                             ? 'bg-green-50 text-green-600 border border-green-200'
                                             : 'bg-amber-50 text-amber-600 border border-amber-200'
-                                }`}>
+                                    }`}
+                                >
                                     {item.status}
                                 </span>
                             </div>
                         </div>
 
                         <div>
-                            <h4 className="text-sm sm:text-base font-bold text-slate-800 leading-tight">{item.name}</h4>
-                            <p className="text-xs text-slate-500 mt-1.5 line-clamp-3">
+                            <h4 className="text-sm font-bold text-slate-800 leading-tight">{item.name}</h4>
+                            <p className="text-xs text-slate-500 mt-1 line-clamp-2">
                                 Source: <span className="italic">{item.source_description || 'Unspecified origin.'}</span>
                             </p>
                             {item.reason && (
-                                <p className="text-xs text-slate-500 mt-1 line-clamp-3">
+                                <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">
                                     Ruling: <span className="italic">{item.reason}</span>
                                 </p>
                             )}
@@ -146,23 +171,48 @@ export default function AdditivesRegistryTab({
 
                         {isAdmin && (
                             <div className="flex gap-2 pt-2 border-t border-slate-200">
-                                <button 
-                                    onClick={() => onOpenModal('edit-additive', item)} 
-                                    className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 py-2 rounded-lg transition-colors"
+                                <button
+                                    onClick={() => onOpenModal('edit-additive', item)}
+                                    className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 py-1.5 rounded-lg transition-colors cursor-pointer"
                                 >
-                                    <Pencil size={13} /> Edit
+                                    <Pencil size={12} /> Edit
                                 </button>
-                                <button 
-                                    onClick={() => onDeleteAdditive(item)} 
-                                    className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 py-2 rounded-lg transition-colors"
+                                <button
+                                    onClick={() => onDeleteAdditive(item)}
+                                    className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 py-1.5 rounded-lg transition-colors cursor-pointer"
                                 >
-                                    <Trash2 size={13} /> Delete
+                                    <Trash2 size={12} /> Delete
                                 </button>
                             </div>
                         )}
                     </div>
                 ))}
             </div>
+
+            {/* Progressive Load More Footer */}
+            {totalItems > 0 && (
+                <div className="pt-4 pb-2 border-t border-slate-200/80 flex flex-col items-center justify-center gap-2.5">
+                    <p className="text-xs text-slate-500 font-medium text-center">
+                        Showing <strong className="font-semibold text-slate-700">{visibleAdditives.length}</strong> of{' '}
+                        <strong className="font-semibold text-slate-700">{totalItems}</strong> chemical additives
+                    </p>
+
+                    {remainingCount > 0 ? (
+                        <button
+                            type="button"
+                            onClick={handleLoadMore}
+                            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-sm transition active:scale-95 cursor-pointer"
+                        >
+                            <span>Load More Additives ({remainingCount} remaining)</span>
+                            <ChevronDown size={15} />
+                        </button>
+                    ) : totalItems > INITIAL_COUNT ? (
+                        <p className="text-xs text-emerald-600 font-semibold bg-emerald-50 border border-emerald-200/60 px-3 py-1 rounded-full">
+                            All {totalItems} additives loaded
+                        </p>
+                    ) : null}
+                </div>
+            )}
         </div>
     );
 }
