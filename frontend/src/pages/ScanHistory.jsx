@@ -14,6 +14,8 @@ import ScanFilterBar from '../components/history/ScanFilterBar';
 import ScanMobileCard from '../components/history/ScanMobileCard';
 import ScanDesktopTable from '../components/history/ScanDesktopTable';
 import ScanDetailModal from '../components/history/ScanDetailModal';
+import Pagination from '../components/ui/Pagination';
+import EmptyState from '../components/ui/EmptyState';
 
 export const ScanHistory = ({ userRole, onViewChange }) => {
     const [modeFilter, setModeFilter] = useState('all');
@@ -25,12 +27,13 @@ export const ScanHistory = ({ userRole, onViewChange }) => {
     const [error, setError] = useState('');
     const [selectedScan, setSelectedScan] = useState(null);
     const [isGuest, setIsGuest] = useState(false);
-    const [visibleMobileCount, setVisibleMobileCount] = useState(10);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     const isAdmin = userRole === 'admin';
 
     useEffect(() => {
-        setVisibleMobileCount(10);
+        setCurrentPage(1);
     }, [modeFilter, verdictFilter, search]);
 
     const fetchScanHistory = useCallback(async (showFullLoading = false) => {
@@ -166,6 +169,12 @@ export const ScanHistory = ({ userRole, onViewChange }) => {
         });
     }, [scanHistory, modeFilter, verdictFilter, search]);
 
+    const totalItems = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+    const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+    const startIndex = (safeCurrentPage - 1) * itemsPerPage;
+    const paginatedScans = filtered.slice(startIndex, startIndex + itemsPerPage);
+
     const handleClearFilters = () => {
         setSearch('');
         setModeFilter('all');
@@ -234,53 +243,53 @@ export const ScanHistory = ({ userRole, onViewChange }) => {
                         </div>
                     )}
 
+                    {/* Empty State */}
+                    {!loading && filtered.length === 0 && (
+                        <EmptyState
+                            icon={Layers}
+                            title="No scan records match your criteria"
+                            description="Try clearing your filters or searching a different term to view previous scan reports."
+                            resetText="Clear Filters"
+                            onReset={handleClearFilters}
+                            actionText={onViewChange ? 'Start New Scan' : undefined}
+                            onAction={onViewChange ? () => onViewChange('scanner') : undefined}
+                            className="bg-white shadow-xs"
+                        />
+                    )}
+
                     {/* Mobile View: Modern Card Feed (Screens < 768px) */}
-                    {!loading && (
+                    {!loading && filtered.length > 0 && (
                         <div className="block md:hidden space-y-3">
-                            {filtered.map((item) => (
+                            {paginatedScans.map((item) => (
                                 <ScanMobileCard
                                     key={item.id}
                                     item={item}
                                     onClick={setSelectedScan}
                                 />
                             ))}
-
-                            {filtered.length === 0 && (
-                                <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-400 space-y-3">
-                                    <Layers size={28} className="mx-auto text-slate-300" />
-                                    <p className="text-xs sm:text-sm font-semibold text-slate-600">No scan records match your criteria.</p>
-                                    <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-                                        <button
-                                            type="button"
-                                            onClick={handleClearFilters}
-                                            className="text-xs font-bold text-emerald-600 hover:text-emerald-700 underline"
-                                        >
-                                            Clear search & filters
-                                        </button>
-                                        {onViewChange && (
-                                            <>
-                                                <span className="text-slate-300">&bull;</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => onViewChange('scanner')}
-                                                    className="text-xs font-bold text-emerald-600 hover:text-emerald-700 underline"
-                                                >
-                                                    Launch Scanner
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     )}
 
                     {/* Desktop View: High-Density Responsive Table (Screens >= 768px) */}
-                    {!loading && (
+                    {!loading && filtered.length > 0 && (
                         <ScanDesktopTable
-                            items={filtered}
+                            items={paginatedScans}
                             onSelectItem={setSelectedScan}
                             onClearFilters={handleClearFilters}
+                        />
+                    )}
+
+                    {/* Standardized Global Pagination */}
+                    {!loading && filtered.length > 0 && (
+                        <Pagination
+                            currentPage={safeCurrentPage}
+                            totalItems={totalItems}
+                            itemsPerPage={itemsPerPage}
+                            onPageChange={setCurrentPage}
+                            onItemsPerPageChange={setItemsPerPage}
+                            itemsPerPageOptions={[10, 25, 50]}
+                            itemLabel="scans"
+                            className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 shadow-sm"
                         />
                     )}
                 </>

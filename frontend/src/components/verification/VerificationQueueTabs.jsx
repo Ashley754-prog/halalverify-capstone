@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
     ShieldCheck,
     CheckCircle2,
@@ -6,8 +7,14 @@ import {
     ExternalLink,
     MapPin,
     AlertTriangle,
+    Search,
+    Store,
+    Package,
+    Flag,
 } from 'lucide-react';
 import { getSafeUrl } from '../../utils/security';
+import Pagination from '../ui/Pagination';
+import EmptyState from '../ui/EmptyState';
 
 export default function VerificationQueueTabs({
     activeTab,
@@ -23,38 +30,77 @@ export default function VerificationQueueTabs({
     handleVerifyProduct,
     handleResolveReport,
 }) {
+    const [search, setSearch] = useState('');
+    const [page, setPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(6);
+
+    useEffect(() => {
+        setPage(1);
+        setSearch('');
+    }, [activeTab]);
+
     if (activeTab === 'establishments') {
+        const filtered = establishments.filter((est) => {
+            const q = search.toLowerCase().trim();
+            if (!q) return true;
+            return (
+                (est.name || '').toLowerCase().includes(q) ||
+                (est.address || '').toLowerCase().includes(q) ||
+                (est.city || '').toLowerCase().includes(q) ||
+                (est.certificate_number || '').toLowerCase().includes(q)
+            );
+        });
+
+        const totalItems = filtered.length;
+        const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+        const safePage = Math.min(Math.max(1, page), totalPages);
+        const startIndex = (safePage - 1) * itemsPerPage;
+        const paginated = filtered.slice(startIndex, startIndex + itemsPerPage);
+
         return (
-            <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
                     <div>
-                        <h3 className="text-sm font-bold text-slate-900">
+                        <h3 className="text-sm sm:text-base font-bold text-slate-900">
                             Pending Establishment Registrations ({establishments.length})
                         </h3>
                         <p className="text-xs text-slate-500">
                             Verify physical certificates against accredited certifying body ledgers before publishing to public search.
                         </p>
                     </div>
+
+                    <div className="relative w-full sm:w-64">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                        <input
+                            type="text"
+                            placeholder="Filter venues by name..."
+                            value={search}
+                            onChange={(e) => {
+                                setSearch(e.target.value);
+                                setPage(1);
+                            }}
+                            className="w-full h-8.5 bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 text-xs focus:outline-none focus:border-emerald-500 transition"
+                        />
+                    </div>
                 </div>
 
-                {establishments.length === 0 ? (
-                    <div className="text-center py-16 text-slate-400 space-y-2">
-                        <CheckCircle2 size={36} className="mx-auto text-emerald-500" />
-                        <p className="text-sm font-bold text-slate-700">Verification Queue is Clean!</p>
-                        <p className="text-xs">No pending establishment submissions require administrative review at this time.</p>
-                        {onViewChange && (
-                            <button
-                                type="button"
-                                onClick={() => onViewChange('dashboard')}
-                                className="mt-2 text-xs font-semibold text-emerald-700 hover:text-emerald-800 underline inline-flex items-center gap-1"
-                            >
-                                Return to Dashboard
-                            </button>
-                        )}
-                    </div>
+                {filtered.length === 0 ? (
+                    <EmptyState
+                        icon={search ? Search : CheckCircle2}
+                        title={search ? 'No establishments match your filter' : 'Verification Queue is Clean!'}
+                        description={
+                            search
+                                ? `No pending submissions match "${search}".`
+                                : 'No pending establishment submissions require administrative review at this time.'
+                        }
+                        resetText={search ? 'Clear Filter' : undefined}
+                        onReset={search ? () => setSearch('') : undefined}
+                        actionText={!search && onViewChange ? 'Return to Dashboard' : undefined}
+                        onAction={!search && onViewChange ? () => onViewChange('dashboard') : undefined}
+                    />
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
-                        {establishments.map((est) => (
+                        {paginated.map((est) => (
                             <div
                                 key={est.id}
                                 className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-slate-300 transition flex flex-col justify-between space-y-3 shadow-xs"
@@ -132,7 +178,7 @@ export default function VerificationQueueTabs({
                                     <button
                                         type="button"
                                         onClick={() => openInspection(est)}
-                                        className="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 transition flex items-center justify-center gap-1.5 shadow-sm"
+                                        className="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                                     >
                                         <ShieldCheck size={14} />
                                         <span>Inspect & Verify</span>
@@ -142,7 +188,7 @@ export default function VerificationQueueTabs({
                                             type="button"
                                             disabled={autoVerifyingId === est.id}
                                             onClick={() => handleAutoVerifyEstablishment(est.id, true)}
-                                            className="py-2 px-3 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition flex items-center justify-center gap-1 shrink-0"
+                                            className="py-2 px-3 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition flex items-center justify-center gap-1 shrink-0 cursor-pointer"
                                             title="Run certificate check & Auto-Approve if valid"
                                         >
                                             <CheckCircle2 size={13} className={autoVerifyingId === est.id ? 'animate-spin text-emerald-600' : ''} />
@@ -154,42 +200,83 @@ export default function VerificationQueueTabs({
                         ))}
                     </div>
                 )}
+
+                {totalItems > 0 && (
+                    <Pagination
+                        currentPage={safePage}
+                        totalItems={totalItems}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setPage}
+                        onItemsPerPageChange={setItemsPerPage}
+                        itemsPerPageOptions={[6, 12, 24]}
+                        itemLabel="establishments"
+                    />
+                )}
             </div>
         );
     }
 
     if (activeTab === 'products') {
+        const filtered = products.filter((prod) => {
+            const q = search.toLowerCase().trim();
+            if (!q) return true;
+            return (
+                (prod.name || '').toLowerCase().includes(q) ||
+                (prod.category || '').toLowerCase().includes(q) ||
+                (prod.brand || '').toLowerCase().includes(q)
+            );
+        });
+
+        const totalItems = filtered.length;
+        const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+        const safePage = Math.min(Math.max(1, page), totalPages);
+        const startIndex = (safePage - 1) * itemsPerPage;
+        const paginated = filtered.slice(startIndex, startIndex + itemsPerPage);
+
         return (
-            <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
                     <div>
-                        <h3 className="text-sm font-bold text-slate-900">
+                        <h3 className="text-sm sm:text-base font-bold text-slate-900">
                             User-Submitted Food Products ({products.length})
                         </h3>
                         <p className="text-xs text-slate-500">
                             Audit community product submissions before indexing them in the public database.
                         </p>
                     </div>
+
+                    <div className="relative w-full sm:w-64">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                        <input
+                            type="text"
+                            placeholder="Filter products by name..."
+                            value={search}
+                            onChange={(e) => {
+                                setSearch(e.target.value);
+                                setPage(1);
+                            }}
+                            className="w-full h-8.5 bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 text-xs focus:outline-none focus:border-emerald-500 transition"
+                        />
+                    </div>
                 </div>
 
-                {products.length === 0 ? (
-                    <div className="text-center py-16 text-slate-400 space-y-2">
-                        <CheckCircle2 size={36} className="mx-auto text-emerald-500" />
-                        <p className="text-sm font-bold text-slate-700">All Products Verified!</p>
-                        <p className="text-xs">No pending community products awaiting approval.</p>
-                        {onViewChange && (
-                            <button
-                                type="button"
-                                onClick={() => onViewChange('dashboard')}
-                                className="mt-2 text-xs font-semibold text-emerald-700 hover:text-emerald-800 underline inline-flex items-center gap-1"
-                            >
-                                Return to Dashboard
-                            </button>
-                        )}
-                    </div>
+                {filtered.length === 0 ? (
+                    <EmptyState
+                        icon={search ? Search : CheckCircle2}
+                        title={search ? 'No products match your filter' : 'All Products Verified!'}
+                        description={
+                            search
+                                ? `No pending products match "${search}".`
+                                : 'No pending community products awaiting approval.'
+                        }
+                        resetText={search ? 'Clear Filter' : undefined}
+                        onReset={search ? () => setSearch('') : undefined}
+                        actionText={!search && onViewChange ? 'Return to Dashboard' : undefined}
+                        onAction={!search && onViewChange ? () => onViewChange('dashboard') : undefined}
+                    />
                 ) : (
                     <div className="divide-y divide-slate-100">
-                        {products.map((prod) => (
+                        {paginated.map((prod) => (
                             <div key={prod.id} className="py-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-2">
@@ -208,7 +295,7 @@ export default function VerificationQueueTabs({
                                     <button
                                         type="button"
                                         onClick={() => openInspection(prod, 'product')}
-                                        className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition flex items-center gap-1"
+                                        className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition flex items-center gap-1 cursor-pointer"
                                         title="Inspect product packaging, ingredients, and certification credentials"
                                     >
                                         <FileText size={12} />
@@ -218,7 +305,7 @@ export default function VerificationQueueTabs({
                                         type="button"
                                         disabled={autoVerifyingId === prod.id}
                                         onClick={() => handleAutoVerifyProduct(prod.id, true)}
-                                        className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition flex items-center gap-1"
+                                        className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition flex items-center gap-1 cursor-pointer"
                                         title="Screen additives and certifying credentials"
                                     >
                                         <ShieldCheck size={12} className={autoVerifyingId === prod.id ? 'animate-spin text-emerald-600' : ''} />
@@ -228,7 +315,7 @@ export default function VerificationQueueTabs({
                                         type="button"
                                         disabled={processingId === prod.id}
                                         onClick={() => handleVerifyProduct(prod, 'VERIFIED')}
-                                        className="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 transition flex items-center gap-1"
+                                        className="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 transition flex items-center gap-1 cursor-pointer shadow-2xs"
                                     >
                                         <CheckCircle2 size={13} />
                                         <span>Approve</span>
@@ -237,7 +324,7 @@ export default function VerificationQueueTabs({
                                         type="button"
                                         disabled={processingId === prod.id}
                                         onClick={() => handleVerifyProduct(prod, 'REJECTED')}
-                                        className="px-3 py-1.5 rounded-lg text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 transition flex items-center gap-1"
+                                        className="px-3 py-1.5 rounded-lg text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 transition flex items-center gap-1 cursor-pointer"
                                     >
                                         <XCircle size={13} />
                                         <span>Reject</span>
@@ -247,45 +334,86 @@ export default function VerificationQueueTabs({
                         ))}
                     </div>
                 )}
+
+                {totalItems > 0 && (
+                    <Pagination
+                        currentPage={safePage}
+                        totalItems={totalItems}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setPage}
+                        onItemsPerPageChange={setItemsPerPage}
+                        itemsPerPageOptions={[6, 12, 24]}
+                        itemLabel="products"
+                    />
+                )}
             </div>
         );
     }
 
     if (activeTab === 'reports') {
+        const filtered = reports.filter((rep) => {
+            const q = search.toLowerCase().trim();
+            if (!q) return true;
+            return (
+                (rep.issue_type || '').toLowerCase().includes(q) ||
+                (rep.subject_name || '').toLowerCase().includes(q) ||
+                (rep.description || '').toLowerCase().includes(q)
+            );
+        });
+
+        const totalItems = filtered.length;
+        const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+        const safePage = Math.min(Math.max(1, page), totalPages);
+        const startIndex = (safePage - 1) * itemsPerPage;
+        const paginated = filtered.slice(startIndex, startIndex + itemsPerPage);
+
         return (
-            <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
                     <div>
-                        <h3 className="text-sm font-bold text-slate-900">
+                        <h3 className="text-sm sm:text-base font-bold text-slate-900">
                             Open User Issue Reports & Flags ({reports.length})
                         </h3>
                         <p className="text-xs text-slate-500">
                             Authenticated reports flagged by community users regarding expired certificates or questionable ingredients.
                         </p>
                     </div>
+
+                    <div className="relative w-full sm:w-64">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                        <input
+                            type="text"
+                            placeholder="Filter reports by keyword..."
+                            value={search}
+                            onChange={(e) => {
+                                setSearch(e.target.value);
+                                setPage(1);
+                            }}
+                            className="w-full h-8.5 bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 text-xs focus:outline-none focus:border-emerald-500 transition"
+                        />
+                    </div>
                 </div>
 
-                {reports.length === 0 ? (
-                    <div className="text-center py-16 text-slate-400 space-y-2">
-                        <CheckCircle2 size={36} className="mx-auto text-emerald-500" />
-                        <p className="text-sm font-bold text-slate-700">No Open Reports!</p>
-                        <p className="text-xs">The community flag queue is completely resolved.</p>
-                        {onViewChange && (
-                            <button
-                                type="button"
-                                onClick={() => onViewChange('dashboard')}
-                                className="mt-2 text-xs font-semibold text-emerald-700 hover:text-emerald-800 underline inline-flex items-center gap-1"
-                            >
-                                Return to Dashboard
-                            </button>
-                        )}
-                    </div>
+                {filtered.length === 0 ? (
+                    <EmptyState
+                        icon={search ? Search : CheckCircle2}
+                        title={search ? 'No reports match your filter' : 'No Open Reports!'}
+                        description={
+                            search
+                                ? `No issue reports match "${search}".`
+                                : 'The community flag queue is completely resolved.'
+                        }
+                        resetText={search ? 'Clear Filter' : undefined}
+                        onReset={search ? () => setSearch('') : undefined}
+                        actionText={!search && onViewChange ? 'Return to Dashboard' : undefined}
+                        onAction={!search && onViewChange ? () => onViewChange('dashboard') : undefined}
+                    />
                 ) : (
                     <div className="space-y-3">
-                        {reports.map((rep) => (
+                        {paginated.map((rep) => (
                             <div
                                 key={rep.id}
-                                className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2.5"
+                                className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2.5 shadow-2xs"
                             >
                                 <div className="flex items-start justify-between gap-2">
                                     <div className="flex items-center gap-2">
@@ -319,7 +447,7 @@ export default function VerificationQueueTabs({
                                         type="button"
                                         disabled={processingId === rep.id}
                                         onClick={() => handleResolveReport(rep, 'dismissed')}
-                                        className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 bg-slate-200 hover:bg-slate-300 transition"
+                                        className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 bg-slate-200 hover:bg-slate-300 transition cursor-pointer"
                                     >
                                         Dismiss Flag
                                     </button>
@@ -327,7 +455,7 @@ export default function VerificationQueueTabs({
                                         type="button"
                                         disabled={processingId === rep.id}
                                         onClick={() => handleResolveReport(rep, 'resolved')}
-                                        className="px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition"
+                                        className="px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition cursor-pointer"
                                     >
                                         Resolve Issue
                                     </button>
@@ -336,7 +464,7 @@ export default function VerificationQueueTabs({
                                             type="button"
                                             disabled={processingId === rep.id}
                                             onClick={() => handleResolveReport(rep, 'resolved', true)}
-                                            className="px-3 py-1.5 rounded-lg text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 transition flex items-center gap-1"
+                                            className="px-3 py-1.5 rounded-lg text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 transition flex items-center gap-1 cursor-pointer"
                                             title="Flag and suspend establishment based on confirmed violation"
                                         >
                                             <AlertTriangle size={12} />
@@ -347,6 +475,18 @@ export default function VerificationQueueTabs({
                             </div>
                         ))}
                     </div>
+                )}
+
+                {totalItems > 0 && (
+                    <Pagination
+                        currentPage={safePage}
+                        totalItems={totalItems}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setPage}
+                        onItemsPerPageChange={setItemsPerPage}
+                        itemsPerPageOptions={[6, 12, 24]}
+                        itemLabel="reports"
+                    />
                 )}
             </div>
         );

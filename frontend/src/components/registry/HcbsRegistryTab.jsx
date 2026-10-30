@@ -1,5 +1,7 @@
-
+import { useState, useEffect } from 'react';
 import { Award, Search, Building2, Globe, ShieldCheck, Calendar, FileText, ExternalLink, Pencil, Trash2 } from 'lucide-react';
+import Pagination from '../ui/Pagination';
+import EmptyState from '../ui/EmptyState';
 
 function HcbCategoryIcon({ isGov, isIntl, isLocal }) {
     return (
@@ -21,6 +23,9 @@ export default function HcbsRegistryTab({
     onOpenModal,
     onDeleteHcb,
 }) {
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(6);
+
     const filteredHcbs = hcbs.filter(body => {
         const matchesSearch = (body.name || '').toLowerCase().includes(hcbSearch.toLowerCase()) ||
             (body.code || '').toLowerCase().includes(hcbSearch.toLowerCase()) ||
@@ -34,8 +39,22 @@ export default function HcbsRegistryTab({
         return matchesSearch && matchesCategory;
     });
 
-    return (
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [hcbSearch, hcbCategoryFilter]);
 
+    const totalItems = filteredHcbs.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+    const safePage = Math.min(Math.max(1, currentPage), totalPages);
+    const startIndex = (safePage - 1) * itemsPerPage;
+    const paginatedHcbs = filteredHcbs.slice(startIndex, startIndex + itemsPerPage);
+
+    const handleResetFilters = () => {
+        setHcbSearch('');
+        setHcbCategoryFilter('all');
+    };
+
+    return (
         <div className="bg-white p-3 sm:p-6 rounded-2xl shadow-sm border border-slate-200 w-full">
             <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-2.5 sm:gap-3 mb-3 sm:mb-6 shrink-0">
                 <div>
@@ -47,11 +66,12 @@ export default function HcbsRegistryTab({
                     </p>
                 </div>
 
-                <div className="flex items-center gap-2 w-full md:w-auto">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
                     <select
                         value={hcbCategoryFilter}
                         onChange={(e) => setHcbCategoryFilter(e.target.value)}
-                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer shrink-0 max-w-[140px] sm:max-w-none"
+                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer shrink-0 w-full sm:w-auto"
+                        aria-label="Filter by certifying authority category"
                     >
                         <option value="all">All Bodies</option>
                         <option value="Local & Regional HCB">Local & Regional</option>
@@ -60,7 +80,7 @@ export default function HcbsRegistryTab({
                         <option value="International Authority">International</option>
                     </select>
 
-                    <div className="relative flex-1 md:w-72">
+                    <div className="relative flex-1 md:w-64">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                         <input
                             type="text"
@@ -73,102 +93,124 @@ export default function HcbsRegistryTab({
                 </div>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-2">
+                {filteredHcbs.length === 0 ? (
+                    <EmptyState
+                        icon={Award}
+                        title="No certifying bodies found"
+                        description="No certifying bodies match your active search or category filter."
+                        resetText="Reset Filters"
+                        onReset={handleResetFilters}
+                    />
+                ) : (
+                    paginatedHcbs.map((body) => {
+                        const isGov = body.category === 'Government Oversight';
+                        const isIntl = body.category === 'International Authority';
+                        const isLocal = body.category === 'Local & Regional HCB';
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
-                {filteredHcbs.map((body) => {
-                    const isGov = body.category === 'Government Oversight';
-                    const isIntl = body.category === 'International Authority';
-                    const isLocal = body.category === 'Local & Regional HCB';
-
-                    return (
-                        <div key={body.id || body.code} className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 flex flex-col justify-between gap-4 hover:border-slate-300 transition shadow-sm">
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="flex items-center gap-3">
-                                    <HcbCategoryIcon isGov={isGov} isIntl={isIntl} isLocal={isLocal} />
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-mono font-bold text-xs bg-slate-200 text-slate-800 px-2 py-0.5 rounded">
-                                                {body.code || body.acronym || 'HCB'}
-                                            </span>
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                                isGov ? 'bg-blue-50 text-blue-700 border border-blue-200' : 
-                                                isIntl ? 'bg-purple-50 text-purple-700 border border-purple-200' : 
-                                                isLocal ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                                                'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                            }`}>
-                                                {body.category || 'Accredited HCB'}
-                                            </span>
+                        return (
+                            <div key={body.id || body.code} className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between gap-3.5 hover:border-slate-300 transition shadow-xs">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex items-center gap-3">
+                                        <HcbCategoryIcon isGov={isGov} isIntl={isIntl} isLocal={isLocal} />
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-mono font-bold text-xs bg-slate-200 text-slate-800 px-2 py-0.5 rounded">
+                                                    {body.code || body.acronym || 'HCB'}
+                                                </span>
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                                    isGov ? 'bg-blue-50 text-blue-700 border border-blue-200' : 
+                                                    isIntl ? 'bg-purple-50 text-purple-700 border border-purple-200' : 
+                                                    isLocal ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                                                    'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                }`}>
+                                                    {body.category || 'Accredited HCB'}
+                                                </span>
+                                            </div>
+                                            <h4 className="font-bold text-slate-900 text-sm mt-1 leading-snug">{body.name}</h4>
                                         </div>
-                                        <h4 className="font-bold text-slate-900 text-sm mt-1 leading-snug">{body.name}</h4>
                                     </div>
                                 </div>
-                            </div>
 
-                            {body.accreditation_details && (
-                                <p className="text-xs text-slate-600 leading-relaxed bg-white/80 p-2.5 rounded-xl border border-slate-100">
-                                    {body.accreditation_details}
-                                </p>
-                            )}
-
-                            <div className="space-y-1.5 text-xs text-slate-600 bg-slate-100/70 p-3 rounded-xl border border-slate-200/60 font-mono">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] uppercase font-sans text-slate-400 flex items-center gap-1">
-                                        <Calendar size={12} /> Validity:
-                                    </span>
-                                    <span className="font-bold text-slate-800 text-[11px]">{body.validity_period || 'Continuous Audit'}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] uppercase font-sans text-slate-400 flex items-center gap-1">
-                                        <FileText size={12} /> Registry Ref:
-                                    </span>
-                                    <span className="font-bold text-slate-800 text-[11px] truncate max-w-[180px]">{body.registry_reference || 'N/A'}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] uppercase font-sans text-slate-400 flex items-center gap-1">
-                                        <Globe size={12} /> Jurisdiction:
-                                    </span>
-                                    <span className="font-semibold text-slate-700 text-[11px]">{body.country || 'Philippines'}</span>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between pt-1 gap-2">
-                                {body.website ? (
-                                    <a
-                                        href={body.website}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:underline"
-                                    >
-                                        <span>Official Portal</span>
-                                        <ExternalLink size={12} />
-                                    </a>
-                                ) : (
-                                    <span className="text-xs text-slate-400 italic">No web portal listed</span>
+                                {body.accreditation_details && (
+                                    <p className="text-xs text-slate-600 leading-relaxed bg-white/80 p-2.5 rounded-xl border border-slate-100">
+                                        {body.accreditation_details}
+                                    </p>
                                 )}
 
-                                {isAdmin && (
-                                    <div className="flex items-center gap-1.5">
-                                        <button
-                                            type="button"
-                                            onClick={() => onOpenModal('edit-hcb', body)}
-                                            className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 bg-slate-200/70 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg transition"
-                                        >
-                                            <Pencil size={12} /> Edit
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => onDeleteHcb(body)}
-                                            className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg border border-red-200 transition"
-                                        >
-                                            <Trash2 size={12} /> Delete
-                                        </button>
+                                <div className="space-y-1 text-xs text-slate-600 bg-slate-100/70 p-2.5 rounded-xl border border-slate-200/60 font-mono">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] uppercase font-sans text-slate-400 flex items-center gap-1">
+                                            <Calendar size={12} /> Validity:
+                                        </span>
+                                        <span className="font-bold text-slate-800 text-[11px]">{body.validity_period || 'Continuous Audit'}</span>
                                     </div>
-                                )}
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] uppercase font-sans text-slate-400 flex items-center gap-1">
+                                            <FileText size={12} /> Registry Ref:
+                                        </span>
+                                        <span className="font-bold text-slate-800 text-[11px] truncate max-w-[180px]">{body.registry_reference || 'N/A'}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] uppercase font-sans text-slate-400 flex items-center gap-1">
+                                            <Globe size={12} /> Jurisdiction:
+                                        </span>
+                                        <span className="font-semibold text-slate-700 text-[11px]">{body.country || 'Philippines'}</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-1 gap-2 border-t border-slate-200/60">
+                                    {body.website ? (
+                                        <a
+                                            href={body.website}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:underline"
+                                        >
+                                            <span>Official Portal</span>
+                                            <ExternalLink size={12} />
+                                        </a>
+                                    ) : (
+                                        <span className="text-xs text-slate-400 italic">No web portal listed</span>
+                                    )}
+
+                                    {isAdmin && (
+                                        <div className="flex items-center gap-1.5">
+                                            <button
+                                                type="button"
+                                                onClick={() => onOpenModal('edit-hcb', body)}
+                                                className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 bg-white hover:bg-slate-100 border border-slate-200 px-2.5 py-1.5 rounded-lg transition cursor-pointer"
+                                            >
+                                                <Pencil size={12} /> Edit
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => onDeleteHcb(body)}
+                                                className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg border border-red-200 transition cursor-pointer"
+                                            >
+                                                <Trash2 size={12} /> Delete
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    );
-                })}
+                        );
+                    })
+                )}
             </div>
+
+            {/* Standardized Global Pagination */}
+            {totalItems > 0 && (
+                <Pagination
+                    currentPage={safePage}
+                    totalItems={totalItems}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={setCurrentPage}
+                    onItemsPerPageChange={setItemsPerPage}
+                    itemsPerPageOptions={[6, 12, 18]}
+                    itemLabel="certifiers"
+                />
+            )}
         </div>
     );
 }

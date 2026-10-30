@@ -9,10 +9,11 @@ import {
     Compass,
     ShieldCheck,
     ExternalLink,
-    ChevronDown,
 } from 'lucide-react';
 import { getStatusConfig, ZAMBOANGA_DISTRICTS, resolveZamboangaDistrict } from '../../data/constants';
 import { getSafeUrl } from '../../utils/security';
+import Pagination from '../ui/Pagination';
+import EmptyState from '../ui/EmptyState';
 
 export default function EstablishmentsRegistryTab({
     establishments,
@@ -25,9 +26,8 @@ export default function EstablishmentsRegistryTab({
 }) {
     const [statusFilter, setStatusFilter] = useState('all');
     const [districtFilter, setDistrictFilter] = useState('all');
-    const INITIAL_COUNT = 8;
-    const LOAD_INCREMENT = 8;
-    const [visibleCount, setVisibleCount] = useState(INITIAL_COUNT);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(8);
 
     const filteredEstablishments = establishments.filter((shop) => {
         const matchesSearch =
@@ -58,17 +58,21 @@ export default function EstablishmentsRegistryTab({
         return true;
     });
 
-    // Reset visible count to initial batch whenever filters or search query change
+    // Reset pagination to page 1 whenever filters change
     useEffect(() => {
-        setVisibleCount(INITIAL_COUNT);
+        setCurrentPage(1);
     }, [districtFilter, statusFilter, localSearch]);
 
     const totalItems = filteredEstablishments.length;
-    const visibleEstablishments = filteredEstablishments.slice(0, visibleCount);
-    const remainingCount = Math.max(0, totalItems - visibleCount);
+    const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+    const safePage = Math.min(Math.max(1, currentPage), totalPages);
+    const startIndex = (safePage - 1) * itemsPerPage;
+    const paginatedEstablishments = filteredEstablishments.slice(startIndex, startIndex + itemsPerPage);
 
-    const handleLoadMore = () => {
-        setVisibleCount((prev) => prev + LOAD_INCREMENT);
+    const handleResetFilters = () => {
+        setLocalSearch('');
+        setStatusFilter('all');
+        setDistrictFilter('all');
     };
 
     return (
@@ -128,23 +132,15 @@ export default function EstablishmentsRegistryTab({
             {/* Establishments Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 pb-2">
                 {filteredEstablishments.length === 0 ? (
-                    <div className="col-span-full text-center py-12 text-slate-400">
-                        <Database size={32} className="mx-auto text-slate-300 mb-2" />
-                        <p className="text-sm font-semibold">No establishments found matching your filter criteria.</p>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setLocalSearch('');
-                                setStatusFilter('all');
-                                setDistrictFilter('all');
-                            }}
-                            className="text-xs text-emerald-700 font-bold hover:underline mt-2 inline-block cursor-pointer"
-                        >
-                            Reset filters
-                        </button>
-                    </div>
+                    <EmptyState
+                        icon={Database}
+                        title="No establishments found"
+                        description="No registered establishments match your active filter criteria."
+                        resetText="Reset Filters"
+                        onReset={handleResetFilters}
+                    />
                 ) : (
-                    visibleEstablishments.map((shop) => {
+                    paginatedEstablishments.map((shop) => {
                         const statusConfig = getStatusConfig(shop);
                         const districtInfo = resolveZamboangaDistrict(shop);
                         const evidenceUrl = getSafeUrl(shop.certificate_url || shop.logo_url);
@@ -291,29 +287,17 @@ export default function EstablishmentsRegistryTab({
                 )}
             </div>
 
-            {/* Progressive Load More Footer */}
+            {/* Standardized Global Pagination */}
             {totalItems > 0 && (
-                <div className="pt-4 pb-2 border-t border-slate-200/80 flex flex-col items-center justify-center gap-2.5">
-                    <p className="text-xs text-slate-500 font-medium text-center">
-                        Showing <strong className="font-semibold text-slate-700">{visibleEstablishments.length}</strong> of{' '}
-                        <strong className="font-semibold text-slate-700">{totalItems}</strong> audit records
-                    </p>
-
-                    {remainingCount > 0 ? (
-                        <button
-                            type="button"
-                            onClick={handleLoadMore}
-                            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-sm transition active:scale-95 cursor-pointer"
-                        >
-                            <span>Load More Establishments ({remainingCount} remaining)</span>
-                            <ChevronDown size={15} />
-                        </button>
-                    ) : totalItems > INITIAL_COUNT ? (
-                        <p className="text-xs text-emerald-600 font-semibold bg-emerald-50 border border-emerald-200/60 px-3 py-1 rounded-full">
-                            All {totalItems} establishments loaded
-                        </p>
-                    ) : null}
-                </div>
+                <Pagination
+                    currentPage={safePage}
+                    totalItems={totalItems}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={setCurrentPage}
+                    onItemsPerPageChange={setItemsPerPage}
+                    itemsPerPageOptions={[8, 16, 24]}
+                    itemLabel="venues"
+                />
             )}
         </div>
     );

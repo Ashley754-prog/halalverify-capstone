@@ -11,6 +11,8 @@ import {
     RotateCcw,
 } from 'lucide-react';
 import Toast from '../components/ui/Toast';
+import Pagination from '../components/ui/Pagination';
+import EmptyState from '../components/ui/EmptyState';
 import ContributionModal from '../components/submissions/ContributionModal';
 import AuthPromptModal from '../components/submissions/AuthPromptModal';
 import ReportIssueModal from '../components/reports/ReportIssueModal';
@@ -115,7 +117,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
     const [selectedDistrict, setSelectedDistrict] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalServerCount, setTotalServerCount] = useState(13239);
-    const itemsPerPage = 24;
+    const [itemsPerPage, setItemsPerPage] = useState(24);
 
     const [activeModal, setActiveModal] = useState(null); // 'add-product', 'edit-product', 'delete-product', 'view-product'
     const [selectedProduct, setSelectedProduct] = useState(null);
@@ -213,7 +215,8 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         categoryParam,
         statusParam,
         certifierParam,
-        districtParam
+        districtParam,
+        limitParam
     ) => {
         try {
             setLoading(true);
@@ -225,8 +228,9 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             const st = statusParam !== undefined ? statusParam : filtersRef.current.status;
             const cert = certifierParam !== undefined ? certifierParam : filtersRef.current.certifier;
             const dist = districtParam !== undefined ? districtParam : filtersRef.current.district;
-            const from = (page - 1) * itemsPerPage;
-            const to = from + itemsPerPage - 1;
+            const limit = limitParam !== undefined ? limitParam : itemsPerPage;
+            const from = (page - 1) * limit;
+            const to = from + limit - 1;
 
             let loadedProducts = null;
             const estMap = establishmentsMapRef.current || {};
@@ -595,6 +599,13 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         window.scrollTo({ top: 120, behavior: 'smooth' });
     };
 
+    const handleItemsPerPageChange = (newLimit) => {
+        setItemsPerPage(newLimit);
+        setCurrentPage(1);
+        filtersRef.current.page = 1;
+        loadData(1, searchQuery, selectedCategory, selectedStatus, selectedCertifier, selectedDistrict, newLimit);
+    };
+
     const isFilterActive = Boolean(
         (searchQuery && searchQuery.trim()) ||
         (selectedCategory && selectedCategory !== 'All Categories') ||
@@ -888,35 +899,20 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                     Loading verified product directory...
                 </div>
             ) : products.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center p-8 sm:p-12 bg-white rounded-2xl border border-slate-200 shadow-sm text-center space-y-4">
-                    <div className="w-14 h-14 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
-                        <Camera size={26} />
-                    </div>
-                    {searchQuery ? (
-                        <>
-                            <h3 className="text-base sm:text-lg font-bold text-slate-800">
-                                Product or Establishment not found. Scan package to verify.
-                            </h3>
-                            <p className="text-xs sm:text-sm text-slate-500 max-w-md">
-                                &quot;{searchQuery}&quot; is not yet recorded in the local verified registry. Use the Halal Scanner to inspect the physical packaging, verify certifying logos, and check ingredient additives.
-                            </p>
-                            <button
-                                onClick={() => onViewChange?.('scanner')}
-                                className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-600/20 transition transform hover:-translate-y-0.5 active:translate-y-0 duration-150"
-                            >
-                                <Camera size={18} />
-                                <span>Scan Package with Camera</span>
-                            </button>
-                        </>
-                    ) : (
-                        <>
-                            <h3 className="text-base font-bold text-slate-700">No Products in Registry</h3>
-                            <p className="text-xs text-slate-500 max-w-md">
-                                No verified products currently match the selected category.
-                            </p>
-                        </>
-                    )}
-                </div>
+                <EmptyState
+                    icon={Package}
+                    title={searchQuery ? 'Product not found in registry' : 'No products match your criteria'}
+                    description={
+                        searchQuery
+                            ? `"${searchQuery}" is not yet indexed in the local verified registry. You can scan the physical packaging with the camera scanner to inspect additives and certifying logos.`
+                            : 'No verified products currently match the selected filters.'
+                    }
+                    resetText={isFilterActive ? 'Reset Filters' : undefined}
+                    onReset={isFilterActive ? handleResetFilters : undefined}
+                    actionText="Scan Package with Camera"
+                    onAction={() => onViewChange?.('scanner')}
+                    className="bg-white"
+                />
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-3 gap-y-5 sm:gap-x-5 sm:gap-y-6">
                     {paginatedProducts.map((product) => (
@@ -932,67 +928,18 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                 </div>
             )}
 
-            {/* Pagination Controls */}
-            {!loading && products.length > 0 && totalPages > 1 && (
-                <div className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-                    <div className="flex items-center gap-2 text-slate-500 text-xs">
-                        <span>
-                            Showing <strong className="font-semibold text-slate-700">{startIndex + 1}</strong>–<strong className="font-semibold text-slate-700">{endIndex}</strong> of <strong className="font-semibold text-slate-700">{totalItems}</strong> products
-                        </span>
-                        <span className="hidden sm:inline text-slate-300">•</span>
-                        <span className="hidden sm:inline">Page <strong className="font-semibold text-slate-700">{currentPage}</strong> of <strong className="font-semibold text-slate-700">{totalPages}</strong></span>
-                    </div>
-
-                    <div className="flex items-center gap-1 sm:gap-1.5">
-                        <button
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
-                            className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1 transition ${
-                                currentPage === 1
-                                    ? 'border-slate-200 text-slate-300 cursor-not-allowed bg-slate-50'
-                                    : 'border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300'
-                            }`}
-                            aria-label="Previous Page"
-                        >
-                            <ChevronLeft size={16} />
-                            <span className="hidden sm:inline">Prev</span>
-                        </button>
-
-                        {getPageNumbers().map((p, idx) =>
-                            p === '...' ? (
-                                <span key={`ellipsis-${idx}`} className="px-2 py-1 text-slate-400 select-none">
-                                    ...
-                                </span>
-                            ) : (
-                                <button
-                                    key={p}
-                                    onClick={() => handlePageChange(p)}
-                                    className={`w-8 h-8 rounded-lg text-xs font-bold transition ${
-                                        currentPage === p
-                                            ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30'
-                                            : 'text-slate-700 hover:bg-slate-100 border border-transparent hover:border-slate-200'
-                                    }`}
-                                >
-                                    {p}
-                                </button>
-                            )
-                        )}
-
-                        <button
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                            className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1 transition ${
-                                currentPage === totalPages
-                                    ? 'border-slate-200 text-slate-300 cursor-not-allowed bg-slate-50'
-                                    : 'border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300'
-                            }`}
-                            aria-label="Next Page"
-                        >
-                            <span className="hidden sm:inline">Next</span>
-                            <ChevronRight size={16} />
-                        </button>
-                    </div>
-                </div>
+            {/* Standardized Global Pagination */}
+            {!loading && products.length > 0 && (
+                <Pagination
+                    currentPage={currentPage}
+                    totalItems={totalItems}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={handlePageChange}
+                    onItemsPerPageChange={handleItemsPerPageChange}
+                    itemsPerPageOptions={[12, 24, 48]}
+                    itemLabel="products"
+                    className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 shadow-sm"
+                />
             )}
 
             {/* Add / Edit Modal */}

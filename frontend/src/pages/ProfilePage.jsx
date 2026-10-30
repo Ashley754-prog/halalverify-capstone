@@ -33,6 +33,12 @@ const ProfilePage = ({ onViewChange }) => {
     const [myProducts, setMyProducts] = useState([]);
     const [myReports, setMyReports] = useState([]);
     const [activeFilter, setActiveFilter] = useState('all');
+    const [subPage, setSubPage] = useState(1);
+    const [subItemsPerPage, setSubItemsPerPage] = useState(6);
+
+    useEffect(() => {
+        setSubPage(1);
+    }, [activeFilter]);
 
     useEffect(() => {
         let isMounted = true;
@@ -417,17 +423,14 @@ const ProfilePage = ({ onViewChange }) => {
                                 Loading your submission history...
                             </div>
                         ) : filteredSubmissions.length === 0 ? (
-                            <div className="py-8 text-center space-y-1.5 bg-slate-50/70 rounded-xl border border-dashed border-slate-200">
-                                <p className="text-xs sm:text-sm font-semibold text-slate-700">
-                                    No submissions found in this category yet
-                                </p>
-                                <p className="text-xs text-slate-500 max-w-md mx-auto">
-                                    When you contribute a Halal establishment, packaged product, or compliance report, its live review status will appear here.
-                                </p>
-                            </div>
+                            <EmptyState
+                                icon={History}
+                                title="No submissions found in this category yet"
+                                description="When you contribute a Halal establishment, packaged product, or compliance report, its live review status will appear here."
+                            />
                         ) : (
                             <div className="divide-y divide-slate-100">
-                                {filteredSubmissions.map((item) => {
+                                {filteredSubmissions.slice((subPage - 1) * subItemsPerPage, subPage * subItemsPerPage).map((item) => {
                                     const IconComp =
                                         item.kind === 'establishment'
                                             ? Building2
@@ -499,6 +502,18 @@ const ProfilePage = ({ onViewChange }) => {
                                     );
                                 })}
                             </div>
+                        )}
+
+                        {!submissionsLoading && filteredSubmissions.length > 0 && (
+                            <Pagination
+                                currentPage={subPage}
+                                totalItems={filteredSubmissions.length}
+                                itemsPerPage={subItemsPerPage}
+                                onPageChange={setSubPage}
+                                onItemsPerPageChange={setSubItemsPerPage}
+                                itemsPerPageOptions={[6, 12, 24]}
+                                itemLabel="contributions"
+                            />
                         )}
                     </div>
                 </>
