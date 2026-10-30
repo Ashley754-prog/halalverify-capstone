@@ -262,8 +262,8 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                 ].map((body) => (
                   <div key={body.name} className="flex min-h-[175px] flex-col rounded-xl border border-slate-800 bg-slate-900 p-3 sm:p-4">
                     <span className="font-extrabold text-emerald-400 text-sm sm:text-base">{body.name}</span>
-                    <p className="mt-1 text-[9px] font-semibold uppercase tracking-wide text-slate-300 sm:text-[10px] leading-snug">{body.fullName}</p>
-                    <p className="mt-2 flex-1 text-[10px] leading-relaxed text-slate-400 sm:text-[11px]">{body.description}</p>
+                    <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-300 sm:text-xs leading-snug">{body.fullName}</p>
+                    <p className="mt-2 flex-1 text-xs leading-relaxed text-slate-400 sm:text-[13px]">{body.description}</p>
                     <a
                       href={body.url}
                       target="_blank"
@@ -299,8 +299,8 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                 ].map((body) => (
                   <div key={body.name} className="flex min-h-[175px] flex-col rounded-xl border border-slate-800 bg-slate-900 p-3 sm:p-4">
                     <span className="font-extrabold text-emerald-400 text-sm sm:text-base">{body.name}</span>
-                    <p className="mt-1 text-[9px] font-semibold uppercase tracking-wide text-slate-300 sm:text-[10px] leading-snug">{body.fullName}</p>
-                    <p className="mt-2 flex-1 text-[10px] leading-relaxed text-slate-400 sm:text-[11px]">{body.description}</p>
+                    <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-300 sm:text-xs leading-snug">{body.fullName}</p>
+                    <p className="mt-2 flex-1 text-xs leading-relaxed text-slate-400 sm:text-[13px]">{body.description}</p>
                     <a
                       href={body.url}
                       target="_blank"

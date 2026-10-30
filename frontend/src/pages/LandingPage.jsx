@@ -280,15 +280,15 @@ export default function LandingPage({ onViewChange, userRole }) {
             <div>
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <span className="font-black text-sm sm:text-xl tracking-[0.1em] sm:tracking-[0.18em] text-white">HALALVERIFY</span>
-                <span className="hidden sm:inline-block px-1.5 py-0.5 text-[8px] sm:px-2 sm:text-[10px] font-bold uppercase tracking-wider bg-emerald-950 text-emerald-400 border border-emerald-800/60 rounded-full">
+                <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-emerald-950 text-emerald-400 border border-emerald-800/60 rounded-full">
                   Zamboanga
                 </span>
               </div>
-              <p className="hidden xs:block text-[8px] sm:text-[10px] text-slate-400 tracking-wide">Verification &amp; Compliance Pipeline</p>
+              <p className="hidden xs:block text-[10px] sm:text-xs text-slate-400 tracking-wide">Verification &amp; Compliance Pipeline</p>
             </div>
           </div>
 
-          <nav className="hidden lg:flex items-center gap-3.5 xl:gap-7 text-xs xl:text-sm whitespace-nowrap">
+          <nav className="hidden lg:flex items-center gap-4 xl:gap-8 text-sm xl:text-base whitespace-nowrap">
             <a
               href="#features"
               onClick={(e) => handleScrollToSection(e, 'features')}
@@ -336,7 +336,7 @@ export default function LandingPage({ onViewChange, userRole }) {
             </button>
             <button
               onClick={() => handleOpenContribution('establishment')}
-              className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 xl:px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:text-emerald-200 transition active:scale-95 shadow-xs whitespace-nowrap shrink-0"
+              className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 xl:px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:text-emerald-200 transition active:scale-95 shadow-xs whitespace-nowrap shrink-0"
               title="Submit an establishment or product to the registry"
             >
               <Plus size={13} strokeWidth={2.5} className="text-emerald-400" />
@@ -348,7 +348,7 @@ export default function LandingPage({ onViewChange, userRole }) {
             {userRole ? (
               <button
                 onClick={() => onViewChange('dashboard')}
-                className="flex items-center gap-1.5 xl:gap-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 xl:px-4 py-2 text-xs xl:text-sm font-semibold text-white transition shadow-sm whitespace-nowrap shrink-0"
+                className="flex items-center gap-1.5 xl:gap-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3.5 xl:px-4 py-2 text-sm font-semibold text-white transition shadow-sm whitespace-nowrap shrink-0"
               >
                 <LayoutDashboard size={15} className="text-emerald-400" />
                 <span>Dashboard</span>
@@ -356,7 +356,7 @@ export default function LandingPage({ onViewChange, userRole }) {
             ) : (
               <button
                 onClick={() => onViewChange('login')}
-                className="flex items-center gap-1.5 rounded-xl text-slate-300 hover:text-white px-2.5 xl:px-3 py-2 text-xs xl:text-sm font-semibold transition whitespace-nowrap shrink-0"
+                className="flex items-center gap-1.5 rounded-xl text-slate-300 hover:text-white px-3 xl:px-3.5 py-2 text-sm font-semibold transition whitespace-nowrap shrink-0"
               >
                 <LogIn size={15} className="text-slate-400" />
                 <span>Sign In</span>
@@ -365,7 +365,7 @@ export default function LandingPage({ onViewChange, userRole }) {
 
             <button
               onClick={() => onViewChange('scanner')}
-              className="flex items-center gap-1.5 xl:gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 px-3 xl:px-4 py-2 text-xs xl:text-sm font-bold text-white shadow-lg shadow-emerald-900/40 transition active:scale-95 whitespace-nowrap shrink-0"
+              className="flex items-center gap-1.5 xl:gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 px-3.5 xl:px-4 py-2 text-sm font-bold text-white shadow-lg shadow-emerald-900/40 transition active:scale-95 whitespace-nowrap shrink-0"
             >
               <Camera size={15} />
               <span>Start Scanning</span>
@@ -509,8 +509,8 @@ export default function LandingPage({ onViewChange, userRole }) {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-800/60 text-emerald-300 text-[10px] sm:text-xs font-semibold mb-4 sm:mb-6 backdrop-blur-sm shadow-inner">
-              <Sparkles size={12} className="text-emerald-400 sm:h-3.5 sm:w-3.5" />
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-800/60 text-emerald-300 text-xs sm:text-sm font-semibold mb-4 sm:mb-6 backdrop-blur-sm shadow-inner">
+              <Sparkles size={14} className="text-emerald-400 shrink-0" />
               <span>Optical Character Recognition &amp; Verified Database</span>
             </div>
 
@@ -534,7 +534,7 @@ export default function LandingPage({ onViewChange, userRole }) {
                   onChange={(e) => handleSearch(e.target.value)}
                   aria-label="Search products, brands, or verified establishments"
                   placeholder="Search product names, brands, or verified establishments in Zamboanga..."
-                  className="w-full rounded-xl border border-slate-700 bg-slate-900/90 py-2.5 pl-3 pr-20 sm:rounded-2xl sm:py-4 sm:pl-4 sm:pr-24 text-base sm:text-sm text-white placeholder-slate-400 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xl backdrop-blur-xl"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-900/90 py-2.5 pl-3 pr-20 sm:rounded-2xl sm:py-4 sm:pl-4 sm:pr-24 text-base text-white placeholder-slate-400 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xl backdrop-blur-xl"
                 />
                 <button
                   type="button"
@@ -670,7 +670,7 @@ export default function LandingPage({ onViewChange, userRole }) {
                   </button>
                 </div>
 
-                <p className="mt-4 text-xs text-slate-400">
+                <p className="mt-4 text-xs sm:text-sm text-slate-300 font-medium">
                   No account required for scanning and searches.
                 </p>
               </>
@@ -685,9 +685,9 @@ export default function LandingPage({ onViewChange, userRole }) {
                   <div className="h-2 w-2 shrink-0 rounded-full bg-red-500/80 sm:h-3 sm:w-3" />
                   <div className="h-2 w-2 shrink-0 rounded-full bg-amber-500/80 sm:h-3 sm:w-3" />
                   <div className="h-2 w-2 shrink-0 rounded-full bg-emerald-500/80 sm:h-3 sm:w-3" />
-                  <span className="ml-0.5 truncate text-[8px] sm:ml-1.5 sm:text-xs font-mono text-slate-400">HalalVerify Inspection Engine</span>
+                  <span className="ml-0.5 truncate text-[10px] sm:ml-1.5 sm:text-xs font-mono text-slate-300">HalalVerify Inspection Engine</span>
                 </div>
-                <span className="shrink-0 rounded-md bg-emerald-950 px-1.5 py-0.5 text-[8px] font-semibold text-emerald-400 border border-emerald-800 sm:px-2 sm:text-[11px]">
+                <span className="shrink-0 rounded-md bg-emerald-950 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400 border border-emerald-800 sm:px-2.5 sm:text-xs">
                   RapidOCR Active
                 </span>
               </div>
@@ -695,28 +695,28 @@ export default function LandingPage({ onViewChange, userRole }) {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-left">
                 <div className="rounded-xl bg-slate-800/60 border border-slate-700/50 p-3 sm:rounded-2xl sm:p-4 flex flex-col justify-between">
                   <div>
-                    <div className="flex items-center justify-between text-[9px] text-slate-400 mb-1.5 sm:mb-2 sm:text-xs">
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1.5 sm:mb-2 sm:text-xs">
                       <span className="font-semibold uppercase tracking-wider text-emerald-400">Step 1</span>
                       <Camera size={13} className="sm:h-[14px] sm:w-[14px]" />
                     </div>
                     <h4 className="font-bold text-white text-xs sm:text-sm">Label OCR Extraction</h4>
                     <p className="mt-1 text-[10px] text-slate-400 sm:text-xs leading-relaxed">High-speed optical text recognition reads ingredients on packaging.</p>
                   </div>
-                  <div className="mt-3 rounded-lg bg-slate-950/80 p-2 font-mono text-[9px] text-slate-300 border border-slate-800 sm:rounded-xl sm:p-2.5 sm:text-[11px]">
+                  <div className="mt-3 rounded-lg bg-slate-950/80 p-2 font-mono text-[11px] text-slate-200 border border-slate-800 sm:rounded-xl sm:p-2.5 sm:text-xs">
                     <span className="text-emerald-400">&gt;</span> Wheat flour, water, salt, yeast, vegetable oil...
                   </div>
                 </div>
 
                 <div className="rounded-xl bg-slate-800/60 border border-slate-700/50 p-3 sm:rounded-2xl sm:p-4 flex flex-col justify-between">
                   <div>
-                    <div className="flex items-center justify-between text-[9px] text-slate-400 mb-1.5 sm:mb-2 sm:text-xs">
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1.5 sm:mb-2 sm:text-xs">
                       <span className="font-semibold uppercase tracking-wider text-emerald-400">Step 2</span>
                       <ShieldCheck size={13} className="sm:h-[14px] sm:w-[14px]" />
                     </div>
                     <h4 className="font-bold text-white text-xs sm:text-sm">Ingredient &amp; Logo Audit</h4>
                     <p className="mt-1 text-[10px] text-slate-400 sm:text-xs leading-relaxed">Cross-referenced with prohibited and doubtful additives and certifiers.</p>
                   </div>
-                  <div className="mt-3 rounded-lg bg-slate-950/80 p-2 font-mono text-[9px] text-slate-300 border border-slate-800 sm:rounded-xl sm:p-2.5 sm:text-[11px] space-y-0.5">
+                  <div className="mt-3 rounded-lg bg-slate-950/80 p-2 font-mono text-[11px] text-slate-200 border border-slate-800 sm:rounded-xl sm:p-2.5 sm:text-xs space-y-0.5">
                     <span className="block"><span className="text-emerald-400">&gt;</span> 0 Flagged Prohibited Additives</span>
                     <span className="block"><span className="text-emerald-400">&gt;</span> Logo: HDIP Philippines</span>
                   </div>
@@ -724,7 +724,7 @@ export default function LandingPage({ onViewChange, userRole }) {
 
                 <div className="rounded-xl bg-emerald-950/30 border border-emerald-700/40 p-3 sm:rounded-2xl sm:p-4 flex flex-col justify-between">
                   <div>
-                    <div className="flex items-center justify-between text-[9px] text-slate-400 mb-1.5 sm:mb-2 sm:text-xs">
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1.5 sm:mb-2 sm:text-xs">
                       <span className="font-semibold uppercase tracking-wider text-emerald-400">Step 3</span>
                       <CheckCircle2 size={13} className="text-emerald-400 sm:h-[14px] sm:w-[14px]" />
                     </div>
@@ -732,7 +732,7 @@ export default function LandingPage({ onViewChange, userRole }) {
                     <p className="mt-1 text-[10px] text-slate-300 sm:text-xs leading-relaxed">Clear confidence rating and certifier accreditation details.</p>
                   </div>
                   <div className="mt-3 rounded-lg bg-emerald-900/40 p-2 text-center border border-emerald-700/60 sm:rounded-xl sm:p-2.5">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-300 sm:text-xs">
+                    <span className="text-xs font-black uppercase tracking-wider text-emerald-300 sm:text-sm">
                       ✓ Halal Verified
                     </span>
                   </div>

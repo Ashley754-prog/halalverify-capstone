@@ -90,7 +90,7 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                         {/* Section 1: Main Features */}
                         <div className="space-y-1">
                             {isOpen ? (
-                                <p className="px-3 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                                <p className="px-3 pb-1 text-xs font-bold uppercase tracking-wider text-slate-400">
                                     Main
                                 </p>
                             ) : (
@@ -136,7 +136,7 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                         {/* Section 2: Community & Knowledge */}
                         <div className="space-y-1">
                             {isOpen ? (
-                                <p className="px-3 pt-2 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                                <p className="px-3 pt-2 pb-1 text-xs font-bold uppercase tracking-wider text-slate-400">
                                     Community & Tools
                                 </p>
                             ) : (
@@ -258,7 +258,7 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                         }`}
                     >
                         <Home size={18} />
-                        <span className="text-[10px] leading-tight">Home</span>
+                        <span className="text-xs leading-tight font-medium">Home</span>
                     </button>
 
                     <button
@@ -271,7 +271,7 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                         }`}
                     >
                         <Package size={18} />
-                        <span className="text-[10px] leading-tight">Catalog</span>
+                        <span className="text-xs leading-tight font-medium">Catalog</span>
                     </button>
 
                     <button
@@ -297,7 +297,7 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                         }`}
                     >
                         <MapPin size={18} />
-                        <span className="text-[10px] leading-tight">Map</span>
+                        <span className="text-xs leading-tight font-medium">Map</span>
                     </button>
 
                     <button
@@ -310,7 +310,7 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                         }`}
                     >
                         <BookOpen size={18} />
-                        <span className="text-[10px] leading-tight">Registry</span>
+                        <span className="text-xs leading-tight font-medium">Registry</span>
                     </button>
                 </nav>
             </div>

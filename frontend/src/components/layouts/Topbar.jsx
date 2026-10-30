@@ -145,7 +145,7 @@ export const AppTopbar = ({
                                     </span>
                                     <div className="flex items-center gap-1.5 mt-0.5">
                                         <span className={`inline-block w-1.5 h-1.5 rounded-full ${isAdmin ? 'bg-emerald-400' : 'bg-sky-400'}`} />
-                                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">
+                                        <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
                                             {isAdmin ? 'Admin' : 'Verifier'}
                                         </span>
                                     </div>
@@ -178,7 +178,7 @@ export const AppTopbar = ({
                                                     </p>
                                                 )}
                                                 <div className="mt-1.5 flex items-center">
-                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${
+                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold uppercase tracking-wider border ${
                                                         isAdmin
                                                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                                             : 'bg-slate-100 text-slate-700 border-slate-200'

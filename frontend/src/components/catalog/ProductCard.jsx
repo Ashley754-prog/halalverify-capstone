@@ -89,7 +89,7 @@ export default function ProductCard({
                     <div className="space-y-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
                             {product.brand && (
-                                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-1.5 sm:px-2 py-0.5 rounded-md border border-emerald-100">
+                                <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-1.5 sm:px-2 py-0.5 rounded-md border border-emerald-100">
                                     {product.brand}
                                 </span>
                             )}
@@ -106,7 +106,7 @@ export default function ProductCard({
                     </div>
 
                     <span
-                        className={`text-[10px] sm:text-[11px] font-bold px-1.5 sm:px-2.5 py-1 rounded-lg shrink-0 flex items-center gap-1 border ${
+                        className={`text-xs font-bold px-1.5 sm:px-2.5 py-1 rounded-lg shrink-0 flex items-center gap-1 border ${
                             isHalal
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                 : isPorkFree
@@ -162,7 +162,7 @@ export default function ProductCard({
 
                 {/* Consumer Discretion Advisory for Doubtful / Expired / Non-Certified */}
                 {(isDoubtful || isExpired) && (
-                    <div className="rounded-lg bg-amber-50/90 border border-amber-200 px-2.5 py-1.5 text-[10px] text-amber-900 leading-snug flex items-start gap-1.5">
+                    <div className="rounded-lg bg-amber-50/90 border border-amber-200 px-2.5 py-1.5 text-xs text-amber-900 leading-snug flex items-start gap-1.5">
                         <AlertCircle size={12} className="text-amber-700 shrink-0 mt-0.5" />
                         <span>
                             <strong>Consumer Discretion Advisory:</strong> Verify active certification or ingredient sources directly with the manufacturer before consumption.
@@ -171,7 +171,7 @@ export default function ProductCard({
                 )}
 
                 {/* Manufacturer & Certification Info */}
-                <div className="space-y-1 text-[11px] sm:text-xs text-slate-600 bg-slate-50 rounded-lg sm:rounded-xl p-2 sm:p-3 border border-slate-100">
+                <div className="space-y-1 text-xs sm:text-sm text-slate-600 bg-slate-50 rounded-lg sm:rounded-xl p-2 sm:p-3 border border-slate-100">
                     <div className="flex items-center gap-1.5">
                         <Building2 size={11} className="text-slate-400 shrink-0 sm:w-[13px] sm:h-[13px]" />
                         <span className="font-semibold text-slate-800">
@@ -180,35 +180,35 @@ export default function ProductCard({
                     </div>
 
                     {isPorkFree ? (
-                        <div className="flex items-center gap-1.5 text-sky-800 font-medium text-[10px] sm:text-[11px]">
+                        <div className="flex items-center gap-1.5 text-sky-800 font-medium text-xs">
                             <CheckCircle2 size={11} className="text-sky-600 shrink-0 sm:w-[13px] sm:h-[13px]" />
                             <span className="truncate">Manufacturer Declared Pork-Free</span>
                         </div>
                     ) : isVegetarian ? (
-                        <div className="flex items-center gap-1.5 text-teal-800 font-medium text-[10px] sm:text-[11px]">
+                        <div className="flex items-center gap-1.5 text-teal-800 font-medium text-xs">
                             <Leaf size={11} className="text-teal-600 shrink-0 sm:w-[13px] sm:h-[13px]" />
                             <span className="truncate">Dietary Standard: Vegetarian / Vegan</span>
                         </div>
                     ) : product.certifying_bodies?.name ? (
-                        <div className="flex items-center gap-1.5 text-emerald-800 font-medium text-[10px] sm:text-[11px]">
+                        <div className="flex items-center gap-1.5 text-emerald-800 font-medium text-xs">
                             <Award size={11} className="text-emerald-600 shrink-0 sm:w-[13px] sm:h-[13px]" />
                             <span className="truncate">{product.certifying_bodies.name}</span>
                         </div>
                     ) : isHalal ? (
-                        <div className="flex items-center gap-1.5 text-emerald-800 font-medium text-[10px] sm:text-[11px]">
+                        <div className="flex items-center gap-1.5 text-emerald-800 font-medium text-xs">
                             <Award size={11} className="text-emerald-600 shrink-0 sm:w-[13px] sm:h-[13px]" />
                             <span className="truncate">Accredited Halal Certifier</span>
                         </div>
                     ) : null}
 
                     {product.certificate_no && (
-                        <div className="text-[10px] text-slate-500 font-mono">
+                        <div className="text-xs text-slate-500 font-mono">
                             Cert #: {product.certificate_no}
                         </div>
                     )}
 
                     {product.expiry_date && (
-                        <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                        <div className="flex items-center gap-1 text-xs text-slate-500">
                             <Calendar size={10} className="shrink-0 sm:w-[11px] sm:h-[11px]" />
                             <span>Valid until: {product.expiry_date}</span>
                         </div>
@@ -218,10 +218,10 @@ export default function ProductCard({
                 {/* Ingredients Summary (only shown when actual ingredients exist, not generic registry imports) */}
                 {product.ingredients_summary && !product.ingredients_summary.toLowerCase().startsWith('verified product certified under') && (
                     <div className="text-xs text-slate-600">
-                        <p className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">
                             Ingredients:
                         </p>
-                        <p className="line-clamp-2 text-slate-600 text-[10px] sm:text-[11px] leading-relaxed">
+                        <p className="line-clamp-2 text-slate-600 text-xs leading-relaxed">
                             {product.ingredients_summary}
                         </p>
                     </div>
