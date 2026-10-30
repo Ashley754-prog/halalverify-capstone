@@ -28,6 +28,7 @@ export default function LandingPage({ onViewChange, userRole }) {
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [initialContributionTab, setInitialContributionTab] = useState('establishment');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState('');
 
   const handleOpenContribution = (tab = 'establishment') => {
     setInitialContributionTab(tab);
@@ -41,8 +42,53 @@ export default function LandingPage({ onViewChange, userRole }) {
   const searchDebounceRef = useRef(null);
   const landingScrollRef = useRef(null);
 
+  // Scrollspy: dynamically highlight the active section in topbar as user scrolls
+  useEffect(() => {
+    const container = landingScrollRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const scrollTop = container.scrollTop;
+      const headerOffset = window.innerWidth >= 640 ? 80 : 64;
+
+      // When near top (hero / search area), clear active section
+      if (scrollTop < 200) {
+        setActiveSection('');
+        return;
+      }
+
+      // When near bottom of page, highlight certifiers
+      if (container.scrollHeight - scrollTop - container.clientHeight < 50) {
+        setActiveSection('certifiers');
+        return;
+      }
+
+      const sections = ['features', 'how-it-works', 'certifiers'];
+      let matched = '';
+
+      for (const id of sections) {
+        const el = document.getElementById(id);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= headerOffset + window.innerHeight * 0.45 && rect.bottom >= headerOffset + 60) {
+            matched = id;
+          }
+        }
+      }
+
+      if (matched) {
+        setActiveSection(matched);
+      }
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const handleScrollToTop = () => {
     setIsMobileMenuOpen(false);
+    setActiveSection('');
     if (landingScrollRef.current) {
       landingScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -55,6 +101,7 @@ export default function LandingPage({ onViewChange, userRole }) {
   const handleScrollToSection = (e, sectionId) => {
     if (e) e.preventDefault();
     setIsMobileMenuOpen(false);
+    setActiveSection(sectionId);
     const container = landingScrollRef.current;
     const target = document.getElementById(sectionId);
     if (container && target) {
@@ -215,25 +262,64 @@ export default function LandingPage({ onViewChange, userRole }) {
             </div>
           </div>
 
-          <nav className="hidden lg:flex items-center gap-3.5 xl:gap-7 text-xs xl:text-sm font-medium text-slate-300 whitespace-nowrap">
-            <a href="#features" onClick={(e) => handleScrollToSection(e, 'features')} className="hover:text-emerald-400 transition whitespace-nowrap shrink-0">Features</a>
-            <a href="#how-it-works" onClick={(e) => handleScrollToSection(e, 'how-it-works')} className="hover:text-emerald-400 transition whitespace-nowrap shrink-0">How It Works</a>
-            <a href="#certifiers" onClick={(e) => handleScrollToSection(e, 'certifiers')} className="hover:text-emerald-400 transition whitespace-nowrap shrink-0">Certifiers</a>
+          <nav className="hidden lg:flex items-center gap-1.5 xl:gap-3 text-xs xl:text-sm font-medium whitespace-nowrap">
+            <a
+              href="#features"
+              onClick={(e) => handleScrollToSection(e, 'features')}
+              className={`relative px-3 py-1.5 rounded-lg transition-all duration-200 whitespace-nowrap shrink-0 ${
+                activeSection === 'features'
+                  ? 'text-emerald-300 font-bold bg-emerald-500/15 border border-emerald-500/30 shadow-xs shadow-emerald-950/40'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+              }`}
+            >
+              Features
+              {activeSection === 'features' && (
+                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-emerald-400 rounded-full" />
+              )}
+            </a>
+            <a
+              href="#how-it-works"
+              onClick={(e) => handleScrollToSection(e, 'how-it-works')}
+              className={`relative px-3 py-1.5 rounded-lg transition-all duration-200 whitespace-nowrap shrink-0 ${
+                activeSection === 'how-it-works'
+                  ? 'text-emerald-300 font-bold bg-emerald-500/15 border border-emerald-500/30 shadow-xs shadow-emerald-950/40'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+              }`}
+            >
+              How It Works
+              {activeSection === 'how-it-works' && (
+                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-emerald-400 rounded-full" />
+              )}
+            </a>
+            <a
+              href="#certifiers"
+              onClick={(e) => handleScrollToSection(e, 'certifiers')}
+              className={`relative px-3 py-1.5 rounded-lg transition-all duration-200 whitespace-nowrap shrink-0 ${
+                activeSection === 'certifiers'
+                  ? 'text-emerald-300 font-bold bg-emerald-500/15 border border-emerald-500/30 shadow-xs shadow-emerald-950/40'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+              }`}
+            >
+              Certifiers
+              {activeSection === 'certifiers' && (
+                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-emerald-400 rounded-full" />
+              )}
+            </a>
             <button
               onClick={() => onViewChange('products')}
-              className="hover:text-emerald-400 transition font-medium whitespace-nowrap shrink-0"
+              className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition font-medium whitespace-nowrap shrink-0"
             >
               Catalog
             </button>
             <button
               onClick={() => onViewChange('map')}
-              className="hover:text-emerald-400 transition font-medium whitespace-nowrap shrink-0"
+              className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition font-medium whitespace-nowrap shrink-0"
             >
               Map
             </button>
             <button
               onClick={() => handleOpenContribution('establishment')}
-              className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 xl:px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:text-emerald-200 transition active:scale-95 shadow-xs whitespace-nowrap shrink-0"
+              className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 xl:px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:text-emerald-200 transition active:scale-95 shadow-xs whitespace-nowrap shrink-0 ml-1"
               title="Submit an establishment or product to the registry"
             >
               <Plus size={13} strokeWidth={2.5} className="text-emerald-400" />
@@ -296,23 +382,38 @@ export default function LandingPage({ onViewChange, userRole }) {
                 <a
                   href="#features"
                   onClick={(e) => handleScrollToSection(e, 'features')}
-                  className="px-3 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
+                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl transition ${
+                    activeSection === 'features'
+                      ? 'bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                  }`}
                 >
-                  Features
+                  <span>Features</span>
+                  {activeSection === 'features' && <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />}
                 </a>
                 <a
                   href="#how-it-works"
                   onClick={(e) => handleScrollToSection(e, 'how-it-works')}
-                  className="px-3 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
+                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl transition ${
+                    activeSection === 'how-it-works'
+                      ? 'bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                  }`}
                 >
-                  How It Works
+                  <span>How It Works</span>
+                  {activeSection === 'how-it-works' && <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />}
                 </a>
                 <a
                   href="#certifiers"
                   onClick={(e) => handleScrollToSection(e, 'certifiers')}
-                  className="px-3 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
+                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl transition ${
+                    activeSection === 'certifiers'
+                      ? 'bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                  }`}
                 >
-                  Certifiers
+                  <span>Certifiers</span>
+                  {activeSection === 'certifiers' && <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />}
                 </a>
                 <button
                   onClick={() => {
