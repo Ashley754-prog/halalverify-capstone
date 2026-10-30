@@ -45,7 +45,7 @@ export default function EstablishmentsRegistryTab({
     });
 
     return (
-        <div className="bg-white p-3 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex-1 flex flex-col min-h-0">
+        <div className="bg-white p-3 sm:p-6 rounded-2xl shadow-sm border border-slate-200 w-full">
             {/* Header Toolbar: Ordinance Standard and Controls */}
             <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-2.5 sm:gap-3 mb-3 sm:mb-6 shrink-0">
                 <div>
@@ -57,11 +57,11 @@ export default function EstablishmentsRegistryTab({
                     </p>
                 </div>
 
-                <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full md:w-auto">
+                <div className="grid grid-cols-2 md:flex md:items-center gap-2 w-full md:w-auto">
                     <select
                         value={districtFilter}
                         onChange={(e) => setDistrictFilter(e.target.value)}
-                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer shrink-0 max-w-[145px] sm:max-w-none"
+                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full md:w-auto"
                         aria-label="Filter by Zamboanga District"
                     >
                         {ZAMBOANGA_DISTRICTS.map((d) => (
@@ -74,7 +74,7 @@ export default function EstablishmentsRegistryTab({
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer shrink-0 max-w-[130px] sm:max-w-none"
+                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full md:w-auto"
                         aria-label="Filter by verification standard"
                     >
                         <option value="all">All Standards ({filteredEstablishments.length})</option>
@@ -85,14 +85,14 @@ export default function EstablishmentsRegistryTab({
                         {isAdmin && <option value="needs_review">Pending Review</option>}
                     </select>
 
-                    <div className="relative flex-1 md:w-72">
+                    <div className="relative col-span-2 md:col-span-1 md:w-72">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                         <input
                             type="text"
                             placeholder="Search name, street, cuisine..."
                             value={localSearch}
                             onChange={(e) => setLocalSearch(e.target.value)}
-                            className="w-full h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 text-base sm:text-xs focus:outline-none focus:border-emerald-500 transition"
+                            className="w-full h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 text-xs focus:outline-none focus:border-emerald-500 transition"
                         />
                     </div>
                 </div>

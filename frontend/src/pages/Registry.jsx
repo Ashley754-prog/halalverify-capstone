@@ -570,7 +570,7 @@ export const Registry = ({ userRole, onViewChange }) => {
     };
 
     return (
-        <div className="p-3 sm:p-6 md:p-8 space-y-3 sm:space-y-5 flex-1 flex flex-col min-h-full">
+        <div className="p-3 sm:p-6 md:p-8 space-y-3 sm:space-y-5 w-full min-h-full pb-8">
             {/* Module Title and Actions Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3 pb-1 border-b border-slate-200/80 shrink-0">
                 <div>
@@ -715,7 +715,7 @@ export const Registry = ({ userRole, onViewChange }) => {
 
             {/* TAB 3: ESTABLISHMENTS LEDGER */}
             {registryMode === 'establishments' && (
-                <div className="space-y-3 sm:space-y-4 flex-1 flex flex-col min-h-0">
+                <div className="space-y-3 sm:space-y-4 w-full">
                     <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-sky-50 border border-emerald-200/80 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs shrink-0">
                         <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
