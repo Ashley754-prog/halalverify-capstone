@@ -7,46 +7,19 @@ import {
   ExternalLink,
 } from 'lucide-react';
 
-export default function LandingMarketingSections({
-  onViewChange,
-  onScrollToTop,
-  userRole,
-  activeSection = '',
-}) {
+export default function LandingMarketingSections({ onViewChange, onScrollToTop, userRole }) {
   return (
     <>
       {/* Core Features Grid */}
       <section
         id="features"
-        className="relative min-h-[calc(100dvh-4rem)] sm:min-h-[calc(100dvh-5rem)] flex flex-col justify-center py-8 sm:py-12 bg-slate-900/60 border-t border-slate-800 scroll-mt-16 sm:scroll-mt-20 overflow-hidden"
+        className="min-h-[calc(100dvh-4rem)] sm:min-h-[calc(100dvh-5rem)] flex flex-col justify-center py-8 sm:py-12 bg-slate-900/60 border-t border-slate-800 scroll-mt-16 sm:scroll-mt-20"
       >
-        {/* Ambient spotlight when section is active */}
-        <div
-          className={`pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[550px] h-[220px] rounded-full blur-[110px] transition-opacity duration-700 ${
-            activeSection === 'features' ? 'bg-emerald-500/15 opacity-100' : 'bg-emerald-500/5 opacity-0'
-          }`}
-        />
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-10">
-            <div className="inline-flex items-center justify-center mb-2">
-              <span
-                className={`inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[11px] sm:text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 ${
-                  activeSection === 'features'
-                    ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-400/60 shadow-[0_0_25px_rgba(16,185,129,0.28)] scale-105'
-                    : 'bg-slate-800/70 text-emerald-400 border border-slate-700/80'
-                }`}
-              >
-                <span
-                  className={`h-2 w-2 rounded-full transition-all duration-300 ${
-                    activeSection === 'features'
-                      ? 'bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse'
-                      : 'bg-emerald-500/50'
-                  }`}
-                />
-                <span>Features &bull; Core Capabilities</span>
-              </span>
-            </div>
+            <h2 className="text-xs sm:text-sm font-bold uppercase tracking-[0.25em] text-emerald-400">
+              Features &bull; Core Capabilities
+            </h2>
             <p className="mt-2 text-xl sm:text-4xl font-extrabold text-white tracking-tight">
               Designed for Everyday Shoppers &amp; Diners
             </p>
@@ -150,34 +123,13 @@ export default function LandingMarketingSections({
       {/* How It Works Section */}
       <section
         id="how-it-works"
-        className="relative min-h-[calc(100dvh-4rem)] sm:min-h-[calc(100dvh-5rem)] flex flex-col justify-center py-8 sm:py-12 border-t border-slate-800/80 scroll-mt-16 sm:scroll-mt-20 overflow-hidden"
+        className="min-h-[calc(100dvh-4rem)] sm:min-h-[calc(100dvh-5rem)] flex flex-col justify-center py-8 sm:py-12 border-t border-slate-800/80 scroll-mt-16 sm:scroll-mt-20"
       >
-        <div
-          className={`pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[550px] h-[220px] rounded-full blur-[110px] transition-opacity duration-700 ${
-            activeSection === 'how-it-works' ? 'bg-emerald-500/15 opacity-100' : 'bg-emerald-500/5 opacity-0'
-          }`}
-        />
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-10">
-            <div className="inline-flex items-center justify-center mb-2">
-              <span
-                className={`inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[11px] sm:text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 ${
-                  activeSection === 'how-it-works'
-                    ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-400/60 shadow-[0_0_25px_rgba(16,185,129,0.28)] scale-105'
-                    : 'bg-slate-800/70 text-emerald-400 border border-slate-700/80'
-                }`}
-              >
-                <span
-                  className={`h-2 w-2 rounded-full transition-all duration-300 ${
-                    activeSection === 'how-it-works'
-                      ? 'bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse'
-                      : 'bg-emerald-500/50'
-                  }`}
-                />
-                <span>How It Works &bull; Simple Workflow</span>
-              </span>
-            </div>
+            <h2 className="text-xs sm:text-sm font-bold uppercase tracking-[0.25em] text-emerald-400">
+              How It Works &bull; Simple Workflow
+            </h2>
             <p className="mt-2 text-xl sm:text-4xl font-extrabold text-white tracking-tight">
               How HalalVerify Verifies Products
             </p>
@@ -260,34 +212,13 @@ export default function LandingMarketingSections({
       {/* Recognized Certifiers & Scope Section */}
       <section
         id="certifiers"
-        className="relative min-h-[calc(100dvh-4rem)] sm:min-h-[calc(100dvh-5rem)] flex flex-col justify-center py-8 sm:py-12 bg-slate-900/60 border-t border-slate-800 scroll-mt-16 sm:scroll-mt-20 overflow-hidden"
+        className="min-h-[calc(100dvh-4rem)] sm:min-h-[calc(100dvh-5rem)] flex flex-col justify-center py-8 sm:py-12 bg-slate-900/60 border-t border-slate-800 scroll-mt-16 sm:scroll-mt-20"
       >
-        <div
-          className={`pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[550px] h-[220px] rounded-full blur-[110px] transition-opacity duration-700 ${
-            activeSection === 'certifiers' ? 'bg-emerald-500/15 opacity-100' : 'bg-emerald-500/5 opacity-0'
-          }`}
-        />
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center justify-center mb-2">
-              <span
-                className={`inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[11px] sm:text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 ${
-                  activeSection === 'certifiers'
-                    ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-400/60 shadow-[0_0_25px_rgba(16,185,129,0.28)] scale-105'
-                    : 'bg-slate-800/70 text-emerald-400 border border-slate-700/80'
-                }`}
-              >
-                <span
-                  className={`h-2 w-2 rounded-full transition-all duration-300 ${
-                    activeSection === 'certifiers'
-                      ? 'bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse'
-                      : 'bg-emerald-500/50'
-                  }`}
-                />
-                <span>Certifiers &bull; Philippine Halal Accreditation</span>
-              </span>
-            </div>
+            <h2 className="text-xs sm:text-sm font-bold uppercase tracking-[0.25em] text-emerald-400">
+              Certifiers &bull; Philippine Halal Accreditation
+            </h2>
             <p className="mt-2 text-xl sm:text-4xl font-extrabold text-white tracking-tight">
               Supported Certifying Bodies &amp; Local Scope
             </p>
