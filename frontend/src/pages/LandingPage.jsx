@@ -13,7 +13,6 @@ import {
   Building2,
   Plus,
   Menu,
-  ArrowUp,
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import ContributionModal from '../components/submissions/ContributionModal';
@@ -29,7 +28,6 @@ export default function LandingPage({ onViewChange, userRole }) {
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [initialContributionTab, setInitialContributionTab] = useState('establishment');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [showBackToTop, setShowBackToTop] = useState(false);
 
   const handleOpenContribution = (tab = 'establishment') => {
     setInitialContributionTab(tab);
@@ -41,14 +39,46 @@ export default function LandingPage({ onViewChange, userRole }) {
   };
 
   const searchDebounceRef = useRef(null);
+  const landingScrollRef = useRef(null);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowBackToTop(window.scrollY > 350);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  const handleScrollToTop = () => {
+    setIsMobileMenuOpen(false);
+    if (landingScrollRef.current) {
+      landingScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (typeof window !== 'undefined' && window.location.hash) {
+      window.history.replaceState({ view: 'landing', params: {} }, '', '/');
+    }
+  };
+
+  const handleScrollToSection = (e, sectionId) => {
+    if (e) e.preventDefault();
+    setIsMobileMenuOpen(false);
+    const container = landingScrollRef.current;
+    const target = document.getElementById(sectionId);
+    if (container && target) {
+      const isDesktop = window.innerWidth >= 640;
+      const headerOffset = isDesktop ? 80 : 64;
+      const containerRect = container.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const sectionTopInScroll = container.scrollTop + (targetRect.top - containerRect.top);
+      const visibleViewportHeight = container.clientHeight - headerOffset;
+      const sectionHeight = target.offsetHeight;
+
+      let scrollTarget = sectionTopInScroll - headerOffset;
+      if (isDesktop) {
+        const sectionCenterInScroll = sectionTopInScroll + sectionHeight / 2;
+        const visibleCenterOffset = headerOffset + visibleViewportHeight / 2;
+        scrollTarget = sectionCenterInScroll - visibleCenterOffset;
+      }
+
+      container.scrollTo({
+        top: Math.max(0, scrollTarget),
+        behavior: 'smooth',
+      });
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -157,13 +187,17 @@ export default function LandingPage({ onViewChange, userRole }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#0e1625] text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white overflow-x-clip w-full max-w-full">
+    <div
+      ref={landingScrollRef}
+      className="h-full max-h-[100dvh] overflow-y-auto overflow-x-hidden scroll-smooth bg-[#0e1625] text-slate-100 selection:bg-emerald-500 selection:text-white w-full max-w-full"
+    >
       {/* Top Navigation Bar */}
       <header className="sticky top-0 z-50 w-full border-b border-slate-800/80 bg-[#0e1625]/95 backdrop-blur-md shadow-md shadow-black/20 transition-all">
         <div className="max-w-7xl mx-auto flex items-center justify-between h-16 sm:h-20 px-4 sm:px-6 lg:px-8">
           <div
             className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0"
-            onClick={() => { setIsMobileMenuOpen(false); onViewChange('landing'); }}
+            onClick={handleScrollToTop}
+            title="Scroll back to top"
           >
             <img
               src="/halalverify-logo.png"
@@ -182,9 +216,9 @@ export default function LandingPage({ onViewChange, userRole }) {
           </div>
 
           <nav className="hidden lg:flex items-center gap-3.5 xl:gap-7 text-xs xl:text-sm font-medium text-slate-300 whitespace-nowrap">
-            <a href="#features" className="hover:text-emerald-400 transition whitespace-nowrap shrink-0">Features</a>
-            <a href="#how-it-works" className="hover:text-emerald-400 transition whitespace-nowrap shrink-0">How It Works</a>
-            <a href="#certifiers" className="hover:text-emerald-400 transition whitespace-nowrap shrink-0">Certifiers</a>
+            <a href="#features" onClick={(e) => handleScrollToSection(e, 'features')} className="hover:text-emerald-400 transition whitespace-nowrap shrink-0">Features</a>
+            <a href="#how-it-works" onClick={(e) => handleScrollToSection(e, 'how-it-works')} className="hover:text-emerald-400 transition whitespace-nowrap shrink-0">How It Works</a>
+            <a href="#certifiers" onClick={(e) => handleScrollToSection(e, 'certifiers')} className="hover:text-emerald-400 transition whitespace-nowrap shrink-0">Certifiers</a>
             <button
               onClick={() => onViewChange('products')}
               className="hover:text-emerald-400 transition font-medium whitespace-nowrap shrink-0"
@@ -261,21 +295,21 @@ export default function LandingPage({ onViewChange, userRole }) {
               <nav className="flex flex-col space-y-1 text-sm font-medium">
                 <a
                   href="#features"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={(e) => handleScrollToSection(e, 'features')}
                   className="px-3 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
                 >
                   Features
                 </a>
                 <a
                   href="#how-it-works"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={(e) => handleScrollToSection(e, 'how-it-works')}
                   className="px-3 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
                 >
                   How It Works
                 </a>
                 <a
                   href="#certifiers"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={(e) => handleScrollToSection(e, 'certifiers')}
                   className="px-3 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition"
                 >
                   Certifiers
@@ -593,7 +627,11 @@ export default function LandingPage({ onViewChange, userRole }) {
         </div>
       </section>
 
-      <LandingMarketingSections onViewChange={onViewChange} />
+      <LandingMarketingSections
+        onViewChange={onViewChange}
+        onScrollToTop={handleScrollToTop}
+        userRole={userRole}
+      />
 
       <ContributionModal
         isOpen={showContributionModal}
@@ -608,19 +646,6 @@ export default function LandingPage({ onViewChange, userRole }) {
         onNavigate={(v) => onViewChange(v)}
         actionTitle="Contribute to Registry"
       />
-
-      {/* Floating Back to Top Button */}
-      {showBackToTop && (
-        <button
-          type="button"
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-6 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xl shadow-emerald-950/60 transition-all duration-200 hover:bg-emerald-500 hover:scale-105 active:scale-95 border border-emerald-400/40 focus:outline-hidden focus:ring-2 focus:ring-emerald-400"
-          aria-label="Scroll back to top"
-          title="Scroll back to top"
-        >
-          <ArrowUp size={20} strokeWidth={2.5} />
-        </button>
-      )}
     </div>
   );
 }
