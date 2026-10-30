@@ -18,6 +18,7 @@ import Toast from '../components/ui/Toast';
 import AuthPromptModal from '../components/submissions/AuthPromptModal';
 import ReportIssueModal from '../components/reports/ReportIssueModal';
 import EstablishmentDetailModal from '../components/map/EstablishmentDetailModal';
+import SearchBar from '../components/ui/SearchBar';
 import { getStatusConfig, ZAMBOANGA_DISTRICTS, resolveZamboangaDistrict } from '../data/constants';
 import EstablishmentsSidebarList from '../components/map/EstablishmentsSidebarList';
 import { API_BASE_URL, authFetch } from '../utils/api';
@@ -594,25 +595,13 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
             {/* Compact Filter & Search Toolbar with Integrated Module Title */}
             <div className="bg-white rounded-2xl border border-slate-200/90 p-2 sm:p-2.5 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-1.5 sm:gap-2 shrink-0">
                 {/* Search Bar - Row 1 on mobile, right side on desktop */}
-                <div className="relative order-1 md:order-2 w-full md:w-64 lg:w-72 shrink-0">
-                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search name, cuisine, street..."
-                        className="w-full h-8 sm:h-8.5 pl-8 pr-7 text-base sm:text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-emerald-500 transition"
-                    />
-                    {searchQuery && (
-                        <button
-                            type="button"
-                            onClick={() => setSearchQuery('')}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                        >
-                            <X size={12} />
-                        </button>
-                    )}
-                </div>
+                <SearchBar
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    placeholder="Search name, cuisine, street..."
+                    className="order-1 md:order-2 w-full md:w-64 lg:w-72 shrink-0"
+                    size="sm"
+                />
 
                 {/* Filter Controls - Row 2 on mobile (single horizontal row), left side on desktop */}
                 <div className="order-2 md:order-1 flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5 min-w-0">

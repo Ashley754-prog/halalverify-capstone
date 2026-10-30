@@ -1,4 +1,5 @@
-import { Search, X, RefreshCw, Filter } from 'lucide-react';
+import { RefreshCw, Filter } from 'lucide-react';
+import SearchBar from '../ui/SearchBar';
 import { MODE_FILTERS, VERDICT_FILTERS } from './scanHistoryUtils';
 
 export const ScanFilterBar = ({
@@ -35,25 +36,13 @@ export const ScanFilterBar = ({
 
                 {/* Search and Refresh Bar */}
                 <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <div className="relative flex-1 sm:w-64">
-                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input
-                            type="text"
-                            placeholder={isAdmin ? "Search product, text, or ID..." : "Search scans, ingredients..."}
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-8.5 pr-8 text-xs sm:text-sm focus:outline-none focus:border-emerald-500 focus:bg-white transition"
-                        />
-                        {search && (
-                            <button
-                                type="button"
-                                onClick={() => setSearch('')}
-                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
-                            >
-                                <X size={13} />
-                            </button>
-                        )}
-                    </div>
+                    <SearchBar
+                        value={search}
+                        onChange={setSearch}
+                        placeholder={isAdmin ? "Search product, text, or ID..." : "Search scans, ingredients..."}
+                        className="flex-1 sm:w-64"
+                        size="sm"
+                    />
 
                     <button
                         type="button"

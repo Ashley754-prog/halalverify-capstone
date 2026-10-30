@@ -11,6 +11,7 @@ import {
     RotateCcw,
 } from 'lucide-react';
 import Toast from '../components/ui/Toast';
+import SearchBar from '../components/ui/SearchBar';
 import Pagination from '../components/ui/Pagination';
 import EmptyState from '../components/ui/EmptyState';
 import ContributionModal from '../components/submissions/ContributionModal';
@@ -655,35 +656,19 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             <div className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-5 shadow-sm space-y-3 sm:space-y-4">
                 <div className="flex flex-row gap-2 sm:gap-3 items-center">
                     {/* Search Box */}
-                    <div className="relative flex-1 min-w-0">
-                        <Search
-                            size={16}
-                            className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                        />
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => handleSearchChange(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-                                    loadData(1, searchQuery, selectedCategory, selectedStatus, selectedCertifier, selectedDistrict);
-                                }
-                            }}
-                            placeholder="Search by product name, brand, manufacturer, or certificate #..."
-                            className="w-full pl-8 sm:pl-10 pr-8 py-2 sm:py-2.5 rounded-lg sm:rounded-xl border border-slate-200 bg-slate-50/50 text-base sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
-                        />
-                        {searchQuery && (
-                            <button
-                                type="button"
-                                onClick={handleClearSearch}
-                                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded transition"
-                                title="Clear search"
-                            >
-                                <X size={14} />
-                            </button>
-                        )}
-                    </div>
+                    <SearchBar
+                        value={searchQuery}
+                        onChange={handleSearchChange}
+                        onClear={handleClearSearch}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+                                loadData(1, searchQuery, selectedCategory, selectedStatus, selectedCertifier, selectedDistrict);
+                            }
+                        }}
+                        placeholder="Search by product name, brand, manufacturer, or certificate #..."
+                        className="flex-1 min-w-0"
+                    />
 
                     {/* Community Submit Button (Accessible to all users; triggers auth prompt if guest) */}
                     <button

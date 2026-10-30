@@ -4,6 +4,7 @@ export default function SearchBar({
     value = '',
     onChange,
     onClear,
+    onKeyDown,
     placeholder = 'Search...',
     className = '',
     inputClassName = '',
@@ -32,6 +33,7 @@ export default function SearchBar({
                 type="text"
                 value={value}
                 onChange={(e) => onChange?.(e.target.value)}
+                onKeyDown={onKeyDown}
                 placeholder={placeholder}
                 aria-label={ariaLabel}
                 autoFocus={autoFocus}
