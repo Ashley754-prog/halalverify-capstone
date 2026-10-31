@@ -33,6 +33,7 @@ export default function EstablishmentContributionForm({
 }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [stepError, setStepError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [locatingGps, setLocatingGps] = useState(false);
   const [gpsStatus, setGpsStatus] = useState('');
   const [newDishTag, setNewDishTag] = useState('');
@@ -254,30 +255,19 @@ export default function EstablishmentContributionForm({
         {/* ======================================================== */}
         {currentStep === 1 && (
           <div className="space-y-4 animate-in fade-in duration-200">
-            {/* Friendly Guidance Banner */}
-            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-900 text-xs flex items-start gap-2.5">
-              <Store size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+            {/* Submitter Affiliation Segmented Control */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
               <div>
-                <p className="font-bold text-emerald-950">Step 1: Tell us about the establishment</p>
-                <p className="text-[11px] text-emerald-800/90 mt-0.5 leading-relaxed">
-                  Pinning an accurate location helps diners find verified food nearby and speeds up auditor approval.
-                </p>
+                <span className="text-xs font-bold text-slate-800 block">Submitter Affiliation</span>
+                <span className="text-[11px] text-slate-500">Helps our moderation team classify verification documents</span>
               </div>
-            </div>
-
-            {/* Submitter Role Selector */}
-            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                <HeartHandshake size={15} className="text-emerald-600 shrink-0" />
-                Who is submitting this place?
-              </span>
-              <div className="inline-flex rounded-lg border border-slate-300 bg-white p-0.5 text-xs">
+              <div className="inline-flex rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium shrink-0">
                 <button
                   type="button"
                   onClick={() => setEstForm((prev) => ({ ...prev, submitter_role: 'owner' }))}
-                  className={`px-2.5 py-1 rounded-md font-medium transition cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-md transition-all cursor-pointer ${
                     estForm.submitter_role === 'owner'
-                      ? 'bg-emerald-600 text-white font-semibold'
+                      ? 'bg-emerald-600 text-white font-semibold shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -286,9 +276,9 @@ export default function EstablishmentContributionForm({
                 <button
                   type="button"
                   onClick={() => setEstForm((prev) => ({ ...prev, submitter_role: 'community' }))}
-                  className={`px-2.5 py-1 rounded-md font-medium transition cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-md transition-all cursor-pointer ${
                     (estForm.submitter_role || 'community') === 'community'
-                      ? 'bg-emerald-600 text-white font-semibold'
+                      ? 'bg-emerald-600 text-white font-semibold shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -303,20 +293,25 @@ export default function EstablishmentContributionForm({
                 <label className="block font-semibold text-slate-700 mb-1">
                   Establishment Name <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
-                  <Store size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g., Al-Makkah Restaurant"
-                    value={estForm.name}
-                    onChange={(e) => {
-                      setStepError('');
-                      setEstForm((prev) => ({ ...prev, name: e.target.value }));
-                    }}
-                    className="w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-2 text-slate-800 placeholder:text-slate-400 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                  />
-                </div>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g., Al-Makkah Restaurant"
+                  value={estForm.name}
+                  onChange={(e) => {
+                    setStepError('');
+                    setFieldErrors((prev) => ({ ...prev, name: '' }));
+                    setEstForm((prev) => ({ ...prev, name: e.target.value }));
+                  }}
+                  className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-slate-800 placeholder:text-slate-400 outline-none transition ${
+                    fieldErrors.name
+                      ? 'border-rose-400 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20'
+                      : 'border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20'
+                  }`}
+                />
+                {fieldErrors.name && (
+                  <p className="text-xs text-rose-600 mt-1 font-medium">{fieldErrors.name}</p>
+                )}
               </div>
 
               <div>
@@ -324,7 +319,7 @@ export default function EstablishmentContributionForm({
                 <select
                   value={estForm.type}
                   onChange={(e) => setEstForm((prev) => ({ ...prev, type: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-emerald-500 bg-white text-slate-800"
+                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 bg-white text-slate-800 transition cursor-pointer"
                 >
                   {ESTABLISHMENT_TYPES.map((t) => (
                     <option key={t} value={t} className="text-slate-800 bg-white">
@@ -345,7 +340,7 @@ export default function EstablishmentContributionForm({
                   type="button"
                   onClick={handleUseCurrentGps}
                   disabled={locatingGps}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[11px] font-bold transition cursor-pointer disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-semibold transition cursor-pointer disabled:opacity-50"
                 >
                   {locatingGps ? (
                     <Loader2 size={12} className="animate-spin text-emerald-600" />
@@ -356,27 +351,32 @@ export default function EstablishmentContributionForm({
                 </button>
               </div>
 
-              <div className="relative">
-                <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g., Gov. Lim Ave, Zone II, Zamboanga City"
-                  value={estForm.address}
-                  onChange={(e) => {
-                    setStepError('');
-                    setEstForm((prev) => ({ ...prev, address: e.target.value }));
-                  }}
-                  className="w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-2 text-slate-800 placeholder:text-slate-400 outline-none focus:border-emerald-500"
-                />
-              </div>
+              <input
+                type="text"
+                required
+                placeholder="e.g., Gov. Lim Ave, Zone II, Zamboanga City"
+                value={estForm.address}
+                onChange={(e) => {
+                  setStepError('');
+                  setFieldErrors((prev) => ({ ...prev, address: '' }));
+                  setEstForm((prev) => ({ ...prev, address: e.target.value }));
+                }}
+                className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-slate-800 placeholder:text-slate-400 outline-none transition ${
+                  fieldErrors.address
+                    ? 'border-rose-400 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20'
+                    : 'border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20'
+                }`}
+              />
+              {fieldErrors.address && (
+                <p className="text-xs text-rose-600 mt-1 font-medium">{fieldErrors.address}</p>
+              )}
 
               {/* Pin Coordinates Card */}
               {estForm.latitude && estForm.longitude ? (
-                <div className="mt-2 flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 text-xs text-emerald-900 font-medium">
-                  <span className="flex items-center gap-2">
-                    <CheckCircle2 size={15} className="text-emerald-600 shrink-0" />
-                    <span>Exact Map Coordinates Pinned ({estForm.latitude}, {estForm.longitude})</span>
+                <div className="mt-1.5 flex items-center justify-between bg-emerald-50/80 border border-emerald-200 rounded-lg px-2.5 py-1 text-xs text-emerald-900 font-medium">
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
+                    <span>Coordinates pinned ({estForm.latitude}, {estForm.longitude})</span>
                   </span>
                   <button
                     type="button"
@@ -384,7 +384,7 @@ export default function EstablishmentContributionForm({
                       setEstForm((prev) => ({ ...prev, latitude: null, longitude: null }));
                       setGpsStatus('');
                     }}
-                    className="text-slate-400 hover:text-red-600 font-semibold text-[11px] cursor-pointer"
+                    className="text-slate-400 hover:text-rose-600 font-semibold text-[11px] cursor-pointer"
                   >
                     Clear Pin
                   </button>
@@ -400,32 +400,26 @@ export default function EstablishmentContributionForm({
                 <label className="block font-semibold text-slate-700 mb-1">
                   Contact Phone / Mobile <span className="text-emerald-600 font-normal text-[11px]">(Fast verification)</span>
                 </label>
-                <div className="relative">
-                  <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="e.g., 0917 123 4567 or (062) 991-2345"
-                    value={estForm.contact_number || ''}
-                    onChange={(e) => setEstForm((prev) => ({ ...prev, contact_number: e.target.value }))}
-                    className="w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-2 text-slate-800 placeholder:text-slate-400 outline-none focus:border-emerald-500"
-                  />
-                </div>
+                <input
+                  type="text"
+                  placeholder="e.g., 0917 123 4567 or (062) 991-2345"
+                  value={estForm.contact_number || ''}
+                  onChange={(e) => setEstForm((prev) => ({ ...prev, contact_number: e.target.value }))}
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-slate-800 placeholder:text-slate-400 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
+                />
               </div>
 
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
                   Facebook Page or Web Link <span className="text-slate-400 font-normal">(Optional)</span>
                 </label>
-                <div className="relative">
-                  <Globe size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="url"
-                    placeholder="e.g., https://facebook.com/almakkah"
-                    value={estForm.social_media_url || ''}
-                    onChange={(e) => setEstForm((prev) => ({ ...prev, social_media_url: e.target.value }))}
-                    className="w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-2 text-slate-800 placeholder:text-slate-400 outline-none focus:border-emerald-500"
-                  />
-                </div>
+                <input
+                  type="url"
+                  placeholder="e.g., https://facebook.com/almakkah"
+                  value={estForm.social_media_url || ''}
+                  onChange={(e) => setEstForm((prev) => ({ ...prev, social_media_url: e.target.value }))}
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-slate-800 placeholder:text-slate-400 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
+                />
               </div>
             </div>
 
@@ -434,7 +428,7 @@ export default function EstablishmentContributionForm({
               <button
                 type="button"
                 onClick={onCancel}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold cursor-pointer"
+                className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold cursor-pointer transition"
               >
                 Cancel
               </button>

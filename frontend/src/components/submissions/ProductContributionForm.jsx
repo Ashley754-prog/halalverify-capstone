@@ -124,7 +124,7 @@ export default function ProductContributionForm({
             placeholder="e.g., Lucky Me! Pancit Canton"
             value={prodForm.name}
             onChange={(e) => setProdForm((prev) => ({ ...prev, name: e.target.value }))}
-            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 placeholder:text-slate-400 placeholder:opacity-100 outline-none focus:border-emerald-500"
+            className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-slate-800 placeholder:text-slate-400 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
           />
         </div>
 
@@ -145,7 +145,7 @@ export default function ProductContributionForm({
         <select
           value={prodForm.category}
           onChange={(e) => setProdForm((prev) => ({ ...prev, category: e.target.value }))}
-          className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-emerald-500 bg-white text-slate-800"
+          className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition bg-white text-slate-800"
         >
           {PRODUCT_CATEGORIES.map((c) => (
             <option key={c} value={c} className="text-slate-800 bg-white">
@@ -164,7 +164,7 @@ export default function ProductContributionForm({
             <select
               value={prodForm.certifying_body || ''}
               onChange={(e) => setProdForm((prev) => ({ ...prev, certifying_body: e.target.value }))}
-              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 outline-none focus:border-emerald-500"
+              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-slate-800 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
             >
               <option value="">Select Certifying Body (Shown on packaging)</option>
               <option value="IDCP">IDCP (Islamic Da'wah Council of the Philippines)</option>
@@ -210,7 +210,7 @@ export default function ProductContributionForm({
                 type="date"
                 value={prodForm.expiry_date}
                 onChange={(e) => setProdForm((prev) => ({ ...prev, expiry_date: e.target.value }))}
-                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 outline-none focus:border-emerald-500"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-slate-800 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
               />
             </div>
           </div>
