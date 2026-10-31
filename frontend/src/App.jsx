@@ -392,7 +392,6 @@ export default function App() {
         onSignInClick={() => handleViewChange('login')}
         onLogoClick={() => handleViewChange('landing')}
         onViewChange={handleViewChange}
-        currentView={currentView}
       />
       {!isOnline && (
         <div className="bg-amber-600 text-white text-center py-2 text-xs font-bold tracking-wide shadow-inner animate-pulse flex items-center justify-center gap-2">
