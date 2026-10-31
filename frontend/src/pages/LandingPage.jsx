@@ -304,88 +304,90 @@ export default function LandingPage({ onViewChange, userRole }) {
       {/* Top Navigation Bar */}
       <header className="sticky top-0 z-50 w-full border-b border-slate-800/80 bg-[#0e1625]/95 backdrop-blur-md shadow-md shadow-black/20 transition-all">
         <div className="max-w-7xl mx-auto flex items-center justify-between h-16 sm:h-20 px-4 sm:px-6 lg:px-8">
-          <div
-            className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0"
-            onClick={handleScrollToTop}
-            title="Scroll back to top"
-          >
-            <img
-              src="/halalverify-logo.png"
-              alt="HalalVerify Logo"
-              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full border border-emerald-500/30 shadow-md group-hover:scale-105 transition duration-200"
-            />
-            <div>
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="font-black text-sm sm:text-xl tracking-[0.1em] sm:tracking-[0.18em] text-white">HALALVERIFY</span>
-                <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-emerald-950 text-emerald-400 border border-emerald-800/60 rounded-full">
-                  Zamboanga
-                </span>
+          <div className="flex items-center gap-3 lg:gap-5 min-w-0">
+            <div
+              className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0 lg:pr-5 xl:pr-6 lg:border-r lg:border-slate-800/80"
+              onClick={handleScrollToTop}
+              title="Scroll back to top"
+            >
+              <img
+                src="/halalverify-logo.png"
+                alt="HalalVerify Logo"
+                className="h-8 w-8 sm:h-10 sm:w-10 rounded-full border border-emerald-500/30 shadow-md group-hover:scale-105 transition duration-200"
+              />
+              <div>
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span className="font-black text-sm sm:text-xl tracking-[0.1em] sm:tracking-[0.18em] text-white">HALALVERIFY</span>
+                  <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-emerald-950 text-emerald-400 border border-emerald-800/60 rounded-full">
+                    Zamboanga
+                  </span>
+                </div>
+                <p className="hidden xs:block text-[10px] sm:text-xs text-slate-400 tracking-wide">Verification &amp; Compliance Pipeline</p>
               </div>
-              <p className="hidden xs:block text-[10px] sm:text-xs text-slate-400 tracking-wide">Verification &amp; Compliance Pipeline</p>
             </div>
+
+            <nav className="hidden lg:flex items-center gap-3 xl:gap-5 text-xs xl:text-sm font-medium whitespace-nowrap">
+              <a
+                href="#features"
+                onClick={(e) => handleScrollToSection(e, 'features')}
+                className={`transition-colors duration-150 whitespace-nowrap shrink-0 ${
+                  activeSection === 'features'
+                    ? 'text-emerald-400 font-bold'
+                    : 'text-slate-300 hover:text-emerald-400'
+                }`}
+              >
+                Features
+              </a>
+              <a
+                href="#how-it-works"
+                onClick={(e) => handleScrollToSection(e, 'how-it-works')}
+                className={`transition-colors duration-150 whitespace-nowrap shrink-0 ${
+                  activeSection === 'how-it-works'
+                    ? 'text-emerald-400 font-bold'
+                    : 'text-slate-300 hover:text-emerald-400'
+                }`}
+              >
+                How It Works
+              </a>
+              <a
+                href="#certifiers"
+                onClick={(e) => handleScrollToSection(e, 'certifiers')}
+                className={`transition-colors duration-150 whitespace-nowrap shrink-0 ${
+                  activeSection === 'certifiers'
+                    ? 'text-emerald-400 font-bold'
+                    : 'text-slate-300 hover:text-emerald-400'
+                }`}
+              >
+                Certifiers
+              </a>
+              <button
+                onClick={() => onViewChange('products')}
+                className="text-slate-300 hover:text-emerald-400 transition-colors duration-150 font-medium whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                Catalog
+              </button>
+              <button
+                onClick={() => onViewChange('map')}
+                className="text-slate-300 hover:text-emerald-400 transition-colors duration-150 font-medium whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                Map
+              </button>
+              <button
+                onClick={() => handleOpenContribution('establishment')}
+                className="flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 xl:px-3.5 h-9 text-xs xl:text-sm font-semibold text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:text-emerald-200 transition active:scale-95 shadow-xs whitespace-nowrap shrink-0 cursor-pointer"
+                title="Submit an establishment or product to the registry"
+              >
+                <Plus size={14} strokeWidth={2.5} className="text-emerald-400" />
+                <span>Submit a Listing</span>
+              </button>
+            </nav>
           </div>
 
-          <nav className="hidden lg:flex items-center gap-4 xl:gap-8 text-sm xl:text-base whitespace-nowrap">
-            <a
-              href="#features"
-              onClick={(e) => handleScrollToSection(e, 'features')}
-              className={`transition-colors duration-150 whitespace-nowrap shrink-0 ${
-                activeSection === 'features'
-                  ? 'text-emerald-400 font-bold'
-                  : 'text-slate-300 hover:text-emerald-400 font-medium'
-              }`}
-            >
-              Features
-            </a>
-            <a
-              href="#how-it-works"
-              onClick={(e) => handleScrollToSection(e, 'how-it-works')}
-              className={`transition-colors duration-150 whitespace-nowrap shrink-0 ${
-                activeSection === 'how-it-works'
-                  ? 'text-emerald-400 font-bold'
-                  : 'text-slate-300 hover:text-emerald-400 font-medium'
-              }`}
-            >
-              How It Works
-            </a>
-            <a
-              href="#certifiers"
-              onClick={(e) => handleScrollToSection(e, 'certifiers')}
-              className={`transition-colors duration-150 whitespace-nowrap shrink-0 ${
-                activeSection === 'certifiers'
-                  ? 'text-emerald-400 font-bold'
-                  : 'text-slate-300 hover:text-emerald-400 font-medium'
-              }`}
-            >
-              Certifiers
-            </a>
-            <button
-              onClick={() => onViewChange('products')}
-              className="text-slate-300 hover:text-emerald-400 transition-colors duration-150 font-medium whitespace-nowrap shrink-0"
-            >
-              Catalog
-            </button>
-            <button
-              onClick={() => onViewChange('map')}
-              className="text-slate-300 hover:text-emerald-400 transition-colors duration-150 font-medium whitespace-nowrap shrink-0"
-            >
-              Map
-            </button>
-            <button
-              onClick={() => handleOpenContribution('establishment')}
-              className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 xl:px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:text-emerald-200 transition active:scale-95 shadow-xs whitespace-nowrap shrink-0"
-              title="Submit an establishment or product to the registry"
-            >
-              <Plus size={13} strokeWidth={2.5} className="text-emerald-400" />
-              <span>Submit Spot</span>
-            </button>
-          </nav>
-
-          <div className="hidden lg:flex items-center gap-2 xl:gap-3 shrink-0 whitespace-nowrap">
+          <div className="hidden lg:flex items-center gap-2.5 xl:gap-3 shrink-0 whitespace-nowrap">
             {userRole ? (
               <button
                 onClick={() => onViewChange('dashboard')}
-                className="flex items-center gap-1.5 xl:gap-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3.5 xl:px-4 py-2 text-sm font-semibold text-white transition shadow-sm whitespace-nowrap shrink-0"
+                className="flex items-center gap-1.5 xl:gap-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 h-9 px-3.5 xl:px-4 text-xs xl:text-sm font-semibold text-white transition shadow-sm whitespace-nowrap shrink-0 cursor-pointer"
               >
                 <LayoutDashboard size={15} className="text-emerald-400" />
                 <span>Dashboard</span>
@@ -393,7 +395,7 @@ export default function LandingPage({ onViewChange, userRole }) {
             ) : (
               <button
                 onClick={() => onViewChange('login')}
-                className="flex items-center gap-1.5 rounded-xl text-slate-300 hover:text-white px-3 xl:px-3.5 py-2 text-sm font-semibold transition whitespace-nowrap shrink-0"
+                className="flex items-center gap-1.5 rounded-xl border border-slate-700/80 bg-slate-800/40 hover:bg-slate-800 text-slate-300 hover:text-white h-9 px-3 xl:px-3.5 text-xs xl:text-sm font-semibold transition whitespace-nowrap shrink-0 cursor-pointer"
               >
                 <LogIn size={15} className="text-slate-400" />
                 <span>Sign In</span>
@@ -402,7 +404,7 @@ export default function LandingPage({ onViewChange, userRole }) {
 
             <button
               onClick={() => onViewChange('scanner')}
-              className="flex items-center gap-1.5 xl:gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 px-3.5 xl:px-4 py-2 text-sm font-bold text-white shadow-lg shadow-emerald-900/40 transition active:scale-95 whitespace-nowrap shrink-0"
+              className="flex items-center gap-1.5 xl:gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 h-9 px-3.5 xl:px-4 text-xs xl:text-sm font-bold text-white shadow-md shadow-emerald-900/40 transition transform hover:-translate-y-0.5 active:translate-y-0 whitespace-nowrap shrink-0 cursor-pointer"
             >
               <Camera size={15} />
               <span>Start Scanning</span>
@@ -609,17 +611,17 @@ export default function LandingPage({ onViewChange, userRole }) {
       </header>
 
       {/* Hero Section */}
-      <section className="relative pt-7 pb-10 sm:pt-16 sm:pb-24 overflow-hidden">
+      <section className="relative pt-8 pb-12 sm:pt-16 sm:pb-24 overflow-hidden">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-emerald-600/15 blur-[120px] rounded-full pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-800/60 text-emerald-300 text-xs sm:text-sm font-semibold mb-4 sm:mb-6 backdrop-blur-sm shadow-inner">
+          <div className="text-center max-w-3xl sm:max-w-4xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-800/60 text-emerald-300 text-xs sm:text-sm font-semibold mb-5 sm:mb-6 backdrop-blur-sm shadow-inner">
               <Sparkles size={14} className="text-emerald-400 shrink-0" />
               <span>Optical Character Recognition &amp; Verified Database</span>
             </div>
 
-            <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-snug sm:leading-tight max-w-sm sm:max-w-3xl mx-auto">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[54px] font-extrabold tracking-tight text-white leading-tight sm:leading-[1.15] max-w-3xl sm:max-w-4xl mx-auto">
               Verify Halal Authenticity{' '}
               <span className="block sm:inline mt-1 sm:mt-0">
                 in{' '}
@@ -629,12 +631,12 @@ export default function LandingPage({ onViewChange, userRole }) {
               </span>
             </h1>
 
-            <p className="mt-3 sm:mt-5 text-xs sm:text-lg text-slate-300 leading-relaxed max-w-2xl mx-auto">
+            <p className="mt-4 sm:mt-6 text-sm sm:text-base md:text-lg text-slate-300 leading-relaxed max-w-2xl mx-auto">
               Empowering consumers and families to inspect food packaging labels, detect certifying logos, and discover certified dining establishments across Zamboanga City, instantly and freely.
             </p>
 
             {/* Interactive Search Interface */}
-            <div className="mt-5 sm:mt-8 max-w-2xl mx-auto text-left">
+            <div className="mt-6 sm:mt-8 max-w-2xl mx-auto text-left">
               <div className="relative">
                 <input
                   type="text"
@@ -642,22 +644,22 @@ export default function LandingPage({ onViewChange, userRole }) {
                   onChange={(e) => handleSearch(e.target.value)}
                   aria-label="Search products, brands, or verified establishments"
                   placeholder="Search product names, brands, or verified establishments in Zamboanga..."
-                  className="w-full rounded-xl border border-slate-700 bg-slate-900/90 py-2.5 pl-3 pr-20 sm:rounded-2xl sm:py-4 sm:pl-4 sm:pr-24 text-base text-white placeholder-slate-400 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 shadow-2xl backdrop-blur-xl"
+                  className="w-full rounded-xl sm:rounded-2xl border border-slate-700 bg-slate-900/90 py-3 pl-4 pr-20 sm:py-3.5 sm:pl-4 sm:pr-24 text-sm sm:text-base text-white placeholder:text-slate-400/90 outline-none transition duration-200 hover:border-slate-600 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/15 shadow-xl backdrop-blur-xl"
                 />
                 <button
                   type="button"
                   onClick={() => handleSearch(searchQuery)}
-                  className={`absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-emerald-400 transition hover:bg-emerald-950 hover:text-emerald-300 ${searchQuery ? 'right-10 sm:right-12' : ''}`}
+                  className={`absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-emerald-400 transition hover:bg-emerald-950 hover:text-emerald-300 ${searchQuery ? 'right-10 sm:right-12' : ''}`}
                   aria-label="Search"
                   title="Search"
                 >
-                  <Search size={17} />
+                  <Search size={18} />
                 </button>
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={() => { setSearchQuery(''); setSearchResults(null); }}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 rounded-lg transition"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 rounded-lg transition cursor-pointer"
                     title="Clear search"
                   >
                     <X size={18} />
@@ -673,7 +675,7 @@ export default function LandingPage({ onViewChange, userRole }) {
                         <span>Found {searchResults.totalCount} matching record(s)</span>
                         <button
                           onClick={() => onViewChange('products', { searchQuery })}
-                          className="text-emerald-400 hover:underline font-semibold"
+                          className="text-emerald-400 hover:underline font-semibold cursor-pointer"
                         >
                           View In Catalog &rarr;
                         </button>
@@ -731,14 +733,14 @@ export default function LandingPage({ onViewChange, userRole }) {
                       <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
                         <button
                           onClick={() => onViewChange('scanner')}
-                          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-900/40 transition transform hover:-translate-y-0.5 active:translate-y-0 duration-150"
+                          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-900/40 transition transform hover:-translate-y-0.5 active:translate-y-0 duration-150 cursor-pointer"
                         >
                           <Camera size={18} />
                           <span>Scan Package with Camera</span>
                         </button>
                         <button
                           onClick={() => handleOpenContribution('establishment')}
-                          className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs sm:text-sm border border-slate-700 transition"
+                          className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs sm:text-sm border border-slate-700 transition cursor-pointer"
                         >
                           <Building2 size={16} className="text-teal-400" />
                           <span>Submit to Registry</span>
@@ -752,33 +754,33 @@ export default function LandingPage({ onViewChange, userRole }) {
 
             {!searchQuery.trim() && (
               <>
-                <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2.5 sm:gap-4 max-w-md sm:max-w-none mx-auto">
+                <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 max-w-md sm:max-w-none mx-auto">
                   <button
                     onClick={() => onViewChange('scanner')}
-                    className="flex items-center justify-center gap-2 px-5 py-3 sm:px-6 sm:py-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 font-bold text-white text-xs sm:text-base shadow-xl shadow-emerald-900/50 transition transform hover:-translate-y-0.5 active:translate-y-0 duration-150"
+                    className="h-11 sm:h-12 px-6 sm:px-7 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 font-bold text-white text-sm sm:text-base shadow-lg shadow-emerald-900/40 hover:shadow-emerald-900/60 transition duration-150 transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <Camera size={18} className="shrink-0 sm:h-5 sm:w-5" />
+                    <Camera size={19} className="shrink-0" />
                     <span>Launch Scanner</span>
                   </button>
 
                   <button
                     onClick={() => onViewChange('products')}
-                    className="flex items-center justify-center gap-2 px-5 py-3 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 font-semibold text-slate-200 text-xs sm:text-base transition"
+                    className="h-11 sm:h-12 px-5 sm:px-6 rounded-xl sm:rounded-2xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 font-semibold text-slate-200 hover:text-white text-sm sm:text-base transition duration-150 flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <Search size={16} className="shrink-0 text-slate-400 sm:h-[18px] sm:w-[18px]" />
+                    <Package size={18} className="shrink-0 text-slate-400" />
                     <span>Browse Products</span>
                   </button>
 
                   <button
                     onClick={() => onViewChange('map')}
-                    className="flex items-center justify-center gap-2 px-5 py-3 sm:px-5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 font-semibold text-slate-200 text-xs sm:text-base transition"
+                    className="h-11 sm:h-12 px-5 sm:px-6 rounded-xl sm:rounded-2xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 font-semibold text-slate-200 hover:text-white text-sm sm:text-base transition duration-150 flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <MapPin size={16} className="shrink-0 text-emerald-400 sm:h-[18px] sm:w-[18px]" />
+                    <MapPin size={18} className="shrink-0 text-emerald-400" />
                     <span>Establishments Map</span>
                   </button>
                 </div>
 
-                <p className="mt-4 text-xs sm:text-sm text-slate-300 font-medium">
+                <p className="mt-4 text-xs sm:text-sm text-slate-400 font-medium">
                   No account required for scanning and searches.
                 </p>
               </>
