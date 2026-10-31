@@ -13,6 +13,7 @@ import {
   Building2,
   Plus,
   Menu,
+  ChevronRight,
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import ContributionModal from '../components/submissions/ContributionModal';
@@ -99,6 +100,32 @@ export default function LandingPage({ onViewChange, userRole }) {
       }
     };
   }, []);
+
+  // Mobile Menu accessibility: Lock background scroll and listen for Escape key
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    const container = landingScrollRef.current;
+    const originalOverflow = container ? container.style.overflowY : '';
+    if (container) {
+      container.style.overflowY = 'hidden';
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      if (container) {
+        container.style.overflowY = originalOverflow || '';
+      }
+    };
+  }, [isMobileMenuOpen]);
 
   const handleScrollToTop = () => {
     setIsMobileMenuOpen(false);
@@ -383,18 +410,22 @@ export default function LandingPage({ onViewChange, userRole }) {
           </div>
 
           <div className="flex items-center gap-2 lg:hidden">
-            <button
-              onClick={() => onViewChange('scanner')}
-              className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 px-3 py-1.5 text-xs font-bold text-white shadow-md shadow-emerald-900/40 transition active:scale-95"
-            >
-              <Camera size={14} />
-              <span>Scan</span>
-            </button>
+            {!isMobileMenuOpen && (
+              <button
+                type="button"
+                onClick={() => onViewChange('scanner')}
+                className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 px-3 py-1.5 text-xs font-bold text-white shadow-md shadow-emerald-900/40 transition active:scale-95 cursor-pointer"
+                aria-label="Quick launch scanner"
+              >
+                <Camera size={14} />
+                <span>Scan</span>
+              </button>
+            )}
 
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen((prev) => !prev)}
-              className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/80 transition focus:outline-none"
+              className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/80 transition focus:outline-none cursor-pointer"
               aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
             >
               {isMobileMenuOpen ? <X size={22} className="text-emerald-400" /> : <Menu size={22} />}
@@ -403,117 +434,178 @@ export default function LandingPage({ onViewChange, userRole }) {
         </div>
 
         {isMobileMenuOpen && (
-          <div className="lg:hidden border-t border-slate-800 bg-[#0e1625]/98 backdrop-blur-xl animate-in slide-in-from-top-3 duration-200 shadow-2xl">
-            <div className="px-4 py-4 space-y-3">
-              <nav className="flex flex-col space-y-1 text-sm font-medium">
-                <a
-                  href="#features"
-                  onClick={(e) => handleScrollToSection(e, 'features')}
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition ${
-                    activeSection === 'features'
-                      ? 'text-emerald-400 font-bold'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-                  }`}
-                >
-                  <span>Features</span>
-                  <Sparkles size={16} className={activeSection === 'features' ? 'text-emerald-400' : 'text-slate-400'} />
-                </a>
-                <a
-                  href="#how-it-works"
-                  onClick={(e) => handleScrollToSection(e, 'how-it-works')}
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition ${
-                    activeSection === 'how-it-works'
-                      ? 'text-emerald-400 font-bold'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-                  }`}
-                >
-                  <span>How It Works</span>
-                  <CheckCircle2 size={16} className={activeSection === 'how-it-works' ? 'text-emerald-400' : 'text-slate-400'} />
-                </a>
-                <a
-                  href="#certifiers"
-                  onClick={(e) => handleScrollToSection(e, 'certifiers')}
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition ${
-                    activeSection === 'certifiers'
-                      ? 'text-emerald-400 font-bold'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-                  }`}
-                >
-                  <span>Certifiers</span>
-                  <ShieldCheck size={16} className={activeSection === 'certifiers' ? 'text-emerald-400' : 'text-slate-400'} />
-                </a>
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    onViewChange('products');
-                  }}
-                  className="flex items-center justify-between px-3 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-left"
-                >
-                  <span>Product Catalog</span>
-                  <Package size={16} className="text-emerald-400" />
-                </button>
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    onViewChange('map');
-                  }}
-                  className="flex items-center justify-between px-3 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-left"
-                >
-                  <span>Establishments Map</span>
-                  <MapPin size={16} className="text-teal-400" />
-                </button>
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    handleOpenContribution('establishment');
-                  }}
-                  className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-emerald-950/50 border border-emerald-800/60 text-emerald-300 hover:bg-emerald-900/50 transition text-left font-semibold"
-                >
-                  <span>+ Submit Establishment / Product</span>
-                  <Plus size={16} className="text-emerald-400" />
-                </button>
-              </nav>
+          <>
+            <div
+              className="fixed inset-0 top-16 sm:top-20 bg-slate-950/70 z-40 lg:hidden backdrop-blur-xs transition-opacity"
+              onClick={() => setIsMobileMenuOpen(false)}
+              aria-hidden="true"
+            />
+            <div className="relative z-50 lg:hidden border-t border-slate-800 bg-[#0e1625]/98 backdrop-blur-xl animate-in slide-in-from-top-3 duration-200 shadow-2xl max-h-[calc(100dvh-4.5rem)] overflow-y-auto">
+              <div className="px-4 py-3.5 space-y-3">
+                {/* Group 1: EXPLORE */}
+                <div className="space-y-1">
+                  <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">
+                    Explore
+                  </p>
+                  <nav className="flex flex-col space-y-0.5 text-sm font-medium">
+                    <a
+                      href="#features"
+                      onClick={(e) => handleScrollToSection(e, 'features')}
+                      className={`flex items-center justify-between px-3 py-2 rounded-xl transition ${
+                        activeSection === 'features'
+                          ? 'bg-emerald-950/60 text-emerald-400 font-bold border border-emerald-800/60'
+                          : 'text-slate-300 hover:text-white hover:bg-slate-800/60 font-medium'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-slate-800/80 text-emerald-400 flex items-center justify-center shrink-0">
+                          <Sparkles size={15} />
+                        </div>
+                        <span className="text-xs sm:text-sm">Features</span>
+                      </div>
+                      <ChevronRight size={14} className="text-slate-500" />
+                    </a>
+                    <a
+                      href="#how-it-works"
+                      onClick={(e) => handleScrollToSection(e, 'how-it-works')}
+                      className={`flex items-center justify-between px-3 py-2 rounded-xl transition ${
+                        activeSection === 'how-it-works'
+                          ? 'bg-emerald-950/60 text-emerald-400 font-bold border border-emerald-800/60'
+                          : 'text-slate-300 hover:text-white hover:bg-slate-800/60 font-medium'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-slate-800/80 text-emerald-400 flex items-center justify-center shrink-0">
+                          <CheckCircle2 size={15} />
+                        </div>
+                        <span className="text-xs sm:text-sm">How It Works</span>
+                      </div>
+                      <ChevronRight size={14} className="text-slate-500" />
+                    </a>
+                    <a
+                      href="#certifiers"
+                      onClick={(e) => handleScrollToSection(e, 'certifiers')}
+                      className={`flex items-center justify-between px-3 py-2 rounded-xl transition ${
+                        activeSection === 'certifiers'
+                          ? 'bg-emerald-950/60 text-emerald-400 font-bold border border-emerald-800/60'
+                          : 'text-slate-300 hover:text-white hover:bg-slate-800/60 font-medium'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-slate-800/80 text-emerald-400 flex items-center justify-center shrink-0">
+                          <ShieldCheck size={15} />
+                        </div>
+                        <span className="text-xs sm:text-sm">Certifiers</span>
+                      </div>
+                      <ChevronRight size={14} className="text-slate-500" />
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        onViewChange('products');
+                      }}
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-left cursor-pointer font-medium"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-slate-800/80 text-emerald-400 flex items-center justify-center shrink-0">
+                          <Package size={15} />
+                        </div>
+                        <span className="text-xs sm:text-sm">Product Catalog</span>
+                      </div>
+                      <ChevronRight size={14} className="text-slate-500" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        onViewChange('map');
+                      }}
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-left cursor-pointer font-medium"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-slate-800/80 text-teal-400 flex items-center justify-center shrink-0">
+                          <MapPin size={15} />
+                        </div>
+                        <span className="text-xs sm:text-sm">Establishments Map</span>
+                      </div>
+                      <ChevronRight size={14} className="text-slate-500" />
+                    </button>
+                  </nav>
+                </div>
 
-              <div className="pt-3 border-t border-slate-800 flex flex-col gap-2">
-                {userRole ? (
+                {/* Group 2: CONTRIBUTE */}
+                <div className="pt-2 border-t border-slate-800/80">
+                  <p className="px-2 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">
+                    Contribute
+                  </p>
                   <button
+                    type="button"
                     onClick={() => {
                       setIsMobileMenuOpen(false);
-                      onViewChange('dashboard');
+                      handleOpenContribution('establishment');
                     }}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm transition"
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-900/40 hover:border-emerald-500/50 transition cursor-pointer active:scale-[0.99] group"
                   >
-                    <LayoutDashboard size={16} className="text-emerald-400" />
-                    <span>Open Dashboard</span>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                        <Plus size={15} strokeWidth={2.5} />
+                      </div>
+                      <span className="text-xs sm:text-sm font-bold text-emerald-200">Submit Establishment / Product</span>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      Community
+                    </span>
                   </button>
-                ) : (
+                </div>
+
+                {/* Group 3: QUICK ACTIONS */}
+                <div className="pt-2 border-t border-slate-800/80 space-y-2">
+                  <p className="px-2 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">
+                    Quick Actions
+                  </p>
                   <button
+                    type="button"
                     onClick={() => {
                       setIsMobileMenuOpen(false);
-                      onViewChange('login');
+                      onViewChange('scanner');
                     }}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm transition"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-950/60 transition active:scale-[0.98] cursor-pointer"
                   >
-                    <LogIn size={16} className="text-emerald-400" />
-                    <span>Sign In / Register</span>
+                    <Camera size={16} className="shrink-0" />
+                    <span>Start Optical Scanner</span>
                   </button>
-                )}
 
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    onViewChange('scanner');
-                  }}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-900/40 transition"
-                >
-                  <Camera size={16} />
-                  <span>Start Optical Scanner</span>
-                </button>
+                  {userRole ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        onViewChange('dashboard');
+                      }}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700/80 text-slate-200 hover:text-white font-semibold text-xs sm:text-sm transition active:scale-[0.98] cursor-pointer"
+                    >
+                      <LayoutDashboard size={15} className="text-emerald-400 shrink-0" />
+                      <span>Open Dashboard</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        onViewChange('login');
+                      }}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700/80 text-slate-200 hover:text-white font-semibold text-xs sm:text-sm transition active:scale-[0.98] cursor-pointer"
+                    >
+                      <LogIn size={15} className="text-emerald-400 shrink-0" />
+                      <span>Sign In / Register</span>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          </>
         )}
-
       </header>
 
       {/* Hero Section */}
@@ -527,10 +619,13 @@ export default function LandingPage({ onViewChange, userRole }) {
               <span>Optical Character Recognition &amp; Verified Database</span>
             </div>
 
-            <h1 className="text-2xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight sm:leading-tight">
-              Verify Halal Authenticity in{' '}
-              <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-200 bg-clip-text text-transparent">
-                Zamboanga City.
+            <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-snug sm:leading-tight max-w-sm sm:max-w-3xl mx-auto">
+              Verify Halal Authenticity{' '}
+              <span className="block sm:inline mt-1 sm:mt-0">
+                in{' '}
+                <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-200 bg-clip-text text-transparent whitespace-nowrap">
+                  Zamboanga City.
+                </span>
               </span>
             </h1>
 
