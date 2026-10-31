@@ -1,6 +1,20 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Menu, X, User, ArrowLeft, ChevronDown, ShieldCheck, Settings, LogOut } from 'lucide-react';
+
+const VIEW_TITLES = {
+    dashboard: 'Operations & Telemetry Dashboard',
+    landing: 'Home Landing',
+    scanner: 'Optical Character Recognition Scanner',
+    products: 'Product Catalog & Directory',
+    map: 'Establishments Map',
+    registry: 'Regulatory Standards Registry',
+    'scan-history': 'Inspection History & Logs',
+    'verification-queue': 'Verification & Backlog Queue',
+    analytics: 'Surveillance & Telemetry Analytics',
+    settings: 'About & System Settings',
+    profile: 'Profile & Account',
+    'report-issue': 'Report Issue',
+};
 
 // Page Header Topbar (used inside views like Settings, Dashboard, etc.)
 export const Topbar = ({ title, subtitle, action, onBack }) => (
@@ -39,6 +53,7 @@ export const AppTopbar = ({
     onSignInClick,
     onLogoClick,
     onViewChange,
+    currentView = 'dashboard',
 }) => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -96,25 +111,44 @@ export const AppTopbar = ({
                     <button
                         type="button"
                         onClick={onToggleSidebar}
-                        className="p-1.5 sm:p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition md:hidden shrink-0"
+                        className="p-1.5 sm:p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition md:hidden shrink-0 cursor-pointer"
                         aria-label={isSidebarOpen ? 'Close menu' : 'Open menu'}
                     >
                         {isSidebarOpen ? <X size={22} /> : <Menu size={22} />}
                     </button>
 
+                    {/* Left Brand / Breadcrumb Area */}
                     <div 
                         onClick={onLogoClick} 
                         className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group min-w-0"
                         title="Return to Home Landing Page"
                     >
-                        <img 
-                            src="/halalverify-logo.png" 
-                            alt="HALALVERIFY logo" 
-                            className="h-8 w-8 sm:h-9 sm:w-9 rounded-full object-cover border border-slate-700 group-hover:scale-105 transition shrink-0" 
-                        />
-                        <div className="min-w-0">
-                            <h1 className="text-sm sm:text-xl font-black tracking-[0.12em] sm:tracking-[0.18em] text-white group-hover:text-emerald-400 transition truncate">HALALVERIFY</h1>
+                        {/* Branding Logo: Always visible on mobile, or when sidebar is collapsed on desktop */}
+                        <div className={`${isSidebarOpen ? 'md:hidden' : 'flex'} items-center gap-2 sm:gap-2.5 min-w-0`}>
+                            <img 
+                                src="/halalverify-logo.png" 
+                                alt="HALALVERIFY logo" 
+                                className="h-8 w-8 sm:h-9 sm:w-9 rounded-full object-cover border border-slate-700 group-hover:scale-105 transition shrink-0" 
+                            />
+                            <div className="min-w-0">
+                                <h1 className="text-sm sm:text-xl font-black tracking-[0.12em] sm:tracking-[0.18em] text-white group-hover:text-emerald-400 transition truncate">
+                                    HALALVERIFY
+                                </h1>
+                            </div>
                         </div>
+
+                        {/* Breadcrumb Context: Shown on desktop when sidebar is open to avoid duplicate logo */}
+                        {isSidebarOpen && (
+                            <div className="hidden md:flex items-center gap-2 text-xs select-none min-w-0">
+                                <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400 bg-emerald-950/70 border border-emerald-800/50 px-2 py-0.5 rounded-md shrink-0">
+                                    {isAdmin ? 'Admin Console' : 'Portal'}
+                                </span>
+                                <span className="text-slate-600 font-mono">/</span>
+                                <span className="text-xs sm:text-sm font-bold text-slate-200 hover:text-white transition truncate">
+                                    {VIEW_TITLES[currentView] || 'Dashboard'}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -253,7 +287,7 @@ export const AppTopbar = ({
                         <button
                             type="button"
                             onClick={onSignInClick}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 text-xs sm:text-sm font-semibold text-white shadow-sm transition shrink-0 whitespace-nowrap active:scale-95"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 text-xs sm:text-sm font-semibold text-white shadow-sm transition shrink-0 whitespace-nowrap active:scale-95 cursor-pointer"
                         >
                             <User size={14} className="shrink-0" />
                             <span className="whitespace-nowrap">Sign In</span>

@@ -38,7 +38,6 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
     // Helper to handle view changes and auto-close drawer on mobile viewports
     const handleNavClick = (viewName) => {
         onViewChange(viewName);
-        // Automatically close sidebar drawer on mobile screens after selecting a view
         if (window.innerWidth < 768 && isOpen) {
             toggleSidebar();
         }
@@ -55,54 +54,52 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                 />
             )}
 
-            {/* Sidebar Navigation */}
+            {/* Sidebar Navigation (Optimized width 260px open, 72px collapsed) */}
             <aside className={`
                 fixed md:static inset-y-0 left-0 z-[9999]
-                ${isOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0 md:w-20'} 
-                bg-slate-900 text-slate-300 flex flex-col transition-all duration-300 ease-in-out border-r border-slate-800
+                ${isOpen ? 'translate-x-0 w-[260px]' : '-translate-x-full md:translate-x-0 md:w-[72px]'} 
+                bg-slate-900 text-slate-300 flex flex-col transition-all duration-300 ease-in-out border-r border-slate-800 shrink-0 select-none
             `}>
                 {/* Sidebar Header */}
-                <div className={`border-b border-slate-800 flex items-center ${isOpen ? 'p-4 justify-between' : 'p-4 justify-center'}`}>
+                <div className={`border-b border-slate-800 flex items-center h-16 sm:h-[65px] px-3.5 ${isOpen ? 'justify-between' : 'justify-center'}`}>
                     {isOpen && (
                         <div 
-                            className="flex items-center gap-2 cursor-pointer group"
+                            className="flex items-center gap-2.5 cursor-pointer group min-w-0"
                             onClick={() => handleNavClick('landing')}
                             title="Return to Home Landing Page"
                         >
-                            <img src="/halalverify-logo.png" alt="HalalVerify Logo" className="h-8 w-8 rounded-full group-hover:scale-105 transition" />
-                            <span className="font-extrabold tracking-wider text-white text-sm group-hover:text-emerald-400 transition">HALALVERIFY</span>
+                            <img src="/halalverify-logo.png" alt="HalalVerify Logo" className="h-8 w-8 rounded-full group-hover:scale-105 transition shrink-0" />
+                            <div className="min-w-0">
+                                <span className="font-black tracking-wider text-white text-sm group-hover:text-emerald-400 transition truncate block">
+                                    HALALVERIFY
+                                </span>
+                            </div>
                         </div>
                     )}
                     <button
                         type="button"
                         onClick={toggleSidebar}
-                        className="inline-flex items-center justify-center rounded-xl p-2 text-slate-300 transition hover:bg-slate-800 hover:text-white focus:outline-none cursor-pointer"
-                        aria-label={isOpen ? 'Close sidebar' : 'Open sidebar'}
+                        className="inline-flex items-center justify-center rounded-xl p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white focus:outline-none cursor-pointer"
+                        aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+                        title={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
                     >
-                        {isOpen ? <Menu size={20} className="md:hidden" /> : null}
-                        <Menu size={20} className={isOpen ? 'hidden md:block' : 'block'} />
+                        {isOpen ? <Menu size={19} className="md:hidden" /> : null}
+                        <Menu size={19} className={isOpen ? 'hidden md:block' : 'block'} />
                     </button>
                 </div>
 
                 {/* Sidebar Navigation Links */}
-                <div className="flex-1 flex flex-col justify-between py-3 overflow-y-auto">
-                    <nav className="px-3 space-y-3">
-                        {/* Section 1: Main Features */}
+                <div className="flex-1 flex flex-col justify-between py-3 overflow-y-auto overflow-x-hidden">
+                    <nav className="px-2.5 space-y-3">
+                        {/* Section 1: Main Navigation */}
                         <div className="space-y-1">
                             {isOpen ? (
-                                <p className="px-3 pb-1 text-xs font-bold uppercase tracking-wider text-slate-400">
-                                    Main
+                                <p className="px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 select-none">
+                                    Main Navigation
                                 </p>
                             ) : (
                                 <div className="my-1 border-t border-slate-800/80 mx-2" />
                             )}
-                            <NavItem 
-                                collapsed={!isOpen} 
-                                active={currentView === 'landing'} 
-                                icon={<Home size={18} />} 
-                                label="Home" 
-                                onClick={() => handleNavClick('landing')} 
-                            />
                             <NavItem 
                                 collapsed={!isOpen} 
                                 active={currentView === 'dashboard'} 
@@ -112,11 +109,29 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                             />
                             <NavItem 
                                 collapsed={!isOpen} 
+                                active={currentView === 'landing'} 
+                                icon={<Home size={18} />} 
+                                label="Home Landing" 
+                                onClick={() => handleNavClick('landing')} 
+                            />
+                            <NavItem 
+                                collapsed={!isOpen} 
                                 active={currentView === 'scanner'} 
                                 icon={<Camera size={18} />} 
                                 label="Halal Scanner" 
                                 onClick={() => handleNavClick('scanner')} 
                             />
+                        </div>
+
+                        {/* Section 2: Database & Registries */}
+                        <div className="space-y-1">
+                            {isOpen ? (
+                                <p className="px-3 pt-2 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 select-none">
+                                    Database &amp; Registries
+                                </p>
+                            ) : (
+                                <div className="my-2 border-t border-slate-800/80 mx-2" />
+                            )}
                             <NavItem 
                                 collapsed={!isOpen} 
                                 active={currentView === 'products'} 
@@ -131,17 +146,6 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                                 label="Establishments Map" 
                                 onClick={() => handleNavClick('map')} 
                             />
-                        </div>
-
-                        {/* Section 2: Community & Knowledge */}
-                        <div className="space-y-1">
-                            {isOpen ? (
-                                <p className="px-3 pt-2 pb-1 text-xs font-bold uppercase tracking-wider text-slate-400">
-                                    Community & Tools
-                                </p>
-                            ) : (
-                                <div className="my-2 border-t border-slate-800/80 mx-2" />
-                            )}
                             <NavItem 
                                 collapsed={!isOpen} 
                                 active={currentView === 'registry'} 
@@ -149,6 +153,43 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                                 label="Local Registry" 
                                 onClick={() => handleNavClick('registry')} 
                             />
+                        </div>
+
+                        {/* Section 3: Operations & Activity */}
+                        <div className="space-y-1">
+                            {isOpen ? (
+                                <div className="px-3 pt-2 pb-1 flex items-center justify-between">
+                                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 select-none">
+                                        {userRole === 'admin' ? 'Operations & Backlog' : 'Activity & Tools'}
+                                    </span>
+                                    {userRole === 'admin' && (
+                                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50">
+                                            Admin
+                                        </span>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="my-2 border-t border-emerald-900/60 mx-2" />
+                            )}
+                            {userRole === 'admin' && (
+                                <NavItem 
+                                    collapsed={!isOpen} 
+                                    active={currentView === 'verification-queue'} 
+                                    icon={<ShieldCheck size={18} />} 
+                                    label="Verification Queue" 
+                                    badge={pendingCount > 0 ? pendingCount : null}
+                                    onClick={() => handleNavClick('verification-queue')} 
+                                />
+                            )}
+                            {userRole === 'admin' && (
+                                <NavItem 
+                                    collapsed={!isOpen} 
+                                    active={currentView === 'analytics'} 
+                                    icon={<BarChart2 size={18} />} 
+                                    label="Analytics & Telemetry" 
+                                    onClick={() => handleNavClick('analytics')} 
+                                />
+                            )}
                             <NavItem 
                                 collapsed={!isOpen} 
                                 active={currentView === 'scan-history'} 
@@ -166,43 +207,10 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                                 />
                             )}
                         </div>
-
-                        {/* Section 3: Management (Admin Only) */}
-                        {userRole === 'admin' && (
-                            <div className="space-y-1">
-                                {isOpen ? (
-                                    <div className="px-3 pt-2 pb-1 flex items-center justify-between">
-                                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400/90 flex items-center gap-1.5">
-                                            <ShieldCheck size={12} className="text-emerald-500" />
-                                            Management
-                                        </span>
-                                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50">
-                                            Admin
-                                        </span>
-                                    </div>
-                                ) : (
-                                    <div className="my-2 border-t border-emerald-900/60 mx-2" />
-                                )}
-                                <NavItem 
-                                    collapsed={!isOpen} 
-                                    active={currentView === 'verification-queue'} 
-                                    icon={<ShieldCheck size={18} />} 
-                                    label="Verification Queue" 
-                                    badge={pendingCount > 0 ? pendingCount : null}
-                                    onClick={() => handleNavClick('verification-queue')} 
-                                />
-                                <NavItem 
-                                    collapsed={!isOpen} 
-                                    active={currentView === 'analytics'} 
-                                    icon={<BarChart2 size={18} />} 
-                                    label="Analytics" 
-                                    onClick={() => handleNavClick('analytics')} 
-                                />
-                            </div>
-                        )}
                     </nav>
 
-                    <div className="px-3 space-y-1 pt-4 border-t border-slate-800/60">
+                    {/* Section 4: Settings & Authentication */}
+                    <div className="px-2.5 space-y-1 pt-3 border-t border-slate-800/60">
                         <NavItem 
                             collapsed={!isOpen} 
                             active={currentView === 'settings'} 
@@ -214,9 +222,10 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                             <button
                                 onClick={onSignOut}
                                 className={`w-full flex items-center rounded-xl transition-all cursor-pointer ${
-                                    isOpen ? 'gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-950/30' : 'justify-center p-3 text-red-400 hover:bg-slate-800'
+                                    isOpen ? 'gap-3 px-3.5 py-2.5 text-sm text-rose-400 hover:bg-rose-950/30' : 'justify-center p-2.5 text-rose-400 hover:bg-slate-800'
                                 }`}
                                 title="Sign Out"
+                                aria-label="Sign Out"
                             >
                                 <LogOut size={18} className="shrink-0" />
                                 {isOpen && <span className="font-medium truncate">Sign Out</span>}
@@ -225,9 +234,10 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                             <button
                                 onClick={() => handleNavClick('login')}
                                 className={`w-full flex items-center rounded-xl transition-all cursor-pointer ${
-                                    isOpen ? 'gap-3 px-4 py-3 text-sm text-emerald-400 hover:bg-emerald-950/30 font-semibold' : 'justify-center p-3 text-emerald-400 hover:bg-slate-800'
+                                    isOpen ? 'gap-3 px-3.5 py-2.5 text-sm text-emerald-400 hover:bg-emerald-950/30 font-semibold' : 'justify-center p-2.5 text-emerald-400 hover:bg-slate-800'
                                 }`}
                                 title="Sign In"
+                                aria-label="Sign In"
                             >
                                 <LogIn size={18} className="shrink-0" />
                                 {isOpen && <span className="font-medium truncate">Sign In / Register</span>}
