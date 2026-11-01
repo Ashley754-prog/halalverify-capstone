@@ -12,6 +12,7 @@ import Toast from '../components/ui/Toast';
 import ConfirmActionModal from '../components/ui/ConfirmActionModal';
 import VerificationQueueTabs from '../components/verification/VerificationQueueTabs';
 import VerificationInspectionModal from '../components/verification/VerificationInspectionModal';
+import ReportAdjudicationModal from '../components/verification/ReportAdjudicationModal';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
 import { isMachineNote, extractMenuHighlights, deriveEstablishmentTier } from '../utils/verificationNotes';
@@ -32,6 +33,7 @@ export default function VerificationQueue({ onViewChange }) {
     // Confirmation Modals
     const [confirmBatchModalOpen, setConfirmBatchModalOpen] = useState(false);
     const [rejectTargetProduct, setRejectTargetProduct] = useState(null);
+    const [adjudicatingReport, setAdjudicatingReport] = useState(null);
 
     // Data lists
     const [establishments, setEstablishments] = useState([]);
@@ -682,15 +684,16 @@ export default function VerificationQueue({ onViewChange }) {
         }
     };
 
-    const handleResolveReport = async (report, resolutionStatus, suspendEstablishment = false) => {
+    const handleResolveReport = async (report, resolutionStatus, suspendEstablishment = false, notesOverride = '') => {
         try {
             setProcessingId(report.id);
+            const finalNotes = (notesOverride || adminNotes || 'Resolved by administrator.').trim();
             const res = await authFetch(`${API_BASE_URL}/api/v1/admin/reports/${report.id}/resolve`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     status: resolutionStatus,
-                    resolution_notes: adminNotes || `Resolved by administrator.`,
+                    resolution_notes: finalNotes,
                     suspend_establishment: suspendEstablishment,
                 }),
             });
@@ -702,7 +705,7 @@ export default function VerificationQueue({ onViewChange }) {
                     .from('issue_reports')
                     .update({
                         status: resolutionStatus,
-                        resolution_notes: adminNotes || 'Resolved by administrator.',
+                        resolution_notes: finalNotes,
                         resolved_at: nowIso,
                         resolved_by: session?.user?.id || null,
                     })
@@ -713,7 +716,7 @@ export default function VerificationQueue({ onViewChange }) {
                         .from('establishments')
                         .update({
                             halal_status: 'flagged',
-                            admin_notes: `Suspended via report #${report.id}`,
+                            admin_notes: `Suspended via report #${report.id}: ${finalNotes}`,
                             verified_at: nowIso,
                             verified_by: session?.user?.id || null,
                         })
@@ -721,13 +724,14 @@ export default function VerificationQueue({ onViewChange }) {
                 }
             }
 
-            const repLabel = report?.id ? `Report #${report.id}` : 'Report';
+            const repLabel = report?.id ? `Report #${String(report.id).slice(0, 8)}` : 'Report';
             const actionLabel = resolutionStatus.toLowerCase() === 'resolved' ? 'resolved' : `marked as ${resolutionStatus.toLowerCase()}`;
             setToast({
                 visible: true,
                 message: `${repLabel} ${actionLabel}.${suspendEstablishment ? ' Establishment suspended.' : ''}`,
                 type: 'success',
             });
+            setAdjudicatingReport(null);
             closeInspection();
             window.dispatchEvent(new CustomEvent('verification-queue-changed'));
             fetchQueueData({ background: true });
@@ -931,6 +935,7 @@ export default function VerificationQueue({ onViewChange }) {
                     handleAutoVerifyProduct={handleAutoVerifyProduct}
                     handleVerifyProduct={handleVerifyProduct}
                     handleResolveReport={handleResolveReport}
+                    onInspectReport={(rep) => setAdjudicatingReport(rep)}
                     loading={loading}
                     refreshing={refreshing}
                     error={error}
@@ -973,6 +978,15 @@ export default function VerificationQueue({ onViewChange }) {
                 handleDeleteMenuItem={handleDeleteMenuItem}
                 adminNotes={adminNotes}
                 setAdminNotes={setAdminNotes}
+            />
+
+            {/* Adjudicate Report Modal with Evidence & Investigation Notes */}
+            <ReportAdjudicationModal
+                isOpen={!!adjudicatingReport}
+                onClose={() => setAdjudicatingReport(null)}
+                report={adjudicatingReport}
+                onResolve={handleResolveReport}
+                processingId={processingId}
             />
 
             {/* Rejection Confirmation Modal with Optional Rationale */}

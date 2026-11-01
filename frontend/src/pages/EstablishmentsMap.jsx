@@ -1048,15 +1048,16 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                 isOpen={showReportModal}
                 onClose={() => setShowReportModal(false)}
                 initialData={{
-                    establishment_id: selectedEstablishment?.id,
-                    establishment_name: selectedEstablishment?.name,
-                    category: 'establishment_concern',
+                    relatedTo: 'establishment',
+                    subjectName: selectedEstablishment?.name,
+                    establishmentId: selectedEstablishment?.id,
+                    halalTier: selectedEstablishment?.halal_status || selectedEstablishment?.tier,
                 }}
                 onSuccess={() => {
                     setShowReportModal(false);
                     setToast({
                         visible: true,
-                        message: 'Report submitted for regulatory review.',
+                        message: 'Report submitted for administrative review.',
                         type: 'success',
                     });
                 }}

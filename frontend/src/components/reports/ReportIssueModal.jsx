@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Flag,
   AlertTriangle,
@@ -7,34 +7,92 @@ import {
   Loader2,
   X,
   FileImage,
-  ShieldAlert,
+  Store,
+  Package,
+  ScanSearch,
 } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { supabase } from '../../lib/supabaseClient';
 import { API_BASE_URL, authFetch } from '../../utils/api';
 import { validateUploadFile } from '../../utils/security';
 
-const VIOLATION_CATEGORIES = [
-  'Expired Certificate',
-  'Fraudulent / Unaccredited Logo',
-  'Prohibited Ingredients Detected',
-  'Establishment Status / Address Incorrect',
-  'Wrong Verdict (Scanner Error)',
-  'Suspected Cross-Contamination',
-  'Other Concern',
-];
+export const CATEGORIES_BY_TARGET = {
+  establishment_certified: [
+    'Expired, Fake, or Questionable Halal Certificate',
+    'Permanently Closed or Relocated',
+    'Incorrect Address, Map Pin, or Phone',
+    'Pork or Alcohol Detected on Premises',
+    'Suspected Cross-Contamination or Storage Issue',
+    'Duplicate Establishment Listing',
+    'Other Listing or Operational Issue',
+  ],
+  establishment_community: [
+    'Permanently Closed or Relocated',
+    'Incorrect Address, Map Pin, or Phone',
+    'Pork or Alcohol Detected on Premises',
+    'Suspected Cross-Contamination or Storage Issue',
+    'Misleading Halal / Muslim-Friendly Claim',
+    'Duplicate Establishment Listing',
+    'Other Listing or Operational Issue',
+  ],
+  product: [
+    'Prohibited or Non-Halal Ingredient / E-Number Detected',
+    'Counterfeit or Unaccredited Halal Seal',
+    'Incorrect Product Details or Ingredients List',
+    'Product Discontinued or Recalled',
+    'Duplicate Product Listing',
+    'Other Product Discrepancy',
+  ],
+  scanner: [
+    'Safe Ingredient Falsely Flagged as Haram',
+    'Haram Ingredient Missed by Scanner',
+    'Text Recognition / Image Crop Failure',
+    'Other Scanner Issue',
+  ],
+};
+
+export function getCategoriesForTarget(relatedTo, halalTier) {
+  if (relatedTo === 'product') return CATEGORIES_BY_TARGET.product;
+  if (relatedTo === 'scanner') return CATEGORIES_BY_TARGET.scanner;
+  const tierLower = String(halalTier || '').toLowerCase();
+  const isCertified = tierLower.includes('cert') || tierLower === 'halal_certified' || tierLower === 'certified';
+  return isCertified ? CATEGORIES_BY_TARGET.establishment_certified : CATEGORIES_BY_TARGET.establishment_community;
+}
 
 export default function ReportIssueModal({
   isOpen,
   onClose,
-  initialData = {}, // { relatedTo, subjectName, productId, establishmentId }
+  initialData = {},
   onSubmitted,
+  onSuccess,
 }) {
-  const [issueType, setIssueType] = useState(VIOLATION_CATEGORIES[0]);
-  const [relatedTo, setRelatedTo] = useState(initialData.relatedTo || 'product');
-  const [subjectName, setSubjectName] = useState(initialData.subjectName || '');
+  const resolvedRelatedTo = initialData.relatedTo || initialData.related_to || 'establishment';
+  const resolvedSubjectName =
+    initialData.subjectName ||
+    initialData.subject_name ||
+    initialData.establishment_name ||
+    initialData.product_name ||
+    initialData.name ||
+    '';
+  const resolvedEstablishmentId = initialData.establishmentId || initialData.establishment_id || null;
+  const resolvedProductId = initialData.productId || initialData.product_id || null;
+  const resolvedHalalTier = initialData.halalTier || initialData.halal_tier || initialData.halal_status || initialData.tier || '';
+
+  const [relatedTo, setRelatedTo] = useState(resolvedRelatedTo);
+  const [subjectName, setSubjectName] = useState(resolvedSubjectName);
+  const [establishmentId, setEstablishmentId] = useState(resolvedEstablishmentId);
+  const [productId, setProductId] = useState(resolvedProductId);
+  const [halalTier, setHalalTier] = useState(resolvedHalalTier);
+
+  const availableCategories = useMemo(
+    () => getCategoriesForTarget(relatedTo, halalTier),
+    [relatedTo, halalTier]
+  );
+
+  const [issueType, setIssueType] = useState(availableCategories[0] || 'Other Issue');
   const [description, setDescription] = useState('');
   const [evidenceUrl, setEvidenceUrl] = useState('');
+  const [declarationAccepted, setDeclarationAccepted] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -42,11 +100,29 @@ export default function ReportIssueModal({
 
   useEffect(() => {
     if (isOpen) {
-      setRelatedTo(initialData.relatedTo || 'product');
-      setSubjectName(initialData.subjectName || '');
-      setIssueType(VIOLATION_CATEGORIES[0]);
+      const rel = initialData.relatedTo || initialData.related_to || 'establishment';
+      const name =
+        initialData.subjectName ||
+        initialData.subject_name ||
+        initialData.establishment_name ||
+        initialData.product_name ||
+        initialData.name ||
+        '';
+      const estId = initialData.establishmentId || initialData.establishment_id || null;
+      const prodId = initialData.productId || initialData.product_id || null;
+      const tier = initialData.halalTier || initialData.halal_tier || initialData.halal_status || initialData.tier || '';
+
+      setRelatedTo(rel);
+      setSubjectName(name);
+      setEstablishmentId(estId);
+      setProductId(prodId);
+      setHalalTier(tier);
+
+      const cats = getCategoriesForTarget(rel, tier);
+      setIssueType(cats[0] || 'Other Issue');
       setDescription('');
       setEvidenceUrl('');
+      setDeclarationAccepted(false);
       setErrorMessage('');
       setIsSuccess(false);
     }
@@ -95,8 +171,14 @@ export default function ReportIssueModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!description.trim()) {
-      setErrorMessage('Please provide a brief description of the issue.');
+    const cleanDesc = description.trim();
+    if (cleanDesc.length < 20) {
+      setErrorMessage('Please provide a descriptive explanation (minimum 20 characters) to help administrators investigate.');
+      return;
+    }
+
+    if (!declarationAccepted) {
+      setErrorMessage('Please confirm the honesty declaration before submitting.');
       return;
     }
 
@@ -108,15 +190,15 @@ export default function ReportIssueModal({
         issue_type: issueType,
         related_to: relatedTo,
         subject_name: subjectName.trim() || 'General Community Report',
-        product_id: initialData.productId || null,
-        establishment_id: initialData.establishmentId || null,
-        description: description.trim(),
+        product_id: productId || null,
+        establishment_id: establishmentId || null,
+        description: cleanDesc,
         evidence_url: evidenceUrl || null,
       };
 
       let success = false;
 
-      // 1. Try Backend API
+      // 1. Backend REST Endpoint
       try {
         const response = await authFetch(`${API_BASE_URL}/reports/submit`, {
           method: 'POST',
@@ -156,6 +238,7 @@ export default function ReportIssueModal({
 
       setIsSuccess(true);
       onSubmitted?.();
+      onSuccess?.();
     } catch (err) {
       console.error('Report submission error:', err);
       setErrorMessage(err.message || 'Failed to submit report. Please check your network.');
@@ -168,11 +251,11 @@ export default function ReportIssueModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isSuccess ? '' : 'Report Non-Compliance or Issue'}
+      title={isSuccess ? '' : 'Report Issue or Discrepancy'}
       description={
         isSuccess
           ? ''
-          : 'Flag discrepancies, counterfeit logos, or expired certificates for administrative audit in Zamboanga City.'
+          : 'Flag compliance concerns, closures, or incorrect information for administrative audit under Zamboanga Ordinance No. 489.'
       }
       size="md"
     >
@@ -193,7 +276,7 @@ export default function ReportIssueModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold shadow-md shadow-emerald-700/20 transition"
+              className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold shadow-md shadow-emerald-700/20 transition cursor-pointer"
             >
               Done
             </button>
@@ -210,15 +293,46 @@ export default function ReportIssueModal({
           )}
 
           {/* Context Item Header */}
-          {subjectName && (
-            <div className="rounded-xl bg-slate-100 border border-slate-200 p-3 flex items-center gap-2.5">
-              <ShieldAlert size={18} className="text-amber-600 shrink-0" />
-              <div className="truncate">
-                <p className="text-[11px] uppercase tracking-wider text-slate-500 font-bold">
-                  Reporting {relatedTo === 'establishment' ? 'Establishment' : 'Product'}
-                </p>
-                <p className="font-bold text-slate-800 text-xs sm:text-sm truncate">{subjectName}</p>
+          {subjectName ? (
+            <div className="rounded-xl bg-slate-50 border border-slate-200/90 p-3 flex items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200/60 flex items-center justify-center shrink-0 text-emerald-700">
+                  {relatedTo === 'product' ? (
+                    <Package size={16} />
+                  ) : relatedTo === 'scanner' ? (
+                    <ScanSearch size={16} />
+                  ) : (
+                    <Store size={16} />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                    Reporting {relatedTo === 'product' ? 'Product' : relatedTo === 'scanner' ? 'Scanner Verdict' : 'Establishment'}
+                  </p>
+                  <p className="font-bold text-slate-800 text-xs sm:text-sm truncate">
+                    {subjectName}
+                  </p>
+                </div>
               </div>
+
+              {halalTier && (
+                <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 border border-slate-300/60">
+                  {halalTier.replace(/_/g, ' ')}
+                </span>
+              )}
+            </div>
+          ) : (
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Establishment or Product Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g., Al-Madina Eatery or Brand Name"
+                value={subjectName}
+                onChange={(e) => setSubjectName(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-emerald-500 font-medium"
+              />
             </div>
           )}
 
@@ -230,9 +344,9 @@ export default function ReportIssueModal({
             <select
               value={issueType}
               onChange={(e) => setIssueType(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none focus:border-emerald-500 bg-white font-medium text-slate-800"
+              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none focus:border-emerald-500 bg-white font-medium text-slate-800 cursor-pointer"
             >
-              {VIOLATION_CATEGORIES.map((cat) => (
+              {availableCategories.map((cat) => (
                 <option key={cat} value={cat}>
                   {cat}
                 </option>
@@ -240,43 +354,32 @@ export default function ReportIssueModal({
             </select>
           </div>
 
-          {/* If no subject pre-filled, allow entering name */}
-          {!subjectName && (
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Establishment or Product Name
-              </label>
-              <input
-                type="text"
-                placeholder="e.g., Al-Madina Eatery or Brand Name"
-                value={subjectName}
-                onChange={(e) => setSubjectName(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-emerald-500"
-              />
-            </div>
-          )}
-
           {/* Detailed Description */}
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">
-              Description of Discrepancy <span className="text-red-500">*</span>
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block font-semibold text-slate-700">
+                Description of Discrepancy <span className="text-red-500">*</span>
+              </label>
+              <span className={`text-[10px] font-semibold ${description.trim().length >= 20 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                {description.trim().length} / 20 min chars
+              </span>
+            </div>
             <textarea
               required
               rows={3}
-              placeholder="Provide details about what you observed (e.g., expired certificate date, unaccredited seal, non-compliant additive)..."
+              placeholder="Provide clear factual details (minimum 20 characters) about what you observed (e.g. venue permanently closed, alcohol served on site, incorrect address)..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-emerald-500 resize-none"
+              className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-emerald-500 resize-none text-xs sm:text-sm"
             />
           </div>
 
           {/* Photo Evidence Upload */}
           <div>
             <label className="block font-semibold text-slate-700 mb-1">
-              Attach Photo Proof (Packaging, Receipt, or Certificate)
+              Attach Photo Proof <span className="text-slate-400 font-normal">(Recommended)</span>
             </label>
-            <div className="rounded-xl border-2 border-dashed border-slate-200 p-3.5 text-center hover:border-emerald-500 transition">
+            <div className="rounded-xl border-2 border-dashed border-slate-200 p-3.5 text-center hover:border-emerald-500 transition bg-slate-50/50">
               {evidenceUrl ? (
                 <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg p-2.5">
                   <div className="flex items-center gap-2 truncate">
@@ -286,7 +389,8 @@ export default function ReportIssueModal({
                   <button
                     type="button"
                     onClick={() => setEvidenceUrl('')}
-                    className="text-slate-400 hover:text-red-500 p-1"
+                    className="text-slate-400 hover:text-red-500 p-1 cursor-pointer"
+                    title="Remove photo"
                   >
                     <X size={16} />
                   </button>
@@ -310,19 +414,34 @@ export default function ReportIssueModal({
             </div>
           </div>
 
+          {/* Truthfulness Declaration Checkbox */}
+          <div className="pt-1">
+            <label className="flex items-start gap-2.5 text-xs text-slate-600 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={declarationAccepted}
+                onChange={(e) => setDeclarationAccepted(e.target.checked)}
+                className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+              />
+              <span className="leading-tight">
+                I declare in good faith that this report reflects truthful observations regarding halal integrity or listing accuracy under Zamboanga Ordinance No. 489.
+              </span>
+            </label>
+          </div>
+
           {/* Actions */}
           <div className="pt-2 flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-medium transition"
+              className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-medium transition cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={submitting || uploadingImage}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold shadow-md shadow-red-700/20 disabled:opacity-50 transition"
+              disabled={submitting || uploadingImage || description.trim().length < 20 || !declarationAccepted}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold shadow-md shadow-red-700/20 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
             >
               {submitting ? <Loader2 size={16} className="animate-spin" /> : <Flag size={16} />}
               <span>{submitting ? 'Submitting...' : 'Submit Report'}</span>

@@ -27,6 +27,7 @@ export default function VerificationQueueTabs({
     handleAutoVerifyProduct,
     handleVerifyProduct,
     handleResolveReport,
+    onInspectReport,
     loading = false,
     refreshing = false,
     error = null,
@@ -339,6 +340,7 @@ export default function VerificationQueueTabs({
                                 rep={rep}
                                 processingId={processingId}
                                 handleResolveReport={handleResolveReport}
+                                onInspectReport={onInspectReport}
                             />
                         ))}
                     </div>

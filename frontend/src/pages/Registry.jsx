@@ -103,6 +103,7 @@ export const Registry = ({ userRole, onViewChange }) => {
                 relatedTo: 'establishment',
                 subjectName: shop.name,
                 establishmentId: shop.id,
+                halalTier: shop.halal_status || shop.tier,
             });
             setShowReportModal(true);
         }
