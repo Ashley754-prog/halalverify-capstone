@@ -284,7 +284,7 @@ export default function VerificationQueue({ onViewChange }) {
                 if (data.is_auto_approved && autoApprove) {
                     setToast({
                         visible: true,
-                        message: `AI Auto-Approved: Confidence ${data.score}%. Verified & published to map!`,
+                        message: `AI verified with ${data.score}% confidence. Published to directory.`,
                         type: 'success',
                     });
                     if (inspectingItem && inspectingItem.id === estId) {
@@ -295,7 +295,7 @@ export default function VerificationQueue({ onViewChange }) {
                     const firstReason = evalData.audit_trail?.reasons?.[0];
                     setToast({
                         visible: true,
-                        message: `AI Screened (Score: ${data.score}%). ${firstReason ? firstReason : 'Form auto-filled. Please inspect.'}`,
+                        message: `AI screened (${data.score}% confidence). ${firstReason ? firstReason : 'Form auto-filled for review.'}`, 
                         type: 'info',
                     });
                     fetchQueueData();
@@ -325,14 +325,14 @@ export default function VerificationQueue({ onViewChange }) {
                 if (data.is_auto_approved && autoApprove) {
                     setToast({
                         visible: true,
-                        message: `AI Auto-Approved Product: Confidence ${data.score}%. Published to catalog!`,
+                        message: `AI verified with ${data.score}% confidence. Published to product catalog.`,
                         type: 'success',
                     });
                     fetchQueueData();
                 } else {
                     setToast({
                         visible: true,
-                        message: `AI Screened: Score ${data.score}%. Manual inspection advised.`,
+                        message: `AI screened (${data.score}% confidence). Manual review recommended.`,
                         type: 'info',
                     });
                     fetchQueueData();
@@ -358,7 +358,7 @@ export default function VerificationQueue({ onViewChange }) {
                 const data = await res.json();
                 setToast({
                     visible: true,
-                    message: data.message || 'Batch automated verification complete!',
+                    message: data.message || 'Batch automated verification complete.',
                     type: 'success',
                 });
                 fetchQueueData();
@@ -457,10 +457,24 @@ export default function VerificationQueue({ onViewChange }) {
                 }
             }
 
+            const estName = inspectingItem?.name ? `"${inspectingItem.name}"` : 'Establishment';
+            let estStatusText = status.toLowerCase();
+            if (estStatusText === 'verified') {
+                estStatusText = 'verified and published to directory';
+            } else if (estStatusText === 'rejected') {
+                estStatusText = 'declined';
+            } else if (estStatusText === 'muslim_owned') {
+                estStatusText = 'marked as Muslim-owned';
+            } else if (estStatusText === 'muslim_friendly') {
+                estStatusText = 'marked as Muslim-friendly';
+            } else {
+                estStatusText = `marked as ${estStatusText.replace(/_/g, ' ')}`;
+            }
+
             setToast({
                 visible: true,
-                message: `Establishment marked as ${status.toUpperCase()} successfully.`,
-                type: status === 'VERIFIED' ? 'success' : 'info',
+                message: `${estName} ${estStatusText}.`,
+                type: status.toUpperCase() === 'VERIFIED' ? 'success' : 'info',
             });
 
             closeInspection();
@@ -506,10 +520,20 @@ export default function VerificationQueue({ onViewChange }) {
                 if (error) throw error;
             }
 
+            const prodName = product?.name ? `"${product.name}"` : 'Product';
+            let prodStatusText = status.toLowerCase();
+            if (prodStatusText === 'verified') {
+                prodStatusText = 'verified and published to catalog';
+            } else if (prodStatusText === 'rejected') {
+                prodStatusText = 'declined';
+            } else {
+                prodStatusText = `marked as ${prodStatusText.replace(/_/g, ' ')}`;
+            }
+
             setToast({
                 visible: true,
-                message: `Product ${product.name} marked as ${status.toUpperCase()}.`,
-                type: status === 'VERIFIED' ? 'success' : 'info',
+                message: `${prodName} ${prodStatusText}.`,
+                type: status.toUpperCase() === 'VERIFIED' ? 'success' : 'info',
             });
             if (inspectingItem && inspectingItem.id === product.id) {
                 closeInspection();
@@ -562,9 +586,11 @@ export default function VerificationQueue({ onViewChange }) {
                 }
             }
 
+            const repLabel = report?.id ? `Report #${report.id}` : 'Report';
+            const actionLabel = resolutionStatus.toLowerCase() === 'resolved' ? 'resolved' : `marked as ${resolutionStatus.toLowerCase()}`;
             setToast({
                 visible: true,
-                message: `Report marked as ${resolutionStatus.toUpperCase()}.${suspendEstablishment ? ' Establishment suspended.' : ''}`,
+                message: `${repLabel} ${actionLabel}.${suspendEstablishment ? ' Establishment suspended.' : ''}`,
                 type: 'success',
             });
             closeInspection();
