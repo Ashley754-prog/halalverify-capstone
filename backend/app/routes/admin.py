@@ -65,10 +65,11 @@ def get_pending_approvals(user: dict = Depends(require_admin)):
                         existing = prod_map.get(e["id"], [])
                         dishes = e.get("menu_highlights") or []
                         if not dishes:
-                            raw_text = f"{e.get('description') or ''} {e.get('admin_notes') or ''}"
+                            raw_text = e.get('description') or ''
                             m = re.search(r'(?:Dishes|Specialties|Menu):\s*([^|\]\n]+)', raw_text, re.IGNORECASE)
                             if m:
-                                dishes = [d.strip() for d in m.group(1).split(',') if d.strip()]
+                                raw_dishes = [d.strip() for d in m.group(1).split(',') if d.strip()]
+                                dishes = [d for d in raw_dishes if not re.search(r'(?:AI AUDITED|Confidence:|Issues:|FATAL INVARIANT)', d, re.I)]
                                 e["menu_highlights"] = dishes
                         if not existing and dishes:
                             e["associated_products"] = [

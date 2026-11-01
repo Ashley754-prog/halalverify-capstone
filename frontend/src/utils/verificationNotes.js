@@ -150,16 +150,22 @@ export function deriveEstablishmentTier(record) {
  */
 export function extractMenuHighlights(record) {
     if (!record || typeof record !== 'object') return [];
+    const isClean = (d) => d && !/(?:AI AUDITED|Confidence:|Issues:|FATAL INVARIANT)/i.test(d);
     if (Array.isArray(record.menu_highlights) && record.menu_highlights.length > 0) {
-        return record.menu_highlights.filter(Boolean);
+        return record.menu_highlights.filter(isClean);
     }
     if (Array.isArray(record.associated_products) && record.associated_products.length > 0) {
-        return record.associated_products.map((p) => p.name || p).filter(Boolean);
+        return record.associated_products
+            .map((p) => p.name || p)
+            .filter(isClean);
     }
-    const combined = `${record.description || ''} \n ${record.admin_notes || ''}`;
-    const match = combined.match(/(?:Dishes|Specialties|Menu):\s*([^|\n\]]+)/i);
+    const rawText = record.description || '';
+    const match = rawText.match(/(?:Dishes|Specialties|Menu):\s*([^|\n\]]+)/i);
     if (match && match[1]) {
-        return match[1].split(',').map((s) => s.trim()).filter(Boolean);
+        return match[1]
+            .split(',')
+            .map((s) => s.trim())
+            .filter(isClean);
     }
     return [];
 }
