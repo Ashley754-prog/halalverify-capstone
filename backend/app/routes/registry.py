@@ -551,14 +551,16 @@ def submit_establishment(
         raise HTTPException(status_code=401, detail="Valid user credentials required")
 
     selected_tier = (submission.halal_tier or "halal_certified").strip().lower()
+    raw_dishes = submission.menu_highlights or submission.product_names or []
+    menu_highlights = [d.strip() for d in raw_dishes if isinstance(d, str) and d.strip()]
+
     desc_parts = []
     if selected_tier != "halal_certified":
         desc_parts.append(f"[Tier: {selected_tier}]")
     if submission.amenities:
         desc_parts.append(f"Amenities: {' | '.join(submission.amenities)}")
-
-    raw_dishes = submission.menu_highlights or submission.product_names or []
-    menu_highlights = [d.strip() for d in raw_dishes if isinstance(d, str) and d.strip()]
+    if menu_highlights:
+        desc_parts.append(f"Dishes: {', '.join(menu_highlights)}")
 
     establishment_payload = {
         "name": submission.name.strip(),

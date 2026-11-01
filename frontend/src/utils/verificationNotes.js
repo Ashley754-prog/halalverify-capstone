@@ -145,6 +145,26 @@ export function deriveEstablishmentTier(record) {
 }
 
 /**
+ * Extracts menu highlights / dishes list from an establishment record across all fallback schemas.
+ * Checks menu_highlights column, associated_products array, description string, and admin_notes string.
+ */
+export function extractMenuHighlights(record) {
+    if (!record || typeof record !== 'object') return [];
+    if (Array.isArray(record.menu_highlights) && record.menu_highlights.length > 0) {
+        return record.menu_highlights.filter(Boolean);
+    }
+    if (Array.isArray(record.associated_products) && record.associated_products.length > 0) {
+        return record.associated_products.map((p) => p.name || p).filter(Boolean);
+    }
+    const combined = `${record.description || ''} \n ${record.admin_notes || ''}`;
+    const match = combined.match(/(?:Dishes|Specialties|Menu):\s*([^|\n\]]+)/i);
+    if (match && match[1]) {
+        return match[1].split(',').map((s) => s.trim()).filter(Boolean);
+    }
+    return [];
+}
+
+/**
  * Formats date strings to clean short date standard (e.g. "Oct 13, 2026").
  */
 export function formatShortDate(dateStr) {

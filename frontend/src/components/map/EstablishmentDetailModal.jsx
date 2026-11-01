@@ -20,6 +20,7 @@ import Modal from '../ui/Modal';
 import { getSafeUrl } from '../../utils/security';
 import { getStatusConfig, resolveZamboangaDistrict } from '../../data/constants';
 import { supabase } from '../../lib/supabaseClient';
+import { extractMenuHighlights } from '../../utils/verificationNotes';
 
 export default function EstablishmentDetailModal({
     establishment,
@@ -36,8 +37,9 @@ export default function EstablishmentDetailModal({
             return;
         }
 
-        if (establishment.menu_highlights && establishment.menu_highlights.length > 0) {
-            setMenuItems(establishment.menu_highlights.map((name, idx) => ({
+        const dishes = extractMenuHighlights(establishment);
+        if (dishes.length > 0) {
+            setMenuItems(dishes.map((name, idx) => ({
                 id: `dish-${idx}`,
                 name,
                 category: 'Food Item',

@@ -64,6 +64,12 @@ def get_pending_approvals(user: dict = Depends(require_admin)):
                     for e in pending_establishments:
                         existing = prod_map.get(e["id"], [])
                         dishes = e.get("menu_highlights") or []
+                        if not dishes:
+                            raw_text = f"{e.get('description') or ''} {e.get('admin_notes') or ''}"
+                            m = re.search(r'(?:Dishes|Specialties|Menu):\s*([^|\]\n]+)', raw_text, re.IGNORECASE)
+                            if m:
+                                dishes = [d.strip() for d in m.group(1).split(',') if d.strip()]
+                                e["menu_highlights"] = dishes
                         if not existing and dishes:
                             e["associated_products"] = [
                                 {"id": f"dish-{idx}", "name": d, "category": "Food & Beverage", "status": "PENDING_VERIFICATION"}
@@ -183,7 +189,21 @@ def verify_establishment(
         update_fields["halal_tier"] = "halal_certified"
 
     if payload.menu_highlights is not None:
-        update_fields["menu_highlights"] = [d.strip() for d in payload.menu_highlights if isinstance(d, str) and d.strip()]
+        cleaned_dishes = [d.strip() for d in payload.menu_highlights if isinstance(d, str) and d.strip()]
+        update_fields["menu_highlights"] = cleaned_dishes
+        try:
+            cur_est = supabase.table("establishments").select("description").eq("id", establishment_id).maybe_single().execute()
+            cur_desc = (cur_est.data or {}).get("description") or ""
+            dishes_str = f"Dishes: {', '.join(cleaned_dishes)}"
+            if re.search(r'(?:Dishes|Specialties|Menu):\s*[^|\n\]]+', cur_desc, re.I):
+                cur_desc = re.sub(r'(?:Dishes|Specialties|Menu):\s*[^|\n\]]+', dishes_str if cleaned_dishes else '', cur_desc, flags=re.I).strip()
+            elif cleaned_dishes:
+                cur_desc = f"{cur_desc} | {dishes_str}" if cur_desc else dishes_str
+            cur_desc = re.sub(r'\s*\|\s*\|\s*', ' | ', cur_desc).strip(' |')
+            update_fields["description"] = cur_desc or None
+        except Exception as desc_err:
+            logger.warning("Updating description dishes notice: %s", desc_err)
+
     if payload.amenities is not None:
         update_fields["amenities"] = payload.amenities
 

@@ -8,6 +8,7 @@ import {
     ShieldCheck,
 } from 'lucide-react';
 import { getStatusConfig, resolveZamboangaDistrict } from '../../data/constants';
+import { extractMenuHighlights } from '../../utils/verificationNotes';
 import EmptyState from '../ui/EmptyState';
 
 export default function EstablishmentsSidebarList({
@@ -57,7 +58,7 @@ export default function EstablishmentsSidebarList({
                             const districtInfo = resolveZamboangaDistrict(est);
                             const isSelected = selectedEstablishment?.id === est.id;
                             const isNearest = Boolean(userLocation && index === 0 && est.distance_km != null);
-                            const productsCount = est.menu_highlights?.length || est.products?.length || 0;
+                            const productsCount = extractMenuHighlights(est).length || est.products?.length || 0;
 
                             return (
                                 <div

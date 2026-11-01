@@ -1,6 +1,6 @@
 import { ShieldCheck, FileText, MapPin, Loader2, CheckCircle2 } from 'lucide-react';
 import { ESTABLISHMENT_HALAL_TIERS } from '../../data/constants';
-import { deriveEstablishmentTier, formatShortDate } from '../../utils/verificationNotes';
+import { deriveEstablishmentTier, formatShortDate, extractMenuHighlights } from '../../utils/verificationNotes';
 import QueueStatusBadge from './QueueStatusBadge';
 import AiTriageBadge from './AiTriageBadge';
 
@@ -87,9 +87,12 @@ export default function EstablishmentQueueCard({
                         <div className="flex justify-between items-center">
                             <span className="text-slate-500 font-medium">Menu Items:</span>
                             <span className="font-semibold text-slate-800 truncate ml-2">
-                                {(est.associated_products?.length || est.menu_highlights?.length)
-                                    ? `${est.associated_products?.length || est.menu_highlights?.length} dishes recorded`
-                                    : 'Awaiting itemization'}
+                                {(() => {
+                                    const dishes = extractMenuHighlights(est);
+                                    return dishes.length > 0
+                                        ? `${dishes.length} dish${dishes.length === 1 ? '' : 'es'} recorded`
+                                        : 'Awaiting itemization';
+                                })()}
                             </span>
                         </div>
                     </div>

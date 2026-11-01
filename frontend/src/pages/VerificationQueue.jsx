@@ -14,7 +14,7 @@ import VerificationQueueTabs from '../components/verification/VerificationQueueT
 import VerificationInspectionModal from '../components/verification/VerificationInspectionModal';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
-import { isMachineNote } from '../utils/verificationNotes';
+import { isMachineNote, extractMenuHighlights } from '../utils/verificationNotes';
 
 export default function VerificationQueue({ onViewChange }) {
     const [activeTab, setActiveTab] = useState('establishments'); // 'establishments' | 'products' | 'reports'
@@ -80,7 +80,22 @@ export default function VerificationQueue({ onViewChange }) {
             throw new Error('Supabase direct query failed across all tables');
         }
 
-        if (!estRes.error) setEstablishments(estRes.data || []);
+        if (!estRes.error) {
+            const enriched = (estRes.data || []).map((e) => {
+                const dishes = extractMenuHighlights(e);
+                return {
+                    ...e,
+                    menu_highlights: dishes,
+                    associated_products: dishes.map((name, idx) => ({
+                        id: `dish-${idx}`,
+                        name,
+                        category: 'Food Item',
+                        status: 'PENDING_VERIFICATION',
+                    })),
+                };
+            });
+            setEstablishments(enriched);
+        }
         if (!prodRes.error) setProducts(prodRes.data || []);
         if (!repRes.error) setReports(repRes.data || []);
     }, []);
@@ -174,16 +189,30 @@ export default function VerificationQueue({ onViewChange }) {
         const dishName = newMenuItemName.trim();
         try {
             setAddingMenuItem(true);
-            const currentHighlights = inspectingItem.menu_highlights || 
-                (inspectingItem.associated_products || []).map(p => p.name || p) || [];
+            const currentHighlights = extractMenuHighlights(inspectingItem);
             const updatedHighlights = Array.from(new Set([...currentHighlights, dishName]));
 
-            // Update establishment menu_highlights directly on establishments table
+            // Build updated description preserving existing tags
+            let curDesc = inspectingItem.description || '';
+            const dishesStr = `Dishes: ${updatedHighlights.join(', ')}`;
+            if (/(?:Dishes|Specialties|Menu):\s*[^|\n\]]+/i.test(curDesc)) {
+                curDesc = curDesc.replace(/(?:Dishes|Specialties|Menu):\s*[^|\n\]]+/i, dishesStr);
+            } else {
+                curDesc = curDesc ? `${curDesc} | ${dishesStr}` : dishesStr;
+            }
+
+            // Update establishment menu_highlights & description directly on establishments table
             try {
-                await supabase
+                const { error: updErr } = await supabase
                     .from('establishments')
-                    .update({ menu_highlights: updatedHighlights })
+                    .update({ menu_highlights: updatedHighlights, description: curDesc })
                     .eq('id', inspectingItem.id);
+                if (updErr) {
+                    await supabase
+                        .from('establishments')
+                        .update({ description: curDesc })
+                        .eq('id', inspectingItem.id);
+                }
             } catch (estErr) {
                 console.warn('Direct update establishment highlights notice:', estErr);
             }
@@ -197,6 +226,7 @@ export default function VerificationQueue({ onViewChange }) {
 
             setInspectingItem((prev) => ({
                 ...prev,
+                description: curDesc,
                 menu_highlights: updatedHighlights,
                 associated_products: [...(prev.associated_products || []), createdItem],
             }));
@@ -205,6 +235,7 @@ export default function VerificationQueue({ onViewChange }) {
                     est.id === inspectingItem.id
                         ? {
                               ...est,
+                              description: curDesc,
                               menu_highlights: updatedHighlights,
                               associated_products: [...(est.associated_products || []), createdItem],
                           }
@@ -230,12 +261,21 @@ export default function VerificationQueue({ onViewChange }) {
         const prodId = productToRemove.id;
         const prodName = productToRemove.name || productToRemove;
 
-        const currentHighlights = inspectingItem.menu_highlights || 
-            (inspectingItem.associated_products || []).map(p => p.name || p) || [];
+        const currentHighlights = extractMenuHighlights(inspectingItem);
         const updatedHighlights = currentHighlights.filter((d) => d !== prodName);
+
+        let curDesc = inspectingItem.description || '';
+        if (/(?:Dishes|Specialties|Menu):\s*[^|\n\]]+/i.test(curDesc)) {
+            curDesc = curDesc.replace(
+                /(?:Dishes|Specialties|Menu):\s*[^|\n\]]+/i,
+                updatedHighlights.length > 0 ? `Dishes: ${updatedHighlights.join(', ')}` : ''
+            ).trim();
+            curDesc = curDesc.replace(/\s*\|\s*\|\s*/g, ' | ').replace(/^\s*\|\s*|\s*\|\s*$/g, '').trim();
+        }
 
         setInspectingItem((prev) => ({
             ...prev,
+            description: curDesc,
             menu_highlights: updatedHighlights,
             associated_products: (prev.associated_products || []).filter((p) =>
                 prodId ? p.id !== prodId : p.name !== prodName
@@ -246,6 +286,7 @@ export default function VerificationQueue({ onViewChange }) {
                 est.id === inspectingItem.id
                     ? {
                           ...est,
+                          description: curDesc,
                           menu_highlights: updatedHighlights,
                           associated_products: (est.associated_products || []).filter((p) =>
                               prodId ? p.id !== prodId : p.name !== prodName
@@ -256,10 +297,16 @@ export default function VerificationQueue({ onViewChange }) {
         );
 
         try {
-            await supabase
+            const { error: updErr } = await supabase
                 .from('establishments')
-                .update({ menu_highlights: updatedHighlights })
+                .update({ menu_highlights: updatedHighlights, description: curDesc })
                 .eq('id', inspectingItem.id);
+            if (updErr) {
+                await supabase
+                    .from('establishments')
+                    .update({ description: curDesc })
+                    .eq('id', inspectingItem.id);
+            }
 
             // Clean up legacy product row if one existed
             if (prodId && !String(prodId).startsWith('local-') && !String(prodId).startsWith('dish-')) {
@@ -492,13 +539,26 @@ export default function VerificationQueue({ onViewChange }) {
 
             if (newMenuItemName && newMenuItemName.trim()) {
                 try {
-                    const currentHighlights = inspectingItem.menu_highlights || 
-                        (inspectingItem.associated_products || []).map((p) => p.name || p) || [];
+                    const currentHighlights = extractMenuHighlights(inspectingItem);
                     const updatedHighlights = Array.from(new Set([...currentHighlights, newMenuItemName.trim()]));
-                    await supabase
+                    let curDesc = inspectingItem.description || '';
+                    const dishesStr = `Dishes: ${updatedHighlights.join(', ')}`;
+                    if (/(?:Dishes|Specialties|Menu):\s*[^|\n\]]+/i.test(curDesc)) {
+                        curDesc = curDesc.replace(/(?:Dishes|Specialties|Menu):\s*[^|\n\]]+/i, dishesStr);
+                    } else {
+                        curDesc = curDesc ? `${curDesc} | ${dishesStr}` : dishesStr;
+                    }
+
+                    const { error: updErr } = await supabase
                         .from('establishments')
-                        .update({ menu_highlights: updatedHighlights })
+                        .update({ menu_highlights: updatedHighlights, description: curDesc })
                         .eq('id', estId);
+                    if (updErr) {
+                        await supabase
+                            .from('establishments')
+                            .update({ description: curDesc })
+                            .eq('id', estId);
+                    }
                     setNewMenuItemName('');
                 } catch (addErr) {
                     console.warn('Auto-save pending menu item notice:', addErr);

@@ -154,7 +154,7 @@ export default function ContributionModal({
     }
   };
 
-  const handleEstablishmentSubmit = async (e) => {
+  const handleEstablishmentSubmit = async (e, overrideProductNames) => {
     e.preventDefault();
     if (!estForm.name.trim()) {
       setErrorMessage('Establishment name is required.');
@@ -173,6 +173,25 @@ export default function ContributionModal({
       if (estForm.has_prayer_space) amenities.push('Dedicated Prayer Space (Musalah)');
       if (estForm.is_alcohol_free) amenities.push('100% Alcohol-Free');
 
+      const rawProductNames = overrideProductNames !== undefined ? overrideProductNames : estForm.product_names;
+      const parsedProductNames = rawProductNames
+        ? (typeof rawProductNames === 'string' ? rawProductNames.split(',') : rawProductNames)
+            .map((s) => String(s).trim())
+            .filter(Boolean)
+        : [];
+
+      const descParts = [];
+      if (estForm.halal_tier && estForm.halal_tier !== 'halal_certified') {
+        descParts.push(`[Tier: ${estForm.halal_tier}]`);
+      }
+      if (amenities.length > 0) {
+        descParts.push(`Amenities: ${amenities.join(' • ')}`);
+      }
+      if (parsedProductNames.length > 0) {
+        descParts.push(`Dishes: ${parsedProductNames.join(', ')}`);
+      }
+      const fullDescription = descParts.length > 0 ? descParts.join(' | ') : null;
+
       const payload = {
         name: estForm.name.trim(),
         type: estForm.type,
@@ -189,11 +208,10 @@ export default function ContributionModal({
         certificate_url: estForm.certificate_url || null,
         logo_url: estForm.logo_url || null,
         amenities: amenities,
-        product_names: estForm.product_names
-          ? estForm.product_names.split(',').map((s) => s.trim()).filter(Boolean)
-          : [],
+        product_names: parsedProductNames,
+        menu_highlights: parsedProductNames,
+        description: fullDescription,
       };
-
       let success = false;
 
       // 1. Try Backend API
@@ -258,24 +276,25 @@ export default function ContributionModal({
           halal_status: fallbackStatus,
           halal_tier: payload.halal_tier || 'halal_certified',
           amenities: amenities || [],
-          menu_highlights: payload.product_names || [],
+          menu_highlights: parsedProductNames || [],
           submitter_role: payload.submitter_role || 'community',
           admin_notes: fallbackNotes,
           latitude: payload.latitude || 6.9142,
           longitude: payload.longitude || 122.0745,
           submitted_by: userId,
-          description: amenities.length > 0 ? `Amenities: ${amenities.join(' • ')}` : null,
+          description: fullDescription,
           source: payload.submitter_role === 'owner' ? 'Business Owner Submission' : 'Community User Submission',
         };
 
         let { error: sbErr } = await supabase.from('establishments').insert(insertPayload).select();
 
         // If live Supabase table does not yet have Migration 006 columns, retry with legacy schema gracefully
-        if (sbErr && (sbErr.code === '42703' || sbErr.message?.includes('column') || sbErr.message?.includes('halal_tier'))) {
+        if (sbErr && (sbErr.code === '42703' || sbErr.message?.includes('column') || sbErr.message?.includes('halal_tier') || sbErr.message?.includes('menu_highlights'))) {
           delete insertPayload.halal_tier;
           delete insertPayload.amenities;
           delete insertPayload.menu_highlights;
           delete insertPayload.submitter_role;
+          insertPayload.description = fullDescription;
           const retryRes = await supabase.from('establishments').insert(insertPayload).select();
           sbErr = retryRes.error;
         }

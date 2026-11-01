@@ -137,6 +137,22 @@ export default function EstablishmentContributionForm({
     setCurrentStep(3);
   };
 
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    let currentNames = estForm.product_names || '';
+    if (newDishTag && newDishTag.trim()) {
+      const trimmed = newDishTag.trim();
+      const existing = currentNames ? currentNames.split(',').map((s) => s.trim()).filter(Boolean) : [];
+      if (!existing.some((t) => t.toLowerCase() === trimmed.toLowerCase())) {
+        existing.push(trimmed);
+        currentNames = existing.join(', ');
+        setEstForm((prev) => ({ ...prev, product_names: currentNames }));
+      }
+      setNewDishTag('');
+    }
+    onSubmit(e, currentNames);
+  };
+
   return (
     <div className="space-y-4 text-xs sm:text-sm">
       {/* Wizard Step Indicator */}
@@ -249,7 +265,7 @@ export default function EstablishmentContributionForm({
       )}
 
       {/* Form Contents */}
-      <form onSubmit={onSubmit} className="space-y-4">
+      <form onSubmit={handleFormSubmit} className="space-y-4">
         {/* ======================================================== */}
         {/* STEP 1: BUSINESS DETAILS */}
         {/* ======================================================== */}

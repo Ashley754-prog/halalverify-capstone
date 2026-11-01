@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { getSafeUrl } from '../../utils/security';
-import { formatSystemNotice, formatShortDate } from '../../utils/verificationNotes';
+import { formatSystemNotice, formatShortDate, extractMenuHighlights } from '../../utils/verificationNotes';
 
 export default function VerificationInspectionModal({
     inspectingItem,
@@ -678,7 +678,7 @@ export default function VerificationInspectionModal({
                         {inspectingType !== 'product' && (() => {
                             const dishesList = (inspectingItem.associated_products && inspectingItem.associated_products.length > 0)
                                 ? inspectingItem.associated_products
-                                : (inspectingItem.menu_highlights || []).map((name, idx) => ({ id: `dish-${idx}`, name }));
+                                : extractMenuHighlights(inspectingItem).map((name, idx) => ({ id: `dish-${idx}`, name }));
 
                             return (
                                 <div className="pt-2 border-t border-slate-100 space-y-2">
