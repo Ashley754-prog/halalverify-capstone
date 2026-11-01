@@ -12,11 +12,11 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
-    const [declarationAccepted, setDeclarationAccepted] = useState(false);
     const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
 
     const [form, setForm] = useState(() => ({
         issueType: initialParams?.issueType || '',
+        customCategory: '',
         relatedTo: initialParams?.relatedTo || 'product',
         name: initialParams?.subjectName || initialParams?.name || '',
         description: initialParams?.description || '',
@@ -106,10 +106,10 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
             });
             return;
         }
-        if (!declarationAccepted) {
+        if (form.issueType === 'Other' && !form.customCategory.trim()) {
             setToast({
                 visible: true,
-                message: 'Please check the declaration confirming the honesty of your report.',
+                message: 'Please specify the other issue in the text box provided.',
                 type: 'error',
             });
             return;
@@ -121,8 +121,13 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
         try {
             setIsSubmitting(true);
 
+            const resolvedIssueType =
+                form.issueType === 'Other' && form.customCategory.trim()
+                    ? `Other: ${form.customCategory.trim()}`
+                    : form.issueType;
+
             const payload = {
-                issue_type: form.issueType,
+                issue_type: resolvedIssueType,
                 related_to: form.relatedTo === 'logo' ? 'scanner' : form.relatedTo,
                 subject_name: form.name.trim() || 'General Community Report',
                 description: form.description.trim(),
@@ -201,9 +206,9 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
                     <button
                         onClick={() => {
                             setSubmitted(false);
-                            setDeclarationAccepted(false);
                             setForm({
-                                issueType: availableCategories[0] || '',
+                                issueType: availableCategories[0] || 'Other',
+                                customCategory: '',
                                 relatedTo: 'product',
                                 name: '',
                                 description: '',
@@ -291,6 +296,22 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
                         >
                             {availableCategories.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
+
+                        {form.issueType === 'Other' && (
+                            <div className="mt-2.5 space-y-1">
+                                <label className="block text-xs font-semibold text-slate-700">
+                                    Please specify the issue <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="Type specific issue (e.g. Menu prices mismatch, Missing signboard, etc.)..."
+                                    value={form.customCategory}
+                                    onChange={e => handleChange('customCategory', e.target.value)}
+                                    className="w-full bg-white border border-slate-300 rounded-xl py-2 px-3 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-emerald-500 font-medium transition"
+                                />
+                            </div>
+                        )}
                     </div>
 
                     <div>
@@ -365,23 +386,13 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
                         </div>
                     </div>
 
-                    <div className="pt-1">
-                        <label className="flex items-start gap-2.5 text-xs text-slate-600 cursor-pointer select-none">
-                            <input
-                                type="checkbox"
-                                checked={declarationAccepted}
-                                onChange={(e) => setDeclarationAccepted(e.target.checked)}
-                                className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                            />
-                            <span className="leading-tight">
-                                I declare in good faith that this report reflects truthful observations regarding halal integrity or listing accuracy under Zamboanga Ordinance No. 489.
-                            </span>
-                        </label>
-                    </div>
-
                     <button
                         type="submit"
-                        disabled={isSubmitting || form.description.trim().length < 20 || !declarationAccepted}
+                        disabled={
+                            isSubmitting ||
+                            form.description.trim().length < 20 ||
+                            (form.issueType === 'Other' && !form.customCategory.trim())
+                        }
                         className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 sm:py-3.5 font-bold text-xs sm:text-sm text-white tracking-wide transition hover:bg-emerald-700 active:scale-[0.98] duration-150 shadow-md shadow-emerald-600/10 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                     >
                         <Flag size={16} /> {isSubmitting ? 'Submitting...' : 'Submit Report'}
@@ -424,7 +435,11 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
                         </div>
                         <div className="flex justify-between">
                             <span className="text-slate-500">Category:</span>
-                            <span className="font-bold text-amber-700">{form.issueType}</span>
+                            <span className="font-bold text-amber-700">
+                                {form.issueType === 'Other' && form.customCategory.trim()
+                                    ? `Other: ${form.customCategory.trim()}`
+                                    : form.issueType}
+                            </span>
                         </div>
                     </div>
                     <div className="flex justify-end gap-3 pt-2">

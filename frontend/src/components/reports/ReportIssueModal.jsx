@@ -24,7 +24,7 @@ export const CATEGORIES_BY_TARGET = {
     'Pork or Alcohol Detected on Premises',
     'Suspected Cross-Contamination or Storage Issue',
     'Duplicate Establishment Listing',
-    'Other Listing or Operational Issue',
+    'Other',
   ],
   establishment_community: [
     'Permanently Closed or Relocated',
@@ -33,7 +33,7 @@ export const CATEGORIES_BY_TARGET = {
     'Suspected Cross-Contamination or Storage Issue',
     'Misleading Halal / Muslim-Friendly Claim',
     'Duplicate Establishment Listing',
-    'Other Listing or Operational Issue',
+    'Other',
   ],
   product: [
     'Prohibited or Non-Halal Ingredient / E-Number Detected',
@@ -41,13 +41,13 @@ export const CATEGORIES_BY_TARGET = {
     'Incorrect Product Details or Ingredients List',
     'Product Discontinued or Recalled',
     'Duplicate Product Listing',
-    'Other Product Discrepancy',
+    'Other',
   ],
   scanner: [
     'Safe Ingredient Falsely Flagged as Haram',
     'Haram Ingredient Missed by Scanner',
     'Text Recognition / Image Crop Failure',
-    'Other Scanner Issue',
+    'Other',
   ],
 };
 
@@ -89,10 +89,10 @@ export default function ReportIssueModal({
     [relatedTo, halalTier]
   );
 
-  const [issueType, setIssueType] = useState(availableCategories[0] || 'Other Issue');
+  const [issueType, setIssueType] = useState(availableCategories[0] || 'Other');
+  const [customCategory, setCustomCategory] = useState('');
   const [description, setDescription] = useState('');
   const [evidenceUrl, setEvidenceUrl] = useState('');
-  const [declarationAccepted, setDeclarationAccepted] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -119,10 +119,10 @@ export default function ReportIssueModal({
       setHalalTier(tier);
 
       const cats = getCategoriesForTarget(rel, tier);
-      setIssueType(cats[0] || 'Other Issue');
+      setIssueType(cats[0] || 'Other');
+      setCustomCategory('');
       setDescription('');
       setEvidenceUrl('');
-      setDeclarationAccepted(false);
       setErrorMessage('');
       setIsSuccess(false);
     }
@@ -177,8 +177,8 @@ export default function ReportIssueModal({
       return;
     }
 
-    if (!declarationAccepted) {
-      setErrorMessage('Please confirm the honesty declaration before submitting.');
+    if (issueType === 'Other' && !customCategory.trim()) {
+      setErrorMessage('Please specify the issue in the field provided.');
       return;
     }
 
@@ -186,8 +186,13 @@ export default function ReportIssueModal({
       setSubmitting(true);
       setErrorMessage('');
 
+      const resolvedIssueType =
+        issueType === 'Other' && customCategory.trim()
+          ? `Other: ${customCategory.trim()}`
+          : issueType;
+
       const payload = {
-        issue_type: issueType,
+        issue_type: resolvedIssueType,
         related_to: relatedTo,
         subject_name: subjectName.trim() || 'General Community Report',
         product_id: productId || null,
@@ -352,6 +357,23 @@ export default function ReportIssueModal({
                 </option>
               ))}
             </select>
+
+            {/* Custom Input when Other is selected */}
+            {issueType === 'Other' && (
+              <div className="mt-2.5 space-y-1">
+                <label className="block text-xs font-semibold text-slate-700">
+                  Please specify the issue <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Type specific issue (e.g. Menu prices mismatch, Missing signboard, etc.)..."
+                  value={customCategory}
+                  onChange={(e) => setCustomCategory(e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-emerald-500 font-medium text-xs sm:text-sm bg-white"
+                />
+              </div>
+            )}
           </div>
 
           {/* Detailed Description */}
@@ -414,21 +436,6 @@ export default function ReportIssueModal({
             </div>
           </div>
 
-          {/* Truthfulness Declaration Checkbox */}
-          <div className="pt-1">
-            <label className="flex items-start gap-2.5 text-xs text-slate-600 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={declarationAccepted}
-                onChange={(e) => setDeclarationAccepted(e.target.checked)}
-                className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-              />
-              <span className="leading-tight">
-                I declare in good faith that this report reflects truthful observations regarding halal integrity or listing accuracy under Zamboanga Ordinance No. 489.
-              </span>
-            </label>
-          </div>
-
           {/* Actions */}
           <div className="pt-2 flex justify-end gap-3">
             <button
@@ -440,7 +447,12 @@ export default function ReportIssueModal({
             </button>
             <button
               type="submit"
-              disabled={submitting || uploadingImage || description.trim().length < 20 || !declarationAccepted}
+              disabled={
+                submitting ||
+                uploadingImage ||
+                description.trim().length < 20 ||
+                (issueType === 'Other' && !customCategory.trim())
+              }
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold shadow-md shadow-red-700/20 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
             >
               {submitting ? <Loader2 size={16} className="animate-spin" /> : <Flag size={16} />}
