@@ -616,12 +616,32 @@ def submit_establishment(
     }
     clean_payload = {k: v for k, v in establishment_payload.items() if k in valid_est_cols and v is not None}
 
-    response = (
-        supabase
-        .table("establishments")
-        .insert(clean_payload)
-        .execute()
-    )
+    try:
+        response = (
+            supabase
+            .table("establishments")
+            .insert(clean_payload)
+            .execute()
+        )
+    except Exception as ins_err:
+        err_msg = str(ins_err).lower()
+        if "column" in err_msg or "42703" in err_msg or "halal_tier" in err_msg:
+            logger.info("Live Supabase table has not run Migration 006 yet. Retrying with legacy column set.")
+            legacy_cols = {
+                "name", "type", "address", "city", "halal_status", "certifying_body_id",
+                "certificate_number", "expiry_date", "certificate_url", "logo_url",
+                "submitted_by", "source", "source_url", "phone", "admin_notes",
+                "verified_at", "verified_by", "latitude", "longitude", "description",
+            }
+            legacy_payload = {k: v for k, v in clean_payload.items() if k in legacy_cols}
+            response = (
+                supabase
+                .table("establishments")
+                .insert(legacy_payload)
+                .execute()
+            )
+        else:
+            raise ins_err
 
     created_establishment = response.data[0] if response.data else None
     if not created_establishment:

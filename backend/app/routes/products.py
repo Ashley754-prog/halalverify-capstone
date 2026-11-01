@@ -335,12 +335,25 @@ def submit_product(
     if "source_url" not in clean_payload or clean_payload["source_url"] is None:
         clean_payload["source_url"] = None
 
-    response = (
-        supabase
-        .table("products")
-        .insert(clean_payload)
-        .execute()
-    )
+    try:
+        response = (
+            supabase
+            .table("products")
+            .insert(clean_payload)
+            .execute()
+        )
+    except Exception as ins_err:
+        err_msg = str(ins_err).lower()
+        if "column" in err_msg or "42703" in err_msg or "halal_tier" in err_msg:
+            legacy_payload = {k: v for k, v in clean_payload.items() if k != "halal_tier"}
+            response = (
+                supabase
+                .table("products")
+                .insert(legacy_payload)
+                .execute()
+            )
+        else:
+            raise ins_err
 
     created_product = response.data[0] if response.data else None
     if not created_product:

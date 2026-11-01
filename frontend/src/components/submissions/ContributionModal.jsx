@@ -244,7 +244,7 @@ export default function ContributionModal({
           ? 'Community User Submission: Halal Certified claim awaiting verification'
           : `Community Listed - ${tierName} (Awaiting Verification)`;
 
-        const { data: insertedEst, error: sbErr } = await supabase.from('establishments').insert({
+        let insertPayload = {
           name: payload.name,
           type: payload.type,
           address: payload.address,
@@ -266,10 +266,23 @@ export default function ContributionModal({
           submitted_by: userId,
           description: amenities.length > 0 ? `Amenities: ${amenities.join(' • ')}` : null,
           source: payload.submitter_role === 'owner' ? 'Business Owner Submission' : 'Community User Submission',
-        }).select();
+        };
+
+        let { data: insertedEst, error: sbErr } = await supabase.from('establishments').insert(insertPayload).select();
+
+        // If live Supabase table does not yet have Migration 006 columns, retry with legacy schema gracefully
+        if (sbErr && (sbErr.code === '42703' || sbErr.message?.includes('column') || sbErr.message?.includes('halal_tier'))) {
+          delete insertPayload.halal_tier;
+          delete insertPayload.amenities;
+          delete insertPayload.menu_highlights;
+          delete insertPayload.submitter_role;
+          const retryRes = await supabase.from('establishments').insert(insertPayload).select();
+          insertedEst = retryRes.data;
+          sbErr = retryRes.error;
+        }
 
         if (sbErr) {
-          console.warn('Direct Supabase insert blocked by RLS:', sbErr);
+          console.warn('Direct Supabase insert failed:', sbErr);
           throw new Error('Verification service is unreachable. Please check backend connection.');
         }
       }

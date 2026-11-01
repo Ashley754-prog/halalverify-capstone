@@ -187,12 +187,25 @@ def verify_establishment(
     if payload.amenities is not None:
         update_fields["amenities"] = payload.amenities
 
-    res = (
-        supabase.table("establishments")
-        .update(update_fields)
-        .eq("id", establishment_id)
-        .execute()
-    )
+    try:
+        res = (
+            supabase.table("establishments")
+            .update(update_fields)
+            .eq("id", establishment_id)
+            .execute()
+        )
+    except Exception as upd_err:
+        err_msg = str(upd_err).lower()
+        if "column" in err_msg or "42703" in err_msg or "halal_tier" in err_msg:
+            legacy_update = {k: v for k, v in update_fields.items() if k not in {"halal_tier", "amenities", "menu_highlights"}}
+            res = (
+                supabase.table("establishments")
+                .update(legacy_update)
+                .eq("id", establishment_id)
+                .execute()
+            )
+        else:
+            raise upd_err
 
     if not res.data:
         raise HTTPException(status_code=404, detail="Establishment not found or update failed")
@@ -286,12 +299,25 @@ def verify_product(
     if payload.certifying_body_id and payload.certifying_body_id.strip():
         update_fields["certifying_body_id"] = payload.certifying_body_id.strip()
 
-    res = (
-        supabase.table("products")
-        .update(update_fields)
-        .eq("id", product_id)
-        .execute()
-    )
+    try:
+        res = (
+            supabase.table("products")
+            .update(update_fields)
+            .eq("id", product_id)
+            .execute()
+        )
+    except Exception as upd_err:
+        err_msg = str(upd_err).lower()
+        if "column" in err_msg or "42703" in err_msg or "halal_tier" in err_msg:
+            legacy_update = {k: v for k, v in update_fields.items() if k != "halal_tier"}
+            res = (
+                supabase.table("products")
+                .update(legacy_update)
+                .eq("id", product_id)
+                .execute()
+            )
+        else:
+            raise upd_err
 
     if not res.data:
         raise HTTPException(status_code=404, detail="Product not found or update failed")
