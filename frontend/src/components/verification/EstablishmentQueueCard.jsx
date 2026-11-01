@@ -1,4 +1,4 @@
-import { ShieldCheck, FileText, MapPin, Loader2, CheckCircle2, Phone, UtensilsCrossed } from 'lucide-react';
+import { ShieldCheck, FileText, MapPin, Loader2, CheckCircle2 } from 'lucide-react';
 import { ESTABLISHMENT_HALAL_TIERS } from '../../data/constants';
 import { deriveEstablishmentTier, formatShortDate } from '../../utils/verificationNotes';
 import QueueStatusBadge from './QueueStatusBadge';
@@ -79,22 +79,16 @@ export default function EstablishmentQueueCard({
                 ) : (
                     <div className="rounded-lg bg-white p-2.5 border border-slate-200/80 text-[11px] space-y-1">
                         <div className="flex justify-between items-center">
-                            <span className="text-slate-500 font-medium flex items-center gap-1">
-                                <Phone size={10} className="text-slate-400" />
-                                <span>Contact:</span>
-                            </span>
+                            <span className="text-slate-500 font-medium">Contact:</span>
                             <span className="font-semibold text-slate-800 truncate ml-2">
                                 {est.phone || 'None provided'}
                             </span>
                         </div>
                         <div className="flex justify-between items-center">
-                            <span className="text-slate-500 font-medium flex items-center gap-1">
-                                <UtensilsCrossed size={10} className="text-slate-400" />
-                                <span>Menu Items:</span>
-                            </span>
+                            <span className="text-slate-500 font-medium">Menu Items:</span>
                             <span className="font-semibold text-slate-800 truncate ml-2">
-                                {est.associated_products?.length
-                                    ? `${est.associated_products.length} dishes recorded`
+                                {(est.associated_products?.length || est.menu_highlights?.length)
+                                    ? `${est.associated_products?.length || est.menu_highlights?.length} dishes recorded`
                                     : 'Awaiting itemization'}
                             </span>
                         </div>

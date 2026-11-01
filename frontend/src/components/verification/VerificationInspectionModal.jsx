@@ -12,7 +12,6 @@ import {
     RotateCw,
     MapPin,
     AlertTriangle,
-    UtensilsCrossed,
     Phone,
     Globe,
     Compass,
@@ -684,8 +683,7 @@ export default function VerificationInspectionModal({
                             return (
                                 <div className="pt-2 border-t border-slate-100 space-y-2">
                                     <div className="flex items-center justify-between">
-                                        <span className="font-semibold text-slate-700 text-xs flex items-center gap-1.5">
-                                            <UtensilsCrossed size={13} className="text-emerald-600" />
+                                        <span className="font-semibold text-slate-700 text-xs">
                                             Menu Highlights & Dishes
                                         </span>
                                         <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
