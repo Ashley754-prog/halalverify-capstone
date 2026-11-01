@@ -9,6 +9,7 @@ import {
     ChevronRight,
     X,
     RotateCcw,
+    Package,
 } from 'lucide-react';
 import Toast from '../components/ui/Toast';
 import SearchBar from '../components/ui/SearchBar';

@@ -268,7 +268,7 @@ export default function ContributionModal({
           source: payload.submitter_role === 'owner' ? 'Business Owner Submission' : 'Community User Submission',
         };
 
-        let { data: insertedEst, error: sbErr } = await supabase.from('establishments').insert(insertPayload).select();
+        let { error: sbErr } = await supabase.from('establishments').insert(insertPayload).select();
 
         // If live Supabase table does not yet have Migration 006 columns, retry with legacy schema gracefully
         if (sbErr && (sbErr.code === '42703' || sbErr.message?.includes('column') || sbErr.message?.includes('halal_tier'))) {
@@ -277,7 +277,6 @@ export default function ContributionModal({
           delete insertPayload.menu_highlights;
           delete insertPayload.submitter_role;
           const retryRes = await supabase.from('establishments').insert(insertPayload).select();
-          insertedEst = retryRes.data;
           sbErr = retryRes.error;
         }
 

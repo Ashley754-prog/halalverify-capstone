@@ -14,6 +14,7 @@ import {
     Leaf,
     MapPin,
     ShieldCheck,
+    ShieldAlert,
 } from 'lucide-react';
 import { getSafeUrl } from '../../utils/security';
 import { simplifyStatus } from '../../utils/textFormatters';
