@@ -94,14 +94,6 @@ export default function VerificationInspectionModal({
         setTimeout(() => setCopiedCert(false), 2000);
     };
 
-    const handleQuickAddNote = (tagText) => {
-        setAdminNotes((prev) => {
-            const trimmed = (prev || '').trim();
-            if (!trimmed) return tagText;
-            if (trimmed.includes(tagText)) return prev;
-            return `${trimmed}; ${tagText}`;
-        });
-    };
 
     const systemNotice = formatSystemNotice(inspectingItem.admin_notes);
     const hasPrayerSpace = Boolean(
@@ -121,20 +113,6 @@ export default function VerificationInspectionModal({
     const contactPhone = inspectingItem.phone || inspectingItem.contact_number;
     const webLink = inspectingItem.source_url || inspectingItem.social_media_url;
 
-    const productQuickTags = [
-        'Ingredients Screened',
-        'Halal Logo Visible on Pack',
-        'Cross-checked Database',
-        'Cert No Matches Registry',
-    ];
-    const establishmentQuickTags = [
-        'Valid Certificate',
-        'Verified Kitchen Signage',
-        'Cross-checked Database',
-        'Pork-Free Declared',
-    ];
-
-    const activeQuickTags = inspectingType === 'product' ? productQuickTags : establishmentQuickTags;
 
     return (
         <Modal
@@ -744,37 +722,6 @@ export default function VerificationInspectionModal({
                             );
                         })()}
 
-                        {/* Admin Notes */}
-                        <div className="pt-2 border-t border-slate-100 space-y-2">
-                            <div className="flex items-center justify-between">
-                                <label htmlFor="inspect-admin-notes" className="block font-semibold text-slate-700 text-xs">
-                                    Admin Notes (Optional)
-                                </label>
-                                <span className="text-[10px] text-slate-500">Quick tags</span>
-                            </div>
-
-                            <div className="flex flex-wrap gap-1.5">
-                                {activeQuickTags.map((tag) => (
-                                    <button
-                                        key={tag}
-                                        type="button"
-                                        onClick={() => handleQuickAddNote(tag)}
-                                        className="text-[10px] font-medium text-slate-600 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200 px-2 py-0.5 rounded-md transition cursor-pointer"
-                                    >
-                                        + {tag}
-                                    </button>
-                                ))}
-                            </div>
-
-                            <textarea
-                                id="inspect-admin-notes"
-                                rows={2}
-                                value={adminNotes}
-                                onChange={(e) => setAdminNotes(e.target.value)}
-                                placeholder="Add optional verification notes..."
-                                className="w-full rounded-xl border border-slate-300 p-2 text-xs text-slate-800 bg-white focus:border-emerald-500 focus:outline-none resize-none"
-                            />
-                        </div>
                     </div>
                 </div>
             </div>
