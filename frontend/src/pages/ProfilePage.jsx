@@ -13,9 +13,12 @@ import {
     Clock,
     XCircle,
     History,
+    ArrowLeft,
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { API_BASE_URL } from '../utils/api';
+import EmptyState from '../components/ui/EmptyState';
+import Pagination from '../components/ui/Pagination';
 
 const ProfilePage = ({ onViewChange }) => {
     const [loading, setLoading] = useState(true);
@@ -66,8 +69,8 @@ const ProfilePage = ({ onViewChange }) => {
 
             setUserId(user.id);
             setEmail(profile?.email || user.email || '');
-            setRole(profile?.role || 'user');
-            setName(profile?.full_name || '');
+            setRole(profile?.role || user.user_metadata?.role || (user.email === 'admin@halalverify.com' ? 'admin' : 'user'));
+            setName(profile?.full_name || user.user_metadata?.name || user.user_metadata?.full_name || '');
 
             if (profileError) {
                 console.warn('Profile load warning:', profileError.message);
@@ -144,20 +147,36 @@ const ProfilePage = ({ onViewChange }) => {
         setSaving(true);
         setErrorMessage('');
 
-        const { error } = await supabase
-            .from('profiles')
-            .update({ full_name: name.trim() })
-            .eq('id', userId);
+        try {
+            const cleanName = name.trim();
 
-        setSaving(false);
+            // 1. Update Supabase Auth user metadata
+            await supabase.auth.updateUser({
+                data: { name: cleanName, full_name: cleanName },
+            }).catch(console.warn);
 
-        if (error) {
-            setErrorMessage(`Save failed: ${error.message}`);
-            return;
+            // 2. Upsert profile table
+            const { error } = await supabase
+                .from('profiles')
+                .upsert({
+                    id: userId,
+                    full_name: cleanName,
+                    email: email,
+                    role: role,
+                });
+
+            if (error) {
+                setErrorMessage(`Save failed: ${error.message}`);
+                return;
+            }
+
+            setSavedSuccess(true);
+            setTimeout(() => setSavedSuccess(false), 3000);
+        } catch (err) {
+            setErrorMessage(`Save failed: ${err.message || 'Unknown error'}`);
+        } finally {
+            setSaving(false);
         }
-
-        setSavedSuccess(true);
-        setTimeout(() => setSavedSuccess(false), 3000);
     };
 
     const isAdmin = role === 'admin';
@@ -258,8 +277,35 @@ const ProfilePage = ({ onViewChange }) => {
         return parts.slice(0, 2).join(' • ');
     };
 
+    const avatarInitial = name?.trim()
+        ? name.trim().charAt(0).toUpperCase()
+        : (email?.trim() ? email.trim().charAt(0).toUpperCase() : 'U');
+
     return (
-        <div className="p-4 sm:p-6 md:p-8 w-full space-y-4 sm:space-y-6">
+        <div className="p-4 sm:p-6 md:p-8 w-full max-w-5xl mx-auto space-y-5 sm:space-y-6">
+            {/* Page Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
+                <div className="flex items-center gap-3">
+                    <button
+                        type="button"
+                        onClick={() => onViewChange?.('back')}
+                        className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer"
+                        title="Go back"
+                        aria-label="Go back"
+                    >
+                        <ArrowLeft size={18} />
+                    </button>
+                    <div>
+                        <h2 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">
+                            Profile &amp; Account
+                        </h2>
+                        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                            Manage your account credentials, personal information, and track community contributions.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
             {loading ? (
                 <div className="flex items-center justify-center gap-2 bg-white rounded-2xl border border-slate-200 p-10 text-sm text-slate-500 shadow-sm">
                     <Loader2 size={18} className="animate-spin text-emerald-600" />
@@ -273,8 +319,8 @@ const ProfilePage = ({ onViewChange }) => {
 
                             {/* Left Column: Avatar & Account Info (1 col on web) */}
                             <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm flex flex-col items-center justify-center text-center space-y-4">
-                                <div className="h-28 w-28 sm:h-32 sm:w-32 rounded-full border-4 border-slate-100 bg-emerald-600 text-white font-bold text-3xl sm:text-4xl flex items-center justify-center shadow-md">
-                                    <span>{name ? name.charAt(0).toUpperCase() : 'U'}</span>
+                                <div className="h-24 w-24 sm:h-28 sm:w-28 rounded-full border-4 border-slate-100 bg-gradient-to-br from-emerald-500 to-teal-700 text-white font-bold text-3xl sm:text-4xl flex items-center justify-center shadow-md">
+                                    <span>{avatarInitial}</span>
                                 </div>
 
                                 <div className="space-y-1">
@@ -360,7 +406,7 @@ const ProfilePage = ({ onViewChange }) => {
                             <button
                                 type="button"
                                 onClick={() => onViewChange?.('back')}
-                                className="px-4 sm:px-6 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+                                className="px-4 sm:px-6 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer"
                             >
                                 Cancel
                             </button>
@@ -368,7 +414,7 @@ const ProfilePage = ({ onViewChange }) => {
                             <button
                                 type="submit"
                                 disabled={saving}
-                                className="flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-[0.98]"
+                                className="flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-[0.98] cursor-pointer"
                             >
                                 {saving ? (
                                     <Loader2 size={16} className="animate-spin" />
@@ -523,4 +569,3 @@ const ProfilePage = ({ onViewChange }) => {
 };
 
 export default ProfilePage;
-
