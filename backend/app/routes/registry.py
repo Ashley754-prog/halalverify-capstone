@@ -558,7 +558,7 @@ def submit_establishment(
     if selected_tier != "halal_certified":
         desc_parts.append(f"[Tier: {selected_tier}]")
     if submission.amenities:
-        desc_parts.append(f"Amenities: {' | '.join(submission.amenities)}")
+        desc_parts.append(f"Amenities: {', '.join(submission.amenities)}")
     if menu_highlights:
         desc_parts.append(f"Dishes: {', '.join(menu_highlights)}")
 

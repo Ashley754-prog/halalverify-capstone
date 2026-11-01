@@ -120,12 +120,41 @@ export default function EstablishmentDetailModal({
         (Array.isArray(establishment.amenities) && establishment.amenities.some((a) => a.toLowerCase().includes('alcohol')))
     );
 
-    const bioText = (establishment.description || '')
-        .replace(/\[Tier:\s*[^\]]+\]/gi, '')
-        .replace(/(?:Amenities|Dishes|Specialties|Menu):\s*[^|\n]+/gi, '')
-        .replace(/\|\s*\|/g, '|')
-        .replace(/^[|\s•-]+|[|\s•-]+$/g, '')
-        .trim();
+    const rawDesc = establishment.description || '';
+    const bioText = (() => {
+        if (!rawDesc) return '';
+        const parts = rawDesc.split('|').map((p) => p.trim()).filter(Boolean);
+        const realParts = [];
+        for (const p of parts) {
+            const pLower = p.toLowerCase();
+            if (pLower.startsWith('[tier:') || (pLower.startsWith('[') && pLower.endsWith(']'))) continue;
+            if (
+                pLower.startsWith('amenities:') ||
+                pLower.includes('alcohol-free') ||
+                pLower.includes('prayer space') ||
+                pLower.includes('musalah')
+            ) {
+                continue;
+            }
+            if (
+                pLower.startsWith('dishes:') ||
+                pLower.startsWith('menu:') ||
+                pLower.startsWith('specialties:')
+            ) {
+                continue;
+            }
+            if (
+                pLower.startsWith('ai audited') ||
+                pLower.startsWith('confidence:') ||
+                pLower.startsWith('issues:') ||
+                pLower.startsWith('fatal invariant')
+            ) {
+                continue;
+            }
+            realParts.push(p);
+        }
+        return realParts.join(' | ');
+    })();
 
     return (
         <Modal
