@@ -15,6 +15,7 @@ import {
     HeartHandshake,
     Leaf,
     Compass,
+    Camera,
 } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { getSafeUrl } from '../../utils/security';
@@ -119,13 +120,12 @@ export default function EstablishmentDetailModal({
         (Array.isArray(establishment.amenities) && establishment.amenities.some((a) => a.toLowerCase().includes('alcohol')))
     );
 
-    const bioText = establishment.description
-        ? establishment.description
-            .replace(/^Amenities:\s*.*$/im, '')
-            .replace(/\|\s*Amenities:\s*.*$/im, '')
-            .replace(/Amenities:\s*.*$/im, '')
-            .trim()
-        : '';
+    const bioText = (establishment.description || '')
+        .replace(/\[Tier:\s*[^\]]+\]/gi, '')
+        .replace(/(?:Amenities|Dishes|Specialties|Menu):\s*[^|\n]+/gi, '')
+        .replace(/\|\s*\|/g, '|')
+        .replace(/^[|\s•-]+|[|\s•-]+$/g, '')
+        .trim();
 
     return (
         <Modal
@@ -347,19 +347,33 @@ export default function EstablishmentDetailModal({
                     </div>
                 )}
 
-                {/* Uploaded Halal Certificate / Verification Evidence */}
+                {/* Uploaded Verification Photo or Formal Certificate */}
                 {evidenceUrl && (
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-3 text-xs space-y-2">
+                    <div className={`rounded-xl border p-3 text-xs space-y-2 ${
+                        isFormallyCertified
+                            ? 'border-emerald-200 bg-emerald-50/40'
+                            : 'border-slate-200 bg-slate-50/70'
+                    }`}>
                         <div className="flex items-center justify-between gap-2">
-                            <span className="font-bold text-emerald-900 flex items-center gap-1.5">
-                                <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
-                                Halal Certificate / Verification Evidence
+                            <span className={`font-bold flex items-center gap-1.5 ${
+                                isFormallyCertified ? 'text-emerald-900' : 'text-slate-800'
+                            }`}>
+                                {isFormallyCertified ? (
+                                    <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+                                ) : (
+                                    <Camera size={14} className="text-slate-600 shrink-0" />
+                                )}
+                                {isFormallyCertified
+                                    ? 'Halal Certificate / Audit Document'
+                                    : 'Storefront / Signboard Photo'}
                             </span>
                             <a
                                 href={evidenceUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-900 hover:underline"
+                                className={`inline-flex items-center gap-1 text-[11px] font-bold hover:underline ${
+                                    isFormallyCertified ? 'text-emerald-700 hover:text-emerald-900' : 'text-slate-600 hover:text-slate-900'
+                                }`}
                             >
                                 <span>Open Full Image</span>
                                 <ExternalLink size={11} />
@@ -369,11 +383,13 @@ export default function EstablishmentDetailModal({
                             href={evidenceUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="block rounded-lg overflow-hidden border border-emerald-200/80 bg-white max-h-48"
+                            className={`block rounded-lg overflow-hidden border bg-white max-h-48 ${
+                                isFormallyCertified ? 'border-emerald-200/80' : 'border-slate-200'
+                            }`}
                         >
                             <img
                                 src={evidenceUrl}
-                                alt={`${establishment.name} Halal certificate or evidence`}
+                                alt={`${establishment.name} verification photo`}
                                 className="w-full h-40 object-cover hover:opacity-95 transition"
                             />
                         </a>
@@ -470,8 +486,7 @@ export default function EstablishmentDetailModal({
                 {/* Truthful Menu Highlights & Specialties Section */}
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                            <UtensilsCrossed size={14} className={isFormallyCertified ? "text-emerald-600" : "text-slate-600"} />
+                        <h4 className="text-xs font-bold text-slate-800">
                             {isFormallyCertified ? "Menu Highlights & Specialties" : "Reported Menu & Specialties"}
                         </h4>
                         {isFormallyCertified ? (
