@@ -174,49 +174,40 @@ export default function VerificationQueue({ onViewChange }) {
         const dishName = newMenuItemName.trim();
         try {
             setAddingMenuItem(true);
-            const { data: sessionData } = await supabase.auth.getSession();
-            const userId = sessionData?.session?.user?.id || null;
-            const newProd = {
-                name: dishName,
-                establishment_id: inspectingItem.id,
-                category: 'Food & Beverage',
-                status: 'VERIFIED',
-                submitted_by: userId,
-                source: inspectingItem.source || 'Admin Itemized Menu Dish',
-            };
+            const currentHighlights = inspectingItem.menu_highlights || 
+                (inspectingItem.associated_products || []).map(p => p.name || p) || [];
+            const updatedHighlights = Array.from(new Set([...currentHighlights, dishName]));
 
-            let createdItem = null;
+            // Update establishment menu_highlights directly on establishments table
             try {
-                const res = await authFetch(`${API_BASE_URL}/api/v1/products`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newProd),
-                });
-                if (res.ok) {
-                    const json = await res.json();
-                    createdItem = json.data || { ...newProd, id: `local-${Date.now()}` };
-                }
-            } catch (apiErr) {
-                console.warn('Backend add dish notice:', apiErr);
+                await supabase
+                    .from('establishments')
+                    .update({ menu_highlights: updatedHighlights })
+                    .eq('id', inspectingItem.id);
+            } catch (estErr) {
+                console.warn('Direct update establishment highlights notice:', estErr);
             }
 
-            if (!createdItem) {
-                const { data, error: insertErr } = await supabase.from('products').insert(newProd).select();
-                if (!insertErr && data?.[0]) {
-                    createdItem = data[0];
-                } else {
-                    createdItem = { ...newProd, id: `local-${Date.now()}` };
-                }
-            }
+            const createdItem = {
+                id: `dish-${Date.now()}`,
+                name: dishName,
+                category: 'Food Item',
+                status: 'VERIFIED',
+            };
 
             setInspectingItem((prev) => ({
                 ...prev,
+                menu_highlights: updatedHighlights,
                 associated_products: [...(prev.associated_products || []), createdItem],
             }));
             setEstablishments((prev) =>
                 prev.map((est) =>
                     est.id === inspectingItem.id
-                        ? { ...est, associated_products: [...(est.associated_products || []), createdItem] }
+                        ? {
+                              ...est,
+                              menu_highlights: updatedHighlights,
+                              associated_products: [...(est.associated_products || []), createdItem],
+                          }
                         : est
                 )
             );
@@ -237,10 +228,15 @@ export default function VerificationQueue({ onViewChange }) {
     const handleDeleteMenuItem = async (productToRemove) => {
         if (!productToRemove || !inspectingItem?.id) return;
         const prodId = productToRemove.id;
-        const prodName = productToRemove.name;
+        const prodName = productToRemove.name || productToRemove;
+
+        const currentHighlights = inspectingItem.menu_highlights || 
+            (inspectingItem.associated_products || []).map(p => p.name || p) || [];
+        const updatedHighlights = currentHighlights.filter((d) => d !== prodName);
 
         setInspectingItem((prev) => ({
             ...prev,
+            menu_highlights: updatedHighlights,
             associated_products: (prev.associated_products || []).filter((p) =>
                 prodId ? p.id !== prodId : p.name !== prodName
             ),
@@ -250,6 +246,7 @@ export default function VerificationQueue({ onViewChange }) {
                 est.id === inspectingItem.id
                     ? {
                           ...est,
+                          menu_highlights: updatedHighlights,
                           associated_products: (est.associated_products || []).filter((p) =>
                               prodId ? p.id !== prodId : p.name !== prodName
                           ),
@@ -258,18 +255,19 @@ export default function VerificationQueue({ onViewChange }) {
             )
         );
 
-        if (prodId && !String(prodId).startsWith('local-')) {
-            try {
-                const res = await authFetch(`${API_BASE_URL}/api/v1/products/${prodId}`, {
-                    method: 'DELETE',
-                });
-                if (!res.ok) {
-                    await supabase.from('products').delete().eq('id', prodId);
-                }
-            } catch {
+        try {
+            await supabase
+                .from('establishments')
+                .update({ menu_highlights: updatedHighlights })
+                .eq('id', inspectingItem.id);
+
+            // Clean up legacy product row if one existed
+            if (prodId && !String(prodId).startsWith('local-') && !String(prodId).startsWith('dish-')) {
                 await supabase.from('products').delete().eq('id', prodId);
             }
             window.dispatchEvent(new CustomEvent('verification-queue-changed'));
+        } catch (err) {
+            console.warn('Delete dish notice:', err);
         }
     };
 
@@ -475,44 +473,32 @@ export default function VerificationQueue({ onViewChange }) {
 
                 if (sbErr) throw sbErr;
 
-                // Client cascade runs ONLY in fallback path and ONLY for still-pending products
-                if (['verified', 'muslim_owned', 'muslim_friendly', 'vegetarian_vegan', 'community_listed'].includes(statusClean)) {
+                // If rejected, cleanly cascade rejection to any legacy pending items
+                if (statusClean === 'rejected') {
                     try {
                         await supabase
                             .from('products')
                             .update({
-                                status: 'VERIFIED',
-                                verified_at: nowIso,
-                                verified_by: session?.user?.id || null,
+                                status: 'REJECTED',
+                                admin_notes: `Establishment rejected: ${adminNotes || ''}`,
                             })
                             .eq('establishment_id', estId)
                             .ilike('status', '%pending%');
-                    } catch (prodCascadeErr) {
-                        console.warn('Cascaded product verification fallback notice:', prodCascadeErr);
+                    } catch (rejCascadeErr) {
+                        console.warn('Cascaded product rejection notice:', rejCascadeErr);
                     }
                 }
             }
 
             if (newMenuItemName && newMenuItemName.trim()) {
                 try {
-                    const { data: sessionData } = await supabase.auth.getSession();
-                    const userId = sessionData?.session?.user?.id || null;
-                    const newProd = {
-                        name: newMenuItemName.trim(),
-                        establishment_id: estId,
-                        category: 'Food & Beverage',
-                        status: 'VERIFIED',
-                        submitted_by: userId,
-                        source: inspectingItem.source || 'Admin Itemized Menu Dish',
-                    };
-                    const prodRes = await authFetch(`${API_BASE_URL}/api/v1/products`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(newProd),
-                    });
-                    if (!prodRes.ok) {
-                        await supabase.from('products').insert(newProd);
-                    }
+                    const currentHighlights = inspectingItem.menu_highlights || 
+                        (inspectingItem.associated_products || []).map((p) => p.name || p) || [];
+                    const updatedHighlights = Array.from(new Set([...currentHighlights, newMenuItemName.trim()]));
+                    await supabase
+                        .from('establishments')
+                        .update({ menu_highlights: updatedHighlights })
+                        .eq('id', estId);
                     setNewMenuItemName('');
                 } catch (addErr) {
                     console.warn('Auto-save pending menu item notice:', addErr);

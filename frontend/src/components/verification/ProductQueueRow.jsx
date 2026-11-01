@@ -125,10 +125,10 @@ export default function ProductQueueRow({
 
                 <button
                     type="button"
-                    disabled={isAnyActionBusy}
+                    disabled={isAnyActionBusy || isDish}
                     onClick={() => handleAutoVerifyProduct(prod.id, true)}
                     className="min-h-9 px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 active:scale-[0.98] border border-emerald-200 transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:outline-none"
-                    title="Screen ingredient text & verify certifying body credentials"
+                    title={isDish ? 'Restaurant dishes should be managed via establishment menu highlights' : 'Screen ingredient text & verify certifying body credentials'}
                     aria-label={`Run AI auto-check on ${prod.name}`}
                 >
                     {isAutoVerifying ? (

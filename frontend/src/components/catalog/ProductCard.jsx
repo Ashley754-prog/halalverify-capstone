@@ -194,10 +194,15 @@ export default function ProductCard({
                             <Award size={11} className="text-emerald-600 shrink-0 sm:w-[13px] sm:h-[13px]" />
                             <span className="truncate">{product.certifying_bodies.name}</span>
                         </div>
-                    ) : isHalal ? (
+                    ) : isHalal && (product.certifying_body_id || product.certificate_no || product.halal_tier === 'halal_certified') ? (
                         <div className="flex items-center gap-1.5 text-emerald-800 font-medium text-xs">
                             <Award size={11} className="text-emerald-600 shrink-0 sm:w-[13px] sm:h-[13px]" />
                             <span className="truncate">Accredited Halal Certifier</span>
+                        </div>
+                    ) : isCommunityListed ? (
+                        <div className="flex items-center gap-1.5 text-slate-700 font-medium text-xs">
+                            <ShieldAlert size={11} className="text-slate-500 shrink-0 sm:w-[13px] sm:h-[13px]" />
+                            <span className="truncate">Community Listed Product</span>
                         </div>
                     ) : null}
 

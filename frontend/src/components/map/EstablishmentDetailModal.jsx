@@ -36,6 +36,16 @@ export default function EstablishmentDetailModal({
             return;
         }
 
+        if (establishment.menu_highlights && establishment.menu_highlights.length > 0) {
+            setMenuItems(establishment.menu_highlights.map((name, idx) => ({
+                id: `dish-${idx}`,
+                name,
+                category: 'Food Item',
+                status: 'VERIFIED',
+            })));
+            return;
+        }
+
         if (establishment.products && establishment.products.length > 0) {
             setMenuItems(establishment.products);
             return;

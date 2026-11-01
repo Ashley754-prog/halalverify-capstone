@@ -233,6 +233,10 @@ def get_establishments_map(
                     "address": item.get("address"),
                     "city": item.get("city"),
                     "halal_status": item.get("halal_status"),
+                    "halal_tier": item.get("halal_tier"),
+                    "amenities": item.get("amenities") or [],
+                    "menu_highlights": item.get("menu_highlights") or [],
+                    "submitter_role": item.get("submitter_role"),
                     "certificate_number": item.get("certificate_number"),
                     "expiry_date": item.get("expiry_date"),
                     "latitude": float(item["latitude"]) if item.get("latitude") is not None else None,
@@ -553,6 +557,9 @@ def submit_establishment(
     if submission.amenities:
         desc_parts.append(f"Amenities: {' | '.join(submission.amenities)}")
 
+    raw_dishes = submission.menu_highlights or submission.product_names or []
+    menu_highlights = [d.strip() for d in raw_dishes if isinstance(d, str) and d.strip()]
+
     establishment_payload = {
         "name": submission.name.strip(),
         "type": submission.type or "Restaurant",
@@ -569,6 +576,7 @@ def submit_establishment(
         "logo_url": submission.logo_url,
         "submitted_by": str(user_id),
         "amenities": submission.amenities or [],
+        "menu_highlights": menu_highlights,
         "description": " | ".join(desc_parts) if desc_parts else None,
         "source": "Business Owner Submission" if submission.submitter_role == "owner" else "Community User Submission",
     }
@@ -600,7 +608,8 @@ def submit_establishment(
 
     # Whitelist valid Supabase table columns only
     valid_est_cols = {
-        "name", "type", "address", "city", "halal_status", "certifying_body_id",
+        "name", "type", "address", "city", "halal_status", "halal_tier", "amenities",
+        "menu_highlights", "submitter_role", "certifying_body_id",
         "certificate_number", "expiry_date", "certificate_url", "logo_url",
         "submitted_by", "source", "source_url", "phone", "admin_notes",
         "verified_at", "verified_by", "latitude", "longitude", "description",
@@ -620,28 +629,19 @@ def submit_establishment(
 
     created_establishment["halal_tier"] = selected_tier
     created_establishment["verification_tier"] = selected_tier
+    created_establishment["menu_highlights"] = menu_highlights
+    created_establishment["amenities"] = submission.amenities or []
 
-    # If associated product names were submitted, insert them
-    created_products = []
-    if submission.product_names and created_establishment.get("id"):
-        for p_name in submission.product_names:
-            if not p_name.strip():
-                continue
-            prod_status = "VERIFIED" if ai_eval["is_auto_approved"] else "PENDING_VERIFICATION"
-            prod_payload = {
-                "name": p_name.strip(),
-                "establishment_id": created_establishment["id"],
-                "category": "Food & Beverage",
-                "status": prod_status,
-                "verified_at": ai_eval["verified_at"],
-                "verified_by": ai_eval["verified_by"],
-                "submitted_by": str(user_id),
-                "source": "Community User Submission",
-            }
-            clean_prod = {k: v for k, v in prod_payload.items() if v is not None}
-            p_res = supabase.table("products").insert(clean_prod).execute()
-            if p_res.data:
-                created_products.append(p_res.data[0])
+    # Format dishes as menu highlights without polluting public.products table
+    created_products = [
+        {
+            "id": f"dish-{idx}",
+            "name": p_name,
+            "category": "Food & Beverage",
+            "status": "VERIFIED" if ai_eval["is_auto_approved"] else "PENDING_VERIFICATION",
+        }
+        for idx, p_name in enumerate(menu_highlights)
+    ]
 
     msg = (
         "Instant AI Verification Complete! Establishment authenticated and published live to directory."

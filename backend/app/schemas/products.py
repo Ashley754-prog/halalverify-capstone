@@ -35,6 +35,7 @@ class ProductCreate(BaseModel):
     certificate_no: Optional[str] = None
     expiry_date: Optional[str] = None
     status: str = "Halal"
+    halal_tier: Optional[str] = "halal_certified"
     halal_logo_present: bool = True
     ingredients_summary: Optional[str] = None
     submitted_by: Optional[str] = None
@@ -55,6 +56,7 @@ class ProductUpdate(BaseModel):
     certificate_no: Optional[str] = None
     expiry_date: Optional[str] = None
     status: Optional[str] = None
+    halal_tier: Optional[str] = None
     halal_logo_present: Optional[bool] = None
     ingredients_summary: Optional[str] = None
     submitted_by: Optional[str] = None

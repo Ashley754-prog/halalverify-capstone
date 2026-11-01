@@ -68,6 +68,10 @@ class EstablishmentCreate(BaseModel):
     description: Optional[str] = None
     certificate_url: Optional[str] = None
     logo_url: Optional[str] = None
+    halal_tier: Optional[str] = "halal_certified"
+    amenities: Optional[list[str]] = None
+    menu_highlights: Optional[list[str]] = None
+    submitter_role: Optional[str] = "community"
 
 
 class EstablishmentUpdate(BaseModel):
@@ -89,6 +93,10 @@ class EstablishmentUpdate(BaseModel):
     source_url: Optional[str] = None
     certificate_url: Optional[str] = None
     logo_url: Optional[str] = None
+    halal_tier: Optional[str] = None
+    amenities: Optional[list[str]] = None
+    menu_highlights: Optional[list[str]] = None
+    submitter_role: Optional[str] = None
 
 
 class EstablishmentSubmissionRequest(BaseModel):
@@ -106,6 +114,7 @@ class EstablishmentSubmissionRequest(BaseModel):
     certificate_url: Optional[str] = Field(None, max_length=4096)
     logo_url: Optional[str] = Field(None, max_length=4096)
     amenities: Optional[list[str]] = None
+    menu_highlights: Optional[list[str]] = None
     product_names: Optional[list[str]] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None

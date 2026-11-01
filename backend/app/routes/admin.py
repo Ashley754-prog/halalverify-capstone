@@ -62,11 +62,19 @@ def get_pending_approvals(user: dict = Depends(require_admin)):
                         if eid:
                             prod_map.setdefault(eid, []).append(p)
                     for e in pending_establishments:
-                        e["associated_products"] = prod_map.get(e["id"], [])
+                        existing = prod_map.get(e["id"], [])
+                        dishes = e.get("menu_highlights") or []
+                        if not existing and dishes:
+                            e["associated_products"] = [
+                                {"id": f"dish-{idx}", "name": d, "category": "Food & Beverage", "status": "PENDING_VERIFICATION"}
+                                for idx, d in enumerate(dishes)
+                            ]
+                        else:
+                            e["associated_products"] = existing
                 except Exception as p_err:
                     logger.warning("Attaching products to pending establishments failed: %s", p_err)
 
-        # 2. Fetch pending standalone community products
+        # 2. Fetch pending standalone community products (exclude restaurant dishes)
         prod_res = (
             supabase.table("products")
             .select("*, establishments(id, name, city, halal_status)")
@@ -74,7 +82,10 @@ def get_pending_approvals(user: dict = Depends(require_admin)):
             .order("created_at", desc=True)
             .execute()
         )
-        pending_products = prod_res.data or []
+        pending_products = [
+            p for p in (prod_res.data or [])
+            if not (p.get("establishment_id") and not p.get("brand") and not p.get("barcode") and not p.get("ingredients_summary"))
+        ]
 
         # 3. Fetch open / reviewing user issue reports
         rep_res = (
@@ -164,6 +175,17 @@ def verify_establishment(
         update_fields["name"] = payload.name.strip()
     if payload.address and payload.address.strip():
         update_fields["address"] = payload.address.strip()
+    if payload.halal_tier:
+        update_fields["halal_tier"] = payload.halal_tier.strip().lower()
+    elif status_clean in tier_note_map:
+        update_fields["halal_tier"] = tier_note_map[status_clean][0]
+    elif status_clean == "verified":
+        update_fields["halal_tier"] = "halal_certified"
+
+    if payload.menu_highlights is not None:
+        update_fields["menu_highlights"] = [d.strip() for d in payload.menu_highlights if isinstance(d, str) and d.strip()]
+    if payload.amenities is not None:
+        update_fields["amenities"] = payload.amenities
 
     res = (
         supabase.table("establishments")
@@ -175,16 +197,15 @@ def verify_establishment(
     if not res.data:
         raise HTTPException(status_code=404, detail="Establishment not found or update failed")
 
-    # If approved into an active directory tier, cascade approval to linked pending products
-    if status_clean in {"verified", "muslim_owned", "muslim_friendly", "vegetarian_vegan", "community_listed"}:
+    # If rejected, clean up any legacy pending dishes so they do not orphan the product queue
+    if status_clean == "rejected":
         try:
             supabase.table("products").update({
-                "status": "VERIFIED",
-                "verified_at": now_iso,
-                "verified_by": str(user_id) if user_id else None,
+                "status": "REJECTED",
+                "admin_notes": f"Establishment rejected: {notes_str}",
             }).eq("establishment_id", establishment_id).ilike("status", "%pending%").execute()
         except Exception as p_err:
-            logger.warning("Cascaded product approval notice: %s", p_err)
+            logger.warning("Cascaded product rejection notice: %s", p_err)
 
     updated_row = enrich_establishment_tier(res.data)[0]
 
@@ -202,7 +223,8 @@ def verify_product(
     user: dict = Depends(require_admin),
 ):
     """
-    Administrative audit action to approve (VERIFIED) or reject (REJECTED) a community product.
+    Administrative audit action to approve (VERIFIED/HALAL) or reject (REJECTED) a community product.
+    Preserves granular halal tiers (pork_free, vegetarian_vegan, community_listed) rather than blindly flattening.
     """
     user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
     status_clean = (payload.status or "").strip().upper()
@@ -212,11 +234,45 @@ def verify_product(
 
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
+    target_status = status_clean
+    target_tier = (payload.halal_tier or "").strip().lower()
+
+    if status_clean in {"VERIFIED", "HALAL"}:
+        if not target_tier:
+            try:
+                curr_p = supabase.table("products").select("halal_tier, status, admin_notes").eq("id", product_id).execute()
+                if curr_p.data:
+                    target_tier = (curr_p.data[0].get("halal_tier") or "").strip().lower()
+                    if not target_tier:
+                        notes = (curr_p.data[0].get("admin_notes") or "").lower()
+                        if "pork-free" in notes:
+                            target_tier = "pork_free"
+                        elif "vegetarian" in notes or "vegan" in notes:
+                            target_tier = "vegetarian_vegan"
+                        elif "community" in notes:
+                            target_tier = "community_listed"
+                        else:
+                            target_tier = "halal_certified"
+            except Exception:
+                target_tier = "halal_certified"
+
+        if target_tier == "pork_free":
+            target_status = "Pork-Free Declared"
+        elif target_tier == "vegetarian_vegan":
+            target_status = "Vegetarian / Vegan"
+        elif target_tier == "community_listed":
+            target_status = "COMMUNITY_LISTED"
+        else:
+            target_status = "Halal"
+            target_tier = "halal_certified"
+
     update_fields = {
-        "status": status_clean,
+        "status": target_status,
         "verified_at": now_iso,
         "verified_by": str(user_id) if user_id else None,
     }
+    if target_tier:
+        update_fields["halal_tier"] = target_tier
     if payload.admin_notes is not None:
         update_fields["admin_notes"] = payload.admin_notes
     if payload.name and payload.name.strip():
@@ -824,15 +880,6 @@ def auto_verify_all_pending(
                 update_fields["verified_by"] = admin_uuid
                 approved_est_count += 1
 
-                try:
-                    supabase.table("products").update({
-                        "status": "VERIFIED",
-                        "verified_at": now_iso,
-                        "verified_by": admin_uuid,
-                    }).eq("establishment_id", est["id"]).ilike("status", "%pending%").execute()
-                except Exception:
-                    pass
-
             supabase.table("establishments").update(update_fields).eq("id", est["id"]).execute()
         except Exception as e:
             logger.error("Error auto-verifying establishment %s: %s", est.get("id"), e)
@@ -843,7 +890,10 @@ def auto_verify_all_pending(
         .ilike("status", "%pending%")
         .execute()
     )
-    pending_products = prod_res.data or []
+    pending_products = [
+        p for p in (prod_res.data or [])
+        if not (p.get("establishment_id") and not p.get("brand") and not p.get("barcode") and not p.get("ingredients_summary"))
+    ]
 
     approved_prod_count = 0
     audited_prod_count = 0

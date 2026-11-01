@@ -327,10 +327,12 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             }
 
             // Enrich with establishment info if linked, or fallback to curated Zamboanga district specialties when filtering by District
-            let finalProducts = (loadedProducts || []).map((p) => ({
-                ...p,
-                establishments: p.establishment_id ? estMap[p.establishment_id] : p.establishments,
-            }));
+            let finalProducts = (loadedProducts || [])
+                .filter((p) => !(p.establishment_id && !p.brand && !p.barcode && !p.ingredients_summary))
+                .map((p) => ({
+                    ...p,
+                    establishments: p.establishment_id ? estMap[p.establishment_id] : p.establishments,
+                }));
 
             if (dist && dist !== 'all' && finalProducts.length === 0) {
                 const districtEsts = Object.values(estMap).filter((e) => resolveZamboangaDistrict(e).id === dist);

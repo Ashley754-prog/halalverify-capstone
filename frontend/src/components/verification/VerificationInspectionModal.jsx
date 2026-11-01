@@ -676,69 +676,75 @@ export default function VerificationInspectionModal({
                         </div>
 
                         {/* Menu Highlights & Dishes (Only for Establishments) */}
-                        {inspectingType !== 'product' && (
-                            <div className="pt-2 border-t border-slate-100 space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <span className="font-semibold text-slate-700 text-xs flex items-center gap-1.5">
-                                        <UtensilsCrossed size={13} className="text-emerald-600" />
-                                        Menu Highlights & Dishes
-                                    </span>
-                                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                                        {inspectingItem.associated_products?.length || 0} Dishes
-                                    </span>
-                                </div>
+                        {inspectingType !== 'product' && (() => {
+                            const dishesList = (inspectingItem.associated_products && inspectingItem.associated_products.length > 0)
+                                ? inspectingItem.associated_products
+                                : (inspectingItem.menu_highlights || []).map((name, idx) => ({ id: `dish-${idx}`, name }));
 
-                                {inspectingItem.associated_products && inspectingItem.associated_products.length > 0 ? (
-                                    <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
-                                        {inspectingItem.associated_products.map((p, idx) => (
-                                            <span
-                                                key={p.id || `${p.name}-${idx}`}
-                                                className="text-[11px] bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg font-medium text-slate-700 flex items-center gap-1.5"
-                                            >
-                                                <CheckCircle2 size={11} className="text-emerald-600 shrink-0" />
-                                                <span>{p.name}</span>
-                                                {handleDeleteMenuItem && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleDeleteMenuItem(p)}
-                                                        className="text-slate-400 hover:text-red-500 transition cursor-pointer ml-0.5"
-                                                        title={`Remove ${p.name}`}
-                                                    >
-                                                        <X size={12} />
-                                                    </button>
-                                                )}
-                                            </span>
-                                        ))}
+                            return (
+                                <div className="pt-2 border-t border-slate-100 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-semibold text-slate-700 text-xs flex items-center gap-1.5">
+                                            <UtensilsCrossed size={13} className="text-emerald-600" />
+                                            Menu Highlights & Dishes
+                                        </span>
+                                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                                            {dishesList.length} Dishes
+                                        </span>
                                     </div>
-                                ) : (
-                                    <p className="text-[11px] text-slate-400">No menu items listed yet.</p>
-                                )}
 
-                                <div className="flex items-center gap-2 pt-1">
-                                    <input
-                                        type="text"
-                                        value={newMenuItemName}
-                                        onChange={(e) => setNewMenuItemName(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                e.preventDefault();
-                                                handleAddMenuItem();
-                                            }
-                                        }}
-                                        placeholder="Add a dish (e.g. Beef Satti)..."
-                                        className="flex-1 rounded-xl border border-slate-300 p-2 text-xs text-slate-800 bg-white focus:border-emerald-500 focus:outline-none"
-                                    />
-                                    <button
-                                        type="button"
-                                        disabled={addingMenuItem || !newMenuItemName.trim()}
-                                        onClick={handleAddMenuItem}
-                                        className="px-3 py-2 rounded-xl text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition disabled:opacity-50 cursor-pointer"
-                                    >
-                                        {addingMenuItem ? 'Adding...' : '+ Add'}
-                                    </button>
+                                    {dishesList.length > 0 ? (
+                                        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+                                            {dishesList.map((p, idx) => (
+                                                <span
+                                                    key={p.id || `${p.name}-${idx}`}
+                                                    className="text-[11px] bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg font-medium text-slate-700 flex items-center gap-1.5"
+                                                >
+                                                    <CheckCircle2 size={11} className="text-emerald-600 shrink-0" />
+                                                    <span>{p.name}</span>
+                                                    {handleDeleteMenuItem && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDeleteMenuItem(p)}
+                                                            className="text-slate-400 hover:text-red-500 transition cursor-pointer ml-0.5"
+                                                            title={`Remove ${p.name}`}
+                                                        >
+                                                            <X size={12} />
+                                                        </button>
+                                                    )}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-[11px] text-slate-400">No menu items listed yet.</p>
+                                    )}
+
+                                    <div className="flex items-center gap-2 pt-1">
+                                        <input
+                                            type="text"
+                                            value={newMenuItemName}
+                                            onChange={(e) => setNewMenuItemName(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleAddMenuItem();
+                                                }
+                                            }}
+                                            placeholder="Add a dish (e.g. Beef Satti)..."
+                                            className="flex-1 rounded-xl border border-slate-300 p-2 text-xs text-slate-800 bg-white focus:border-emerald-500 focus:outline-none"
+                                        />
+                                        <button
+                                            type="button"
+                                            disabled={addingMenuItem || !newMenuItemName.trim()}
+                                            onClick={handleAddMenuItem}
+                                            className="px-3 py-2 rounded-xl text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition disabled:opacity-50 cursor-pointer"
+                                        >
+                                            {addingMenuItem ? 'Adding...' : '+ Add'}
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            );
+                        })()}
 
                         {/* Admin Notes */}
                         <div className="pt-2 border-t border-slate-100 space-y-2">

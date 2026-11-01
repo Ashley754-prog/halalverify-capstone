@@ -303,6 +303,7 @@ def submit_product(
         "expiry_date": submission.expiry_date,
         "image_url": submission.image_url,
         "ingredients_summary": submission.ingredients_summary,
+        "halal_tier": submission.halal_tier or "halal_certified",
         "submitted_by": str(user_id),
         "source": "Brand Representative Submission" if submission.submitter_role == "brand" else "Community User Submission",
         "source_url": submission.source_url if submission.source_url else None,
@@ -326,7 +327,7 @@ def submit_product(
     valid_prod_cols = {
         "name", "brand", "category", "barcode", "establishment_id", "manufacturer_id",
         "certifying_body_id", "certificate_no", "expiry_date", "image_url",
-        "ingredients_summary", "submitted_by", "source", "status", "verified_at",
+        "ingredients_summary", "submitted_by", "source", "status", "halal_tier", "verified_at",
         "verified_by", "admin_notes", "source_url"
     }
     clean_payload = {k: v for k, v in product_payload.items() if k in valid_prod_cols and v is not None}

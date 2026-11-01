@@ -700,20 +700,32 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
     # Duplicate check against existing products
     is_duplicate = False
     try:
-        existing_prod_res = supabase.table("products").select("id, name, brand").limit(400).execute()
-        if existing_prod_res.data and name:
-            norm_target = normalize_text(f"{brand or ''} {name}").lower()
-            for prod in existing_prod_res.data:
-                if payload.get("id") and str(prod.get("id")) == str(payload.get("id")):
-                    continue
-                norm_cand = normalize_text(f"{prod.get('brand') or ''} {prod.get('name') or ''}").lower()
-                sim = SequenceMatcher(None, norm_target, norm_cand).ratio()
-                if sim >= 0.92 and len(norm_target) >= 5:
+        if barcode:
+            dup_bc = supabase.table("products").select("id, name, brand, barcode").eq("barcode", barcode.strip()).execute()
+            if dup_bc.data:
+                for prod in dup_bc.data:
+                    if payload.get("id") and str(prod.get("id")) == str(payload.get("id")):
+                        continue
                     is_duplicate = True
-                    reasons.append(f"Potential duplicate product in catalog ('{prod.get('name')}', {int(sim*100)}% match)")
+                    reasons.append(f"Barcode already registered in catalog ('{prod.get('name')}')")
                     break
-    except Exception:
-        pass
+
+        if not is_duplicate and name:
+            query_name = name.strip()[:30]
+            existing_prod_res = supabase.table("products").select("id, name, brand").ilike("name", f"%{query_name}%").limit(20).execute()
+            if existing_prod_res.data:
+                norm_target = normalize_text(f"{brand or ''} {name}").lower()
+                for prod in existing_prod_res.data:
+                    if payload.get("id") and str(prod.get("id")) == str(payload.get("id")):
+                        continue
+                    norm_cand = normalize_text(f"{prod.get('brand') or ''} {prod.get('name') or ''}").lower()
+                    sim = SequenceMatcher(None, norm_target, norm_cand).ratio()
+                    if sim >= 0.88 and len(norm_target) >= 5:
+                        is_duplicate = True
+                        reasons.append(f"Potential duplicate product in catalog ('{prod.get('name')}', {int(sim*100)}% match)")
+                        break
+    except Exception as dup_err:
+        logger.warning("[AutoVerify] Product duplicate check warning: %s", dup_err)
 
     effective_ingredients = f"{ingredients} {ocr_text}".strip()
     screened_text = f"{name} {brand or ''} {effective_ingredients}".lower()

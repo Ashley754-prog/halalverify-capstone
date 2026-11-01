@@ -57,7 +57,7 @@ export default function EstablishmentsSidebarList({
                             const districtInfo = resolveZamboangaDistrict(est);
                             const isSelected = selectedEstablishment?.id === est.id;
                             const isNearest = Boolean(userLocation && index === 0 && est.distance_km != null);
-                            const productsCount = est.products?.length || 0;
+                            const productsCount = est.menu_highlights?.length || est.products?.length || 0;
 
                             return (
                                 <div

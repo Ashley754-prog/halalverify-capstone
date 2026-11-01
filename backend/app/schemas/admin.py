@@ -10,6 +10,9 @@ class EstablishmentVerifyRequest(BaseModel):
     certifying_body_id: Optional[str] = Field(None, description="Assigned certifying body ID")
     name: Optional[str] = Field(None, description="Corrected establishment name")
     address: Optional[str] = Field(None, description="Corrected establishment address")
+    halal_tier: Optional[str] = Field(None, description="Explicit verification tier")
+    amenities: Optional[list[str]] = Field(None, description="Updated amenities list")
+    menu_highlights: Optional[list[str]] = Field(None, description="Updated menu specialties/dishes")
 
 
 class ProductVerifyRequest(BaseModel):
@@ -20,6 +23,7 @@ class ProductVerifyRequest(BaseModel):
     certificate_no: Optional[str] = Field(None, description="Updated certificate number if applicable")
     expiry_date: Optional[str] = Field(None, description="Updated certificate expiry date")
     certifying_body_id: Optional[str] = Field(None, description="Assigned certifying body ID")
+    halal_tier: Optional[str] = Field(None, description="Product tier: halal_certified, pork_free, vegetarian_vegan, community_listed")
 
 
 class ReportResolveRequest(BaseModel):

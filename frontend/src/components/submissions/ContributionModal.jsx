@@ -256,6 +256,10 @@ export default function ContributionModal({
           certificate_url: payload.certificate_url,
           logo_url: payload.logo_url,
           halal_status: fallbackStatus,
+          halal_tier: payload.halal_tier || 'halal_certified',
+          amenities: amenities || [],
+          menu_highlights: payload.product_names || [],
+          submitter_role: payload.submitter_role || 'community',
           admin_notes: fallbackNotes,
           latitude: payload.latitude || 6.9142,
           longitude: payload.longitude || 122.0745,
@@ -267,19 +271,6 @@ export default function ContributionModal({
         if (sbErr) {
           console.warn('Direct Supabase insert blocked by RLS:', sbErr);
           throw new Error('Verification service is unreachable. Please check backend connection.');
-        }
-
-        // Insert submitted menu items if any
-        if (insertedEst?.[0]?.id && payload.product_names?.length > 0) {
-          const prodsToInsert = payload.product_names.map((pName) => ({
-            name: pName,
-            establishment_id: insertedEst[0].id,
-            category: 'Food & Beverage',
-            status: 'PENDING_VERIFICATION',
-            submitted_by: userId,
-            source: payload.submitter_role === 'owner' ? 'Business Owner Submission' : 'Community User Submission',
-          }));
-          await supabase.from('products').insert(prodsToInsert).catch(console.warn);
         }
       }
 
