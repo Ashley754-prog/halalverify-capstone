@@ -14,7 +14,7 @@ import VerificationQueueTabs from '../components/verification/VerificationQueueT
 import VerificationInspectionModal from '../components/verification/VerificationInspectionModal';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
-import { isMachineNote, extractMenuHighlights } from '../utils/verificationNotes';
+import { isMachineNote, extractMenuHighlights, deriveEstablishmentTier } from '../utils/verificationNotes';
 
 export default function VerificationQueue({ onViewChange }) {
     const [activeTab, setActiveTab] = useState('establishments'); // 'establishments' | 'products' | 'reports'
@@ -156,11 +156,15 @@ export default function VerificationQueue({ onViewChange }) {
         setSelectedHcbId(item.certifying_body_id || '');
         setNewMenuItemName('');
 
-        const st = (item.halal_status || item.status || '').toLowerCase();
-        if (['muslim_owned', 'muslim_friendly', 'vegetarian_vegan', 'pork_free_declared'].includes(st)) {
-            setSelectedStatus(st);
-        } else if (st.includes('community')) {
-            setSelectedStatus('muslim_owned');
+        if (type === 'establishment') {
+            const derivedTier = deriveEstablishmentTier(item);
+            if (derivedTier === 'halal_certified') {
+                setSelectedStatus('verified');
+            } else if (['muslim_owned', 'muslim_friendly', 'vegetarian_vegan', 'pork_free_declared'].includes(derivedTier)) {
+                setSelectedStatus(derivedTier);
+            } else {
+                setSelectedStatus('verified');
+            }
         } else {
             setSelectedStatus('verified');
         }

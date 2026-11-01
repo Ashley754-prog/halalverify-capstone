@@ -590,11 +590,13 @@ export default function VerificationInspectionModal({
                             </div>
                         )}
 
-                        <div>
+                        {(inspectingType === 'product' || selectedStatus === 'verified') ? (
+                            <>
+                                <div>
                             <label htmlFor="inspect-cert-body" className="block text-xs font-semibold text-slate-700 mb-1">
                                 {inspectingType === 'product'
                                     ? 'Accredited Certifying Body (Optional)'
-                                    : 'Certifying Body (Optional for Community Tiers)'}
+                                    : 'Accredited Certifying Body'}
                             </label>
                             <select
                                 id="inspect-cert-body"
@@ -651,6 +653,25 @@ export default function VerificationInspectionModal({
                                 />
                             </div>
                         </div>
+                            </>
+                        ) : (
+                            <div className="rounded-xl border border-teal-200/80 bg-teal-50/70 p-3.5 text-xs text-teal-900 space-y-1.5">
+                                <div className="flex items-center gap-2 font-bold text-teal-950">
+                                    <span className="w-2 h-2 rounded-full bg-teal-600"></span>
+                                    <span>Community Verified Listing</span>
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 font-semibold text-teal-800 ml-auto border border-teal-200">
+                                        {selectedStatus === 'muslim_owned'
+                                            ? 'Muslim-Owned'
+                                            : selectedStatus === 'muslim_friendly'
+                                            ? 'Muslim-Friendly'
+                                            : 'Plant-Based'}
+                                    </span>
+                                </div>
+                                <p className="text-[11px] text-teal-800 leading-relaxed">
+                                    No 3rd-party paper certificate is required for this community tier. Verified via submitted photos, Muslim ownership declaration, and dining amenities.
+                                </p>
+                            </div>
+                        )}
 
                         {/* Menu Highlights & Dishes (Only for Establishments) */}
                         {inspectingType !== 'product' && (() => {
