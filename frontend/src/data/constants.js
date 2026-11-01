@@ -206,103 +206,31 @@ export const PRODUCT_HALAL_TIERS = [
 ];
 
 export const getStatusConfig = (statusOrEst, rawNotes = '') => {
-    let status;
-    let notes;
+    let status = '';
+    let notes = '';
+    let estObj = null;
 
     if (statusOrEst && typeof statusOrEst === 'object') {
-        status = statusOrEst.halal_status || statusOrEst.status || '';
-        notes = statusOrEst.admin_notes || statusOrEst.notes || '';
-        if (statusOrEst.halal_tier === 'halal_certified' && (statusOrEst.certificate_number || (status && status.toLowerCase() === 'verified'))) {
-            return {
-                key: 'verified',
-                label: 'Formally Certified',
-                color: '#10b981',
-                badgeBg: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-                weight: 1.0,
-            };
-        }
-        if (statusOrEst.halal_tier === 'muslim_owned') {
-            return {
-                key: 'muslim_owned',
-                label: 'Muslim-Owned',
-                color: '#0284c7',
-                badgeBg: 'bg-sky-50 text-sky-800 border-sky-200',
-                weight: 0.9,
-            };
-        }
-        if (statusOrEst.halal_tier === 'muslim_friendly') {
-            return {
-                key: 'muslim_friendly',
-                label: 'Muslim-Friendly',
-                color: '#6366f1',
-                badgeBg: 'bg-indigo-50 text-indigo-800 border-indigo-200',
-                weight: 0.8,
-            };
-        }
-        if (statusOrEst.halal_tier === 'vegetarian_vegan') {
-            return {
-                key: 'vegetarian_vegan',
-                label: 'Vegetarian / Vegan',
-                color: '#0d9488',
-                badgeBg: 'bg-teal-50 text-teal-800 border-teal-200',
-                weight: 0.8,
-            };
-        }
+        estObj = statusOrEst;
+        status = (statusOrEst.halal_status || statusOrEst.status || '').toLowerCase().trim();
+        notes = (statusOrEst.admin_notes || statusOrEst.notes || statusOrEst.description || '').toLowerCase();
     } else {
-        status = statusOrEst || '';
-        notes = rawNotes || '';
+        status = (statusOrEst || '').toLowerCase().trim();
+        notes = (rawNotes || '').toLowerCase();
     }
 
-    const s = status.toLowerCase();
-    const n = notes.toLowerCase();
+    // 1. Terminal unverified states ALWAYS take precedence
+    if (status === 'rejected' || status.includes('reject')) {
+        return {
+            key: 'rejected',
+            label: 'Rejected',
+            color: '#ef4444',
+            badgeBg: 'bg-rose-50 text-rose-700 border-rose-200',
+            weight: 0.0,
+        };
+    }
 
-    // Check for community tiers first (stored with halal_status='verified' but specified in admin_notes)
-    if (s === 'muslim_owned' || s.includes('muslim_owned') || n.includes('muslim-owned') || n.includes('muslim_owned')) {
-        return {
-            key: 'muslim_owned',
-            label: 'Muslim-Owned',
-            color: '#0284c7',
-            badgeBg: 'bg-sky-50 text-sky-800 border-sky-200',
-            weight: 0.9,
-        };
-    }
-    if (s === 'muslim_friendly' || s.includes('muslim_friendly') || n.includes('muslim-friendly')) {
-        return {
-            key: 'muslim_friendly',
-            label: 'Muslim-Friendly',
-            color: '#6366f1',
-            badgeBg: 'bg-indigo-50 text-indigo-800 border-indigo-200',
-            weight: 0.8,
-        };
-    }
-    if (s === 'vegetarian_vegan' || s.includes('vegetarian') || s.includes('vegan') || n.includes('vegetarian') || n.includes('plant-based')) {
-        return {
-            key: 'vegetarian_vegan',
-            label: 'Vegetarian / Vegan',
-            color: '#0d9488',
-            badgeBg: 'bg-teal-50 text-teal-800 border-teal-200',
-            weight: 0.8,
-        };
-    }
-    if (s.includes('community') || n.includes('community listed')) {
-        return {
-            key: 'community',
-            label: 'Muslim-Owned / Community',
-            color: '#0284c7',
-            badgeBg: 'bg-sky-50 text-sky-800 border-sky-200',
-            weight: 0.8,
-        };
-    }
-    if (s.includes('verif') && !s.includes('pending') && !s.includes('unverif') && !s.includes('need')) {
-        return {
-            key: 'verified',
-            label: 'Formally Certified',
-            color: '#10b981',
-            badgeBg: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-            weight: 1.0,
-        };
-    }
-    if (s.includes('flag') || s.includes('suspend') || s.includes('expir') || s.includes('reject')) {
+    if (status.includes('flag') || status.includes('suspend') || status.includes('expir')) {
         return {
             key: 'flagged',
             label: 'Flagged / Suspended',
@@ -311,9 +239,111 @@ export const getStatusConfig = (statusOrEst, rawNotes = '') => {
             weight: 0.1,
         };
     }
+
+    // 2. Pending review submissions MUST NEVER be treated as verified
+    if (
+        status === 'needs_review' ||
+        status === 'pending' ||
+        status === 'pending_review' ||
+        status.includes('pending') ||
+        status.includes('needs_review') ||
+        status.includes('unverif')
+    ) {
+        return {
+            key: 'needs_review',
+            label: 'Under Review',
+            color: '#f59e0b',
+            badgeBg: 'bg-amber-50 text-amber-700 border-amber-200',
+            weight: 0.5,
+        };
+    }
+
+    // 3. For verified records (halal_status='verified', 'halal', or explicit verified tier), resolve tier:
+    const tier = (estObj && (estObj.halal_tier || estObj.verification_tier || '')).toLowerCase();
+
+    if (tier === 'muslim_owned' || status === 'muslim_owned' || notes.includes('[tier: muslim_owned]')) {
+        return {
+            key: 'muslim_owned',
+            label: 'Muslim-Owned',
+            color: '#0284c7',
+            badgeBg: 'bg-sky-50 text-sky-800 border-sky-200',
+            weight: 0.9,
+        };
+    }
+
+    if (tier === 'muslim_friendly' || status === 'muslim_friendly' || notes.includes('[tier: muslim_friendly]')) {
+        return {
+            key: 'muslim_friendly',
+            label: 'Muslim-Friendly',
+            color: '#6366f1',
+            badgeBg: 'bg-indigo-50 text-indigo-800 border-indigo-200',
+            weight: 0.8,
+        };
+    }
+
+    if (tier === 'vegetarian_vegan' || status === 'vegetarian_vegan' || notes.includes('[tier: vegetarian_vegan]') || notes.includes('plant-based')) {
+        return {
+            key: 'vegetarian_vegan',
+            label: 'Vegetarian / Vegan',
+            color: '#0d9488',
+            badgeBg: 'bg-teal-50 text-teal-800 border-teal-200',
+            weight: 0.8,
+        };
+    }
+
+    if (notes.includes('community listed - muslim-owned') || notes.includes('muslim-owned')) {
+        return {
+            key: 'muslim_owned',
+            label: 'Muslim-Owned',
+            color: '#0284c7',
+            badgeBg: 'bg-sky-50 text-sky-800 border-sky-200',
+            weight: 0.9,
+        };
+    }
+
+    if (notes.includes('community listed - muslim-friendly') || notes.includes('muslim-friendly')) {
+        return {
+            key: 'muslim_friendly',
+            label: 'Muslim-Friendly',
+            color: '#6366f1',
+            badgeBg: 'bg-indigo-50 text-indigo-800 border-indigo-200',
+            weight: 0.8,
+        };
+    }
+
+    if (notes.includes('community listed - vegetarian') || notes.includes('vegetarian')) {
+        return {
+            key: 'vegetarian_vegan',
+            label: 'Vegetarian / Vegan',
+            color: '#0d9488',
+            badgeBg: 'bg-teal-50 text-teal-800 border-teal-200',
+            weight: 0.8,
+        };
+    }
+
+    if (status.includes('community') || notes.includes('community listed')) {
+        return {
+            key: 'community',
+            label: 'Muslim-Owned / Community',
+            color: '#0284c7',
+            badgeBg: 'bg-sky-50 text-sky-800 border-sky-200',
+            weight: 0.8,
+        };
+    }
+
+    if (status.includes('verif') || status === 'halal' || tier === 'halal_certified') {
+        return {
+            key: 'verified',
+            label: 'Formally Certified',
+            color: '#10b981',
+            badgeBg: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+            weight: 1.0,
+        };
+    }
+
     return {
         key: 'needs_review',
-        label: 'Self-Declared / Review',
+        label: 'Under Review',
         color: '#f59e0b',
         badgeBg: 'bg-amber-50 text-amber-700 border-amber-200',
         weight: 0.5,

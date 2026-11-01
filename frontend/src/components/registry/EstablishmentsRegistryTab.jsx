@@ -43,18 +43,32 @@ export default function EstablishmentsRegistryTab({
             if (dist.id !== districtFilter) return false;
         }
 
+        const sLower = (shop.halal_status || '').toLowerCase().trim();
+        // Never show rejected, pending review, flagged, or suspended establishments in public registry
+        if (
+            sLower === 'rejected' ||
+            sLower.includes('reject') ||
+            sLower === 'flagged' ||
+            sLower === 'suspended' ||
+            sLower === 'expired' ||
+            sLower === 'needs_review' ||
+            sLower === 'pending' ||
+            sLower.includes('pending') ||
+            sLower.includes('needs_review')
+        ) {
+            return false;
+        }
+
+        const cfg = getStatusConfig(shop);
+        if (cfg.key === 'needs_review' || cfg.key === 'pending_review' || cfg.key === 'rejected' || cfg.key === 'flagged') {
+            return false;
+        }
+
         if (statusFilter !== 'all') {
-            const cfg = getStatusConfig(shop);
             if (statusFilter === 'verified') return cfg.key === 'verified';
             if (statusFilter === 'muslim_owned') return cfg.key === 'muslim_owned' || cfg.key === 'community';
             if (statusFilter === 'muslim_friendly') return cfg.key === 'muslim_friendly';
             if (statusFilter === 'vegetarian_vegan') return cfg.key === 'vegetarian_vegan';
-            if (statusFilter === 'needs_review') return cfg.key === 'needs_review' || cfg.key === 'pending_review';
-        } else {
-            const cfg = getStatusConfig(shop);
-            if (cfg.key === 'needs_review' || cfg.key === 'pending_review') return false;
-            const sLower = (shop.halal_status || '').toLowerCase();
-            if (sLower.includes('reject') || sLower.includes('flag') || sLower.includes('suspend')) return false;
         }
         return true;
     });

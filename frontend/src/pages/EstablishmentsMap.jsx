@@ -169,6 +169,17 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                 const { data: sbData, error: sbErr } = await query;
                 if (!sbErr && sbData && sbData.length > 0) {
                     let withCoords = sbData.filter((e) => e.latitude && e.longitude);
+                    withCoords = withCoords.filter((e) => {
+                        const st = (e.halal_status || '').toLowerCase().trim();
+                        if (st === 'rejected' || st.includes('reject') || st === 'flagged' || st === 'suspended' || st === 'expired') {
+                            return selectedStatus === 'flagged' || selectedStatus === 'rejected';
+                        }
+                        if (st === 'needs_review' || st === 'pending' || st.includes('pending') || st.includes('needs_review')) {
+                            return selectedStatus === 'needs_review' || selectedStatus === 'pending_review';
+                        }
+                        return true;
+                    });
+
                     if (selectedStatus === 'all') {
                         withCoords = withCoords.filter((e) => {
                             const cfg = getStatusConfig(e);
