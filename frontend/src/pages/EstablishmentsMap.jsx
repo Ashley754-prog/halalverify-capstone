@@ -63,7 +63,6 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
     // Filters (Certifier filter removed per instructions)
     const [selectedStatus, setSelectedStatus] = useState('all');
     const [selectedDistrict, setSelectedDistrict] = useState('all');
-    const [selectedRadius, setSelectedRadius] = useState('all');
     const [selectedAmenity, setSelectedAmenity] = useState('all');
     const [searchQuery, setSearchQuery] = useState(initialSearchQuery || '');
 
@@ -138,14 +137,10 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                 ...e,
                 distance_km: calculateDistanceKm(userLocation.lat, userLocation.lng, e.latitude, e.longitude)
             }));
-            if (selectedRadius !== 'all') {
-                const maxR = parseFloat(selectedRadius);
-                list = list.filter((e) => e.distance_km <= maxR);
-            }
             list.sort((a, b) => (a.distance_km || 999) - (b.distance_km || 999));
         }
         setEstablishments(list);
-    }, [selectedStatus, userLocation, selectedRadius]);
+    }, [selectedStatus, userLocation]);
 
     // Fetch establishments from API or fallback
     const fetchEstablishments = useCallback(async () => {
@@ -155,9 +150,6 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
             if (userLocation?.lat && userLocation?.lng) {
                 params.append('lat', userLocation.lat);
                 params.append('lng', userLocation.lng);
-                if (selectedRadius !== 'all') {
-                    params.append('radius', selectedRadius);
-                }
             }
             if (selectedStatus !== 'all') {
                 params.append('status', selectedStatus);
@@ -214,10 +206,6 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                             ...e,
                             distance_km: calculateDistanceKm(userLocation.lat, userLocation.lng, e.latitude, e.longitude)
                         }));
-                        if (selectedRadius !== 'all') {
-                            const radiusKm = parseFloat(selectedRadius);
-                            withCoords = withCoords.filter((e) => e.distance_km <= radiusKm);
-                        }
                         withCoords.sort((a, b) => (a.distance_km ?? 999) - (b.distance_km ?? 999));
                     }
                     if (withCoords.length > 0) {
@@ -261,7 +249,7 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
         } finally {
             setLoading(false);
         }
-    }, [userLocation, selectedRadius, selectedStatus, applySeedFallback]);
+    }, [userLocation, selectedStatus, applySeedFallback]);
 
     useEffect(() => {
         fetchEstablishments();
@@ -286,7 +274,6 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                 };
                 setUserLocation(coords);
                 setIsLocating(false);
-                setSelectedRadius('10');
 
                 if (mapInstanceRef.current) {
                     mapInstanceRef.current.invalidateSize();
@@ -650,23 +637,6 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                             Reset
                         </button>
                     )}
-
-                    <div className="h-8 sm:h-8.5 flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100/80 px-2 sm:px-2.5 rounded-xl border border-slate-200 text-xs transition shrink-0">
-                        <Compass size={13} className="text-slate-500 shrink-0" />
-                        <span className="font-semibold text-slate-500 hidden sm:inline">Radius:</span>
-                        <select
-                            value={selectedRadius}
-                            onChange={(e) => setSelectedRadius(e.target.value)}
-                            className="bg-transparent font-bold text-slate-800 focus:outline-none cursor-pointer text-xs"
-                        >
-                            <option value="all">Citywide</option>
-                            <option value="1">1 km</option>
-                            <option value="3">3 km</option>
-                            <option value="5">5 km</option>
-                            <option value="10">10 km</option>
-                            <option value="25">25 km</option>
-                        </select>
-                    </div>
 
                     <div className="h-8 sm:h-8.5 flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100/80 px-2 sm:px-2.5 rounded-xl border border-slate-200 text-xs transition shrink-0">
                         <MapPin size={13} className="text-slate-500 shrink-0" />
