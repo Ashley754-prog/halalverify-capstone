@@ -69,7 +69,7 @@ def get_pending_approvals(user: dict = Depends(require_admin)):
         # 2. Fetch pending standalone community products
         prod_res = (
             supabase.table("products")
-            .select("*, establishments(id, name, city)")
+            .select("*, establishments(id, name, city, halal_status)")
             .ilike("status", "%pending%")
             .order("created_at", desc=True)
             .execute()
@@ -214,14 +214,21 @@ def verify_product(
 
     update_fields = {
         "status": status_clean,
-        "admin_notes": payload.admin_notes or "",
         "verified_at": now_iso,
         "verified_by": str(user_id) if user_id else None,
     }
+    if payload.admin_notes is not None:
+        update_fields["admin_notes"] = payload.admin_notes
     if payload.name and payload.name.strip():
         update_fields["name"] = payload.name.strip()
     if payload.brand is not None and payload.brand.strip():
         update_fields["brand"] = payload.brand.strip()
+    if payload.certificate_no and payload.certificate_no.strip():
+        update_fields["certificate_no"] = payload.certificate_no.strip()
+    if payload.expiry_date and payload.expiry_date.strip():
+        update_fields["expiry_date"] = payload.expiry_date.strip()
+    if payload.certifying_body_id and payload.certifying_body_id.strip():
+        update_fields["certifying_body_id"] = payload.certifying_body_id.strip()
 
     res = (
         supabase.table("products")

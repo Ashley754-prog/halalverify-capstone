@@ -17,6 +17,9 @@ class ProductVerifyRequest(BaseModel):
     admin_notes: Optional[str] = Field(None, description="Administrative audit notes")
     name: Optional[str] = Field(None, description="Corrected product name")
     brand: Optional[str] = Field(None, description="Corrected product brand")
+    certificate_no: Optional[str] = Field(None, description="Updated certificate number if applicable")
+    expiry_date: Optional[str] = Field(None, description="Updated certificate expiry date")
+    certifying_body_id: Optional[str] = Field(None, description="Assigned certifying body ID")
 
 
 class ReportResolveRequest(BaseModel):

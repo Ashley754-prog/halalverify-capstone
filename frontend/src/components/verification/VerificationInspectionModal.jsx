@@ -23,20 +23,7 @@ import {
 } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { getSafeUrl } from '../../utils/security';
-
-function formatSystemNotice(rawNote) {
-    if (!rawNote) return null;
-    const text = String(rawNote).trim();
-    if (!text.startsWith('FATAL INVARIANT') && !text.startsWith('[AI ')) {
-        return null;
-    }
-    return text
-        .replace(/^FATAL INVARIANT FAILED:\s*/i, '')
-        .replace(/\(Confidence:\s*\d+%\)\.?\s*/i, '')
-        .replace(/^\[AI [^\]]+\]\s*/i, '')
-        .split('|')[0]
-        .trim();
-}
+import { formatSystemNotice, formatShortDate } from '../../utils/verificationNotes';
 
 export default function VerificationInspectionModal({
     inspectingItem,
@@ -85,12 +72,13 @@ export default function VerificationInspectionModal({
             url: inspectingItem.certificate_url,
         });
     }
-    if (inspectingItem.logo_url || inspectingItem.image_url) {
+    const secondaryPhoto = inspectingItem.image_url || inspectingItem.front_label_url || inspectingItem.logo_url;
+    if (secondaryPhoto) {
         imagesList.push({
             id: 'signage',
             type: 'storefront',
-            label: inspectingType === 'product' ? 'Packaging Photo' : 'Storefront Photo',
-            url: inspectingItem.logo_url || inspectingItem.image_url,
+            label: inspectingType === 'product' ? 'Packaging / Label Photo' : 'Storefront Photo',
+            url: secondaryPhoto,
         });
     }
 
@@ -134,6 +122,21 @@ export default function VerificationInspectionModal({
     const contactPhone = inspectingItem.phone || inspectingItem.contact_number;
     const webLink = inspectingItem.source_url || inspectingItem.social_media_url;
 
+    const productQuickTags = [
+        'Ingredients Screened',
+        'Halal Logo Visible on Pack',
+        'Cross-checked Database',
+        'Cert No Matches Registry',
+    ];
+    const establishmentQuickTags = [
+        'Valid Certificate',
+        'Verified Kitchen Signage',
+        'Cross-checked Database',
+        'Pork-Free Declared',
+    ];
+
+    const activeQuickTags = inspectingType === 'product' ? productQuickTags : establishmentQuickTags;
+
     return (
         <Modal
             isOpen={!!inspectingItem}
@@ -146,7 +149,7 @@ export default function VerificationInspectionModal({
                             <Clock size={12} className="text-amber-600" />
                             Pending Review
                         </span>
-                        <span className="text-xs text-slate-400 font-mono">
+                        <span className="text-xs text-slate-500 font-mono">
                             ID: {inspectingItem.id}
                         </span>
                     </div>
@@ -157,26 +160,32 @@ export default function VerificationInspectionModal({
                 </div>
             }
             description={
-                <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap pt-0.5">
+                <div className="flex items-center gap-2 text-xs text-slate-600 flex-wrap pt-0.5">
                     <span className="inline-flex items-center gap-1 font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
                         {inspectingType === 'product' ? <Package size={11} /> : <Store size={11} />}
-                        {inspectingType === 'product' ? (inspectingItem.category || 'Food Item') : (inspectingItem.type || 'Restaurant')}
+                        {inspectingType === 'product' ? (inspectingItem.category || 'Food & Beverage') : (inspectingItem.type || 'Restaurant')}
                     </span>
                     <span>•</span>
-                    <span className="inline-flex items-center gap-1 text-slate-600">
-                        <MapPin size={12} className="text-slate-400" />
-                        {inspectingItem.address || inspectingItem.city || 'Zamboanga City'}
-                    </span>
+
+                    {inspectingType === 'product' ? (
+                        <span className="inline-flex items-center gap-1 text-slate-600 font-medium">
+                            <Store size={12} className="text-slate-400" />
+                            {inspectingItem.establishments?.name
+                                ? `Linked: ${inspectingItem.establishments.name}`
+                                : 'Standalone Product'}
+                        </span>
+                    ) : (
+                        <span className="inline-flex items-center gap-1 text-slate-600 font-medium">
+                            <MapPin size={12} className="text-slate-400" />
+                            {inspectingItem.address || inspectingItem.city || 'Zamboanga City'}
+                        </span>
+                    )}
+
                     {inspectingItem.created_at && (
                         <>
                             <span>•</span>
-                            <span>
-                                Submitted:{' '}
-                                {new Date(inspectingItem.created_at).toLocaleDateString(undefined, {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    year: 'numeric',
-                                })}
+                            <span className="text-slate-500">
+                                Submitted: {formatShortDate(inspectingItem.created_at)}
                             </span>
                         </>
                     )}
@@ -201,7 +210,7 @@ export default function VerificationInspectionModal({
                                     ? handleVerifyProduct(inspectingItem, 'REJECTED')
                                     : handleVerifyEstablishment('REJECTED')
                             }
-                            className="flex-1 sm:flex-none px-4 py-2.5 text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                            className="flex-1 sm:flex-none px-4 py-2.5 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
                         >
                             <XCircle size={15} />
                             <span>Reject Submission</span>
@@ -214,7 +223,7 @@ export default function VerificationInspectionModal({
                                     ? handleVerifyProduct(inspectingItem, 'VERIFIED')
                                     : handleVerifyEstablishment(selectedStatus)
                             }
-                            className="flex-1 sm:flex-none px-5 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
+                            className="flex-1 sm:flex-none px-5 py-2.5 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
                         >
                             <CheckCircle2 size={15} />
                             <span>
@@ -251,6 +260,7 @@ export default function VerificationInspectionModal({
                                     onClick={() => setZoomLevel((z) => Math.max(0.6, z - 0.2))}
                                     className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-700 transition cursor-pointer"
                                     title="Zoom Out"
+                                    aria-label="Zoom out"
                                 >
                                     <ZoomOut size={13} />
                                 </button>
@@ -262,6 +272,7 @@ export default function VerificationInspectionModal({
                                     onClick={() => setZoomLevel((z) => Math.min(2.5, z + 0.2))}
                                     className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-700 transition cursor-pointer"
                                     title="Zoom In"
+                                    aria-label="Zoom in"
                                 >
                                     <ZoomIn size={13} />
                                 </button>
@@ -270,6 +281,7 @@ export default function VerificationInspectionModal({
                                     onClick={() => setRotation((r) => (r + 90) % 360)}
                                     className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-700 transition cursor-pointer"
                                     title="Rotate 90°"
+                                    aria-label="Rotate image"
                                 >
                                     <RotateCw size={13} />
                                 </button>
@@ -281,6 +293,7 @@ export default function VerificationInspectionModal({
                                         rel="noopener noreferrer"
                                         className="p-1 rounded text-emerald-400 hover:text-emerald-300 hover:bg-slate-700 transition ml-0.5"
                                         title="Open full image in new tab"
+                                        aria-label="Open full image in new tab"
                                     >
                                         <ExternalLink size={13} />
                                     </a>
@@ -395,34 +408,36 @@ export default function VerificationInspectionModal({
                         </div>
                     )}
 
-                    {/* Submitted Details Summary */}
-                    <div className="rounded-xl bg-white border border-slate-200 p-4 space-y-3 text-xs">
-                        <span className="font-bold text-slate-800 text-xs block border-b border-slate-100 pb-2">
-                            {inspectingType === 'product' ? 'Product Information' : 'Establishment Information'}
-                        </span>
+                    {/* Submitted Details Summary - Conditional for Product vs Establishment */}
+                    {inspectingType === 'product' ? (
+                        <div className="rounded-xl bg-white border border-slate-200 p-4 space-y-3 text-xs">
+                            <span className="font-bold text-slate-800 text-xs block border-b border-slate-100 pb-2">
+                                Product Submission Details
+                            </span>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                                <label className="text-slate-400 block text-[11px] mb-1">
-                                    Name (Editable)
-                                </label>
-                                <input
-                                    type="text"
-                                    value={inspectingItem.name || ''}
-                                    onChange={(e) =>
-                                        setInspectingItem?.((prev) =>
-                                            prev ? { ...prev, name: e.target.value } : prev
-                                        )
-                                    }
-                                    className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-bold text-slate-900 bg-slate-50/60 focus:bg-white focus:border-emerald-500 focus:outline-none"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-slate-400 block text-[11px] mb-1">
-                                    {inspectingType === 'product' ? 'Brand (Editable)' : 'Category'}
-                                </label>
-                                {inspectingType === 'product' ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label htmlFor="inspect-product-name" className="text-slate-600 font-semibold block text-[11px] mb-1">
+                                        Product Name (Editable)
+                                    </label>
                                     <input
+                                        id="inspect-product-name"
+                                        type="text"
+                                        value={inspectingItem.name || ''}
+                                        onChange={(e) =>
+                                            setInspectingItem?.((prev) =>
+                                                prev ? { ...prev, name: e.target.value } : prev
+                                            )
+                                        }
+                                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-bold text-slate-900 bg-slate-50/60 focus:bg-white focus:border-emerald-500 focus:outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="inspect-product-brand" className="text-slate-600 font-semibold block text-[11px] mb-1">
+                                        Brand Name (Editable)
+                                    </label>
+                                    <input
+                                        id="inspect-product-brand"
                                         type="text"
                                         value={inspectingItem.brand || ''}
                                         placeholder="Unbranded"
@@ -433,22 +448,84 @@ export default function VerificationInspectionModal({
                                         }
                                         className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-800 bg-slate-50/60 focus:bg-white focus:border-emerald-500 focus:outline-none"
                                     />
+                                </div>
+                                <div>
+                                    <span className="text-slate-600 font-semibold block text-[11px] mb-1">Category</span>
+                                    <span className="font-semibold text-slate-800 block py-1.5">
+                                        {inspectingItem.category || 'Food & Beverage'}
+                                    </span>
+                                </div>
+                                <div>
+                                    <span className="text-slate-600 font-semibold block text-[11px] mb-1">Barcode</span>
+                                    <span className="font-mono text-slate-800 block py-1.5">
+                                        {inspectingItem.barcode || 'None registered'}
+                                    </span>
+                                </div>
+                                <div>
+                                    <span className="text-slate-600 font-semibold block text-[11px] mb-1">Linked Venue</span>
+                                    <span className="font-semibold text-slate-800 block py-1.5">
+                                        {inspectingItem.establishments?.name || 'Standalone Product'}
+                                    </span>
+                                </div>
+                                <div>
+                                    <span className="text-slate-600 font-semibold block text-[11px] mb-1">Source</span>
+                                    <span className="text-slate-700 block py-1.5">
+                                        {inspectingItem.source || 'Community User Submission'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Declared Ingredients List */}
+                            <div className="pt-2 border-t border-slate-100 space-y-1.5">
+                                <span className="text-slate-700 font-bold block text-xs">
+                                    Declared Ingredients & Chemical Additives
+                                </span>
+                                {inspectingItem.ingredients_summary || inspectingItem.ingredients_text ? (
+                                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 font-mono leading-relaxed max-h-36 overflow-y-auto whitespace-pre-wrap select-text">
+                                        {inspectingItem.ingredients_summary || inspectingItem.ingredients_text}
+                                    </div>
                                 ) : (
+                                    <p className="text-[11px] text-slate-400 italic">
+                                        No ingredient declaration or text provided with this submission.
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="rounded-xl bg-white border border-slate-200 p-4 space-y-3 text-xs">
+                            <span className="font-bold text-slate-800 text-xs block border-b border-slate-100 pb-2">
+                                Establishment Information
+                            </span>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label htmlFor="inspect-est-name" className="text-slate-600 font-semibold block text-[11px] mb-1">
+                                        Venue Name (Editable)
+                                    </label>
+                                    <input
+                                        id="inspect-est-name"
+                                        type="text"
+                                        value={inspectingItem.name || ''}
+                                        onChange={(e) =>
+                                            setInspectingItem?.((prev) =>
+                                                prev ? { ...prev, name: e.target.value } : prev
+                                            )
+                                        }
+                                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-bold text-slate-900 bg-slate-50/60 focus:bg-white focus:border-emerald-500 focus:outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <span className="text-slate-600 font-semibold block text-[11px] mb-1">Category</span>
                                     <span className="font-semibold text-slate-800 block py-1.5">
                                         {inspectingItem.type || 'Restaurant'}
                                     </span>
-                                )}
-                            </div>
-                            <div>
-                                <label className="text-slate-400 block text-[11px] mb-1">
-                                    {inspectingType === 'product' ? 'Location' : 'Address (Editable)'}
-                                </label>
-                                {inspectingType === 'product' ? (
-                                    <span className="font-semibold text-slate-800 block py-1.5">
-                                        {inspectingItem.address || inspectingItem.city || 'Zamboanga City'}
-                                    </span>
-                                ) : (
+                                </div>
+                                <div>
+                                    <label htmlFor="inspect-est-address" className="text-slate-600 font-semibold block text-[11px] mb-1">
+                                        Address (Editable)
+                                    </label>
                                     <input
+                                        id="inspect-est-address"
                                         type="text"
                                         value={inspectingItem.address || ''}
                                         placeholder="Zamboanga City"
@@ -459,70 +536,71 @@ export default function VerificationInspectionModal({
                                         }
                                         className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-800 bg-slate-50/60 focus:bg-white focus:border-emerald-500 focus:outline-none"
                                     />
-                                )}
-                            </div>
-                            <div>
-                                <span className="text-slate-400 block text-[11px] mb-1">Contact Phone</span>
-                                {contactPhone ? (
-                                    <a href={`tel:${contactPhone}`} className="font-semibold text-emerald-700 hover:underline flex items-center gap-1 py-1.5">
-                                        <Phone size={11} />
-                                        {contactPhone}
-                                    </a>
-                                ) : (
-                                    <span className="text-slate-400 block py-1.5">Not provided</span>
-                                )}
-                            </div>
-                        </div>
-
-                        {webLink && (
-                            <div className="pt-1">
-                                <span className="text-slate-400 block text-[11px] mb-1">Website / Social Link</span>
-                                <a
-                                    href={getSafeUrl(webLink)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-xs font-semibold text-emerald-700 hover:underline flex items-center gap-1.5 truncate"
-                                >
-                                    <Globe size={12} className="shrink-0" />
-                                    <span className="truncate">{webLink}</span>
-                                    <ExternalLink size={11} className="shrink-0" />
-                                </a>
-                            </div>
-                        )}
-
-                        {inspectingType !== 'product' && (hasPrayerSpace || hasAlcoholFree) && (
-                            <div className="pt-1">
-                                <span className="text-slate-400 block text-[11px] mb-1">Amenities</span>
-                                <div className="flex flex-wrap gap-1.5">
-                                    {hasPrayerSpace && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                                            <Compass size={11} />
-                                            Prayer Space (Musalah)
-                                        </span>
-                                    )}
-                                    {hasAlcoholFree && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                                            <ShieldCheck size={11} />
-                                            Alcohol-Free
-                                        </span>
+                                </div>
+                                <div>
+                                    <span className="text-slate-600 font-semibold block text-[11px] mb-1">Contact Phone</span>
+                                    {contactPhone ? (
+                                        <a href={`tel:${contactPhone}`} className="font-semibold text-emerald-700 hover:underline flex items-center gap-1 py-1.5">
+                                            <Phone size={11} />
+                                            {contactPhone}
+                                        </a>
+                                    ) : (
+                                        <span className="text-slate-400 block py-1.5">Not provided</span>
                                     )}
                                 </div>
                             </div>
-                        )}
-                    </div>
+
+                            {webLink && (
+                                <div className="pt-1">
+                                    <span className="text-slate-600 block text-[11px] mb-1">Website / Social Link</span>
+                                    <a
+                                        href={getSafeUrl(webLink)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-xs font-semibold text-emerald-700 hover:underline flex items-center gap-1.5 truncate"
+                                    >
+                                        <Globe size={12} className="shrink-0" />
+                                        <span className="truncate">{webLink}</span>
+                                        <ExternalLink size={11} className="shrink-0" />
+                                    </a>
+                                </div>
+                            )}
+
+                            {(hasPrayerSpace || hasAlcoholFree) && (
+                                <div className="pt-1">
+                                    <span className="text-slate-600 block text-[11px] mb-1">Amenities</span>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {hasPrayerSpace && (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                                <Compass size={11} />
+                                                Prayer Space (Musalah)
+                                            </span>
+                                        )}
+                                        {hasAlcoholFree && (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                                <ShieldCheck size={11} />
+                                                Alcohol-Free
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* Verification & Classification Fields */}
                     <div className="rounded-xl bg-white border border-slate-200 p-4 space-y-3.5">
                         <span className="font-bold text-slate-800 text-xs block border-b border-slate-100 pb-2">
-                            Verification Details
+                            Verification Credentials & Ledgers
                         </span>
 
                         {inspectingType !== 'product' && (
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                <label htmlFor="inspect-classification-tier" className="block text-xs font-semibold text-slate-700 mb-1">
                                     Halal Classification Tier
                                 </label>
                                 <select
+                                    id="inspect-classification-tier"
                                     value={selectedStatus}
                                     onChange={(e) => setSelectedStatus(e.target.value)}
                                     className="w-full rounded-xl border border-slate-300 p-2 text-xs font-semibold text-slate-800 bg-white focus:border-emerald-500 focus:outline-none"
@@ -536,10 +614,13 @@ export default function VerificationInspectionModal({
                         )}
 
                         <div>
-                            <label className="block text-xs font-semibold text-slate-700 mb-1">
-                                Certifying Body (Optional for Community Tiers)
+                            <label htmlFor="inspect-cert-body" className="block text-xs font-semibold text-slate-700 mb-1">
+                                {inspectingType === 'product'
+                                    ? 'Accredited Certifying Body (Optional)'
+                                    : 'Certifying Body (Optional for Community Tiers)'}
                             </label>
                             <select
+                                id="inspect-cert-body"
                                 value={selectedHcbId}
                                 onChange={(e) => setSelectedHcbId(e.target.value)}
                                 className="w-full rounded-xl border border-slate-300 p-2 text-xs font-semibold text-slate-800 bg-white focus:border-emerald-500 focus:outline-none"
@@ -556,7 +637,7 @@ export default function VerificationInspectionModal({
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <div className="flex items-center justify-between mb-1">
-                                    <label className="block text-xs font-semibold text-slate-700">
+                                    <label htmlFor="inspect-cert-number" className="block text-xs font-semibold text-slate-700">
                                         Certificate Number
                                     </label>
                                     {(certNumber || inspectingItem.certificate_number || inspectingItem.certificate_no) && (
@@ -571,6 +652,7 @@ export default function VerificationInspectionModal({
                                     )}
                                 </div>
                                 <input
+                                    id="inspect-cert-number"
                                     type="text"
                                     value={certNumber}
                                     onChange={(e) => setCertNumber(e.target.value)}
@@ -580,10 +662,11 @@ export default function VerificationInspectionModal({
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                <label htmlFor="inspect-cert-expiry" className="block text-xs font-semibold text-slate-700 mb-1">
                                     Expiry Date
                                 </label>
                                 <input
+                                    id="inspect-cert-expiry"
                                     type="date"
                                     value={expiryDate}
                                     onChange={(e) => setExpiryDate(e.target.value)}
@@ -592,7 +675,7 @@ export default function VerificationInspectionModal({
                             </div>
                         </div>
 
-                        {/* Menu Highlights & Dishes */}
+                        {/* Menu Highlights & Dishes (Only for Establishments) */}
                         {inspectingType !== 'product' && (
                             <div className="pt-2 border-t border-slate-100 space-y-2">
                                 <div className="flex items-center justify-between">
@@ -660,19 +743,14 @@ export default function VerificationInspectionModal({
                         {/* Admin Notes */}
                         <div className="pt-2 border-t border-slate-100 space-y-2">
                             <div className="flex items-center justify-between">
-                                <label className="block font-semibold text-slate-700 text-xs">
+                                <label htmlFor="inspect-admin-notes" className="block font-semibold text-slate-700 text-xs">
                                     Admin Notes (Optional)
                                 </label>
-                                <span className="text-[10px] text-slate-400">Quick tags</span>
+                                <span className="text-[10px] text-slate-500">Quick tags</span>
                             </div>
 
                             <div className="flex flex-wrap gap-1.5">
-                                {[
-                                    'Valid Certificate',
-                                    'Verified Kitchen Signage',
-                                    'Cross-checked Database',
-                                    'Pork-Free Declared',
-                                ].map((tag) => (
+                                {activeQuickTags.map((tag) => (
                                     <button
                                         key={tag}
                                         type="button"
@@ -685,6 +763,7 @@ export default function VerificationInspectionModal({
                             </div>
 
                             <textarea
+                                id="inspect-admin-notes"
                                 rows={2}
                                 value={adminNotes}
                                 onChange={(e) => setAdminNotes(e.target.value)}

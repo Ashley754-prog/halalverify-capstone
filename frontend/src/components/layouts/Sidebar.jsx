@@ -7,20 +7,28 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
     const isOpen = isSidebarOpen;
     const [pendingCount, setPendingCount] = useState(0);
 
-    // Live sync pending approvals count for admin badge
+    // Live sync pending approvals count for admin badge across establishments and products
     useEffect(() => {
         if (userRole !== 'admin') return;
 
         let isMounted = true;
         const fetchPendingCount = async () => {
             try {
-                const { count } = await supabase
-                    .from('establishments')
-                    .select('id', { count: 'exact', head: true })
-                    .or('halal_status.ilike.%pending%,halal_status.ilike.%needs_review%');
+                const [estRes, prodRes] = await Promise.all([
+                    supabase
+                        .from('establishments')
+                        .select('id', { count: 'exact', head: true })
+                        .or('halal_status.ilike.%pending%,halal_status.ilike.%needs_review%,halal_status.ilike.%review%'),
+                    supabase
+                        .from('products')
+                        .select('id', { count: 'exact', head: true })
+                        .ilike('status', '%pending%'),
+                ]);
 
-                if (isMounted && typeof count === 'number') {
-                    setPendingCount(count);
+                if (isMounted) {
+                    const estCount = typeof estRes.count === 'number' ? estRes.count : 0;
+                    const prodCount = typeof prodRes.count === 'number' ? prodRes.count : 0;
+                    setPendingCount(estCount + prodCount);
                 }
             } catch {
                 // Silently ignore if offline
@@ -29,9 +37,13 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
 
         fetchPendingCount();
         const interval = setInterval(fetchPendingCount, 25000);
+        const handleQueueChanged = () => fetchPendingCount();
+        window.addEventListener('verification-queue-changed', handleQueueChanged);
+
         return () => {
             isMounted = false;
             clearInterval(interval);
+            window.removeEventListener('verification-queue-changed', handleQueueChanged);
         };
     }, [userRole]);
 

@@ -1,27 +1,24 @@
 import { useState, useEffect } from 'react';
 import {
-    ShieldCheck,
     CheckCircle2,
-    XCircle,
-    FileText,
-    ExternalLink,
-    MapPin,
-    AlertTriangle,
     Search,
-    Store,
-    Package,
-    Flag,
+    AlertTriangle,
+    RotateCcw,
+    RefreshCw,
 } from 'lucide-react';
-import { getSafeUrl } from '../../utils/security';
 import Pagination from '../ui/Pagination';
 import EmptyState from '../ui/EmptyState';
 import SearchBar from '../ui/SearchBar';
+import EstablishmentQueueCard from './EstablishmentQueueCard';
+import ProductQueueRow from './ProductQueueRow';
+import ReportQueueCard from './ReportQueueCard';
+import { EstablishmentSkeletons, ProductSkeletons } from './QueueSkeletons';
 
 export default function VerificationQueueTabs({
     activeTab,
-    establishments,
-    products,
-    reports,
+    establishments = [],
+    products = [],
+    reports = [],
     onViewChange,
     openInspection,
     autoVerifyingId,
@@ -30,16 +27,55 @@ export default function VerificationQueueTabs({
     handleAutoVerifyProduct,
     handleVerifyProduct,
     handleResolveReport,
+    loading = false,
+    refreshing = false,
+    error = null,
+    onRetry,
+    onRequestRejectProduct,
 }) {
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(6);
+    const [itemsPerPage, setItemsPerPage] = useState(activeTab === 'products' ? 10 : 6);
 
+    // Keep pagination density suited to layout
     useEffect(() => {
         setPage(1);
         setSearch('');
+        setItemsPerPage(activeTab === 'products' ? 10 : 6);
     }, [activeTab]);
 
+    // -------------------------------------------------------------
+    // Global Error View (when both backend and Supabase fail)
+    // -------------------------------------------------------------
+    if (error && establishments.length === 0 && products.length === 0 && reports.length === 0) {
+        return (
+            <div className="bg-white rounded-2xl border border-rose-200 p-8 shadow-xs text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center mx-auto text-rose-600">
+                    <AlertTriangle size={24} />
+                </div>
+                <div className="space-y-1 max-w-md mx-auto">
+                    <h3 className="text-base font-bold text-slate-900">Failed to Load Verification Queue</h3>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                        {error || 'Unable to establish connection with verification services. Please check credentials or try again.'}
+                    </p>
+                </div>
+                {onRetry && (
+                    <button
+                        type="button"
+                        onClick={onRetry}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-xs cursor-pointer"
+                    >
+                        <RotateCcw size={13} />
+                        <span>Retry Connection</span>
+                    </button>
+                )}
+            </div>
+        );
+    }
+
+    // -------------------------------------------------------------
+    // Establishments Tab
+    // -------------------------------------------------------------
     if (activeTab === 'establishments') {
         const filtered = establishments.filter((est) => {
             const q = search.toLowerCase().trim();
@@ -62,10 +98,14 @@ export default function VerificationQueueTabs({
             <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
                     <div>
-                        <h3 className="text-sm sm:text-base font-bold text-slate-900">
-                            Pending Establishment Registrations ({establishments.length})
+                        <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+                            <span>Pending Establishment Registrations</span>
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 inline-flex items-center gap-1">
+                                {refreshing && <RefreshCw size={11} className="animate-spin text-emerald-600" />}
+                                <span>{search ? `${filtered.length} of ${establishments.length}` : establishments.length}</span>
+                            </span>
                         </h3>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-slate-500 mt-0.5">
                             Verify physical certificates against accredited certifying body ledgers before publishing to public search.
                         </p>
                     </div>
@@ -76,13 +116,16 @@ export default function VerificationQueueTabs({
                             setSearch(val);
                             setPage(1);
                         }}
-                        placeholder="Filter venues by name..."
-                        className="w-full sm:w-64"
+                        placeholder="Search name, address, or cert no..."
+                        ariaLabel="Search pending establishments"
+                        className="w-full sm:w-72"
                         size="sm"
                     />
                 </div>
 
-                {filtered.length === 0 ? (
+                {loading && establishments.length === 0 ? (
+                    <EstablishmentSkeletons count={itemsPerPage} />
+                ) : filtered.length === 0 ? (
                     <EmptyState
                         icon={search ? Search : CheckCircle2}
                         title={search ? 'No establishments match your filter' : 'Verification Queue is Clean!'}
@@ -99,102 +142,13 @@ export default function VerificationQueueTabs({
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
                         {paginated.map((est) => (
-                            <div
+                            <EstablishmentQueueCard
                                 key={est.id}
-                                className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-slate-300 transition flex flex-col justify-between space-y-3 shadow-xs"
-                            >
-                                <div className="space-y-2">
-                                    <div className="flex items-start justify-between gap-2">
-                                        <div className="flex flex-wrap items-center gap-1.5">
-                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
-                                                {est.halal_status?.toUpperCase() || 'PENDING'}
-                                            </span>
-                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
-                                                {est.source?.includes('Owner') || est.submitter_role === 'owner' ? 'Owner / Staff' : 'Customer / Scout'}
-                                            </span>
-                                        </div>
-                                        <span className="text-[10px] text-slate-400">
-                                            {est.created_at ? new Date(est.created_at).toLocaleDateString() : 'Recent'}
-                                        </span>
-                                    </div>
-
-                                    <h4 className="text-sm font-black text-slate-900 leading-snug">
-                                        {est.name}
-                                    </h4>
-
-                                    <p className="text-xs text-slate-500 flex items-center gap-1">
-                                        <MapPin size={12} className="text-slate-400 shrink-0" />
-                                        <span className="truncate">{est.address || est.city || 'Zamboanga City'}</span>
-                                    </p>
-
-                                    <div className="rounded-lg bg-white p-2 border border-slate-200/80 text-[11px] space-y-1">
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-400">Certifier:</span>
-                                            <span className="font-bold text-slate-700">
-                                                {est.certifying_bodies?.code || 'Not Specified'}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-400">Cert No:</span>
-                                            <span className="font-semibold text-slate-800">
-                                                {est.certificate_number || 'Awaiting Input'}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* Pre-Check Audit Indicator */}
-                                    {est.admin_notes && est.admin_notes.includes('AI AUTO-APPROVED') && (
-                                        <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-2 text-[11px] font-bold text-emerald-800 flex items-center justify-between">
-                                            <span className="flex items-center gap-1.5">
-                                                <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
-                                                Pre-Approved (High Match)
-                                            </span>
-                                            <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full font-bold">70%+</span>
-                                        </div>
-                                    )}
-                                    {est.admin_notes && est.admin_notes.includes('AI AUDITED') && (
-                                        <div className="rounded-lg bg-amber-50 border border-amber-200 p-2 text-[11px] font-bold text-amber-800 flex items-center justify-between">
-                                            <span className="flex items-center gap-1.5 truncate">
-                                                <AlertTriangle size={13} className="text-amber-600 shrink-0" />
-                                                Manual Review Needed
-                                            </span>
-                                        </div>
-                                    )}
-
-                                    {est.certificate_url && (
-                                        <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-2 text-xs flex items-center justify-between text-emerald-800">
-                                            <span className="flex items-center gap-1.5 font-semibold text-[11px]">
-                                                <FileText size={13} className="text-emerald-600" />
-                                                Certificate Attached
-                                            </span>
-                                            <span className="text-[10px] text-emerald-700 font-bold">Image / Doc</span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="flex items-center gap-2 pt-1">
-                                    <button
-                                        type="button"
-                                        onClick={() => openInspection(est)}
-                                        className="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
-                                    >
-                                        <ShieldCheck size={14} />
-                                        <span>Inspect & Verify</span>
-                                    </button>
-                                    {est.certificate_url && (
-                                        <button
-                                            type="button"
-                                            disabled={autoVerifyingId === est.id}
-                                            onClick={() => handleAutoVerifyEstablishment(est.id, true)}
-                                            className="py-2 px-3 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition flex items-center justify-center gap-1 shrink-0 cursor-pointer"
-                                            title="Run certificate check & Auto-Approve if valid"
-                                        >
-                                            <CheckCircle2 size={13} className={autoVerifyingId === est.id ? 'animate-spin text-emerald-600' : ''} />
-                                            <span className="hidden sm:inline">Auto-Verify</span>
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
+                                est={est}
+                                openInspection={openInspection}
+                                autoVerifyingId={autoVerifyingId}
+                                handleAutoVerifyEstablishment={handleAutoVerifyEstablishment}
+                            />
                         ))}
                     </div>
                 )}
@@ -214,6 +168,9 @@ export default function VerificationQueueTabs({
         );
     }
 
+    // -------------------------------------------------------------
+    // Community Products Tab
+    // -------------------------------------------------------------
     if (activeTab === 'products') {
         const filtered = products.filter((prod) => {
             const q = search.toLowerCase().trim();
@@ -221,7 +178,9 @@ export default function VerificationQueueTabs({
             return (
                 (prod.name || '').toLowerCase().includes(q) ||
                 (prod.category || '').toLowerCase().includes(q) ||
-                (prod.brand || '').toLowerCase().includes(q)
+                (prod.brand || '').toLowerCase().includes(q) ||
+                (prod.barcode || '').toLowerCase().includes(q) ||
+                (prod.establishments?.name || '').toLowerCase().includes(q)
             );
         });
 
@@ -235,11 +194,15 @@ export default function VerificationQueueTabs({
             <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
                     <div>
-                        <h3 className="text-sm sm:text-base font-bold text-slate-900">
-                            User-Submitted Food Products ({products.length})
+                        <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+                            <span>User-Submitted Food Products</span>
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 inline-flex items-center gap-1">
+                                {refreshing && <RefreshCw size={11} className="animate-spin text-emerald-600" />}
+                                <span>{search ? `${filtered.length} of ${products.length}` : products.length}</span>
+                            </span>
                         </h3>
-                        <p className="text-xs text-slate-500">
-                            Audit community product submissions before indexing them in the public database.
+                        <p className="text-xs text-slate-500 mt-0.5">
+                            Audit community product submissions and itemized menu dishes before indexing them in the public database.
                         </p>
                     </div>
 
@@ -249,13 +212,16 @@ export default function VerificationQueueTabs({
                             setSearch(val);
                             setPage(1);
                         }}
-                        placeholder="Filter products by name..."
-                        className="w-full sm:w-64"
+                        placeholder="Search name, brand, category, or venue..."
+                        ariaLabel="Search pending products"
+                        className="w-full sm:w-72"
                         size="sm"
                     />
                 </div>
 
-                {filtered.length === 0 ? (
+                {loading && products.length === 0 ? (
+                    <ProductSkeletons count={itemsPerPage} />
+                ) : filtered.length === 0 ? (
                     <EmptyState
                         icon={search ? Search : CheckCircle2}
                         title={search ? 'No products match your filter' : 'All Products Verified!'}
@@ -272,60 +238,16 @@ export default function VerificationQueueTabs({
                 ) : (
                     <div className="divide-y divide-slate-100">
                         {paginated.map((prod) => (
-                            <div key={prod.id} className="py-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                                <div className="space-y-1">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs font-bold text-slate-900">{prod.name}</span>
-                                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200">
-                                            {prod.status}
-                                        </span>
-                                    </div>
-                                    <p className="text-[11px] text-slate-500">
-                                        Category: <b className="text-slate-700">{prod.category || 'Food Item'}</b> •{' '}
-                                        Establishment: <b className="text-slate-700">{prod.establishments?.name || 'Standalone'}</b>
-                                    </p>
-                                </div>
-
-                                <div className="flex items-center gap-2 self-end sm:self-auto">
-                                    <button
-                                        type="button"
-                                        onClick={() => openInspection(prod, 'product')}
-                                        className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition flex items-center gap-1 cursor-pointer"
-                                        title="Inspect product packaging, ingredients, and certification credentials"
-                                    >
-                                        <FileText size={12} />
-                                        <span>Inspect</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        disabled={autoVerifyingId === prod.id}
-                                        onClick={() => handleAutoVerifyProduct(prod.id, true)}
-                                        className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition flex items-center gap-1 cursor-pointer"
-                                        title="Screen additives and certifying credentials"
-                                    >
-                                        <ShieldCheck size={12} className={autoVerifyingId === prod.id ? 'animate-spin text-emerald-600' : ''} />
-                                        <span>Auto-Check</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        disabled={processingId === prod.id}
-                                        onClick={() => handleVerifyProduct(prod, 'VERIFIED')}
-                                        className="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 transition flex items-center gap-1 cursor-pointer shadow-2xs"
-                                    >
-                                        <CheckCircle2 size={13} />
-                                        <span>Approve</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        disabled={processingId === prod.id}
-                                        onClick={() => handleVerifyProduct(prod, 'REJECTED')}
-                                        className="px-3 py-1.5 rounded-lg text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 transition flex items-center gap-1 cursor-pointer"
-                                    >
-                                        <XCircle size={13} />
-                                        <span>Reject</span>
-                                    </button>
-                                </div>
-                            </div>
+                            <ProductQueueRow
+                                key={prod.id}
+                                prod={prod}
+                                openInspection={openInspection}
+                                autoVerifyingId={autoVerifyingId}
+                                processingId={processingId}
+                                handleAutoVerifyProduct={handleAutoVerifyProduct}
+                                handleVerifyProduct={handleVerifyProduct}
+                                onRequestReject={onRequestRejectProduct}
+                            />
                         ))}
                     </div>
                 )}
@@ -337,7 +259,7 @@ export default function VerificationQueueTabs({
                         itemsPerPage={itemsPerPage}
                         onPageChange={setPage}
                         onItemsPerPageChange={setItemsPerPage}
-                        itemsPerPageOptions={[6, 12, 24]}
+                        itemsPerPageOptions={[10, 20, 50]}
                         itemLabel="products"
                     />
                 )}
@@ -345,6 +267,9 @@ export default function VerificationQueueTabs({
         );
     }
 
+    // -------------------------------------------------------------
+    // Reports Tab
+    // -------------------------------------------------------------
     if (activeTab === 'reports') {
         const filtered = reports.filter((rep) => {
             const q = search.toLowerCase().trim();
@@ -366,10 +291,13 @@ export default function VerificationQueueTabs({
             <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
                     <div>
-                        <h3 className="text-sm sm:text-base font-bold text-slate-900">
-                            Open User Issue Reports & Flags ({reports.length})
+                        <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+                            <span>Open User Issue Reports & Flags</span>
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                                {search ? `${filtered.length} of ${reports.length}` : reports.length}
+                            </span>
                         </h3>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-slate-500 mt-0.5">
                             Authenticated reports flagged by community users regarding expired certificates or questionable ingredients.
                         </p>
                     </div>
@@ -381,12 +309,15 @@ export default function VerificationQueueTabs({
                             setPage(1);
                         }}
                         placeholder="Filter reports by keyword..."
-                        className="w-full sm:w-64"
+                        ariaLabel="Search open issue reports"
+                        className="w-full sm:w-72"
                         size="sm"
                     />
                 </div>
 
-                {filtered.length === 0 ? (
+                {loading && reports.length === 0 ? (
+                    <EstablishmentSkeletons count={itemsPerPage} />
+                ) : filtered.length === 0 ? (
                     <EmptyState
                         icon={search ? Search : CheckCircle2}
                         title={search ? 'No reports match your filter' : 'No Open Reports!'}
@@ -403,68 +334,12 @@ export default function VerificationQueueTabs({
                 ) : (
                     <div className="space-y-3">
                         {paginated.map((rep) => (
-                            <div
+                            <ReportQueueCard
                                 key={rep.id}
-                                className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2.5 shadow-2xs"
-                            >
-                                <div className="flex items-start justify-between gap-2">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs font-black text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-200">
-                                            {rep.issue_type}
-                                        </span>
-                                        <span className="text-xs font-bold text-slate-800">
-                                            Subject: {rep.subject_name || rep.products?.name || rep.establishments?.name || 'Report Target'}
-                                        </span>
-                                    </div>
-                                    <span className="text-[10px] text-slate-400">
-                                        {rep.created_at ? new Date(rep.created_at).toLocaleString() : ''}
-                                    </span>
-                                </div>
-
-                                <p className="text-xs text-slate-600 bg-white p-2.5 rounded-lg border border-slate-200 leading-relaxed">
-                                    &quot;{rep.description}&quot;
-                                </p>
-
-                                {getSafeUrl(rep.evidence_url) && (
-                                    <div className="flex items-center gap-2 text-xs text-emerald-700">
-                                        <FileText size={13} />
-                                        <a href={getSafeUrl(rep.evidence_url)} target="_blank" rel="noopener noreferrer" className="underline font-semibold flex items-center gap-1">
-                                            View Attached Photo Evidence <ExternalLink size={11} />
-                                        </a>
-                                    </div>
-                                )}
-
-                                <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-200/60">
-                                    <button
-                                        type="button"
-                                        disabled={processingId === rep.id}
-                                        onClick={() => handleResolveReport(rep, 'dismissed')}
-                                        className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 bg-slate-200 hover:bg-slate-300 transition cursor-pointer"
-                                    >
-                                        Dismiss Flag
-                                    </button>
-                                    <button
-                                        type="button"
-                                        disabled={processingId === rep.id}
-                                        onClick={() => handleResolveReport(rep, 'resolved')}
-                                        className="px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition cursor-pointer"
-                                    >
-                                        Resolve Issue
-                                    </button>
-                                    {rep.establishment_id && (
-                                        <button
-                                            type="button"
-                                            disabled={processingId === rep.id}
-                                            onClick={() => handleResolveReport(rep, 'resolved', true)}
-                                            className="px-3 py-1.5 rounded-lg text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 transition flex items-center gap-1 cursor-pointer"
-                                            title="Flag and suspend establishment based on confirmed violation"
-                                        >
-                                            <AlertTriangle size={12} />
-                                            <span>Suspend Establishment</span>
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
+                                rep={rep}
+                                processingId={processingId}
+                                handleResolveReport={handleResolveReport}
+                            />
                         ))}
                     </div>
                 )}
