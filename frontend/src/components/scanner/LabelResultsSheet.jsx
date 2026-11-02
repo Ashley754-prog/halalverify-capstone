@@ -549,7 +549,7 @@ export const LabelResultsSheet = ({
                             <div className="p-3 rounded-xl bg-slate-800/50 border border-slate-700/70 flex items-start gap-2.5 text-[11px] text-slate-300 leading-relaxed">
                                 <Info size={14} className="text-slate-400 shrink-0 mt-0.5" />
                                 <p>
-                                    <strong className="text-slate-200 font-semibold">Advisory Disclaimer:</strong> This result is an automated screening based on visible packaging text and certification seals. Consumption is at your own discretion and risk; abstain or verify ingredients independently if in doubt.
+                                    <strong className="text-slate-200 font-semibold">Advisory Disclaimer:</strong> This result is an automated screening based on visible packaging text and certification seals. Consumption is at your own discretion and risk.
                                 </p>
                             </div>
 
