@@ -372,7 +372,7 @@ export const ScanDetailModal = ({ scan, onClose }) => {
                     >
                         <span className="flex items-center gap-2">
                             <Sparkles size={15} className="text-emerald-600 shrink-0" />
-                            <span>Scan Details &amp; Extracted Text</span>
+                            <span>How This Product Was Scanned</span>
                         </span>
                         <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-semibold">
                             <span>{showTechnicalDetails ? 'Hide' : 'View Details'}</span>
@@ -432,46 +432,7 @@ export const ScanDetailModal = ({ scan, onClose }) => {
                                 </div>
                             )}
 
-                            {/* Extracted Packaging Text inside the accordion */}
-                            <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
-                                        <FileText size={13} className="text-slate-400" />
-                                        <span>Extracted Packaging Text</span>
-                                    </span>
-                                    {scan.extracted_text && (
-                                        <button
-                                            type="button"
-                                            onClick={() => handleCopy(scan.extracted_text, 'text')}
-                                            className="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 cursor-pointer"
-                                        >
-                                            {copiedText ? (
-                                                <>
-                                                    <Check size={12} className="text-emerald-600" />
-                                                    <span>Copied!</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Copy size={12} />
-                                                    <span>Copy text</span>
-                                                </>
-                                            )}
-                                        </button>
-                                    )}
-                                </div>
 
-                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 max-h-36 overflow-y-auto text-xs text-slate-700 leading-relaxed font-mono text-[10px]">
-                                    {scan.extracted_text ? (
-                                        <p className="whitespace-pre-wrap select-all">
-                                            {scan.extracted_text}
-                                        </p>
-                                    ) : (
-                                        <p className="text-slate-400 italic font-sans text-xs">
-                                            No textual ingredients extracted for this scan.
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
                         </div>
                     )}
                 </div>
