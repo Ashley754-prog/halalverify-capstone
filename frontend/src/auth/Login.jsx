@@ -143,9 +143,6 @@ export const Login = ({ onLogin, onViewChange, layout = 'login' }) => {
                         {/* Title and Subtitle matching benchmark accessibility */}
                         <div className="mb-4 text-center">
                             <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-emerald-950">Access Your Account</h3>
-                            <p className="text-sm sm:text-base font-medium text-emerald-800/90 mt-1.5 leading-snug">
-                                Sign in to manage listings, submit products, and access verification features.
-                            </p>
                         </div>
 
                         {/* Benchmark Pill Toggle Switch */}

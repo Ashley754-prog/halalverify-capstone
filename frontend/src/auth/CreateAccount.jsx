@@ -175,9 +175,6 @@ export const CreateAccount = ({ onViewChange, layout = 'create' }) => {
             {/* Title and Subtitle matching benchmark accessibility */}
             <div className="mb-4 text-center">
               <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-emerald-950">Access Your Account</h3>
-              <p className="text-sm sm:text-base font-medium text-emerald-800/90 mt-1.5 leading-snug">
-                Create an account to submit listings, track scans, and access verification features.
-              </p>
             </div>
 
             {/* Benchmark Pill Toggle Switch */}
