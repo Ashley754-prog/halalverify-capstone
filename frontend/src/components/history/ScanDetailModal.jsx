@@ -14,6 +14,7 @@ import {
     Info,
     Layers,
     Cpu,
+    Sparkles,
 } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { simplifyStatus, simplifyHalalText } from '../../utils/textFormatters';
@@ -25,6 +26,86 @@ import {
     hasRecognizedLogo,
     resolveReferenceLogoSrc,
 } from './scanHistoryUtils';
+
+const formatFriendlyPipelineStage = (stage) => {
+    const step = stage?.step || 1;
+    const name = (stage?.name || '').toLowerCase();
+    const details = stage?.details || '';
+    const rawStatus = (stage?.status || '').toLowerCase();
+
+    if (name.includes('acquisition') || name.includes('preprocessing') || step === 1) {
+        return {
+            title: '1. Photo Preparation',
+            summary: 'Checked image quality and prepared the photo for scanning.',
+            status: 'Ready',
+            statusColor: 'bg-emerald-100 text-emerald-800',
+        };
+    }
+
+    if (name.includes('logo') || name.includes('localization') || step === 2) {
+        const isDetected = rawStatus.includes('detect') || rawStatus.includes('success');
+        let logoSummary = 'Scanned packaging for recognized Philippine Halal logos (IDCP, HDIP, NCMF).';
+        if (details.includes('Localized:')) {
+            const parts = details.split('|');
+            logoSummary = parts[0].replace('Localized:', 'Detected').trim();
+        } else if (details.includes('No visual seal')) {
+            logoSummary = 'No official certification seal was found in this photo.';
+        }
+        return {
+            title: '2. Halal Seal Detection',
+            summary: logoSummary,
+            status: isDetected ? 'Detected' : 'None',
+            statusColor: isDetected ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700',
+        };
+    }
+
+    if (name.includes('text') || name.includes('ocr') || name.includes('section') || step === 3) {
+        let textSummary = 'Read printed ingredient words and numbers from the packaging.';
+        if (details.includes('Extracted')) {
+            textSummary = details.split('(')[0].trim() + '.';
+        }
+        return {
+            title: '3. Reading Ingredients',
+            summary: textSummary,
+            status: 'Completed',
+            statusColor: 'bg-emerald-100 text-emerald-800',
+        };
+    }
+
+    if (name.includes('additive') || name.includes('screening') || name.includes('lexicon') || step === 4) {
+        const isFlagged = rawStatus.includes('flag');
+        return {
+            title: '4. Screening Additives & Ingredients',
+            summary: isFlagged
+                ? details
+                : 'Screened ingredients against prohibited (Haram) and doubtful food additives.',
+            status: isFlagged ? 'Flagged' : 'Clean',
+            statusColor: isFlagged ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800',
+        };
+    }
+
+    if (name.includes('classification') || name.includes('verdict') || step === 5) {
+        const isGreen = rawStatus === 'green' || rawStatus.includes('halal');
+        const isRed = rawStatus === 'red' || rawStatus.includes('haram') || rawStatus.includes('prohibit');
+        return {
+            title: '5. Final Halal Assessment',
+            summary: 'Combined the logo check and ingredient screening to reach the final verdict.',
+            status: isGreen ? 'Halal' : isRed ? 'Prohibited' : 'Doubtful',
+            statusColor: isGreen
+                ? 'bg-emerald-100 text-emerald-800'
+                : isRed
+                ? 'bg-red-100 text-red-800'
+                : 'bg-amber-100 text-amber-800',
+        };
+    }
+
+    return {
+        title: `${step}. ${stage?.name || 'Processing Step'}`,
+        summary: details || 'Step completed successfully.',
+        status: stage?.status || 'Done',
+        statusColor: 'bg-slate-200 text-slate-700',
+    };
+};
 
 export const ScanDetailModal = ({ scan, onClose }) => {
     const [copiedText, setCopiedText] = useState(false);
@@ -282,112 +363,115 @@ export const ScanDetailModal = ({ scan, onClose }) => {
                     )}
                 </div>
 
-                {/* 7. Extracted OCR Ingredients & Text */}
-                <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                        <h4 className="text-xs sm:text-sm font-bold text-slate-800 flex items-center gap-1.5">
-                            <FileText size={14} className="text-slate-500 shrink-0" />
-                            Extracted OCR Ingredients & Text
-                        </h4>
-                        {scan.extracted_text && (
-                            <button
-                                type="button"
-                                onClick={() => handleCopy(scan.extracted_text, 'text')}
-                                className="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 cursor-pointer"
-                            >
-                                {copiedText ? (
-                                    <>
-                                        <Check size={12} className="text-emerald-600" />
-                                        <span>Copied!</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Copy size={12} />
-                                        <span>Copy text</span>
-                                    </>
-                                )}
-                            </button>
-                        )}
-                    </div>
-
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 max-h-36 overflow-y-auto text-xs text-slate-700 leading-relaxed">
-                        {scan.extracted_text ? (
-                            <p className="whitespace-pre-wrap select-all font-mono text-[11px]">
-                                {scan.extracted_text}
-                            </p>
-                        ) : (
-                            <p className="text-slate-400 italic">No textual ingredients extracted for this scan.</p>
-                        )}
-                    </div>
-                </div>
-
-                {/* 8. Collapsible Technical Audit & Forensic Details Accordion */}
-                <div className="border border-slate-200 rounded-xl overflow-hidden">
+                {/* 7. Collapsible Scan Processing Details & Scanned Text */}
+                <div className="border border-slate-200 rounded-xl overflow-hidden text-xs">
                     <button
                         type="button"
                         onClick={() => setShowTechnicalDetails((prev) => !prev)}
-                        className="w-full flex items-center justify-between p-3 bg-slate-50/80 hover:bg-slate-100/80 text-xs font-bold text-slate-700 transition cursor-pointer"
+                        className="w-full flex items-center justify-between p-3 bg-slate-50/90 hover:bg-slate-100 text-xs font-bold text-slate-700 transition cursor-pointer select-none"
                     >
-                        <span className="flex items-center gap-1.5">
-                            <Cpu size={14} className="text-slate-500" />
-                            <span>Technical Audit & Pipeline Trace</span>
+                        <span className="flex items-center gap-2">
+                            <Sparkles size={15} className="text-emerald-600 shrink-0" />
+                            <span>Scan Details &amp; Extracted Text</span>
                         </span>
-                        {showTechnicalDetails ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-semibold">
+                            <span>{showTechnicalDetails ? 'Hide' : 'View Details'}</span>
+                            {showTechnicalDetails ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                        </div>
                     </button>
 
                     {showTechnicalDetails && (
-                        <div className="p-3.5 bg-white border-t border-slate-200 text-xs space-y-3 animate-in fade-in duration-150">
+                        <div className="p-4 bg-white border-t border-slate-200 space-y-4 animate-in fade-in duration-150">
+                            {/* Summary Metrics */}
                             <div className="grid grid-cols-2 gap-2 text-[11px]">
-                                <div>
-                                    <span className="text-slate-400 block font-semibold">OCR Engine</span>
-                                    <span className="font-mono text-slate-800">{raw?.ocrEngine || 'RapidOCR (ONNX Runtime)'}</span>
+                                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                                    <span className="text-slate-400 block font-medium">Processing Speed</span>
+                                    <span className="font-bold text-slate-800 text-xs">
+                                        {raw?.totalLatencyMs ? `${Math.round(raw.totalLatencyMs)} ms` : 'Fast'}
+                                    </span>
                                 </div>
-                                <div>
-                                    <span className="text-slate-400 block font-semibold">Total Pipeline Latency</span>
-                                    <span className="font-mono text-slate-800">
-                                        {raw?.totalLatencyMs ? `${Math.round(raw.totalLatencyMs)} ms` : 'N/A'}
+                                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                                    <span className="text-slate-400 block font-medium">Text Recognition</span>
+                                    <span className="font-bold text-slate-800 text-xs truncate block">
+                                        {raw?.ocrEngine ? 'Optical AI Scanner' : 'Standard Scanner'}
                                     </span>
                                 </div>
                             </div>
 
+                            {/* Easy-to-understand Scan Steps */}
                             {pipelineStages.length > 0 && (
-                                <div className="space-y-1.5 pt-1 border-t border-slate-100">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                                        Pipeline Stages ({pipelineStages.length})
+                                <div className="space-y-2">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                                        How This Product Was Checked
                                     </span>
-                                    {pipelineStages.map((stage, idx) => (
-                                        <div key={idx} className="flex items-start justify-between gap-2 p-2 rounded-lg bg-slate-50 border border-slate-100 text-[11px]">
-                                            <div className="min-w-0">
-                                                <div className="font-bold text-slate-800 truncate">
-                                                    {stage.step}. {stage.name}
-                                                </div>
-                                                <div className="text-[10px] text-slate-500 font-mono mt-0.5">
-                                                    {stage.module}
-                                                </div>
-                                                {stage.details && (
-                                                    <div className="text-[10px] text-slate-600 mt-0.5 leading-snug">
-                                                        {stage.details}
+                                    <div className="space-y-1.5">
+                                        {pipelineStages.map((stage, idx) => {
+                                            const friendly = formatFriendlyPipelineStage(stage);
+                                            return (
+                                                <div
+                                                    key={idx}
+                                                    className="flex items-start justify-between gap-2.5 p-2.5 rounded-xl bg-slate-50/70 border border-slate-100 text-[11px]"
+                                                >
+                                                    <div className="min-w-0 flex-1 space-y-0.5">
+                                                        <div className="font-bold text-slate-800 flex items-center gap-1.5">
+                                                            <span>{friendly.title}</span>
+                                                        </div>
+                                                        <p className="text-[11px] text-slate-600 leading-snug">
+                                                            {friendly.summary}
+                                                        </p>
                                                     </div>
-                                                )}
-                                            </div>
-                                            <div className="text-right shrink-0">
-                                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                                                    stage.status === 'Success' || stage.status === 'Detected'
-                                                        ? 'bg-emerald-100 text-emerald-800'
-                                                        : 'bg-slate-200 text-slate-700'
-                                                }`}>
-                                                    {stage.status}
-                                                </span>
-                                                {typeof stage.latencyMs === 'number' && (
-                                                    <div className="text-[10px] font-mono text-slate-400 mt-1">
-                                                        {Math.round(stage.latencyMs)}ms
+                                                    <div className="shrink-0 pt-0.5">
+                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${friendly.statusColor}`}>
+                                                            {friendly.status}
+                                                        </span>
                                                     </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             )}
+
+                            {/* Extracted Packaging Text inside the accordion */}
+                            <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                                        <FileText size={13} className="text-slate-400" />
+                                        <span>Extracted Packaging Text</span>
+                                    </span>
+                                    {scan.extracted_text && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleCopy(scan.extracted_text, 'text')}
+                                            className="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 cursor-pointer"
+                                        >
+                                            {copiedText ? (
+                                                <>
+                                                    <Check size={12} className="text-emerald-600" />
+                                                    <span>Copied!</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Copy size={12} />
+                                                    <span>Copy text</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 max-h-36 overflow-y-auto text-xs text-slate-700 leading-relaxed font-mono text-[10px]">
+                                    {scan.extracted_text ? (
+                                        <p className="whitespace-pre-wrap select-all">
+                                            {scan.extracted_text}
+                                        </p>
+                                    ) : (
+                                        <p className="text-slate-400 italic font-sans text-xs">
+                                            No textual ingredients extracted for this scan.
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
