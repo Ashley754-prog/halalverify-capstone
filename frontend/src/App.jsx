@@ -44,7 +44,16 @@ const VALID_VIEWS = new Set([
 const getInitialView = () => {
   if (typeof window === 'undefined') return 'landing';
 
-  // 1. If returning from OAuth callback (access token hash or auth code in query)
+  // 1. Password recovery check must happen FIRST before general OAuth redirect check
+  if (
+    window.location.hash.includes('type=recovery') ||
+    window.location.search.includes('type=recovery') ||
+    window.location.pathname.includes('reset-password')
+  ) {
+    return 'reset-password';
+  }
+
+  // 2. If returning from OAuth callback (access token hash or auth code in query)
   if (
     window.location.hash.includes('access_token') ||
     window.location.hash.includes('id_token') ||
@@ -80,6 +89,12 @@ export default function App() {
   // Normalize legacy hash URL (e.g. /#products) into clean pathname (/products)
   useEffect(() => {
     if (typeof window !== 'undefined' && window.location.hash) {
+      if (
+        window.location.hash.includes('type=recovery') ||
+        window.location.hash.includes('access_token')
+      ) {
+        return;
+      }
       const hash = window.location.hash.replace('#', '').trim();
       if (hash && VALID_VIEWS.has(hash)) {
         const cleanPath = hash === 'landing' ? '/' : `/${hash}`;
@@ -202,6 +217,20 @@ export default function App() {
     }
 
     setCurrentView((prev) => {
+      const isRecovery = typeof window !== 'undefined' && (
+        window.location.hash.includes('type=recovery') ||
+        window.location.search.includes('type=recovery') ||
+        window.location.pathname.includes('reset-password') ||
+        prev === 'reset-password'
+      );
+
+      if (isRecovery) {
+        if (typeof window !== 'undefined' && (window.location.hash.includes('type=recovery') || window.location.search.includes('type=recovery'))) {
+          window.history.replaceState({ view: 'reset-password', params: {} }, '', '/reset-password');
+        }
+        return 'reset-password';
+      }
+
       const isOAuthRedirect = typeof window !== 'undefined' && (
         window.location.hash.includes('access_token') ||
         window.location.hash.includes('id_token') ||
@@ -370,7 +399,7 @@ export default function App() {
   }
 
   if (currentView === 'reset-password') {
-    return <ResetPassword onViewChange={handleViewChange} />;
+    return <ResetPassword onViewChange={handleViewChange} userRole={userRole} />;
   }
 
   return (

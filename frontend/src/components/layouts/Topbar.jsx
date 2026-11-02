@@ -1,6 +1,6 @@
 
 import { useState, useRef, useEffect } from 'react';
-import { Menu, X, User, ArrowLeft, ChevronDown, ShieldCheck, Settings, LogOut } from 'lucide-react';
+import { Menu, X, User, ArrowLeft, ChevronDown, ShieldCheck, Settings, LogOut, KeyRound } from 'lucide-react';
 import NotificationBell from '../notifications/NotificationBell.jsx';
 
 
@@ -229,6 +229,20 @@ export const AppTopbar = ({
                                             >
                                                 <Settings size={16} className="text-slate-500 shrink-0" />
                                                 <span>Settings</span>
+                                            </button>
+                                        )}
+
+                                        {onViewChange && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setIsDropdownOpen(false);
+                                                    onViewChange('reset-password');
+                                                }}
+                                                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs sm:text-sm font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition text-left cursor-pointer"
+                                            >
+                                                <KeyRound size={16} className="text-slate-500 shrink-0" />
+                                                <span>Change Password</span>
                                             </button>
                                         )}
                                     </div>

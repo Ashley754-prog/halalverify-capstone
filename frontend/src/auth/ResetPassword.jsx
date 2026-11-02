@@ -3,7 +3,7 @@ import { Eye, EyeOff, CheckCircle, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { signOut } from '../lib/auth';
 
-export const ResetPassword = ({ onViewChange }) => {
+export const ResetPassword = ({ onViewChange, userRole }) => {
     const [submitted, setSubmitted] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -195,10 +195,10 @@ export const ResetPassword = ({ onViewChange }) => {
 
                                 <button
                                     type="button"
-                                    onClick={() => onViewChange('login')}
+                                    onClick={() => onViewChange(userRole ? 'profile' : 'login')}
                                     className="mt-6 inline-flex w-full items-center justify-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 transition cursor-pointer"
                                 >
-                                    <ArrowLeft size={16} /> Back to Login
+                                    <ArrowLeft size={16} /> {userRole ? 'Back to Profile' : 'Back to Login'}
                                 </button>
                             </form>
                         ) : (
