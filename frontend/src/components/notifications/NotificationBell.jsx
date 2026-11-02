@@ -9,6 +9,7 @@ import {
     ShieldCheck,
     Inbox,
     ChevronRight,
+    X,
 } from 'lucide-react';
 import { API_BASE_URL, authFetch } from '../../utils/api';
 
@@ -198,7 +199,7 @@ export default function NotificationBell({ onViewChange }) {
                         : 'Notifications inbox'
                 }
                 title="Notifications"
-                className={`relative p-2 rounded-full transition cursor-pointer flex items-center justify-center ${
+                className={`relative h-9 w-9 sm:h-10 sm:w-10 rounded-full transition cursor-pointer flex items-center justify-center shrink-0 ${
                     isOpen
                         ? 'bg-slate-800 text-emerald-400 ring-2 ring-emerald-500/30'
                         : 'text-slate-300 hover:text-white hover:bg-slate-800'
@@ -213,37 +214,58 @@ export default function NotificationBell({ onViewChange }) {
                 )}
             </button>
 
+            {/* Mobile Backdrop Overlay */}
+            {isOpen && (
+                <div
+                    className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs z-40 sm:hidden animate-in fade-in duration-200"
+                    onClick={() => setIsOpen(false)}
+                    aria-hidden="true"
+                />
+            )}
+
             {/* Dropdown Popover */}
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white shadow-2xl border border-slate-200 z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 text-slate-800">
+                <div className="fixed inset-x-3 top-16 z-50 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 max-w-sm sm:max-w-none mx-auto sm:mx-0 rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-top-2 text-slate-800">
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200">
-                        <div className="flex items-center gap-2">
-                            <h3 className="font-bold text-sm text-slate-900 tracking-tight">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <h3 className="font-bold text-sm text-slate-900 tracking-tight truncate">
                                 Notifications
                             </h3>
                             {unreadCount > 0 && (
-                                <span className="px-1.5 py-0.5 text-[11px] font-semibold bg-emerald-100 text-emerald-700 rounded-full">
+                                <span className="px-1.5 py-0.5 text-[11px] font-semibold bg-emerald-100 text-emerald-700 rounded-full shrink-0">
                                     {unreadCount} new
                                 </span>
                             )}
                         </div>
 
-                        {unreadCount > 0 && (
+                        <div className="flex items-center gap-2 shrink-0">
+                            {unreadCount > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={handleMarkAllAsRead}
+                                    disabled={isMarkingAll}
+                                    className="flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition cursor-pointer disabled:opacity-50"
+                                >
+                                    <CheckCheck size={14} />
+                                    <span>Mark all as read</span>
+                                </button>
+                            )}
+
+                            {/* Mobile Dismiss Close Button */}
                             <button
                                 type="button"
-                                onClick={handleMarkAllAsRead}
-                                disabled={isMarkingAll}
-                                className="flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition cursor-pointer disabled:opacity-50"
+                                onClick={() => setIsOpen(false)}
+                                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition sm:hidden"
+                                aria-label="Close notifications"
                             >
-                                <CheckCheck size={14} />
-                                <span>Mark all as read</span>
+                                <X size={18} />
                             </button>
-                        )}
+                        </div>
                     </div>
 
                     {/* Content List */}
-                    <div className="max-h-[380px] overflow-y-auto divide-y divide-slate-100">
+                    <div className="max-h-[calc(100dvh-200px)] sm:max-h-[380px] overflow-y-auto divide-y divide-slate-100">
                         {isLoading && notifications.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-10 text-slate-400">
                                 <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mb-2" />
@@ -257,7 +279,7 @@ export default function NotificationBell({ onViewChange }) {
                                 <p className="font-semibold text-sm text-slate-700 mb-1">
                                     No notifications yet
                                 </p>
-                                <p className="text-xs text-slate-400 leading-relaxed max-w-[220px]">
+                                <p className="text-xs text-slate-400 leading-relaxed max-w-[240px]">
                                     Updates regarding your submissions and issue reports will appear here.
                                 </p>
                             </div>
@@ -268,7 +290,7 @@ export default function NotificationBell({ onViewChange }) {
                                     <div
                                         key={item.id}
                                         onClick={() => handleItemClick(item)}
-                                        className={`flex items-start gap-3 p-3.5 transition cursor-pointer relative hover:bg-slate-50 ${
+                                        className={`flex items-start gap-3 p-3.5 transition cursor-pointer relative hover:bg-slate-50 active:bg-slate-100 ${
                                             isUnread ? 'bg-emerald-50/40' : 'bg-white'
                                         }`}
                                     >
