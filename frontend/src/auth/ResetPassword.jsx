@@ -152,7 +152,7 @@ export const ResetPassword = ({ onViewChange }) => {
                                                 className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 focus:outline-none cursor-pointer"
                                                 aria-label={showNewPassword ? 'Hide password' : 'Show password'}
                                             >
-                                                {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                                {showNewPassword ? <Eye size={20} /> : <EyeOff size={20} />}
                                             </button>
                                         </div>
                                     </div>
@@ -173,7 +173,7 @@ export const ResetPassword = ({ onViewChange }) => {
                                                 className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 focus:outline-none cursor-pointer"
                                                 aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                                             >
-                                                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                                {showConfirmPassword ? <Eye size={20} /> : <EyeOff size={20} />}
                                             </button>
                                         </div>
                                     </div>
