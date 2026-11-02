@@ -1,6 +1,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Menu, X, User, ArrowLeft, ChevronDown, ShieldCheck, Settings, LogOut } from 'lucide-react';
+import NotificationBell from '../notifications/NotificationBell.jsx';
+
 
 // Page Header Topbar (used inside views like Settings, Dashboard, etc.)
 export const Topbar = ({ title, subtitle, action, onBack }) => (
@@ -119,9 +121,11 @@ export const AppTopbar = ({
                 </div>
 
                 {/* Right side: User Profile Dropdown or Sign In button */}
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
                     {userRole ? (
-                        <div className="relative" ref={dropdownRef}>
+                        <>
+                            <NotificationBell onViewChange={onViewChange} />
+                            <div className="relative" ref={dropdownRef}>
                             <button
                                 type="button"
                                 onClick={() => setIsDropdownOpen((prev) => !prev)}
@@ -249,6 +253,7 @@ export const AppTopbar = ({
                                 </div>
                             )}
                         </div>
+                        </>
                     ) : (
                         <button
                             type="button"

@@ -13,7 +13,7 @@ from collections import defaultdict
 from contextlib import asynccontextmanager
 from threading import Lock
 
-from app.routes import admin, analyze, health, issue_reports, products, registry, scan_history, summaries
+from app.routes import admin, analyze, health, issue_reports, notifications, products, registry, scan_history, summaries
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -137,3 +137,4 @@ app.include_router(summaries.router)
 app.include_router(issue_reports.router)
 app.include_router(scan_history.router)
 app.include_router(admin.router)
+app.include_router(notifications.router)

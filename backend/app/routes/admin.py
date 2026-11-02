@@ -8,6 +8,7 @@ from app.auto_verification_service import (
     evaluate_establishment_submission,
     evaluate_product_submission,
 )
+from app.notification_service import notify_user
 from app.routes.registry import enrich_establishment_tier
 from app.schemas.admin import (
     EstablishmentVerifyRequest,
@@ -26,6 +27,16 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
+
+
+def _is_machine_note(text: str) -> bool:
+    """True when an admin_notes value was written by the screening engine."""
+    if not text:
+        return False
+    cleaned = text.strip()
+    return cleaned.startswith(
+        ("FATAL INVARIANT", "AI ", "[AI ", "Classification Tier:")
+    )
 
 
 @router.get("/pending-approvals")
@@ -154,6 +165,7 @@ def verify_establishment(
         "vegetarian_vegan": ("vegetarian_vegan", "Community Listed - Vegetarian / Vegan"),
     }
     notes_str = (payload.admin_notes or "").strip()
+    has_admin_notes = payload.admin_notes is not None
     if status_clean in tier_note_map:
         canonical_tier, required_tag = tier_note_map[status_clean]
         tier_marker = f"[Tier: {canonical_tier}]"
@@ -165,12 +177,20 @@ def verify_establishment(
     else:
         db_status = status_clean
 
-    update_fields = {
-        "halal_status": db_status,
-        "admin_notes": notes_str,
-        "verified_at": now_iso,
-        "verified_by": str(user_id) if user_id else None,
+    is_approval = status_clean in {
+        "verified", "community_listed", "muslim_owned",
+        "muslim_friendly", "vegetarian_vegan",
     }
+
+    update_fields = {"halal_status": db_status}
+    if has_admin_notes or status_clean in tier_note_map:
+        # Community tiers always persist their canonical marker so that tier
+        # derivation still works on databases without the halal_tier column.
+        update_fields["admin_notes"] = notes_str
+    if is_approval:
+        # verified_at means "approved by a reviewer", not "last touched".
+        update_fields["verified_at"] = now_iso
+        update_fields["verified_by"] = str(user_id) if user_id else None
 
     if payload.certificate_number:
         update_fields["certificate_number"] = payload.certificate_number.strip()
@@ -243,6 +263,31 @@ def verify_establishment(
 
     updated_row = enrich_establishment_tier(res.data)[0]
 
+    submitted_by = res.data[0].get("submitted_by") if res.data else None
+    if submitted_by:
+        est_name = updated_row.get("name") or "Your establishment"
+        if is_approval:
+            notify_user(
+                submitted_by,
+                category="verification",
+                title="Establishment approved",
+                message=f'"{est_name}" has been verified and published to the directory.',
+                entity_type="establishment",
+                entity_id=establishment_id,
+                action_view="profile",
+            )
+        elif status_clean == "rejected":
+            rejection_reason = notes_str or "Does not meet verification standards."
+            notify_user(
+                submitted_by,
+                category="verification",
+                title="Establishment review update",
+                message=f'"{est_name}" was not approved: {rejection_reason}',
+                entity_type="establishment",
+                entity_id=establishment_id,
+                action_view="profile",
+            )
+
     return {
         "success": True,
         "message": f"Establishment marked as {payload.status.upper()}.",
@@ -288,23 +333,29 @@ def verify_product(
                         else:
                             target_tier = "halal_certified"
             except Exception:
-                target_tier = "halal_certified"
+                # Fail safe: if the stored tier cannot be read, do not promote a
+                # self-declared product to Halal Certified.
+                target_tier = "community_listed"
 
-        if target_tier == "pork_free":
+        if target_tier in {"pork_free", "pork_free_declared"}:
+            target_tier = "pork_free_declared"
             target_status = "Pork-Free Declared"
         elif target_tier == "vegetarian_vegan":
             target_status = "Vegetarian / Vegan"
         elif target_tier == "community_listed":
             target_status = "COMMUNITY_LISTED"
-        else:
+        elif target_tier == "halal_certified":
             target_status = "Halal"
-            target_tier = "halal_certified"
+        else:
+            # Never silently promote an unknown/self-declared tier to Halal Certified.
+            target_tier = "community_listed"
+            target_status = "COMMUNITY_LISTED"
 
-    update_fields = {
-        "status": target_status,
-        "verified_at": now_iso,
-        "verified_by": str(user_id) if user_id else None,
-    }
+    update_fields = {"status": target_status}
+    if target_status not in {"REJECTED", "DOUBTFUL"}:
+        # verified_at means "approved by a reviewer", not "last touched".
+        update_fields["verified_at"] = now_iso
+        update_fields["verified_by"] = str(user_id) if user_id else None
     if target_tier:
         update_fields["halal_tier"] = target_tier
     if payload.admin_notes is not None:
@@ -342,6 +393,31 @@ def verify_product(
 
     if not res.data:
         raise HTTPException(status_code=404, detail="Product not found or update failed")
+
+    submitted_by = res.data[0].get("submitted_by") if res.data else None
+    if submitted_by:
+        prod_name = res.data[0].get("name") or "Your product"
+        if target_status in {"REJECTED", "DOUBTFUL"}:
+            rej_reason = payload.admin_notes or "Does not meet verification criteria."
+            notify_user(
+                submitted_by,
+                category="verification",
+                title="Product review update",
+                message=f'"{prod_name}" was marked as {target_status.capitalize()}: {rej_reason}',
+                entity_type="product",
+                entity_id=product_id,
+                action_view="profile",
+            )
+        else:
+            notify_user(
+                submitted_by,
+                category="verification",
+                title="Product approved",
+                message=f'"{prod_name}" has been verified and published to the catalog.',
+                entity_type="product",
+                entity_id=product_id,
+                action_view="profile",
+            )
 
     return {
         "success": True,
@@ -395,11 +471,26 @@ def resolve_issue_report(
             supabase.table("establishments").update({
                 "halal_status": "flagged",
                 "admin_notes": f"Suspended via report #{report_id}: {payload.resolution_notes or ''}",
-                "verified_at": now_iso,
-                "verified_by": str(user_id) if user_id else None,
             }).eq("id", est_id).execute()
         except Exception as s_err:
             logger.warning("Suspending establishment failed: %s", s_err)
+
+    reporter_id = resolved_report.get("user_id")
+    if reporter_id:
+        rep_subj = resolved_report.get("subject_name") or "Reported item"
+        res_notes = (payload.resolution_notes or "").strip()
+        notif_msg = f'Your report regarding "{rep_subj}" was marked as {status_clean}.'
+        if res_notes:
+            notif_msg += f" Note: {res_notes}"
+        notify_user(
+            reporter_id,
+            category="report",
+            title=f"Report {status_clean.capitalize()}",
+            message=notif_msg,
+            entity_type="issue_report",
+            entity_id=report_id,
+            action_view="profile",
+        )
 
     return {
         "success": True,
@@ -783,9 +874,12 @@ def auto_verify_establishment_endpoint(
     est = res.data[0]
     eval_result = evaluate_establishment_submission(est)
 
-    update_fields = {
-        "admin_notes": eval_result["admin_notes"],
-    }
+    existing_notes = (est.get("admin_notes") or "").strip()
+    update_fields = {}
+    if not existing_notes or _is_machine_note(existing_notes):
+        update_fields["admin_notes"] = eval_result["admin_notes"]
+    elif eval_result["admin_notes"] not in existing_notes:
+        update_fields["admin_notes"] = f"{existing_notes}\n\nAI screening: {eval_result['admin_notes']}"
     if eval_result.get("certificate_number") and not est.get("certificate_number"):
         update_fields["certificate_number"] = eval_result["certificate_number"]
     if eval_result.get("expiry_date") and not est.get("expiry_date"):
@@ -802,23 +896,29 @@ def auto_verify_establishment_endpoint(
 
     if auto_approve and can_approve_est:
         update_fields["halal_status"] = "verified"
+        update_fields["halal_tier"] = "halal_certified"
         update_fields["verified_at"] = now_iso
         update_fields["verified_by"] = admin_uuid
         eval_result["is_auto_approved"] = True
+        # Do NOT cascade-approve pending products here: each product is a separate
+        # submission that must pass its own screening before publication.
 
-        try:
-            supabase.table("products").update({
-                "status": "VERIFIED",
-                "verified_at": now_iso,
-                "verified_by": admin_uuid,
-            }).eq("establishment_id", establishment_id).ilike("status", "%pending%").execute()
-        except Exception as p_err:
-            logger.warning("Cascaded product approval: %s", p_err)
-
-    supabase.table("establishments").update(update_fields).eq("id", establishment_id).execute()
+    if update_fields:
+        supabase.table("establishments").update(update_fields).eq("id", establishment_id).execute()
 
     updated_res = supabase.table("establishments").select("*, certifying_bodies(*)").eq("id", establishment_id).execute()
     updated_row = enrich_establishment_tier(updated_res.data)[0] if updated_res.data else est
+
+    if eval_result.get("is_auto_approved") and est.get("submitted_by"):
+        notify_user(
+            est["submitted_by"],
+            category="verification",
+            title="Establishment auto-verified",
+            message=f'"{est.get("name", "Your establishment")}" has been verified via AI audit.',
+            entity_type="establishment",
+            entity_id=establishment_id,
+            action_view="profile",
+        )
 
     return {
         "success": True,
@@ -846,9 +946,12 @@ def auto_verify_product_endpoint(
     prod = res.data[0]
     eval_result = evaluate_product_submission(prod)
 
-    update_fields = {
-        "admin_notes": eval_result["admin_notes"],
-    }
+    existing_notes = (prod.get("admin_notes") or "").strip()
+    update_fields = {}
+    if not existing_notes or _is_machine_note(existing_notes):
+        update_fields["admin_notes"] = eval_result["admin_notes"]
+    elif eval_result["admin_notes"] not in existing_notes:
+        update_fields["admin_notes"] = f"{existing_notes}\n\nAI screening: {eval_result['admin_notes']}"
     if eval_result.get("certificate_no") and not prod.get("certificate_no"):
         update_fields["certificate_no"] = eval_result["certificate_no"]
     if eval_result.get("expiry_date") and not prod.get("expiry_date"):
@@ -869,9 +972,21 @@ def auto_verify_product_endpoint(
         update_fields["verified_by"] = admin_uuid
         eval_result["is_auto_approved"] = True
 
-    supabase.table("products").update(update_fields).eq("id", product_id).execute()
+    if update_fields:
+        supabase.table("products").update(update_fields).eq("id", product_id).execute()
 
     updated_res = supabase.table("products").select("*, certifying_bodies(*)").eq("id", product_id).execute()
+
+    if eval_result.get("is_auto_approved") and prod.get("submitted_by"):
+        notify_user(
+            prod["submitted_by"],
+            category="verification",
+            title="Product auto-verified",
+            message=f'"{prod.get("name", "Your product")}" has been verified via AI screening.',
+            entity_type="product",
+            entity_id=product_id,
+            action_view="profile",
+        )
 
     return {
         "success": True,
@@ -911,7 +1026,12 @@ def auto_verify_all_pending(
             eval_res = evaluate_establishment_submission(est)
             audited_est_count += 1
 
-            update_fields = {"admin_notes": eval_res["admin_notes"]}
+            existing_notes = (est.get("admin_notes") or "").strip()
+            update_fields = {}
+            if not existing_notes or _is_machine_note(existing_notes):
+                update_fields["admin_notes"] = eval_res["admin_notes"]
+            elif eval_res["admin_notes"] not in existing_notes:
+                update_fields["admin_notes"] = f"{existing_notes}\n\nAI screening: {eval_res['admin_notes']}"
             if eval_res.get("certificate_number") and not est.get("certificate_number"):
                 update_fields["certificate_number"] = eval_res["certificate_number"]
             if eval_res.get("expiry_date") and not est.get("expiry_date"):
@@ -923,11 +1043,13 @@ def auto_verify_all_pending(
 
             if auto_approve and can_approve_est:
                 update_fields["halal_status"] = "verified"
+                update_fields["halal_tier"] = "halal_certified"
                 update_fields["verified_at"] = now_iso
                 update_fields["verified_by"] = admin_uuid
                 approved_est_count += 1
 
-            supabase.table("establishments").update(update_fields).eq("id", est["id"]).execute()
+            if update_fields:
+                supabase.table("establishments").update(update_fields).eq("id", est["id"]).execute()
         except Exception as e:
             logger.error("Error auto-verifying establishment %s: %s", est.get("id"), e)
 
@@ -950,7 +1072,12 @@ def auto_verify_all_pending(
             eval_res = evaluate_product_submission(prod)
             audited_prod_count += 1
 
-            update_fields = {"admin_notes": eval_res["admin_notes"]}
+            existing_notes = (prod.get("admin_notes") or "").strip()
+            update_fields = {}
+            if not existing_notes or _is_machine_note(existing_notes):
+                update_fields["admin_notes"] = eval_res["admin_notes"]
+            elif eval_res["admin_notes"] not in existing_notes:
+                update_fields["admin_notes"] = f"{existing_notes}\n\nAI screening: {eval_res['admin_notes']}"
             if eval_res.get("certificate_no") and not prod.get("certificate_no"):
                 update_fields["certificate_no"] = eval_res["certificate_no"]
             if eval_res.get("expiry_date") and not prod.get("expiry_date"):
@@ -967,7 +1094,8 @@ def auto_verify_all_pending(
                 update_fields["verified_by"] = admin_uuid
                 approved_prod_count += 1
 
-            supabase.table("products").update(update_fields).eq("id", prod["id"]).execute()
+            if update_fields:
+                supabase.table("products").update(update_fields).eq("id", prod["id"]).execute()
         except Exception as e:
             logger.error("Error auto-verifying product %s: %s", prod.get("id"), e)
 

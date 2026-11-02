@@ -54,8 +54,6 @@ export default function VerificationInspectionModal({
     addingMenuItem,
     handleAddMenuItem,
     handleDeleteMenuItem,
-    adminNotes,
-    setAdminNotes,
 }) {
     const [selectedImageTab, setSelectedImageTab] = useState('primary');
     const [copiedCert, setCopiedCert] = useState(false);
@@ -194,7 +192,7 @@ export default function VerificationInspectionModal({
                         </button>
                         <button
                             type="button"
-                            disabled={processingId === inspectingItem.id}
+                            disabled={processingId === inspectingItem.id || (inspectingType !== 'product' && !selectedStatus)}
                             onClick={() =>
                                 inspectingType === 'product'
                                     ? handleVerifyProduct(inspectingItem, 'VERIFIED')
@@ -206,6 +204,8 @@ export default function VerificationInspectionModal({
                             <span>
                                 {inspectingType === 'product'
                                     ? 'Approve & Publish Product'
+                                    : !selectedStatus
+                                    ? 'Select a Tier to Approve'
                                     : selectedStatus === 'verified'
                                     ? 'Approve as Certified'
                                     : selectedStatus === 'muslim_owned'
@@ -582,6 +582,7 @@ export default function VerificationInspectionModal({
                                     onChange={(e) => setSelectedStatus(e.target.value)}
                                     className="w-full rounded-xl border border-slate-300 p-2 text-xs font-semibold text-slate-800 bg-white focus:border-emerald-500 focus:outline-none"
                                 >
+                                    <option value="" disabled>Select verification tier…</option>
                                     <option value="verified">Formally Halal Certified</option>
                                     <option value="muslim_owned">Muslim-Owned Kitchen (Pork-Free)</option>
                                     <option value="muslim_friendly">Muslim-Friendly Venue</option>

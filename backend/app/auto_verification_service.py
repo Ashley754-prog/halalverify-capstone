@@ -422,15 +422,9 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
                     matched_hcb_code = code
                     break
 
-        if not ocr_corroborated_hcb and cert_no:
-            upper_cert = cert_no.upper()
-            for code in ACCREDITED_HCB_CODES:
-                if code in upper_cert:
-                    hcb_matched = True
-                    ocr_corroborated_hcb = True
-                    hcb_name = f"Accredited Body ({code})"
-                    matched_hcb_code = code
-                    break
+        # NOTE: a certificate number containing an HCB acronym is a *claim*, not
+        # documentary corroboration. OCR corroboration is only set when the code
+        # is actually read from the certificate image (see the OCR branch above).
 
         if hcb_id:
             try:
@@ -582,27 +576,15 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
             score += 10
             audit_notes.append(f"Guest amenities declared: {', '.join(amenities)} (+10 pts)")
 
-        is_community_approved = (
-            (score >= 65)
-            and is_zamboanga
-            and is_valid_phone
-            and (not is_duplicate)
-            and has_photo
+        # Policy: self-declared community tiers are never auto-published.
+        # They may be scored and screened automatically, but a human must confirm
+        # the declaration before it is shown as "verified" to the public.
+        is_auto_approved = False
+        final_status = "needs_review"
+        summary_note = (
+            f"AI AUDITED: Community Listed - {tier_label} queued for manual review (Confidence: {score}%). "
+            f"Issues: {'; '.join(reasons) if reasons else 'No blocking issues detected; human confirmation is required for self-declared tiers.'}"
         )
-        if is_community_approved:
-            is_auto_approved = True
-            final_status = "verified"
-            summary_note = (
-                f"AI TRIAGED & PUBLISHED: Community Listed - {tier_label} (Confidence: {score}%). "
-                f"Verified local contact ({contact_phone}) with storefront photo evidence. Transparently listed without 3rd-party certificate."
-            )
-        else:
-            is_auto_approved = False
-            final_status = "needs_review"
-            summary_note = (
-                f"AI AUDITED: Community Listed - {tier_label} queued for review (Confidence: {score}%). "
-                f"Issues: {'; '.join(reasons)}."
-            )
 
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
@@ -699,9 +681,10 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     # Duplicate check against existing products
     is_duplicate = False
+    barcode = (payload.get("barcode") or "").strip() or None
     try:
         if barcode:
-            dup_bc = supabase.table("products").select("id, name, brand, barcode").eq("barcode", barcode.strip()).execute()
+            dup_bc = supabase.table("products").select("id, name, brand, barcode").eq("barcode", barcode).execute()
             if dup_bc.data:
                 for prod in dup_bc.data:
                     if payload.get("id") and str(prod.get("id")) == str(payload.get("id")):
@@ -973,14 +956,14 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
                 score += 20
                 audit_notes.append(f"Brand / maker name provided: {brand} (+20 pts)")
 
-            is_auto_approved = (score >= 75) and bool(effective_ingredients) and has_prod_photo and (not is_duplicate)
-            final_status = (
-                "Pork-Free Declared" if halal_tier == "pork_free_declared" else "Vegetarian / Vegan"
-            ) if is_auto_approved else "PENDING_VERIFICATION"
+            # Policy: self-declared product tiers are never auto-published.
+            # Ingredients and photos are screened, but a human must confirm the
+            # declaration before it appears in the public catalog.
+            is_auto_approved = False
+            final_status = "PENDING_VERIFICATION"
             summary_note = (
-                f"AI TRIAGED & PUBLISHED: Community Listed - {tier_label} (Confidence: {score}%). Zero prohibited additives detected with packaging photo."
-                if is_auto_approved
-                else f"AI AUDITED: Community Listed - {tier_label} queued for review (Confidence: {score}%). Issues: {'; '.join(reasons)}"
+                f"AI AUDITED: Community Listed - {tier_label} queued for manual review (Confidence: {score}%). "
+                f"Issues: {'; '.join(reasons) if reasons else 'No blocking issues detected; human confirmation is required for self-declared tiers.'}"
             )
 
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()

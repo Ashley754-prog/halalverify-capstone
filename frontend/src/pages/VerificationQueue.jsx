@@ -160,12 +160,18 @@ export default function VerificationQueue({ onViewChange }) {
 
         if (type === 'establishment') {
             const derivedTier = deriveEstablishmentTier(item);
-            if (derivedTier === 'halal_certified') {
+            const hasCertificationEvidence = Boolean(
+                item.certificate_number || item.certifying_body_id || item.certificate_url
+            );
+            if (derivedTier === 'halal_certified' && !hasCertificationEvidence) {
+                // Never preselect the strongest claim when no certificate evidence exists.
+                setSelectedStatus('');
+            } else if (derivedTier === 'halal_certified') {
                 setSelectedStatus('verified');
             } else if (['muslim_owned', 'muslim_friendly', 'vegetarian_vegan', 'pork_free_declared'].includes(derivedTier)) {
                 setSelectedStatus(derivedTier);
             } else {
-                setSelectedStatus('verified');
+                setSelectedStatus('');
             }
         } else {
             setSelectedStatus('verified');
@@ -207,20 +213,15 @@ export default function VerificationQueue({ onViewChange }) {
                 curDesc = curDesc ? `${curDesc} | ${dishesStr}` : dishesStr;
             }
 
-            // Update establishment menu_highlights & description directly on establishments table
-            try {
-                const { error: updErr } = await supabase
-                    .from('establishments')
-                    .update({ menu_highlights: updatedHighlights, description: curDesc })
-                    .eq('id', inspectingItem.id);
-                if (updErr) {
-                    await supabase
-                        .from('establishments')
-                        .update({ description: curDesc })
-                        .eq('id', inspectingItem.id);
-                }
-            } catch (estErr) {
-                console.warn('Direct update establishment highlights notice:', estErr);
+            // Persist through the backend so the browser never writes workflow tables directly.
+            const estRes = await authFetch(`${API_BASE_URL}/api/v1/registry/establishments/${inspectingItem.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ menu_highlights: updatedHighlights, description: curDesc }),
+            });
+            if (!estRes.ok) {
+                const errData = await estRes.json().catch(() => ({}));
+                throw new Error(errData.detail || 'Could not save menu highlights.');
             }
 
             const createdItem = {
@@ -257,6 +258,7 @@ export default function VerificationQueue({ onViewChange }) {
             window.dispatchEvent(new CustomEvent('verification-queue-changed'));
         } catch (err) {
             console.error('Failed to add menu item:', err);
+            setToast({ visible: true, message: err.message || 'Could not save menu item.', type: 'error' });
         } finally {
             setAddingMenuItem(false);
         }
@@ -303,24 +305,28 @@ export default function VerificationQueue({ onViewChange }) {
         );
 
         try {
-            const { error: updErr } = await supabase
-                .from('establishments')
-                .update({ menu_highlights: updatedHighlights, description: curDesc })
-                .eq('id', inspectingItem.id);
-            if (updErr) {
-                await supabase
-                    .from('establishments')
-                    .update({ description: curDesc })
-                    .eq('id', inspectingItem.id);
+            const estRes = await authFetch(`${API_BASE_URL}/api/v1/registry/establishments/${inspectingItem.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ menu_highlights: updatedHighlights, description: curDesc }),
+            });
+            if (!estRes.ok) {
+                const errData = await estRes.json().catch(() => ({}));
+                throw new Error(errData.detail || 'Could not remove menu highlight.');
             }
 
             // Clean up legacy product row if one existed
             if (prodId && !String(prodId).startsWith('local-') && !String(prodId).startsWith('dish-')) {
-                await supabase.from('products').delete().eq('id', prodId);
+                const prodRes = await authFetch(`${API_BASE_URL}/api/v1/products/${prodId}`, { method: 'DELETE' });
+                if (!prodRes.ok) {
+                    const errData = await prodRes.json().catch(() => ({}));
+                    throw new Error(errData.detail || 'Could not remove linked product.');
+                }
             }
             window.dispatchEvent(new CustomEvent('verification-queue-changed'));
         } catch (err) {
-            console.warn('Delete dish notice:', err);
+            console.error('Delete dish failed:', err);
+            setToast({ visible: true, message: err.message || 'Could not remove menu highlight.', type: 'error' });
         }
     };
 
@@ -465,6 +471,10 @@ export default function VerificationQueue({ onViewChange }) {
 
     const handleVerifyEstablishment = async (status) => {
         if (!inspectingItem) return;
+        if (!status) {
+            setToast({ visible: true, message: 'Select a verification tier before approving.', type: 'error' });
+            return;
+        }
         const estId = inspectingItem.id;
 
         try {
@@ -474,101 +484,21 @@ export default function VerificationQueue({ onViewChange }) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     status: status,
-                    admin_notes: adminNotes,
+                    admin_notes: adminNotes?.trim() ? adminNotes : undefined,
                     certificate_number: certNumber || undefined,
                     expiry_date: expiryDate || undefined,
                     certifying_body_id: selectedHcbId || undefined,
                     name: inspectingItem.name || undefined,
                     address: inspectingItem.address || undefined,
+                    menu_highlights: newMenuItemName && newMenuItemName.trim()
+                        ? Array.from(new Set([...extractMenuHighlights(inspectingItem), newMenuItemName.trim()]))
+                        : undefined,
                 }),
             });
 
             if (!res.ok) {
-                const { data: { session } } = await supabase.auth.getSession();
-                const nowIso = new Date().toISOString();
-                const statusClean = status.toLowerCase();
-                let dbStatus = statusClean;
-                let notesStr = (adminNotes || '').trim();
-
-                const tierNoteMap = {
-                    muslim_owned: ['muslim_owned', 'Community Listed - Muslim-Owned'],
-                    community_listed: ['muslim_owned', 'Community Listed - Muslim-Owned'],
-                    muslim_friendly: ['muslim_friendly', 'Community Listed - Muslim-Friendly'],
-                    vegetarian_vegan: ['vegetarian_vegan', 'Community Listed - Vegetarian / Vegan'],
-                };
-
-                if (tierNoteMap[statusClean]) {
-                    const [canonicalTier, requiredTag] = tierNoteMap[statusClean];
-                    const tierMarker = `[Tier: ${canonicalTier}]`;
-                    if (!notesStr.toLowerCase().includes(requiredTag.toLowerCase())) {
-                        notesStr = `${requiredTag}. ${notesStr}`.trim().replace(/\.\s*$/, '');
-                    }
-                    if (!notesStr.toLowerCase().includes(tierMarker.toLowerCase())) {
-                        notesStr = `${tierMarker} ${notesStr}`.trim();
-                    }
-                    dbStatus = 'verified';
-                }
-
-                const { error: sbErr } = await supabase
-                    .from('establishments')
-                    .update({
-                        name: inspectingItem.name,
-                        address: inspectingItem.address,
-                        halal_status: dbStatus,
-                        admin_notes: notesStr,
-                        certificate_number: certNumber || inspectingItem.certificate_number,
-                        expiry_date: expiryDate || inspectingItem.expiry_date,
-                        certifying_body_id: selectedHcbId || inspectingItem.certifying_body_id,
-                        verified_at: nowIso,
-                        verified_by: session?.user?.id || null,
-                    })
-                    .eq('id', estId);
-
-                if (sbErr) throw sbErr;
-
-                // If rejected, cleanly cascade rejection to any legacy pending items
-                if (statusClean === 'rejected') {
-                    try {
-                        await supabase
-                            .from('products')
-                            .update({
-                                status: 'REJECTED',
-                                admin_notes: `Establishment rejected: ${adminNotes || ''}`,
-                            })
-                            .eq('establishment_id', estId)
-                            .ilike('status', '%pending%');
-                    } catch (rejCascadeErr) {
-                        console.warn('Cascaded product rejection notice:', rejCascadeErr);
-                    }
-                }
-            }
-
-            if (newMenuItemName && newMenuItemName.trim()) {
-                try {
-                    const currentHighlights = extractMenuHighlights(inspectingItem);
-                    const updatedHighlights = Array.from(new Set([...currentHighlights, newMenuItemName.trim()]));
-                    let curDesc = inspectingItem.description || '';
-                    const dishesStr = `Dishes: ${updatedHighlights.join(', ')}`;
-                    if (/(?:Dishes|Specialties|Menu):\s*[^|\n\]]+/i.test(curDesc)) {
-                        curDesc = curDesc.replace(/(?:Dishes|Specialties|Menu):\s*[^|\n\]]+/i, dishesStr);
-                    } else {
-                        curDesc = curDesc ? `${curDesc} | ${dishesStr}` : dishesStr;
-                    }
-
-                    const { error: updErr } = await supabase
-                        .from('establishments')
-                        .update({ menu_highlights: updatedHighlights, description: curDesc })
-                        .eq('id', estId);
-                    if (updErr) {
-                        await supabase
-                            .from('establishments')
-                            .update({ description: curDesc })
-                            .eq('id', estId);
-                    }
-                    setNewMenuItemName('');
-                } catch (addErr) {
-                    console.warn('Auto-save pending menu item notice:', addErr);
-                }
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.detail || 'Failed to update establishment verification status.');
             }
 
             const estName = inspectingItem?.name ? `"${inspectingItem.name}"` : 'Establishment';
@@ -632,27 +562,8 @@ export default function VerificationQueue({ onViewChange }) {
             });
 
             if (!res.ok) {
-                const { data: { session } } = await supabase.auth.getSession();
-                const updatePayload = {
-                    name: product.name,
-                    brand: product.brand,
-                    status: status.toUpperCase(),
-                    verified_at: new Date().toISOString(),
-                    verified_by: session?.user?.id || null,
-                };
-                if (finalNotes !== undefined) {
-                    updatePayload.admin_notes = finalNotes;
-                }
-                if (isModalTarget) {
-                    if (certNumber) updatePayload.certificate_no = certNumber;
-                    if (expiryDate) updatePayload.expiry_date = expiryDate;
-                    if (selectedHcbId) updatePayload.certifying_body_id = selectedHcbId;
-                }
-                const { error: sbErr } = await supabase
-                    .from('products')
-                    .update(updatePayload)
-                    .eq('id', product.id);
-                if (sbErr) throw sbErr;
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.detail || 'Could not update product status.');
             }
 
             const prodName = product?.name ? `"${product.name}"` : 'Product';
@@ -699,29 +610,8 @@ export default function VerificationQueue({ onViewChange }) {
             });
 
             if (!res.ok) {
-                const { data: { session } } = await supabase.auth.getSession();
-                const nowIso = new Date().toISOString();
-                await supabase
-                    .from('issue_reports')
-                    .update({
-                        status: resolutionStatus,
-                        resolution_notes: finalNotes,
-                        resolved_at: nowIso,
-                        resolved_by: session?.user?.id || null,
-                    })
-                    .eq('id', report.id);
-
-                if (suspendEstablishment && report.establishment_id) {
-                    await supabase
-                        .from('establishments')
-                        .update({
-                            halal_status: 'flagged',
-                            admin_notes: `Suspended via report #${report.id}: ${finalNotes}`,
-                            verified_at: nowIso,
-                            verified_by: session?.user?.id || null,
-                        })
-                        .eq('id', report.establishment_id);
-                }
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.detail || 'Could not resolve report.');
             }
 
             const repLabel = report?.id ? `Report #${String(report.id).slice(0, 8)}` : 'Report';

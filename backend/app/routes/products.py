@@ -11,11 +11,27 @@ from app.schemas.products import (
 )
 from app.supabase_client import supabase
 from app.auto_verification_service import evaluate_product_submission
+from app.notification_service import notify_admins, notify_user
 from app.utils.db_helpers import ensure_deleted, ensure_updated, model_dump_without_none, sanitize_postgrest_search
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["products"])
+
+# Statuses that may be requested through the unauthenticated public catalog.
+PUBLIC_PRODUCT_STATUSES = {
+    "halal",
+    "verified",
+    "pork-free declared",
+    "vegetarian / vegan",
+    "community_listed",
+    "doubtful",
+}
+
+EXCLUDED_UNVERIFIED_STATUSES = [
+    "REJECTED", "rejected", "PENDING_VERIFICATION", "pending",
+    "needs_review", "draft", "Expired", "expired",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -29,13 +45,14 @@ def get_products(
     status: Optional[str] = Query(None, description="Filter by halal status"),
     manufacturer_id: Optional[str] = Query(None, description="Filter by manufacturer ID"),
     certifying_body_id: Optional[str] = Query(None, description="Filter by certifying body ID"),
+    page: Optional[int] = Query(None, ge=1, description="1-based page number (alias for offset)"),
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ):
     builder = (
         supabase
         .table("products")
-        .select("*, manufacturers(*), certifying_bodies(*)")
+        .select("*, manufacturers(*), certifying_bodies(*)", count="exact")
     )
 
     if query:
@@ -49,13 +66,13 @@ def get_products(
     if category:
         builder = builder.eq("category", category)
 
-    EXCLUDED_UNVERIFIED_STATUSES = [
-        "REJECTED", "rejected", "PENDING_VERIFICATION", "pending", "needs_review", "draft"
-    ]
     if status and status != "all":
-        builder = builder.eq("status", status)
+        if status.strip().lower() not in PUBLIC_PRODUCT_STATUSES:
+            raise HTTPException(status_code=400, detail="Invalid public status filter")
+        # Case-insensitive match: stored statuses use display casing (e.g. "Halal").
+        builder = builder.ilike("status", status.strip())
     else:
-        # By default, exclude rejected and pending verification items from public listings
+        # By default, exclude rejected, pending, and expired items from public listings
         builder = builder.not_.in_("status", EXCLUDED_UNVERIFIED_STATUSES)
 
     if manufacturer_id:
@@ -64,12 +81,17 @@ def get_products(
     if certifying_body_id:
         builder = builder.eq("certifying_body_id", certifying_body_id)
 
+    if page is not None and offset == 0:
+        offset = (page - 1) * limit
+
     response = builder.order("name").range(offset, offset + limit - 1).execute()
 
+    total = response.count if response.count is not None else len(response.data or [])
     return {
         "success": True,
         "data": response.data or [],
         "count": len(response.data or []),
+        "total": total,
     }
 
 
@@ -86,9 +108,16 @@ def get_product(product_id: str):
     if not response.data:
         raise HTTPException(status_code=404, detail="Product not found")
 
+    row = response.data[0]
+    if (row.get("status") or "").strip().lower() in {
+        "rejected", "pending_verification", "pending", "needs_review", "draft",
+    }:
+        # Do not disclose unapproved products through the public detail endpoint.
+        raise HTTPException(status_code=404, detail="Product not found")
+
     return {
         "success": True,
-        "data": response.data[0],
+        "data": row,
     }
 
 
@@ -367,6 +396,37 @@ def submit_product(
         )
     else:
         msg = "Product submitted successfully and queued for standard verification."
+
+    prod_name = created_product.get("name") or "Your product"
+    prod_id = created_product.get("id")
+    if ai_eval["is_auto_approved"]:
+        notify_user(
+            user_id,
+            category="verification",
+            title="Product approved",
+            message=f'"{prod_name}" was verified and published to the product catalog.',
+            entity_type="product",
+            entity_id=prod_id,
+            action_view="profile",
+        )
+    else:
+        notify_user(
+            user_id,
+            category="submission",
+            title="Product submitted",
+            message=f'"{prod_name}" is queued for verification. Track its status in My Contributions.',
+            entity_type="product",
+            entity_id=prod_id,
+            action_view="profile",
+        )
+        notify_admins(
+            category="submission",
+            title="New product submission",
+            message=f'"{prod_name}" is awaiting verification.',
+            entity_type="product",
+            entity_id=prod_id,
+            action_view="verification-queue",
+        )
 
     return {
         "success": True,

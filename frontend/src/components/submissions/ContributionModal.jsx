@@ -242,67 +242,8 @@ export default function ContributionModal({
         console.warn('Backend submission endpoint unavailable, falling back to direct Supabase:', apiErr);
       }
 
-      // 2. Direct Supabase Fallback
       if (!success) {
-        const { data: { session } } = await supabase.auth.getSession();
-        const userId = session?.user?.id;
-        if (!userId) {
-          throw new Error('You must be logged in to submit an establishment.');
-        }
-
-        const tierName = payload.halal_tier === 'muslim_owned' 
-          ? 'Muslim-Owned' 
-          : payload.halal_tier === 'muslim_friendly' 
-          ? 'Muslim-Friendly' 
-          : payload.halal_tier === 'vegetarian_vegan' 
-          ? 'Vegetarian / Vegan' 
-          : 'Halal Certified';
-        const fallbackStatus = 'needs_review';
-        const fallbackNotes = payload.halal_tier === 'halal_certified'
-          ? 'Community User Submission: Halal Certified claim awaiting verification'
-          : `Community Listed - ${tierName} (Awaiting Verification)`;
-
-        let insertPayload = {
-          name: payload.name,
-          type: payload.type,
-          address: payload.address,
-          city: payload.city,
-          phone: payload.contact_number,
-          source_url: payload.social_media_url,
-          certificate_number: payload.certificate_number,
-          expiry_date: payload.expiry_date,
-          certificate_url: payload.certificate_url,
-          logo_url: payload.logo_url,
-          halal_status: fallbackStatus,
-          halal_tier: payload.halal_tier || 'halal_certified',
-          amenities: amenities || [],
-          menu_highlights: parsedProductNames || [],
-          submitter_role: payload.submitter_role || 'community',
-          admin_notes: fallbackNotes,
-          latitude: payload.latitude || 6.9142,
-          longitude: payload.longitude || 122.0745,
-          submitted_by: userId,
-          description: fullDescription,
-          source: payload.submitter_role === 'owner' ? 'Business Owner Submission' : 'Community User Submission',
-        };
-
-        let { error: sbErr } = await supabase.from('establishments').insert(insertPayload).select();
-
-        // If live Supabase table does not yet have Migration 006 columns, retry with legacy schema gracefully
-        if (sbErr && (sbErr.code === '42703' || sbErr.message?.includes('column') || sbErr.message?.includes('halal_tier') || sbErr.message?.includes('menu_highlights'))) {
-          delete insertPayload.halal_tier;
-          delete insertPayload.amenities;
-          delete insertPayload.menu_highlights;
-          delete insertPayload.submitter_role;
-          insertPayload.description = fullDescription;
-          const retryRes = await supabase.from('establishments').insert(insertPayload).select();
-          sbErr = retryRes.error;
-        }
-
-        if (sbErr) {
-          console.warn('Direct Supabase insert failed:', sbErr);
-          throw new Error('Verification service is unreachable. Please check backend connection.');
-        }
+        throw new Error('The verification service is unavailable. Please try again in a moment.');
       }
 
       setIsSuccess(true);
@@ -370,42 +311,8 @@ export default function ContributionModal({
         console.warn('Backend submission endpoint unavailable, falling back to direct Supabase:', apiErr);
       }
 
-      // 2. Direct Supabase Fallback
       if (!success) {
-        const { data: { session } } = await supabase.auth.getSession();
-        const userId = session?.user?.id;
-        if (!userId) {
-          throw new Error('You must be logged in to submit a product.');
-        }
-
-        const prodTierNote = payload.halal_tier === 'pork_free_declared'
-          ? 'Community Listed - Pork-Free Declared (Awaiting Verification)'
-          : payload.halal_tier === 'vegetarian_vegan'
-          ? 'Community Listed - Vegetarian / Vegan (Awaiting Verification)'
-          : 'Halal Certified Claim (Awaiting Verification)';
-
-        const { error: sbErr } = await supabase.from('products').insert({
-          name: payload.name,
-          brand: payload.brand,
-          category: payload.category,
-          barcode: payload.barcode,
-          certificate_no: payload.certificate_no,
-          expiry_date: payload.expiry_date,
-          image_url: payload.image_url,
-          ingredients_summary: payload.ingredients_summary,
-          status: 'PENDING_VERIFICATION',
-          admin_notes: prodTierNote,
-          submitted_by: userId,
-          source_url: null,
-          source: prodForm.certifying_body
-            ? `Certified by ${prodForm.certifying_body}`
-            : 'Community User Submission',
-        });
-
-        if (sbErr) {
-          console.warn('Direct Supabase product insert blocked by RLS:', sbErr);
-          throw new Error('Verification service is unreachable. Please check backend connection.');
-        }
+        throw new Error('The verification service is unavailable. Please try again in a moment.');
       }
 
       setIsSuccess(true);

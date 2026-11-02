@@ -1,8 +1,9 @@
 import logging
 from typing import Optional
 
-from app.auth import get_current_user, require_admin
+from app.auth import get_current_user, get_optional_current_user, require_admin
 from app.auto_verification_service import evaluate_establishment_submission
+from app.notification_service import notify_admins, notify_user
 from app.schemas.registry import (
     AdditiveCreate,
     AdditiveUpdate,
@@ -32,7 +33,55 @@ EXCLUDED_UNVERIFIED_ESTABLISHMENT_STATUSES = {
     "flagged",
     "rejected",
     "suspended",
+    "expired",
 }
+
+# Moderation states that must only be visible to authenticated administrators.
+PRIVILEGED_ESTABLISHMENT_STATUSES = {
+    "needs_review",
+    "pending",
+    "pending_review",
+    "flagged",
+    "rejected",
+    "suspended",
+    "expired",
+}
+
+# Status filters the public may request. This is an allowlist so that fuzzy or
+# partial values (e.g. "review", "rej") cannot be used to reach privileged rows.
+PUBLIC_ESTABLISHMENT_STATUS_FILTERS = {
+    "all",
+    "verified",
+    "halal_certified",
+    "community",
+    "muslim_owned",
+    "muslim_friendly",
+    "vegetarian_vegan",
+    "vegetarian",
+    "vegan",
+    "plant_based",
+    "pork_free",
+}
+
+
+def _is_admin_user(user: Optional[dict]) -> bool:
+    """Resolve an optional bearer token to an admin profile without raising."""
+    if not user:
+        return False
+    uid = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
+    if not uid:
+        return False
+    try:
+        res = (
+            supabase.table("profiles")
+            .select("role")
+            .eq("id", str(uid))
+            .single()
+            .execute()
+        )
+        return (res.data or {}).get("role") == "admin"
+    except Exception:
+        return False
 
 
 def derive_establishment_tier(record: dict) -> str:
@@ -200,12 +249,23 @@ def get_establishments_map(
     status: Optional[str] = Query(None, description="Status filter: verified, pending_review, flagged, etc."),
     hcb: Optional[str] = Query(None, description="Certifying body code or name (e.g. UCZP, IDCP, HDIP)"),
     category: Optional[str] = Query(None, description="Establishment type/category"),
+    user: Optional[dict] = Depends(get_optional_current_user),
 ):
     """
     Spatial query endpoint returning nearby or region-filtered verified establishments
     and geographic coordinates across the Philippines (Zamboanga City core).
     Executes PostGIS ST_DWithin proximity search when coordinates are supplied.
     """
+    requested_status = (status or "").strip().lower().replace(" ", "_").replace("-", "_")
+    if requested_status and not _is_admin_user(user):
+        if (
+            requested_status in PRIVILEGED_ESTABLISHMENT_STATUSES
+            or requested_status not in PUBLIC_ESTABLISHMENT_STATUS_FILTERS
+        ):
+            # Do not disclose the existence of unapproved moderation records and
+            # do not allow partial/fuzzy status probes.
+            raise HTTPException(status_code=404, detail="Not found")
+
     try:
         data = []
         if lat is not None and lng is not None:
@@ -248,7 +308,6 @@ def get_establishments_map(
                     "phone": item.get("phone"),
                     "email": item.get("email"),
                     "description": item.get("description"),
-                    "admin_notes": item.get("admin_notes"),
                     "source_url": item.get("source_url"),
                     "certifying_bodies": {
                         "code": item.get("hcb_code"),
@@ -380,7 +439,7 @@ def search_establishments(q: Optional[str] = Query(None, description="Search que
         base_query = (
             supabase.table("establishments")
             .select("*, certifying_bodies(*)")
-            .not_("halal_status", "in", "(rejected,REJECTED,needs_review,NEEDS_REVIEW,pending,PENDING,pending_review,flagged,suspended)")
+            .not_("halal_status", "in", "(rejected,REJECTED,needs_review,NEEDS_REVIEW,pending,PENDING,pending_review,flagged,suspended,expired,EXPIRED)")
         )
         if query_str:
             base_query = base_query.or_(
@@ -409,7 +468,7 @@ def get_establishments():
         supabase
         .table("establishments")
         .select("*, certifying_bodies(*)")
-        .not_("halal_status", "in", "(rejected,REJECTED,flagged,suspended,needs_review,NEEDS_REVIEW,pending,PENDING,pending_review)")
+        .not_("halal_status", "in", "(rejected,REJECTED,flagged,suspended,needs_review,NEEDS_REVIEW,pending,PENDING,pending_review,expired,EXPIRED)")
         .order("name")
         .execute()
     )
@@ -670,6 +729,37 @@ def submit_establishment(
         if ai_eval["is_auto_approved"]
         else "Establishment submitted successfully and queued for standard verification."
     )
+
+    est_name = created_establishment.get("name") or "Your establishment"
+    est_id = created_establishment.get("id")
+    if ai_eval["is_auto_approved"]:
+        notify_user(
+            user_id,
+            category="verification",
+            title="Establishment approved",
+            message=f'"{est_name}" was verified and published to the directory.',
+            entity_type="establishment",
+            entity_id=est_id,
+            action_view="profile",
+        )
+    else:
+        notify_user(
+            user_id,
+            category="submission",
+            title="Establishment submitted",
+            message=f'"{est_name}" is queued for verification. Track its status in My Contributions.',
+            entity_type="establishment",
+            entity_id=est_id,
+            action_view="profile",
+        )
+        notify_admins(
+            category="submission",
+            title="New establishment submission",
+            message=f'"{est_name}" is awaiting verification.',
+            entity_type="establishment",
+            entity_id=est_id,
+            action_view="verification-queue",
+        )
 
     return {
         "success": True,

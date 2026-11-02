@@ -1,5 +1,6 @@
 from typing import Optional
 from app.auth import get_current_user, require_admin
+from app.notification_service import notify_admins, notify_user
 from app.schemas.issue_reports import IssueReportCreate
 from app.supabase_client import supabase
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -46,6 +47,25 @@ def submit_issue_report(
     if not created_report:
         raise HTTPException(status_code=500, detail="Failed to log issue report")
 
+    subj_display = report.subject_name or ("Establishment" if report.establishment_id else "Product")
+    notify_user(
+        user_id,
+        category="report",
+        title="Issue report submitted",
+        message=f'Your report regarding "{subj_display}" has been received and queued for review.',
+        entity_type="issue_report",
+        entity_id=created_report.get("id"),
+        action_view="profile",
+    )
+    notify_admins(
+        category="report",
+        title="New community issue report",
+        message=f'A new report was flagged regarding "{subj_display}": {report.issue_type}.',
+        entity_type="issue_report",
+        entity_id=created_report.get("id"),
+        action_view="verification-queue",
+    )
+
     return {
         "success": True,
         "message": "Report submitted successfully and queued for admin review.",
@@ -72,4 +92,3 @@ def get_issue_reports(
         "success": True,
         "data": response.data or [],
     }
-
