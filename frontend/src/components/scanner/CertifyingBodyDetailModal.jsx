@@ -7,14 +7,10 @@ import {
     Award,
     FileText,
     Globe,
-    Phone,
-    Mail,
     MapPin,
     Calendar,
     X,
-    Building2,
     BookOpen,
-    Info,
     AlertTriangle,
 } from 'lucide-react';
 
@@ -186,7 +182,7 @@ export const CertifyingBodyDetailModal = ({ profile, onClose }) => {
                     </div>
 
                     {/* Key Facts Summary Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    <div className="grid grid-cols-3 gap-2.5">
                         <div className="p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-1">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
                                 <Award size={11} className="text-emerald-400" />
@@ -214,16 +210,6 @@ export const CertifyingBodyDetailModal = ({ profile, onClose }) => {
                             </span>
                             <p className="text-xs font-semibold text-slate-100 truncate">
                                 {profile.country}
-                            </p>
-                        </div>
-
-                        <div className="p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-1">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                                <Building2 size={11} className="text-emerald-400" />
-                                Scope
-                            </span>
-                            <p className="text-xs font-semibold text-slate-100 truncate">
-                                {profile.auditingScope?.length || 0} Categories
                             </p>
                         </div>
                     </div>
@@ -277,103 +263,7 @@ export const CertifyingBodyDetailModal = ({ profile, onClose }) => {
                         </div>
                     )}
 
-                    {/* Auditing & Inspection Scope */}
-                    {Array.isArray(profile.auditingScope) && profile.auditingScope.length > 0 && (
-                        <div className="space-y-2">
-                            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                                <CheckCircle2 size={13} className="text-emerald-400" />
-                                Certified Auditing Scope
-                            </h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                {profile.auditingScope.map((item, idx) => (
-                                    <div
-                                        key={idx}
-                                        className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-start gap-2 text-xs text-slate-300"
-                                    >
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 mt-1.5" />
-                                        <span>{item}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Standards & International Affiliations */}
-                    {Array.isArray(profile.standards) && profile.standards.length > 0 && (
-                        <div className="space-y-2">
-                            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                                <Award size={13} className="text-emerald-400" />
-                                Technical Standards & Accreditations
-                            </h3>
-                            <div className="flex flex-wrap gap-1.5">
-                                {profile.standards.map((std, idx) => (
-                                    <span
-                                        key={idx}
-                                        className="px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700 text-[11px] font-mono text-emerald-300"
-                                    >
-                                        {std}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {Array.isArray(profile.affiliations) && profile.affiliations.length > 0 && (
-                        <div className="space-y-2">
-                            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                                <Globe size={13} className="text-emerald-400" />
-                                Institutional Affiliations
-                            </h3>
-                            <ul className="space-y-1.5 text-xs text-slate-300">
-                                {profile.affiliations.map((aff, idx) => (
-                                    <li key={idx} className="flex items-start gap-2">
-                                        <span className="text-emerald-400 font-bold">•</span>
-                                        <span>{aff}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-
-                    {/* Public Contact & Headquarters */}
-                    <div className="pt-2 border-t border-slate-800 space-y-2.5">
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                            <Info size={13} className="text-emerald-400" />
-                            Official Contact & Verification Hotlines
-                        </h3>
-
-                        <div className="space-y-1.5 text-xs text-slate-300">
-                            {profile.address && (
-                                <div className="flex items-start gap-2">
-                                    <MapPin size={13} className="text-slate-400 shrink-0 mt-0.5" />
-                                    <span>{profile.address}</span>
-                                </div>
-                            )}
-                            {profile.phone && (
-                                <div className="flex items-center gap-2">
-                                    <Phone size={13} className="text-slate-400 shrink-0" />
-                                    <a
-                                        href={`tel:${profile.phone.replace(/[^0-9+]/g, '')}`}
-                                        className="hover:text-emerald-300 transition"
-                                    >
-                                        {profile.phone}
-                                    </a>
-                                </div>
-                            )}
-                            {profile.email && (
-                                <div className="flex items-center gap-2">
-                                    <Mail size={13} className="text-slate-400 shrink-0" />
-                                    <a
-                                        href={`mailto:${profile.email}`}
-                                        className="hover:text-emerald-300 transition"
-                                    >
-                                        {profile.email}
-                                    </a>
-                                </div>
-                            )}
-                        </div>
                     </div>
-                </div>
 
                 {/* Footer */}
                 <div className="p-4 bg-slate-950/60 border-t border-slate-800 flex items-center justify-between gap-3">

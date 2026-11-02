@@ -52,6 +52,21 @@ const resolveReferenceLogoSrc = (scanResult) => {
     return null;
 };
 
+const formatCertifierHeading = (bodyText = '') => {
+    if (!bodyText) return { name: 'Recognized Halal Seal', isForeign: false };
+    const isForeign =
+        bodyText.toLowerCase().includes('foreign') ||
+        bodyText.toLowerCase().includes('bpjph') ||
+        bodyText.toLowerCase().includes('jakim') ||
+        bodyText.toLowerCase().includes('muis') ||
+        bodyText.toLowerCase().includes('cicot');
+    const name = bodyText
+        .replace(/\s*\(Recognized Foreign Certifier\)/gi, '')
+        .replace(/\s*\(Foreign Certifier\)/gi, '')
+        .trim();
+    return { name, isForeign };
+};
+
 export const LabelResultsSheet = ({
     scanResult,
     isLoading,
@@ -226,7 +241,7 @@ export const LabelResultsSheet = ({
                                     {/* Circular Medallion Emblem (Clips rectangular borders into a sleek circular seal) */}
                                     <div className="relative shrink-0">
                                         <div
-                                            className={`w-16 h-16 rounded-full p-0.5 flex items-center justify-center shadow-md ${
+                                            className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full p-0.5 flex items-center justify-center shadow-md ${
                                                 scanResult.isInvalidLogo
                                                     ? 'bg-gradient-to-b from-red-400 to-red-600 ring-4 ring-red-500/15'
                                                     : 'bg-gradient-to-b from-emerald-400 to-emerald-600 ring-4 ring-emerald-500/15'
@@ -262,30 +277,32 @@ export const LabelResultsSheet = ({
                                     {/* Authority Details */}
                                     <div className="min-w-0 flex-1 space-y-1">
                                         <div className="flex items-center justify-between gap-1">
-                                            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
-                                                Certifying Body / Seal
+                                            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block truncate">
+                                                Certifying Body
                                             </span>
-                                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-400 group-hover:text-emerald-300 transition">
-                                                <span>Authority Profile</span>
+                                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-400 group-hover:text-emerald-300 transition shrink-0">
+                                                <span>View Profile</span>
                                                 <ChevronRight size={11} className="transition group-hover:translate-x-0.5" />
                                             </span>
                                         </div>
                                         <strong className="text-white font-bold text-sm sm:text-base leading-snug block break-words group-hover:text-emerald-200 transition">
-                                            {scanResult.logoBody}
+                                            {formatCertifierHeading(scanResult.logoBody).name}
                                         </strong>
                                         {scanResult.logoConfidence > 0 && (
                                             <div className="pt-0.5">
                                                 <span
-                                                    className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${
+                                                    className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
                                                         scanResult.isInvalidLogo
                                                             ? 'text-red-200 bg-red-900/60 border-red-500/40'
                                                             : 'text-emerald-300 bg-emerald-950/80 border-emerald-500/35'
                                                     }`}
                                                 >
                                                     {scanResult.isInvalidLogo ? (
-                                                        <span>Unaccredited Mark · {scanResult.logoConfidence}% Visual Match</span>
+                                                        <span>Unaccredited Mark · {scanResult.logoConfidence}% Match</span>
+                                                    ) : formatCertifierHeading(scanResult.logoBody).isForeign ? (
+                                                        <span>Recognized Foreign Seal · {scanResult.logoConfidence}% Match</span>
                                                     ) : (
-                                                        <span>Recognized Accredited Seal · {scanResult.logoConfidence}% Visual Match</span>
+                                                        <span>Accredited Seal · {scanResult.logoConfidence}% Match</span>
                                                     )}
                                                 </span>
                                             </div>
@@ -300,7 +317,7 @@ export const LabelResultsSheet = ({
                                         </div>
                                         <div className="min-w-0">
                                             <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
-                                                Certifying Body / Seal
+                                                Certifying Body
                                             </span>
                                             <p className="text-xs sm:text-sm font-bold text-slate-200">
                                                 No Halal Seal Detected
