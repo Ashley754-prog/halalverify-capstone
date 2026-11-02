@@ -17,7 +17,9 @@ def analyze_label(
 ) -> dict:
     user_id = getattr(user, "id", None) or (user.get("id") if isinstance(user, dict) else None)
     result = analyze_label_image(request.imageBase64)
-    save_scan_history("label", result, user_id=str(user_id) if user_id else None)
+    scan_record = save_scan_history("label", result, user_id=str(user_id) if user_id else None)
+    if scan_record and scan_record.get("id"):
+        result["scan_id"] = str(scan_record["id"])
     return result
 
 
@@ -28,6 +30,7 @@ def analyze_certificate(
 ) -> dict:
     user_id = getattr(user, "id", None) or (user.get("id") if isinstance(user, dict) else None)
     result = analyze_certificate_image(request.imageBase64)
-    save_scan_history("certificate", result, user_id=str(user_id) if user_id else None)
+    scan_record = save_scan_history("certificate", result, user_id=str(user_id) if user_id else None)
+    if scan_record and scan_record.get("id"):
+        result["scan_id"] = str(scan_record["id"])
     return result
-

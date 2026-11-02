@@ -1,6 +1,6 @@
 import { ScanSearch, FileText, Clock, Eye, ShieldCheck } from 'lucide-react';
 import VerdictBadge from './VerdictBadge';
-import { getFlaggedItems, getConfidencePct, formatDate } from './scanHistoryUtils';
+import { getFlaggedItems, getConfidencePct, formatDate, hasRecognizedLogo } from './scanHistoryUtils';
 
 export const ScanDesktopTable = ({ items, onSelectItem, onClearFilters }) => {
     return (
@@ -25,6 +25,7 @@ export const ScanDesktopTable = ({ items, onSelectItem, onClearFilters }) => {
                             const displayFlagged = flagged.slice(0, 2);
                             const remainingFlagged = flagged.length - 2;
                             const confPct = getConfidencePct(item.confidence);
+                            const hasLogo = hasRecognizedLogo(item);
 
                             return (
                                 <tr
@@ -88,17 +89,23 @@ export const ScanDesktopTable = ({ items, onSelectItem, onClearFilters }) => {
                                     </td>
 
                                     <td className="px-5 py-3.5 whitespace-nowrap">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full rounded-full bg-emerald-500"
-                                                    style={{ width: `${confPct}%` }}
-                                                />
+                                        {hasLogo && confPct > 0 ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full rounded-full bg-emerald-500"
+                                                        style={{ width: `${confPct}%` }}
+                                                    />
+                                                </div>
+                                                <span className="text-xs font-mono text-slate-600 font-semibold">
+                                                    {confPct.toFixed(0)}%
+                                                </span>
                                             </div>
-                                            <span className="text-xs font-mono text-slate-600 font-semibold">
-                                                {confPct.toFixed(0)}%
+                                        ) : (
+                                            <span className="inline-flex items-center text-[10px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/70">
+                                                Ingredient Check
                                             </span>
-                                        </div>
+                                        )}
                                     </td>
 
                                     <td className="px-5 py-3.5 text-xs text-slate-500 whitespace-nowrap">
@@ -115,32 +122,16 @@ export const ScanDesktopTable = ({ items, onSelectItem, onClearFilters }) => {
                                                 e.stopPropagation();
                                                 onSelectItem(item);
                                             }}
-                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 transition border border-transparent hover:border-emerald-200"
+                                            className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 px-2.5 py-1.5 rounded-lg transition"
+                                            title="View full audit record"
                                         >
-                                            <Eye size={12} />
-                                            <span>View</span>
+                                            <Eye size={13} />
+                                            <span>Inspect</span>
                                         </button>
                                     </td>
                                 </tr>
                             );
                         })}
-
-                        {items.length === 0 && (
-                            <tr>
-                                <td colSpan={7} className="px-6 py-12 text-center text-slate-400 text-xs sm:text-sm">
-                                    <p className="font-semibold text-slate-600">No scan records match your criteria.</p>
-                                    {onClearFilters && (
-                                        <button
-                                            type="button"
-                                            onClick={onClearFilters}
-                                            className="mt-2 text-xs font-bold text-emerald-600 hover:text-emerald-700 underline"
-                                        >
-                                            Clear search & filters
-                                        </button>
-                                    )}
-                                </td>
-                            </tr>
-                        )}
                     </tbody>
                 </table>
             </div>

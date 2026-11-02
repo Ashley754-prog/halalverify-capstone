@@ -1,12 +1,13 @@
 import { ScanSearch, FileText, Clock, ChevronRight, CheckCircle2, AlertTriangle, XCircle, ShieldCheck } from 'lucide-react';
 import VerdictBadge from './VerdictBadge';
-import { getFlaggedItems, getConfidencePct, formatDate } from './scanHistoryUtils';
+import { getFlaggedItems, getConfidencePct, formatDate, hasRecognizedLogo } from './scanHistoryUtils';
 
 export const ScanMobileCard = ({ item, onClick }) => {
     const flagged = getFlaggedItems(item);
     const displayFlagged = flagged.slice(0, 2);
     const remainingFlagged = flagged.length - 2;
     const confPct = getConfidencePct(item.confidence);
+    const hasLogo = hasRecognizedLogo(item);
 
     return (
         <div
@@ -81,15 +82,23 @@ export const ScanMobileCard = ({ item, onClick }) => {
             {/* Card Footer: Confidence + Date + Action Hint */}
             <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
                 <div className="flex items-center gap-2">
-                    <div className="w-14 h-1.5 bg-slate-100 rounded-full overflow-hidden shrink-0">
-                        <div
-                            className="h-full rounded-full bg-emerald-500 transition-all"
-                            style={{ width: `${confPct}%` }}
-                        />
-                    </div>
-                    <span className="text-[11px] font-mono font-semibold text-slate-600">
-                        {confPct.toFixed(0)}%
-                    </span>
+                    {hasLogo && confPct > 0 ? (
+                        <>
+                            <div className="w-14 h-1.5 bg-slate-100 rounded-full overflow-hidden shrink-0">
+                                <div
+                                    className="h-full rounded-full bg-emerald-500 transition-all"
+                                    style={{ width: `${confPct}%` }}
+                                />
+                            </div>
+                            <span className="text-[11px] font-mono font-semibold text-slate-600">
+                                {confPct.toFixed(0)}%
+                            </span>
+                        </>
+                    ) : (
+                        <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/70">
+                            Ingredient Check
+                        </span>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-2">

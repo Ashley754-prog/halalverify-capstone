@@ -4,6 +4,29 @@ export const isCertificateMode = (mode) => {
     return mode === 'cert' || mode === 'certificate';
 };
 
+export const getRawResult = (item) => {
+    if (!item?.raw_result) return null;
+    if (typeof item.raw_result === 'object') return item.raw_result;
+    try {
+        return JSON.parse(item.raw_result);
+    } catch {
+        return null;
+    }
+};
+
+export const hasRecognizedLogo = (item) => {
+    if (!item) return false;
+    const raw = getRawResult(item);
+    if (raw?.logoDetected) return true;
+    const logoStr = (item.detected_logo || '').trim().toLowerCase();
+    return Boolean(
+        logoStr &&
+        logoStr !== 'not detected' &&
+        logoStr !== 'no logo detected' &&
+        logoStr !== 'none'
+    );
+};
+
 export const getConfidencePct = (confidence) => {
     const raw = Number(confidence || 0);
     const pct = raw > 1 ? raw : raw * 100;
@@ -54,7 +77,7 @@ export const getFlaggedItems = (item) => {
         return item.scan_flagged_items.filter(isNonHalalFlag);
     }
     try {
-        const raw = typeof item.raw_result === 'string' ? JSON.parse(item.raw_result) : item.raw_result;
+        const raw = getRawResult(item);
         if (raw && Array.isArray(raw.flaggedIngredients)) {
             return raw.flaggedIngredients
                 .filter(isNonHalalFlag)
@@ -95,6 +118,34 @@ export const calculateScanStats = (scans) => {
     };
 };
 
+const CERTIFIER_LOGO_MAP = [
+    { keys: ['idcp', 'philippines2', 'da\'wah', 'dawah'], src: '/logos/IDCP.jpg' },
+    { keys: ['hdip', 'philippines3', 'halal development institute'], src: '/logos/HDIP.jpg' },
+    { keys: ['ncmf', 'national_halal_logo', 'philippines1', 'national halal seal', 'dti'], src: '/logos/NCMF.jpg' },
+    { keys: ['hiccip'], src: '/logos/HICCIP.png' },
+    { keys: ['prime'], src: '/logos/PRIME.png' },
+    { keys: ['minha', 'mindanao halal authority'], src: '/logos/MinHA.png' },
+    { keys: ['philcosed'], src: '/logos/Philcosed.png' },
+    { keys: ['ahip'], src: '/logos/AHIP.png' },
+    { keys: ['bpcc'], src: '/logos/BPCC.png' },
+    { keys: ['busc'], src: '/logos/BUSC.png' },
+    { keys: ['fiqhi'], src: '/logos/FIQHI.png' },
+    { keys: ['maslaha'], src: '/logos/MASLAHA.png' },
+    { keys: ['mmhcb'], src: '/logos/MMHCB.png' },
+    { keys: ['pucoi'], src: '/logos/PUCOI.png' },
+    { keys: ['invalid', 'counterfeit', 'unrecognized'], src: '/logos/Invalid_Logo.png' },
+];
+
+export const resolveReferenceLogoSrc = (logoBodyStr = '') => {
+    const combined = (logoBodyStr || '').toLowerCase();
+    for (const item of CERTIFIER_LOGO_MAP) {
+        if (item.keys.some((k) => combined.includes(k))) {
+            return item.src;
+        }
+    }
+    return null;
+};
+
 export const MODE_FILTERS = [
     { id: 'all', label: 'All Scans' },
     { id: 'label', label: 'Product Labels' },
@@ -102,8 +153,8 @@ export const MODE_FILTERS = [
 ];
 
 export const VERDICT_FILTERS = [
-    { id: 'all', label: 'All Results' },
-    { id: 'halal', label: 'Halal' },
+    { id: 'all', label: 'All Verdicts' },
+    { id: 'halal', label: 'Halal Verified' },
     { id: 'doubtful', label: 'Doubtful' },
     { id: 'prohibited', label: 'Prohibited' },
 ];

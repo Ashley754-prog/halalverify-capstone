@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Camera, AlertTriangle } from 'lucide-react';
 import Toast from '../components/ui/Toast';
-import { analyzeImage, simulateFallback, API_BASE_URL } from '../utils/api';
+import { analyzeImage, simulateFallback, API_BASE_URL, authFetch } from '../utils/api';
 import { mergeLabelScans } from '../utils/scanFusion';
 import { useCameraStream } from '../hooks/useCameraStream';
 import CameraViewfinder from '../components/scanner/CameraViewfinder';
@@ -91,6 +91,24 @@ export const Scanner = ({ isOnline, onViewChange }) => {
                         fusionState.firstImage,
                         base64Img
                     );
+
+                    const primaryScanId = fusionState.firstScan?.scan_id;
+                    const secondaryScanId = result?.scan_id;
+                    if (primaryScanId) {
+                        merged.scan_id = primaryScanId;
+                        authFetch(`${API_BASE_URL}/api/v1/scan-history/fusion`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                primary_scan_id: primaryScanId,
+                                secondary_scan_id: secondaryScanId,
+                                merged_result: merged,
+                            }),
+                        }).catch((err) => {
+                            console.warn('Fusion consolidation background sync notice:', err);
+                        });
+                    }
+
                     setScanResult(merged);
                     setFusionState(null);
                     setToast({
