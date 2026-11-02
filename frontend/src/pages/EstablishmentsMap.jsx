@@ -3,7 +3,6 @@ import {
     MapPin,
     Flame,
     Store,
-    Filter,
     Search,
     Compass,
     Crosshair,
@@ -28,6 +27,32 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet.heat';
 
 import { SEED_ESTABLISHMENTS } from '../data/seedEstablishments';
+
+// Quick-filter pills. Venue status and moderation are single-select groups;
+// amenities are independent toggles, so the row is rendered in three groups.
+const VENUE_STATUS_PILLS = [
+    { key: 'all', label: 'All Venues' },
+    { key: 'verified', label: 'Halal Certified' },
+    { key: 'muslim_owned', label: 'Muslim-Owned' },
+    { key: 'muslim_friendly', label: 'Muslim-Friendly' },
+    { key: 'vegetarian_vegan', label: 'Plant-Based' },
+];
+
+const MODERATION_PILLS = [
+    { key: 'needs_review', label: 'Pending Verification' },
+    { key: 'flagged', label: 'Expired / Flagged' },
+];
+
+const AMENITY_PILLS = [
+    { key: 'prayer_space', label: 'Prayer Area', icon: Compass },
+    { key: 'alcohol_free', label: 'Alcohol-Free', icon: ShieldCheck },
+];
+
+const FILTER_PILL_BASE = 'px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40';
+const FILTER_PILL_ACTIVE = 'bg-emerald-600 text-white shadow-xs';
+const FILTER_PILL_ACTIVE_MODERATION = 'bg-amber-100 text-amber-800 border border-amber-300 shadow-xs';
+const FILTER_PILL_IDLE = 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200';
+
 
 // Client Haversine distance calculator in km
 const calculateDistanceKm = (lat1, lon1, lat2, lon2) => {
@@ -654,115 +679,69 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                         </select>
                     </div>
 
-                    <div className="h-8 sm:h-8.5 flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100/80 px-2 sm:px-2.5 rounded-xl border border-slate-200 text-xs transition shrink-0">
-                        <Filter size={13} className="text-slate-500 shrink-0" />
-                        <select
-                            value={selectedStatus}
-                            onChange={(e) => setSelectedStatus(e.target.value)}
-                            className="bg-transparent font-bold text-slate-800 focus:outline-none cursor-pointer text-xs"
-                            aria-label="Filter Halal Venues"
-                        >
-                            <option value="all">All Halal Venues</option>
-                            <optgroup label="Institutional Certification">
-                                <option value="verified">Formally Halal Certified</option>
-                            </optgroup>
-                            <optgroup label="Community & Lifestyle">
-                                <option value="muslim_owned">Muslim-Owned (Pork-Free)</option>
-                                <option value="muslim_friendly">Muslim-Friendly Venue</option>
-                                <option value="vegetarian_vegan">Vegetarian / Vegan</option>
-                            </optgroup>
-                            {userRole === 'admin' && (
-                                <optgroup label="Moderation Status">
-                                    <option value="needs_review">Pending Verification</option>
-                                    <option value="flagged">Expired / Flagged</option>
-                                </optgroup>
-                            )}
-                        </select>
-                    </div>
                 </div>
             </div>
 
             {/* Quick One-Tap Filter Pills Row */}
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 shrink-0 select-none">
-                <button
-                    type="button"
-                    onClick={() => { setSelectedStatus('all'); setSelectedAmenity('all'); }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
-                        selectedStatus === 'all' && selectedAmenity === 'all'
-                            ? 'bg-emerald-600 text-white shadow-xs'
-                            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                    }`}
-                >
-                    All Venues
-                </button>
-                <button
-                    type="button"
-                    onClick={() => { setSelectedStatus('verified'); setSelectedAmenity('all'); }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
-                        selectedStatus === 'verified'
-                            ? 'bg-emerald-600 text-white shadow-xs'
-                            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                    }`}
-                >
-                    Halal Certified
-                </button>
-                <button
-                    type="button"
-                    onClick={() => { setSelectedStatus('muslim_owned'); setSelectedAmenity('all'); }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
-                        selectedStatus === 'muslim_owned'
-                            ? 'bg-emerald-600 text-white shadow-xs'
-                            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                    }`}
-                >
-                    Muslim-Owned
-                </button>
-                <button
-                    type="button"
-                    onClick={() => { setSelectedStatus('muslim_friendly'); setSelectedAmenity('all'); }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
-                        selectedStatus === 'muslim_friendly'
-                            ? 'bg-emerald-600 text-white shadow-xs'
-                            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                    }`}
-                >
-                    Muslim-Friendly
-                </button>
-                <button
-                    type="button"
-                    onClick={() => { setSelectedStatus('vegetarian_vegan'); setSelectedAmenity('all'); }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
-                        selectedStatus === 'vegetarian_vegan'
-                            ? 'bg-emerald-600 text-white shadow-xs'
-                            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                    }`}
-                >
-                    Plant-Based
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setSelectedAmenity(selectedAmenity === 'prayer_space' ? 'all' : 'prayer_space')}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
-                        selectedAmenity === 'prayer_space'
-                            ? 'bg-emerald-600 text-white shadow-xs'
-                            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                    }`}
-                >
-                    <Compass size={12} />
-                    <span>Prayer Area</span>
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setSelectedAmenity(selectedAmenity === 'alcohol_free' ? 'all' : 'alcohol_free')}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
-                        selectedAmenity === 'alcohol_free'
-                            ? 'bg-emerald-600 text-white shadow-xs'
-                            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                    }`}
-                >
-                    <ShieldCheck size={12} />
-                    <span>Alcohol-Free</span>
-                </button>
+            <div className="relative shrink-0">
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 pr-7 select-none">
+                    {VENUE_STATUS_PILLS.map((pill) => {
+                        const isActive = pill.key === 'all'
+                            ? selectedStatus === 'all' && selectedAmenity === 'all'
+                            : selectedStatus === pill.key;
+                        return (
+                            <button
+                                key={pill.key}
+                                type="button"
+                                aria-pressed={isActive}
+                                onClick={() => { setSelectedStatus(pill.key); setSelectedAmenity('all'); }}
+                                className={`${FILTER_PILL_BASE} ${isActive ? FILTER_PILL_ACTIVE : FILTER_PILL_IDLE}`}
+                            >
+                                {pill.label}
+                            </button>
+                        );
+                    })}
+
+                    {userRole === 'admin' && (
+                        <>
+                            <span aria-hidden="true" className="h-4 w-px bg-slate-200 shrink-0 mx-1" />
+                            {MODERATION_PILLS.map((pill) => {
+                                const isActive = selectedStatus === pill.key;
+                                return (
+                                    <button
+                                        key={pill.key}
+                                        type="button"
+                                        aria-pressed={isActive}
+                                        onClick={() => { setSelectedStatus(pill.key); setSelectedAmenity('all'); }}
+                                        className={`${FILTER_PILL_BASE} ${isActive ? FILTER_PILL_ACTIVE_MODERATION : FILTER_PILL_IDLE}`}
+                                    >
+                                        {pill.label}
+                                    </button>
+                                );
+                            })}
+                        </>
+                    )}
+
+                    <span aria-hidden="true" className="h-4 w-px bg-slate-200 shrink-0 mx-1" />
+
+                    {AMENITY_PILLS.map((pill) => {
+                        const Icon = pill.icon;
+                        const isActive = selectedAmenity === pill.key;
+                        return (
+                            <button
+                                key={pill.key}
+                                type="button"
+                                aria-pressed={isActive}
+                                onClick={() => setSelectedAmenity(isActive ? 'all' : pill.key)}
+                                className={`${FILTER_PILL_BASE} ${isActive ? FILTER_PILL_ACTIVE : FILTER_PILL_IDLE}`}
+                            >
+                                <Icon size={12} />
+                                <span>{pill.label}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+                <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-slate-50 to-transparent" />
             </div>
 
             {/* Segmented View Tabs for Mobile & Tablet */}
