@@ -33,24 +33,24 @@ export const CertResultsSheet = ({
     };
 
     return (
-        <div className="absolute inset-0 z-40 flex flex-col justify-end">
-            {/* Clickable Backdrop to collapse */}
+        <div className="absolute inset-0 z-40 flex flex-col justify-end lg:static lg:inset-auto lg:z-auto lg:h-full lg:max-h-full">
+            {/* Clickable Backdrop to collapse (Mobile only) */}
             <div
-                className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity"
+                className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity lg:hidden"
                 onClick={onClose}
                 aria-label="Collapse inspection sheet"
             />
 
-            <div className="relative w-full max-h-[88%] bg-slate-900 border-t border-slate-700 rounded-t-3xl shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300 text-slate-100 z-10">
+            <div className="relative w-full max-h-[88%] lg:max-h-full lg:h-full bg-slate-900 border-t lg:border border-slate-700 rounded-t-3xl lg:rounded-2xl shadow-2xl flex flex-col animate-in slide-in-from-bottom lg:animate-none duration-300 text-slate-100 z-10 overflow-hidden">
                 {/* Grab Handle & Sheet Header with Swipe-Down Gesture */}
                 <div 
-                    className="p-3 pb-2 flex flex-col items-center border-b border-slate-800 touch-none select-none"
+                    className="p-3 pb-2 flex flex-col items-center border-b border-slate-800 touch-none select-none shrink-0"
                     onTouchStart={handleTouchStart}
                     onTouchEnd={handleTouchEnd}
                 >
                     {/* Draggable & Tappable Pill Handle */}
                     <div 
-                        className="w-full py-1.5 flex justify-center cursor-pointer active:opacity-75"
+                        className="w-full py-1.5 flex justify-center cursor-pointer active:opacity-75 lg:hidden"
                         onClick={onClose}
                         title="Swipe down or tap to return to camera"
                     >
@@ -95,7 +95,7 @@ export const CertResultsSheet = ({
                 </div>
 
                 {/* Scrollable Content */}
-                <div className="overflow-y-auto p-4 sm:p-6 space-y-4 max-h-[75vh]">
+                <div className="overflow-y-auto p-4 sm:p-6 space-y-4 max-h-[75vh] lg:max-h-none lg:flex-1">
                     {isLoading && (
                         <div className="flex flex-col items-center justify-center py-12 gap-3">
                             <RefreshCw className="h-9 w-9 text-emerald-400 animate-spin" />

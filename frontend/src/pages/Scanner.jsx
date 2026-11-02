@@ -49,6 +49,17 @@ export const Scanner = ({ isOnline, onViewChange }) => {
     // Touch Swipe Gesture State
     const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
 
+    // Keyboard Escape to dismiss results on desktop
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' && showResultsSheet) {
+                setShowResultsSheet(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [showResultsSheet]);
+
     // Pre-warm cloud backend in background so it is active before capture
     useEffect(() => {
         fetch(`${API_BASE_URL}/health`).catch(() => {});
@@ -308,74 +319,82 @@ export const Scanner = ({ isOnline, onViewChange }) => {
                 </div>
             )}
 
-            {/* Camera Viewfinder Component */}
-            <CameraViewfinder
-                scannerMode={scannerMode}
-                setScannerMode={setScannerMode}
-                isCapturing={isCapturing}
-                videoRef={videoRef}
-                canvasRef={canvasRef}
-                selectedImage={selectedImage}
-                scanResult={scanResult}
-                certResult={certResult}
-                showResultsSheet={showResultsSheet}
-                onOpenResultsSheet={() => setShowResultsSheet(true)}
-                isMirrored={isMirrored}
-                zoom={zoom}
-                zoomCapabilities={zoomCapabilities}
-                applyZoom={applyZoom}
-                toggleCamera={toggleCamera}
-                torchOn={torchOn}
-                torchSupported={torchSupported}
-                toggleTorch={toggleTorch}
-                focusRing={focusRing}
-                handleTapToFocus={handleTapToFocus}
-                onCapture={handleCapture}
-                onFileUpload={handleFileUpload}
-                onReset={resetState}
-                fusionState={fusionState}
-                onCancelFusion={handleCancelFusion}
-            />
+            {/* Camera Viewfinder & Results Workspace */}
+            <div className={`flex-1 min-h-0 w-full relative ${showResultsSheet ? 'lg:grid lg:grid-cols-12 lg:gap-5' : 'flex flex-col'}`}>
+                {/* Left Column on Desktop / Full Viewport on Mobile */}
+                <div className={`h-full min-h-0 flex flex-col ${showResultsSheet ? 'lg:col-span-5 xl:col-span-5' : 'w-full max-w-4xl mx-auto flex-1'}`}>
+                    <CameraViewfinder
+                        scannerMode={scannerMode}
+                        setScannerMode={setScannerMode}
+                        isCapturing={isCapturing}
+                        videoRef={videoRef}
+                        canvasRef={canvasRef}
+                        selectedImage={selectedImage}
+                        scanResult={scanResult}
+                        certResult={certResult}
+                        showResultsSheet={showResultsSheet}
+                        onOpenResultsSheet={() => setShowResultsSheet(true)}
+                        isMirrored={isMirrored}
+                        zoom={zoom}
+                        zoomCapabilities={zoomCapabilities}
+                        applyZoom={applyZoom}
+                        toggleCamera={toggleCamera}
+                        torchOn={torchOn}
+                        torchSupported={torchSupported}
+                        toggleTorch={toggleTorch}
+                        focusRing={focusRing}
+                        handleTapToFocus={handleTapToFocus}
+                        onCapture={handleCapture}
+                        onFileUpload={handleFileUpload}
+                        onReset={resetState}
+                        fusionState={fusionState}
+                        onCancelFusion={handleCancelFusion}
+                    />
+                </div>
 
-            {/* Label Results Sheet */}
-            {showResultsSheet && scannerMode === 'label' && (
-                <LabelResultsSheet
-                    scanResult={scanResult}
-                    selectedImage={selectedImage}
-                    isLoading={isLoading}
-                    onReset={resetState}
-                    onRetry={() => selectedImage && triggerAIScan(selectedImage)}
-                    onClose={() => setShowResultsSheet(false)}
-                    onViewChange={onViewChange}
-                    onScanSecondary={handleScanSecondary}
-                    onContributeProduct={async (result) => {
-                        const { data: { session } } = await supabase.auth.getSession();
-                        if (!session?.user) {
-                            setShowAuthPrompt(true);
-                            return;
-                        }
-                        const hasValidLogo = Boolean(result?.logoDetected && !result?.isInvalidLogo);
-                        setPrefillProductData({
-                            halal_tier: hasValidLogo ? 'halal_certified' : 'pork_free_declared',
-                            certifying_body: hasValidLogo ? resolveCertifierCode(result?.logoBody || '') : '',
-                            ingredients_summary: result?.ocrText ? result.ocrText.slice(0, 600) : '',
-                        });
-                        setShowContributionModal(true);
-                    }}
-                />
-            )}
+                {/* Right Column on Desktop / Absolute Sheet on Mobile */}
+                {showResultsSheet && (
+                    <div className="contents lg:block lg:col-span-7 xl:col-span-7 lg:h-full lg:min-h-0">
+                        {scannerMode === 'label' && (
+                            <LabelResultsSheet
+                                scanResult={scanResult}
+                                selectedImage={selectedImage}
+                                isLoading={isLoading}
+                                onReset={resetState}
+                                onRetry={() => selectedImage && triggerAIScan(selectedImage)}
+                                onClose={() => setShowResultsSheet(false)}
+                                onViewChange={onViewChange}
+                                onScanSecondary={handleScanSecondary}
+                                onContributeProduct={async (result) => {
+                                    const { data: { session } } = await supabase.auth.getSession();
+                                    if (!session?.user) {
+                                        setShowAuthPrompt(true);
+                                        return;
+                                    }
+                                    const hasValidLogo = Boolean(result?.logoDetected && !result?.isInvalidLogo);
+                                    setPrefillProductData({
+                                        halal_tier: hasValidLogo ? 'halal_certified' : 'pork_free_declared',
+                                        certifying_body: hasValidLogo ? resolveCertifierCode(result?.logoBody || '') : '',
+                                        ingredients_summary: result?.ocrText ? result.ocrText.slice(0, 600) : '',
+                                    });
+                                    setShowContributionModal(true);
+                                }}
+                            />
+                        )}
 
-            {/* Certificate Results Sheet */}
-            {showResultsSheet && scannerMode === 'cert' && (
-                <CertResultsSheet
-                    certResult={certResult}
-                    isLoading={isLoading}
-                    onReset={resetState}
-                    onRetry={() => selectedImage && triggerAIScan(selectedImage)}
-                    onClose={() => setShowResultsSheet(false)}
-                    onViewChange={onViewChange}
-                />
-            )}
+                        {scannerMode === 'cert' && (
+                            <CertResultsSheet
+                                certResult={certResult}
+                                isLoading={isLoading}
+                                onReset={resetState}
+                                onRetry={() => selectedImage && triggerAIScan(selectedImage)}
+                                onClose={() => setShowResultsSheet(false)}
+                                onViewChange={onViewChange}
+                            />
+                        )}
+                    </div>
+                )}
+            </div>
 
             {/* Contribute Scanned Product Modal */}
             <ContributionModal

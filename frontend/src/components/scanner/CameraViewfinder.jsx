@@ -296,9 +296,11 @@ export const CameraViewfinder = ({
                             <div className="px-3 py-1 rounded-full bg-slate-950/70 border border-slate-800 backdrop-blur-md text-[11px] text-slate-300 font-medium flex items-center gap-1.5 shadow-sm min-w-0">
                                 <span className={`w-2 h-2 rounded-full shrink-0 ${isCapturing ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
                                 <span className="truncate">
-                                    {scannerMode === 'label'
-                                        ? 'Point at ingredients or Halal logo'
-                                        : 'Point at Halal Certificate'}
+                                    {selectedImage && !isCapturing
+                                        ? 'Captured Packaging Evidence'
+                                        : (scannerMode === 'label'
+                                            ? 'Point at ingredients or Halal logo'
+                                            : 'Point at Halal Certificate')}
                                 </span>
                             </div>
 

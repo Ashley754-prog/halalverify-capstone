@@ -233,6 +233,44 @@ def match_certifier_from_catalog(upper_text: str):
     return None
 
 
+def find_catalog_product_match(upper_text: str):
+    """Matches OCR packaging text against verified products and brands in Supabase catalog."""
+    global _cached_catalog_certs, _cached_catalog_certs_ts
+    if not upper_text or len(upper_text) < 4:
+        return None
+
+    now = time.time()
+    if not _cached_catalog_certs or (now - _cached_catalog_certs_ts > 180):
+        try:
+            res = (
+                supabase.table("products")
+                .select("name, brand, certificate_no, certifying_bodies(code, name)")
+                .not_.is_("certifying_body_id", "null")
+                .limit(400)
+                .execute()
+            )
+            if res.data:
+                _cached_catalog_certs = res.data
+                _cached_catalog_certs_ts = now
+        except Exception:
+            pass
+
+    for item in (_cached_catalog_certs or []):
+        brand = (item.get("brand") or "").strip()
+        p_name = (item.get("name") or "").strip()
+        b_upper = brand.upper()
+        p_upper = p_name.upper()
+
+        if b_upper and len(b_upper) >= 4 and p_upper and len(p_upper) >= 8:
+            if b_upper in upper_text and p_upper in upper_text:
+                return {"brand": brand, "name": p_name, "matched": True}
+
+        if b_upper and len(b_upper) >= 4 and b_upper in upper_text:
+            return {"brand": brand, "name": p_name, "matched": True}
+
+    return None
+
+
 def get_all_additives():
     global _cached_additives, _cached_additives_ts
     now = time.time()
@@ -1253,6 +1291,7 @@ def analyze_label_image(image_base64: str) -> dict:
     verdict_details = explain_label_verdict(flagged_items, extracted_text, logo_result, section_info)
     decision_time = round((time.time() - t_decision) * 1000, 1)
     total_latency = round((time.time() - t_start) * 1000, 1)
+    matched_product = find_catalog_product_match(extracted_text.upper() if extracted_text else "")
 
     crop_ocr_note = (
         f" | ROI Crop OCR: '{logo_result.get('cropOcrText')[:60]}'"
@@ -1348,6 +1387,7 @@ def analyze_label_image(image_base64: str) -> dict:
         "riskLevel": verdict_details["riskLevel"],
         "analysisSummary": verdict_details["analysisSummary"],
         "recommendations": verdict_details["recommendations"],
+        "matchedProduct": matched_product,
         "ocrText": extracted_text,
         "ocrEngine": ocr_engine_used,
         "pipelineStages": pipeline_stages,
@@ -1364,7 +1404,11 @@ def save_scan_history(mode: str, result: dict, user_id: str = None):
         if mode == "label":
             verdict = VERDICT_TO_STATUS.get(result.get("verdict"), "Unknown")
             confidence = result.get("logoConfidence", 0)
-            image_name = "Product Label Scan"
+            matched = result.get("matchedProduct")
+            if matched and matched.get("name"):
+                image_name = f"{matched.get('brand', '')} {matched.get('name', '')}".strip()
+            else:
+                image_name = "Product Label Scan"
             detected_logo = result.get("logoBody")
             extracted_text = ", ".join(result.get("ingredientsFound", []))
         else:
