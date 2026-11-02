@@ -556,7 +556,7 @@ export const HCB_DIRECTORY = {
         code: 'BPJPH',
         name: 'Badan Penyelenggara Jaminan Produk Halal (BPJPH / LPPOM MUI - Indonesia)',
         shortName: 'BPJPH / MUI Indonesia',
-        logoSrc: null,
+        logoSrc: '/logos/BPJPH.png',
         category: 'International Recognized Partner',
         country: 'Indonesia',
         flag: '🇮🇩',

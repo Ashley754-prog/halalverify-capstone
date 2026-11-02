@@ -136,6 +136,7 @@ const CERTIFIER_LOGO_MAP = [
     { keys: ['maslaha'], src: '/logos/MASLAHA.png' },
     { keys: ['mmhcb'], src: '/logos/MMHCB.png' },
     { keys: ['pucoi'], src: '/logos/PUCOI.png' },
+    { keys: ['bpjph', 'mui', 'indonesia', 'halal indonesia'], src: '/logos/BPJPH.png' },
     { keys: ['invalid', 'counterfeit', 'unrecognized'], src: '/logos/Invalid_Logo.png' },
 ];
 
