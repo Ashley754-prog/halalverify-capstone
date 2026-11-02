@@ -134,81 +134,63 @@ export const CertifyingBodyDetailModal = ({ profile, onClose }) => {
                                 {profile.name}
                             </h2>
 
-                            <p className="text-xs text-slate-400 flex items-center gap-1.5 flex-wrap">
+                            <div className="text-xs text-slate-400 flex flex-wrap items-center gap-x-2.5 gap-y-1">
                                 <span className="font-semibold text-slate-300">{profile.shortName}</span>
                                 {profile.headquarters && (
-                                    <>
-                                        <span className="text-slate-600">•</span>
-                                        <span className="flex items-center gap-1">
-                                            <MapPin size={11} className="text-slate-500 shrink-0" />
-                                            {profile.headquarters}
-                                        </span>
-                                    </>
+                                    <span className="inline-flex items-center gap-1 text-slate-400">
+                                        <MapPin size={11} className="text-slate-500 shrink-0" />
+                                        <span>{profile.headquarters}</span>
+                                    </span>
                                 )}
-                            </p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Scrollable Body Content */}
                 <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 scrollbar-thin">
-                    {/* Quick Action Buttons */}
-                    <div className="flex flex-wrap gap-2.5">
-                        {profile.website && (
-                            <a
-                                href={profile.website}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex-1 min-w-[200px] py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg active:scale-95 transition cursor-pointer"
-                            >
-                                <Globe size={14} />
-                                <span>Visit Official Website</span>
-                                <ExternalLink size={12} className="opacity-80" />
-                            </a>
-                        )}
-
-                        {profile.registryUrl && (
-                            <a
-                                href={profile.registryUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 font-semibold text-xs border border-slate-700 flex items-center justify-center gap-2 active:scale-95 transition cursor-pointer"
-                            >
-                                <FileText size={14} className="text-emerald-400" />
-                                <span>Registry Lookup</span>
-                                <ExternalLink size={12} className="text-slate-500" />
-                            </a>
-                        )}
-                    </div>
+                    {/* Quick Action Button */}
+                    {profile.website && (
+                        <a
+                            href={profile.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg active:scale-95 transition cursor-pointer"
+                        >
+                            <Globe size={14} />
+                            <span>Visit Official Website</span>
+                            <ExternalLink size={12} className="opacity-80" />
+                        </a>
+                    )}
 
                     {/* Key Facts Summary Grid */}
-                    <div className="grid grid-cols-3 gap-2.5">
-                        <div className="p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-1">
+                    <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
+                        <div className="p-2.5 sm:p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-1">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                                <Award size={11} className="text-emerald-400" />
+                                <Award size={11} className="text-emerald-400 shrink-0" />
                                 Status
                             </span>
-                            <p className="text-xs font-semibold text-slate-100 truncate">
-                                {profile.status}
+                            <p className="text-xs font-semibold text-slate-100 leading-snug">
+                                {profile.status === 'Foreign Official Authority' ? 'Foreign Authority' : profile.status}
                             </p>
                         </div>
 
-                        <div className="p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-1">
+                        <div className="p-2.5 sm:p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-1">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                                <Calendar size={11} className="text-emerald-400" />
+                                <Calendar size={11} className="text-emerald-400 shrink-0" />
                                 Established
                             </span>
-                            <p className="text-xs font-semibold text-slate-100 truncate">
-                                {profile.founded}
+                            <p className="text-xs font-semibold text-slate-100 leading-snug">
+                                {profile.founded ? profile.founded.split('(')[0].trim() : 'N/A'}
                             </p>
                         </div>
 
-                        <div className="p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-1">
+                        <div className="p-2.5 sm:p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-1">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                                <Globe size={11} className="text-emerald-400" />
+                                <Globe size={11} className="text-emerald-400 shrink-0" />
                                 Country
                             </span>
-                            <p className="text-xs font-semibold text-slate-100 truncate">
+                            <p className="text-xs font-semibold text-slate-100 leading-snug truncate">
                                 {profile.country}
                             </p>
                         </div>
@@ -267,8 +249,8 @@ export const CertifyingBodyDetailModal = ({ profile, onClose }) => {
 
                 {/* Footer */}
                 <div className="p-4 bg-slate-950/60 border-t border-slate-800 flex items-center justify-between gap-3">
-                    <span className="text-[11px] text-slate-400 truncate">
-                        HalalVerify Authority Knowledge Base · PNS 2067:2008
+                    <span className="text-[11px] text-slate-400">
+                        PNS 2067:2008 Standard
                     </span>
                     <button
                         type="button"
