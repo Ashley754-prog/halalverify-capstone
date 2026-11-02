@@ -159,9 +159,11 @@ export const ScanDetailModal = ({ scan, onClose }) => {
     }
 
     // Use actual dynamic analysis summary from the scanner if available
-    const activeSummary = raw?.analysisSummary
-        ? simplifyHalalText(raw.analysisSummary)
-        : defaultBannerDesc;
+    const activeSummary = (!hasLogo && flagged.length === 0 && isDoubtful)
+        ? 'Ingredients appear clean, but no official Halal seal was detected on the packaging.'
+        : (raw?.analysisSummary
+            ? simplifyHalalText(raw.analysisSummary)
+            : defaultBannerDesc);
 
     const flagged = getFlaggedItems(scan);
     const recommendations = Array.isArray(raw?.recommendations) ? raw.recommendations : [];
@@ -225,7 +227,7 @@ export const ScanDetailModal = ({ scan, onClose }) => {
                         <span className="font-semibold text-slate-400 block mb-1">Scan Mode</span>
                         <span className="font-bold text-slate-800 flex items-center gap-1.5 truncate">
                             {scan.mode === 'label' ? <ScanSearch size={14} className="text-blue-600 shrink-0" /> : <FileText size={14} className="text-emerald-600 shrink-0" />}
-                            <span className="truncate">{scan.mode === 'label' ? 'Packaging Label OCR' : 'Certificate Scan'}</span>
+                            <span className="truncate">{scan.mode === 'label' ? 'Product Label' : 'Certificate Scan'}</span>
                         </span>
                     </div>
 
@@ -238,8 +240,8 @@ export const ScanDetailModal = ({ scan, onClose }) => {
                     </div>
                 </div>
 
-                {/* 3. Detected Certifying Body Card (if present) */}
-                {scan.detected_logo && (
+                {/* 3. Detected Certifying Body Card */}
+                {hasLogo ? (
                     <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 flex items-center gap-3">
                         {certLogoSrc ? (
                             <div className="w-12 h-12 rounded-full overflow-hidden border border-slate-200 bg-white shadow-xs shrink-0 flex items-center justify-center">
@@ -271,6 +273,25 @@ export const ScanDetailModal = ({ scan, onClose }) => {
                                         Accredited Certification Mark {confPct > 0 ? `· ${confPct.toFixed(0)}% Match` : ''}
                                     </span>
                                 )}
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center shrink-0">
+                            <ScanSearch size={20} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                                Halal Logo Seal
+                            </span>
+                            <p className="font-bold text-xs sm:text-sm text-slate-700 truncate">
+                                No Halal Logo Detected
+                            </p>
+                            <div className="mt-0.5 flex items-center gap-1.5">
+                                <span className="text-[10px] font-semibold text-slate-600 bg-slate-200/80 border border-slate-300 px-2 py-0.5 rounded-full">
+                                    Ingredient-Only Screening
+                                </span>
                             </div>
                         </div>
                     </div>

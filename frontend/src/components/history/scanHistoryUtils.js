@@ -19,12 +19,16 @@ export const hasRecognizedLogo = (item) => {
     const raw = getRawResult(item);
     if (raw?.logoDetected) return true;
     const logoStr = (item.detected_logo || '').trim().toLowerCase();
-    return Boolean(
-        logoStr &&
-        logoStr !== 'not detected' &&
-        logoStr !== 'no logo detected' &&
-        logoStr !== 'none'
-    );
+    if (!logoStr) return false;
+    if (
+        logoStr.includes('not detected') ||
+        logoStr.includes('no logo') ||
+        logoStr.includes('no halal logo') ||
+        logoStr === 'none'
+    ) {
+        return false;
+    }
+    return true;
 };
 
 export const getConfidencePct = (confidence) => {
@@ -56,11 +60,10 @@ export const formatFullDate = (dateStr) => {
         if (isNaN(d.getTime())) return 'Invalid date';
         return d.toLocaleString('en-PH', {
             year: 'numeric',
-            month: 'long',
+            month: 'short',
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
-            second: '2-digit',
         });
     } catch {
         return dateStr;

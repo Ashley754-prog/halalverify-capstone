@@ -14,9 +14,6 @@ import {
     ScanSearch,
     Camera,
     Info,
-    Terminal,
-    Copy,
-    Check,
 } from 'lucide-react';
 import { simplifyHalalText, simplifyStatus } from '../../utils/textFormatters';
 import { CertifyingBodyDetailModal } from './CertifyingBodyDetailModal';
@@ -66,15 +63,7 @@ export const LabelResultsSheet = ({
 }) => {
     const [touchStartY, setTouchStartY] = useState(null);
     const [selectedHcbProfile, setSelectedHcbProfile] = useState(null);
-    const [showTechDetails, setShowTechDetails] = useState(false);
-    const [copiedOcr, setCopiedOcr] = useState(false);
 
-    const handleCopyOcr = () => {
-        if (!scanResult?.ocrText) return;
-        navigator.clipboard?.writeText(scanResult.ocrText);
-        setCopiedOcr(true);
-        setTimeout(() => setCopiedOcr(false), 2000);
-    };
 
     const displayedLogoSrc = resolveReferenceLogoSrc(scanResult);
     const hasVerifiedSeal = Boolean(
@@ -539,82 +528,13 @@ export const LabelResultsSheet = ({
                                 </button>
                             )}
 
-                            {/* 5. Concise 2-Sentence Advisory Disclaimer Card */}
+                            {/* 5. Advisory Disclaimer Card */}
                             <div className="p-3 rounded-xl bg-slate-800/50 border border-slate-700/70 flex items-start gap-2.5 text-[11px] text-slate-300 leading-relaxed">
                                 <Info size={14} className="text-slate-400 shrink-0 mt-0.5" />
                                 <p>
-                                    <strong className="text-slate-200 font-semibold">Advisory Disclaimer:</strong> This result is an automated screening based on visible packaging text and certification seals. Please verify the physical seal on the package or abstain if in doubt.
+                                    <strong className="text-slate-200 font-semibold">Advisory Disclaimer:</strong> This result is an automated screening based on visible packaging text and certification seals. Consumption is at your own discretion and risk; abstain or verify ingredients independently if in doubt.
                                 </p>
                             </div>
-
-                            {/* Technical Analysis & Raw OCR Text Drawer */}
-                            {scanResult.ocrText && (
-                                <div className="rounded-xl border border-slate-700/80 bg-slate-800/40 overflow-hidden text-xs">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowTechDetails((prev) => !prev)}
-                                        className="w-full p-3 flex items-center justify-between text-slate-300 hover:text-white transition cursor-pointer select-none"
-                                    >
-                                        <div className="flex items-center gap-2 font-semibold">
-                                            <Terminal size={14} className="text-emerald-400 shrink-0" />
-                                            <span>Technical Analysis & OCR Text</span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
-                                            <span>{showTechDetails ? 'Hide' : 'Inspect'}</span>
-                                            <ChevronDown size={14} className={`transition-transform duration-200 ${showTechDetails ? 'rotate-180' : ''}`} />
-                                        </div>
-                                    </button>
-
-                                    {showTechDetails && (
-                                        <div className="p-3 pt-0 space-y-2.5 border-t border-slate-700/60 animate-in fade-in duration-200">
-                                            {/* Pipeline Metrics */}
-                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 text-[10px]">
-                                                <div className="p-2 rounded-lg bg-slate-950/60 border border-slate-800">
-                                                    <span className="text-slate-400 block font-medium">OCR Engine</span>
-                                                    <span className="font-semibold text-slate-200 truncate block">{scanResult.ocrEngine || 'Vision AI Engine'}</span>
-                                                </div>
-                                                <div className="p-2 rounded-lg bg-slate-950/60 border border-slate-800">
-                                                    <span className="text-slate-400 block font-medium">Total Latency</span>
-                                                    <span className="font-semibold text-slate-200 block">{scanResult.totalLatencyMs ? `${scanResult.totalLatencyMs} ms` : 'Cached / Fast'}</span>
-                                                </div>
-                                                <div className="col-span-2 sm:col-span-1 p-2 rounded-lg bg-slate-950/60 border border-slate-800">
-                                                    <span className="text-slate-400 block font-medium">Seal Detector</span>
-                                                    <span className="font-semibold text-slate-200 truncate block">
-                                                        {scanResult.logoDetected ? `YOLOv8n (${scanResult.logoConfidence}%)` : 'None detected'}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* Raw OCR Text Box */}
-                                            <div className="space-y-1">
-                                                <div className="flex items-center justify-between text-[11px]">
-                                                    <span className="text-slate-300 font-semibold">Extracted Packaging Text:</span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleCopyOcr}
-                                                        className="inline-flex items-center gap-1 text-[10px] text-emerald-400 hover:text-emerald-300 transition cursor-pointer"
-                                                    >
-                                                        {copiedOcr ? (
-                                                            <>
-                                                                <Check size={11} className="text-emerald-400" />
-                                                                <span>Copied!</span>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <Copy size={11} />
-                                                                <span>Copy Text</span>
-                                                            </>
-                                                        )}
-                                                    </button>
-                                                </div>
-                                                <div className="max-h-36 overflow-y-auto p-2.5 bg-slate-950/90 rounded-lg border border-slate-800/80 font-mono text-[10px] text-slate-300 whitespace-pre-wrap leading-relaxed select-all">
-                                                    {scanResult.ocrText}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
 
                             {/* 6. Footer Actions */}
                             <div className="pt-1 flex flex-wrap gap-2">
