@@ -589,7 +589,7 @@ export const Registry = ({ userRole, onViewChange }) => {
                         <button
                             type="button"
                             onClick={handleOpenContribution}
-                            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-bold text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-500 transition active:scale-[0.98]"
+                            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-bold text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-700 transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
                         >
                             <Plus size={14} />
                             <span>Submit <span className="hidden sm:inline">Establishment</span></span>
@@ -603,7 +603,7 @@ export const Registry = ({ userRole, onViewChange }) => {
                                 if (registryMode === 'additives') openModal('add-additive');
                                 else if (registryMode === 'hcb') openModal('add-hcb');
                             }}
-                            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-bold text-white hover:bg-slate-800 transition shadow-sm"
+                            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-bold text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-700 transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
                         >
                             <Plus size={14} />
                             <span>{registryMode === 'additives' ? 'Add Additive' : 'Register HCB'}</span>
