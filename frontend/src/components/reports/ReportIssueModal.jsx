@@ -256,7 +256,7 @@ export default function ReportIssueModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isSuccess ? '' : 'Report Issue or Discrepancy'}
+      title={isSuccess ? '' : 'Report Issue'}
       description={
         isSuccess
           ? ''
@@ -320,11 +320,7 @@ export default function ReportIssueModal({
                 </div>
               </div>
 
-              {halalTier && (
-                <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 border border-slate-300/60">
-                  {halalTier.replace(/_/g, ' ')}
-                </span>
-              )}
+
             </div>
           ) : (
             <div>
@@ -380,7 +376,7 @@ export default function ReportIssueModal({
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="block font-semibold text-slate-700">
-                Description of Discrepancy <span className="text-red-500">*</span>
+                Description of Issue <span className="text-red-500">*</span>
               </label>
               <span className={`text-[10px] font-semibold ${description.trim().length >= 4 ? 'text-emerald-600' : 'text-slate-400'}`}>
                 {description.trim().length} / 4 min chars
