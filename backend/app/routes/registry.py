@@ -742,6 +742,14 @@ def submit_establishment(
             entity_id=est_id,
             action_view="profile",
         )
+        notify_admins(
+            category="verification",
+            title="New establishment auto-approved",
+            message=f'"{est_name}" was auto-verified by AI and published.',
+            entity_type="establishment",
+            entity_id=est_id,
+            action_view="map",
+        )
     else:
         notify_user(
             user_id,

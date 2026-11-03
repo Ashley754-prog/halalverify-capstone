@@ -409,6 +409,14 @@ def submit_product(
             entity_id=prod_id,
             action_view="profile",
         )
+        notify_admins(
+            category="verification",
+            title="New product auto-approved",
+            message=f'"{prod_name}" was auto-verified by AI and published.',
+            entity_type="product",
+            entity_id=prod_id,
+            action_view="products",
+        )
     else:
         notify_user(
             user_id,

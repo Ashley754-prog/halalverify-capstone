@@ -98,10 +98,10 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         const cleanDesc = form.description.trim();
-        if (cleanDesc.length < 20) {
+        if (cleanDesc.length < 4) {
             setToast({
                 visible: true,
-                message: 'Please provide at least 20 characters in the description explaining the issue.',
+                message: 'Please provide at least 4 characters in the description explaining the issue.',
                 type: 'error',
             });
             return;
@@ -333,15 +333,15 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
                             <label className="block text-xs font-bold uppercase tracking-wide text-slate-600">
                                 Description <span className="text-red-500">*</span>
                             </label>
-                            <span className={`text-[10px] font-semibold ${form.description.trim().length >= 20 ? 'text-emerald-600' : 'text-slate-400'}`}>
-                                {form.description.trim().length} / 20 min chars
+                            <span className={`text-[10px] font-semibold ${form.description.trim().length >= 4 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                                {form.description.trim().length} / 4 min chars
                             </span>
                         </div>
                         <textarea
                             required
                             value={form.description}
                             onChange={e => handleChange('description', e.target.value)}
-                            placeholder="Describe the discrepancy clearly (minimum 20 characters). What did you observe? What information needs correction?"
+                            placeholder="Describe the discrepancy clearly (minimum 4 characters). What did you observe? What information needs correction?"
                             rows={4}
                             className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 sm:py-3 px-3.5 sm:px-4 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-emerald-500 transition resize-none"
                         />
@@ -390,7 +390,7 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
                         type="submit"
                         disabled={
                             isSubmitting ||
-                            form.description.trim().length < 20 ||
+                            form.description.trim().length < 4 ||
                             (form.issueType === 'Other' && !form.customCategory.trim())
                         }
                         className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 sm:py-3.5 font-bold text-xs sm:text-sm text-white tracking-wide transition hover:bg-emerald-700 active:scale-[0.98] duration-150 shadow-md shadow-emerald-600/10 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"

@@ -543,7 +543,7 @@ export default function EstablishmentContributionForm({
               <div className="flex items-center gap-1.5 text-slate-700">
                 <Store size={15} className="text-slate-600 shrink-0" />
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                  Community Verified (Without 3rd-Party Certificate)
+                  Community Sourced (Without 3rd-Party Certificate)
                 </span>
               </div>
               <p className="text-[11px] text-slate-500">

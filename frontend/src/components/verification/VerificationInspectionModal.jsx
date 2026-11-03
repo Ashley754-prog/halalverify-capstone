@@ -659,7 +659,7 @@ export default function VerificationInspectionModal({
                             <div className="rounded-xl border border-teal-200/80 bg-teal-50/70 p-3.5 text-xs text-teal-900 space-y-1.5">
                                 <div className="flex items-center gap-2 font-bold text-teal-950">
                                     <span className="w-2 h-2 rounded-full bg-teal-600"></span>
-                                    <span>Community Verified Listing</span>
+                                    <span>Community Sourced Listing</span>
                                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 font-semibold text-teal-800 ml-auto border border-teal-200">
                                         {selectedStatus === 'muslim_owned'
                                             ? 'Muslim-Owned'
