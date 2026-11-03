@@ -84,7 +84,7 @@ export const CreateAccount = ({ onViewChange, layout = 'create' }) => {
       return;
     }
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: form.email.trim(),
       password: form.password,
       options: {
@@ -100,12 +100,21 @@ export const CreateAccount = ({ onViewChange, layout = 'create' }) => {
       return;
     }
 
-    setSuccessMessage('Account created successfully. You can now sign in.');
+    if (data?.session) {
+      setSuccessMessage('Account created successfully! Taking you to your dashboard...');
+      setIsLoading(false);
+      setTimeout(() => {
+        onViewChange('dashboard');
+      }, 700);
+      return;
+    }
+
+    setSuccessMessage('Account created successfully! Please check your email to verify.');
     setIsLoading(false);
 
     setTimeout(() => {
       onViewChange('login');
-    }, 900);
+    }, 1200);
   };
 
   const handleProviderSignIn = async (provider) => {

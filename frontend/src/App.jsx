@@ -247,6 +247,12 @@ export default function App() {
         window.location.hash.includes('id_token') ||
         window.location.search.includes('code=')
       );
+
+      // Prevent jumping prematurely while CreateAccount displays its success notice
+      if (prev === 'create-account' && !isOAuthRedirect) {
+        return prev;
+      }
+
       if (AUTH_VIEWS.has(prev) || isOAuthRedirect) {
         if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
           window.history.replaceState({ view: 'dashboard', params: {} }, '', '/dashboard');
