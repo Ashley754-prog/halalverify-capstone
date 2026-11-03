@@ -7,7 +7,7 @@ class IssueReportCreate(BaseModel):
     issue_type: str = Field(..., max_length=150)
     related_to: Optional[str] = Field("product", max_length=50)
     subject_name: Optional[str] = Field(None, max_length=255)
-    description: str = Field(..., min_length=10, max_length=3000)
+    description: str = Field(..., min_length=3, max_length=3000)
     product_id: Optional[str] = Field(None, max_length=100)
     establishment_id: Optional[str] = Field(None, max_length=100)
     evidence_url: Optional[str] = Field(None, max_length=2048)
