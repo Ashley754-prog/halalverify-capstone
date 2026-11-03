@@ -459,9 +459,16 @@ def resolve_issue_report(
 
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
+    # Map 'dismissed' to 'resolved' with clear note prefix to satisfy PostgreSQL check constraint:
+    # issue_reports_status_check (status IN ('open', 'resolved', 'reviewing'))
+    db_status = "resolved" if status_clean == "dismissed" else status_clean
+    clean_notes = (payload.resolution_notes or "").strip()
+    if status_clean == "dismissed" and not clean_notes.lower().startswith("dismissed"):
+        clean_notes = f"Dismissed: {clean_notes}" if clean_notes else "Dismissed by administrator."
+
     update_fields = {
-        "status": status_clean,
-        "resolution_notes": payload.resolution_notes or "",
+        "status": db_status,
+        "resolution_notes": clean_notes,
         "resolved_at": now_iso,
         "resolved_by": str(user_id) if user_id else None,
     }

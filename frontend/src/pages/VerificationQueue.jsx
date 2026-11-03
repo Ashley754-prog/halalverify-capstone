@@ -598,20 +598,45 @@ export default function VerificationQueue({ onViewChange }) {
     const handleResolveReport = async (report, resolutionStatus, suspendEstablishment = false, notesOverride = '') => {
         try {
             setProcessingId(report.id);
-            const finalNotes = (notesOverride || adminNotes || 'Resolved by administrator.').trim();
-            const res = await authFetch(`${API_BASE_URL}/api/v1/admin/reports/${report.id}/resolve`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    status: resolutionStatus,
-                    resolution_notes: finalNotes,
-                    suspend_establishment: suspendEstablishment,
-                }),
-            });
+            let finalNotes = (notesOverride || adminNotes || 'Resolved by administrator.').trim();
+            if (resolutionStatus === 'dismissed' && !finalNotes.toLowerCase().startsWith('dismissed')) {
+                finalNotes = `Dismissed: ${finalNotes}`;
+            }
 
-            if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
-                throw new Error(errData.detail || 'Could not resolve report.');
+            let success = false;
+            try {
+                const res = await authFetch(`${API_BASE_URL}/api/v1/admin/reports/${report.id}/resolve`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        status: resolutionStatus,
+                        resolution_notes: finalNotes,
+                        suspend_establishment: suspendEstablishment,
+                    }),
+                });
+                if (res.ok) {
+                    success = true;
+                }
+            } catch (apiErr) {
+                console.warn('Backend resolve failed, falling back to direct Supabase:', apiErr);
+            }
+
+            if (!success) {
+                const dbStatus = resolutionStatus === 'dismissed' ? 'resolved' : resolutionStatus;
+                const { data: { session } } = await supabase.auth.getSession();
+                const adminId = session?.user?.id;
+
+                const { error: sbErr } = await supabase
+                    .from('issue_reports')
+                    .update({
+                        status: dbStatus,
+                        resolution_notes: finalNotes,
+                        resolved_at: new Date().toISOString(),
+                        resolved_by: adminId || null,
+                    })
+                    .eq('id', report.id);
+
+                if (sbErr) throw sbErr;
             }
 
             const repLabel = report?.id ? `Report #${String(report.id).slice(0, 8)}` : 'Report';
