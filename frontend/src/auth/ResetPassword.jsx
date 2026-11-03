@@ -3,7 +3,7 @@ import { Eye, EyeOff, CheckCircle, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { signOut } from '../lib/auth';
 
-export const ResetPassword = ({ onViewChange, userRole }) => {
+export const ResetPassword = ({ onViewChange, userRole, isRecoveryFlow = false }) => {
     const [submitted, setSubmitted] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -65,9 +65,21 @@ export const ResetPassword = ({ onViewChange, userRole }) => {
             return;
         }
 
-        setSubmitted(true);
         setIsLoading(false);
-        await signOut();
+        setSubmitted(true);
+    };
+
+    const handleCancel = async () => {
+        if (isRecoveryFlow) {
+            try {
+                await signOut();
+            } catch {
+                // Ignore sign out error
+            }
+            onViewChange('login');
+        } else {
+            onViewChange(userRole ? 'profile' : 'login');
+        }
     };
 
     if (checkingSession) {
@@ -194,10 +206,10 @@ export const ResetPassword = ({ onViewChange, userRole }) => {
 
                                 <button
                                     type="button"
-                                    onClick={() => onViewChange(userRole ? 'profile' : 'login')}
+                                    onClick={handleCancel}
                                     className="mt-6 inline-flex w-full items-center justify-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 transition cursor-pointer"
                                 >
-                                    <ArrowLeft size={16} /> {userRole ? 'Back to Profile' : 'Back to Login'}
+                                    <ArrowLeft size={16} /> {isRecoveryFlow ? 'Back to Sign In' : (userRole ? 'Back to Profile' : 'Back to Sign In')}
                                 </button>
                             </form>
                         ) : (
@@ -207,14 +219,14 @@ export const ResetPassword = ({ onViewChange, userRole }) => {
                                 </div>
                                 <h3 className="text-2xl font-bold text-emerald-950">Password Updated</h3>
                                 <p className="mt-2 text-base leading-relaxed text-slate-600">
-                                    Your password has been changed successfully. You can now sign in with your new credentials.
+                                    Your password has been changed successfully. You are now securely signed in.
                                 </p>
                                 <button
                                     type="button"
-                                    onClick={() => onViewChange('login')}
-                                    className="mt-6 h-12 w-full rounded-xl border border-slate-300 bg-slate-100 text-base font-bold text-slate-800 transition hover:bg-slate-200 cursor-pointer"
+                                    onClick={() => onViewChange('dashboard')}
+                                    className="mt-6 h-12 w-full rounded-xl bg-emerald-800 hover:bg-emerald-700 text-base font-bold tracking-wide text-white transition active:scale-95 duration-150 shadow-md shadow-emerald-900/20 cursor-pointer"
                                 >
-                                    Return to Login
+                                    Continue to Dashboard
                                 </button>
                             </div>
                         )}

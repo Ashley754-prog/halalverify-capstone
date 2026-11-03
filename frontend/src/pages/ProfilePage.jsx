@@ -392,7 +392,7 @@ const ProfilePage = ({ onViewChange }) => {
                                     </div>
                                     <button
                                         type="button"
-                                        onClick={() => onViewChange?.('reset-password')}
+                                        onClick={() => onViewChange?.('reset-password', { isRecoveryFlow: false })}
                                         className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs sm:text-sm font-semibold text-slate-700 transition cursor-pointer active:scale-95"
                                     >
                                         <KeyRound size={15} className="text-slate-500" />

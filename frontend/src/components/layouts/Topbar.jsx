@@ -237,7 +237,7 @@ export const AppTopbar = ({
                                                 type="button"
                                                 onClick={() => {
                                                     setIsDropdownOpen(false);
-                                                    onViewChange('reset-password');
+                                                    onViewChange('reset-password', { isRecoveryFlow: false });
                                                 }}
                                                 className="w-full flex items-center gap-2.5 px-3 py-2 text-xs sm:text-sm font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition text-left cursor-pointer"
                                             >

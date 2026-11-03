@@ -84,6 +84,14 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [authLoading, setAuthLoading] = useState(true);
+  const [isRecoveryFlow, setIsRecoveryFlow] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return (
+      window.location.hash.includes('type=recovery') ||
+      window.location.search.includes('type=recovery') ||
+      window.location.pathname.includes('reset-password')
+    );
+  });
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => (typeof window !== 'undefined' ? window.innerWidth >= 768 : true));
 
   // Normalize legacy hash URL (e.g. /#products) into clean pathname (/products)
@@ -144,6 +152,9 @@ export default function App() {
     }
 
     setViewParams(params || {});
+    if (view !== 'reset-password') {
+      setIsRecoveryFlow(false);
+    }
     setCurrentView(view);
 
     // Push clean path into browser history so back button navigates logically between in-app views
@@ -270,7 +281,8 @@ export default function App() {
       }
 
       if (event === 'PASSWORD_RECOVERY') {
-        handleViewChange('reset-password', {}, true);
+        setIsRecoveryFlow(true);
+        handleViewChange('reset-password', { isRecoveryFlow: true }, true);
         return;
       }
 
@@ -399,7 +411,13 @@ export default function App() {
   }
 
   if (currentView === 'reset-password') {
-    return <ResetPassword onViewChange={handleViewChange} userRole={userRole} />;
+    return (
+      <ResetPassword
+        onViewChange={handleViewChange}
+        userRole={userRole}
+        isRecoveryFlow={viewParams?.isRecoveryFlow !== undefined ? viewParams.isRecoveryFlow : isRecoveryFlow}
+      />
+    );
   }
 
   return (
