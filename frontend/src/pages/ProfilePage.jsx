@@ -550,15 +550,7 @@ const ProfilePage = ({ onViewChange }) => {
                                                     <BadgeIcon size={13} />
                                                     {item.badgeLabel}
                                                 </span>
-                                                {item.createdAt && (
-                                                    <span className="text-[11px] text-slate-400">
-                                                        {new Date(item.createdAt).toLocaleDateString('en-PH', {
-                                                            month: 'short',
-                                                            day: 'numeric',
-                                                            year: 'numeric',
-                                                        })}
-                                                    </span>
-                                                )}
+
                                             </div>
                                         </div>
                                     );

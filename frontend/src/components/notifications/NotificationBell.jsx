@@ -12,6 +12,7 @@ import {
     X,
 } from 'lucide-react';
 import { API_BASE_URL, authFetch } from '../../utils/api';
+import { supabase } from '../../lib/supabaseClient';
 
 function formatRelativeTime(dateString) {
     if (!dateString) return '';
@@ -76,15 +77,37 @@ export default function NotificationBell({ onViewChange }) {
     const containerRef = useRef(null);
 
     const fetchNotifications = useCallback(async () => {
+        let loaded = false;
         try {
             const res = await authFetch(`${API_BASE_URL}/api/v1/notifications?limit=25`);
             if (res.ok) {
                 const data = await res.json();
                 setNotifications(data.data || []);
                 setUnreadCount(data.unread_count || 0);
+                loaded = true;
             }
         } catch {
-            // Notifications are best-effort; silently ignore transient network hiccups
+            // Silently fall through to direct Supabase query
+        }
+
+        if (!loaded) {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session?.user?.id) {
+                    const { data, error } = await supabase
+                        .from('notifications')
+                        .select('*')
+                        .eq('recipient_id', session.user.id)
+                        .order('created_at', { ascending: false })
+                        .limit(25);
+                    if (!error && data) {
+                        setNotifications(data);
+                        setUnreadCount(data.filter((n) => !n.read_at).length);
+                    }
+                }
+            } catch {
+                // Ignore fallback error
+            }
         }
     }, []);
 
@@ -100,6 +123,43 @@ export default function NotificationBell({ onViewChange }) {
 
         return () => clearInterval(interval);
     }, [fetchNotifications]);
+
+    // Realtime notification listener via Supabase
+    useEffect(() => {
+        let channel = null;
+
+        const setupRealtime = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.user?.id) return;
+
+            channel = supabase
+                .channel(`notifs:${session.user.id}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'notifications',
+                        filter: `recipient_id=eq.${session.user.id}`,
+                    },
+                    (payload) => {
+                        if (payload.new) {
+                            setNotifications((prev) => [payload.new, ...prev.filter((p) => p.id !== payload.new.id)]);
+                            setUnreadCount((prev) => prev + 1);
+                        }
+                    }
+                )
+                .subscribe();
+        };
+
+        setupRealtime();
+
+        return () => {
+            if (channel) {
+                supabase.removeChannel(channel);
+            }
+        };
+    }, []);
 
     // Close dropdown on outside click or Escape key
     useEffect(() => {
@@ -146,11 +206,16 @@ export default function NotificationBell({ onViewChange }) {
             );
             setUnreadCount((prev) => Math.max(0, prev - 1));
 
-            // Sync with backend in background
+            // Sync with backend and direct Supabase in background
             try {
-                await authFetch(`${API_BASE_URL}/api/v1/notifications/${notif.id}/read`, {
+                authFetch(`${API_BASE_URL}/api/v1/notifications/${notif.id}/read`, {
                     method: 'PATCH',
-                });
+                }).catch(() => {});
+                supabase
+                    .from('notifications')
+                    .update({ read_at: new Date().toISOString() })
+                    .eq('id', notif.id)
+                    .then(() => {});
             } catch {
                 // Background update failure is non-blocking
             }

@@ -288,6 +288,19 @@ def verify_establishment(
                 action_view="profile",
             )
 
+    admin_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
+    if admin_id:
+        est_name = updated_row.get("name") or "Establishment"
+        notify_user(
+            admin_id,
+            category="verification",
+            title="Establishment review recorded",
+            message=f'You marked "{est_name}" as {status_clean}.',
+            entity_type="establishment",
+            entity_id=establishment_id,
+            action_view="verification-queue",
+        )
+
     return {
         "success": True,
         "message": f"Establishment marked as {payload.status.upper()}.",
