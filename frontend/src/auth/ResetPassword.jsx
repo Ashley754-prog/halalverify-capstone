@@ -131,7 +131,6 @@ export const ResetPassword = ({ onViewChange, userRole }) => {
 
                                 <div className="mb-6 text-center">
                                     <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-emerald-950">Reset Password</h3>
-                                    <p className="mt-1.5 text-sm sm:text-base font-medium text-emerald-800/90 leading-snug">Choose a new password for your HalalVerify account.</p>
                                 </div>
 
                                 <div className="space-y-4">
