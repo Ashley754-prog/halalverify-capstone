@@ -67,7 +67,7 @@ export default function ReportQueueCard({
                         className="px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition cursor-pointer flex items-center gap-1.5"
                     >
                         <ShieldAlert size={13} className="text-emerald-600" />
-                        <span>Adjudicate / Review</span>
+                        <span>Review</span>
                     </button>
                 ) : <div />}
 

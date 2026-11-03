@@ -7,12 +7,23 @@ router = APIRouter(tags=["health"])
 
 @router.api_route("/health", methods=["GET", "HEAD"])
 def health_check() -> dict:
-    import os
+    import os, json, base64
+    k = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+    key_role = "missing"
+    if k and "." in k:
+        try:
+            parts = k.split(".")
+            pad = len(parts[1]) % 4
+            p = base64.b64decode(parts[1] + "=" * (4 - pad if pad else 0)).decode()
+            key_role = json.loads(p).get("role", "unknown")
+        except Exception as e:
+            key_role = f"err: {e}"
     return {
         "status": "ok",
         "service": "HalalVerify API",
         "version": "onnx-cloud-v2",
         "gemini_configured": bool(os.getenv("GEMINI_API_KEY", "").strip()),
+        "supabase_role": key_role,
     }
 
 

@@ -66,7 +66,7 @@ export default function ReportAdjudicationModal({
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title="Adjudicate Compliance Report"
+            title="Review Compliance Report"
             description="Review user-submitted discrepancy, inspect evidence, and record administrative findings under Zamboanga Ordinance No. 489."
             size="lg"
         >
