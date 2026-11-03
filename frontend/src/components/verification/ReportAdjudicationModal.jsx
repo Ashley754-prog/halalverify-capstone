@@ -26,15 +26,11 @@ export default function ReportAdjudicationModal({
     processingId,
 }) {
     const [notes, setNotes] = useState('');
-    const [suspendEstablishment, setSuspendEstablishment] = useState(false);
-    const [confirmSuspend, setConfirmSuspend] = useState(false);
     const [actionError, setActionError] = useState('');
 
     useEffect(() => {
         if (isOpen && report) {
             setNotes(report.resolution_notes || '');
-            setSuspendEstablishment(false);
-            setConfirmSuspend(false);
             setActionError('');
         }
     }, [isOpen, report]);
@@ -59,7 +55,7 @@ export default function ReportAdjudicationModal({
 
         try {
             setActionError('');
-            await onResolve(report, status, suspendEstablishment, cleanNotes);
+            await onResolve(report, status, false, cleanNotes);
             onClose();
         } catch (err) {
             setActionError(err.message || 'Action failed. Please try again.');
@@ -190,31 +186,6 @@ export default function ReportAdjudicationModal({
                         className="w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm outline-none focus:border-emerald-500 resize-none"
                     />
                 </div>
-
-                {/* Optional Severe Sanction: Suspend Establishment */}
-                {report.establishment_id && (
-                    <div className="p-3 rounded-xl border border-rose-200 bg-rose-50/70 space-y-2">
-                        <label className="flex items-start gap-2.5 cursor-pointer select-none">
-                            <input
-                                type="checkbox"
-                                checked={suspendEstablishment}
-                                onChange={(e) => {
-                                    setSuspendEstablishment(e.target.checked);
-                                    if (e.target.checked) setConfirmSuspend(true);
-                                }}
-                                className="mt-0.5 rounded text-rose-600 focus:ring-rose-500 cursor-pointer"
-                            />
-                            <div className="text-xs">
-                                <span className="font-bold text-rose-900">
-                                    Flag & Suspend Establishment on Map/Registry
-                                </span>
-                                <p className="text-[11px] text-rose-700 leading-tight mt-0.5">
-                                    Only check if a severe violation of Zamboanga Ordinance No. 489 was verified (e.g. serving pork or alcohol in an accredited kitchen). This changes the establishment status to flagged.
-                                </p>
-                            </div>
-                        </label>
-                    </div>
-                )}
 
                 {/* Modal Footer Actions */}
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-200">
