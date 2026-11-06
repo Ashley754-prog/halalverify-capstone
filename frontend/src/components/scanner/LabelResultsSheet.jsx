@@ -7,7 +7,6 @@ import {
     RefreshCw,
     Flag,
     ChevronDown,
-    ChevronUp,
     Layers,
     PlusCircle,
     ChevronRight,
@@ -15,8 +14,6 @@ import {
     ScanSearch,
     Camera,
     Info,
-    BookOpen,
-    Check,
 } from 'lucide-react';
 import { simplifyHalalText, simplifyStatus } from '../../utils/textFormatters';
 import { CertifyingBodyDetailModal } from './CertifyingBodyDetailModal';
@@ -71,37 +68,6 @@ const formatCertifierHeading = (bodyText = '') => {
     return { name, isForeign };
 };
 
-const parseCleanIngredients = (ocrText, flaggedItems = []) => {
-    if (!ocrText || typeof ocrText !== 'string') return [];
-    let text = ocrText;
-    const nutritionIdx = text.search(/nutrition\s*facts/i);
-    if (nutritionIdx !== -1) {
-        text = text.slice(0, nutritionIdx);
-    }
-    const ingMatch = text.match(/ingredients?\s*[:\-]\s*(.*)/is);
-    if (ingMatch && ingMatch[1]) {
-        text = ingMatch[1];
-    }
-    const rawTokens = text.split(/[,;\n•]+/).map((t) => t.trim().replace(/^[-*•\s]+/, '')).filter(Boolean);
-    const flaggedWords = (flaggedItems || []).map((f) => (f.ingredient || '').toLowerCase());
-    const clean = [];
-    const seen = new Set();
-    for (const token of rawTokens) {
-        if (token.length < 3 || token.length > 50) continue;
-        if (/^\d+(\.\d+)?(%|g|mg|kcal|cal)?$/i.test(token)) continue;
-        if (/^(and|contains|may contain|allergen|produced in|manufactured by)/i.test(token)) continue;
-        const lower = token.toLowerCase();
-        const isFlagged = flaggedWords.some((fw) => fw && (lower.includes(fw) || fw.includes(lower)));
-        if (!isFlagged && !seen.has(lower)) {
-            seen.add(lower);
-            const formatted = token.charAt(0).toUpperCase() + token.slice(1);
-            clean.push(formatted);
-        }
-        if (clean.length >= 12) break;
-    }
-    return clean;
-};
-
 export const LabelResultsSheet = ({
     scanResult,
     isLoading,
@@ -113,7 +79,6 @@ export const LabelResultsSheet = ({
 }) => {
     const [touchStartY, setTouchStartY] = useState(null);
     const [selectedHcbProfile, setSelectedHcbProfile] = useState(null);
-    const [isSafeListOpen, setIsSafeListOpen] = useState(false);
 
 
     const displayedLogoSrc = resolveReferenceLogoSrc(scanResult);
@@ -415,37 +380,6 @@ export const LabelResultsSheet = ({
                                 </div>
                             </div>
 
-                            {/* Quick Breakdown Summary Tags (Mobbin Lifesum & BitePal Pattern) */}
-                            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
-                                    (scanResult.flaggedIngredients || []).filter((f) => !['halal', 'safe', 'compliant', 'verified', 'approved'].includes((f.status || '').toLowerCase().trim())).length > 0
-                                        ? 'bg-amber-950/60 border-amber-500/40 text-amber-300'
-                                        : 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
-                                }`}>
-                                    {(scanResult.flaggedIngredients || []).filter((f) => !['halal', 'safe', 'compliant', 'verified', 'approved'].includes((f.status || '').toLowerCase().trim())).length > 0 ? (
-                                        <>
-                                            <AlertTriangle size={11} className="shrink-0" />
-                                            <span>{(scanResult.flaggedIngredients || []).filter((f) => !['halal', 'safe', 'compliant', 'verified', 'approved'].includes((f.status || '').toLowerCase().trim())).length} Flagged</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <CheckCircle2 size={11} className="shrink-0" />
-                                            <span>Zero Prohibited</span>
-                                        </>
-                                    )}
-                                </span>
-
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border bg-slate-800/80 border-slate-700 text-slate-300">
-                                    <ShieldCheck size={11} className={hasVerifiedSeal ? 'text-emerald-400' : 'text-slate-400'} />
-                                    <span>{hasVerifiedSeal ? 'Official Seal Detected' : 'Ingredients Only Screen'}</span>
-                                </span>
-
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border bg-slate-800/80 border-slate-700 text-slate-300">
-                                    <BookOpen size={11} className="text-emerald-400" />
-                                    <span>SMIIC 1:2019 Standard</span>
-                                </span>
-                            </div>
-
                             {/* Product Context Card (Detected Brand or Catalog Match) */}
                             {scanResult.matchedProduct?.name && (
                                 <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-3 flex items-center justify-between gap-3 text-xs animate-in fade-in duration-200">
@@ -484,56 +418,39 @@ export const LabelResultsSheet = ({
                                 </div>
                             )}
 
-                            {/* 3. Screened Additives & Ingredients (Mobbin Yuka Prioritized Breakdown) */}
+                            {/* 3. Screened Additives & Ingredients */}
                             {(() => {
                                 const visibleFlagged = (scanResult.flaggedIngredients || []).filter((f) => {
                                     const st = (f.status || '').toLowerCase().trim();
                                     return !['halal', 'safe', 'compliant', 'verified', 'approved'].includes(st);
                                 });
-                                const cleanIngredients = parseCleanIngredients(scanResult.ocrText, scanResult.flaggedIngredients);
-
                                 return (
-                                    <div className="bg-slate-800/80 border border-slate-700 rounded-xl p-3.5 space-y-3">
+                                    <div className="bg-slate-800/80 border border-slate-700 rounded-xl p-3.5 space-y-2">
                                         <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                                                    Ingredients & Additives
-                                                </span>
-                                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-900 border border-slate-700 font-mono text-slate-400">
-                                                    {visibleFlagged.length + (cleanIngredients.length > 0 ? cleanIngredients.length : 0)} Screened
-                                                </span>
-                                            </div>
-                                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
-                                                visibleFlagged.length > 0
-                                                    ? 'bg-amber-950/70 border-amber-500/40 text-amber-300'
-                                                    : 'bg-emerald-950/70 border-emerald-500/35 text-emerald-300'
-                                            }`}>
-                                                {visibleFlagged.length > 0 ? `${visibleFlagged.length} Flagged` : 'All Safe'}
+                                            <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                                                Ingredients & Additives
+                                            </span>
+                                            <span className="text-[10px] font-mono text-slate-400">
+                                                {visibleFlagged.length} Flagged
                                             </span>
                                         </div>
 
-                                        {/* Flagged Ingredients List - Pinned at top with status indicator dots */}
                                         {visibleFlagged.length > 0 ? (
-                                            <div className="space-y-2">
+                                            <div className="space-y-2 pt-1">
                                                 {visibleFlagged.map((flag, idx) => {
                                                     const isHaram = (flag.status || '').toLowerCase().includes('haram') || (flag.status || '').toLowerCase().includes('prohibit');
                                                     return (
                                                         <div
                                                             key={idx}
-                                                            className={`p-3 rounded-xl border text-xs space-y-1.5 ${
+                                                            className={`p-2.5 rounded-lg border text-xs space-y-1 ${
                                                                 isHaram
                                                                     ? 'bg-red-950/60 border-red-500/40 text-red-200'
                                                                     : 'bg-amber-950/60 border-amber-500/40 text-amber-200'
                                                             }`}
                                                         >
                                                             <div className="flex items-center justify-between font-bold">
-                                                                <div className="flex items-center gap-2 min-w-0">
-                                                                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                                                                        isHaram ? 'bg-red-500 ring-4 ring-red-500/20' : 'bg-amber-400 ring-4 ring-amber-400/20'
-                                                                    }`} />
-                                                                    <span className="truncate">{simplifyHalalText(flag.ingredient)}</span>
-                                                                </div>
-                                                                <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border shrink-0 ${
+                                                                <span>{simplifyHalalText(flag.ingredient)}</span>
+                                                                <span className={`text-[10px] uppercase px-1.5 py-0.2 rounded border ${
                                                                     isHaram
                                                                         ? 'bg-red-900/80 border-red-400/50 text-red-100'
                                                                         : 'bg-amber-900/80 border-amber-400/50 text-amber-100'
@@ -541,7 +458,7 @@ export const LabelResultsSheet = ({
                                                                     {simplifyStatus(flag.status)}
                                                                 </span>
                                                             </div>
-                                                            <p className="text-[11px] opacity-90 leading-relaxed pl-4.5">
+                                                            <p className="text-[11px] opacity-90 leading-relaxed">
                                                                 {simplifyHalalText(flag.reason)}
                                                             </p>
                                                         </div>
@@ -549,78 +466,11 @@ export const LabelResultsSheet = ({
                                                 })}
                                             </div>
                                         ) : (
-                                            <div className="p-3 bg-emerald-950/40 border border-emerald-500/30 rounded-xl text-xs text-emerald-300 flex items-center gap-2.5">
-                                                <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
-                                                <div className="min-w-0">
-                                                    <p className="font-semibold text-emerald-200">No prohibited additives identified</p>
-                                                    <p className="text-[11px] text-emerald-400/80">Every detected element complies with Philippine Halal standards.</p>
-                                                </div>
+                                            <div className="p-2.5 bg-emerald-950/40 border border-emerald-500/30 rounded-lg text-xs text-emerald-300 flex items-center gap-2">
+                                                <CheckCircle2 size={15} className="text-emerald-400 shrink-0" />
+                                                <span>No prohibited or doubtful food additives found.</span>
                                             </div>
                                         )}
-
-                                        {/* Collapsible Safe & Permissible Ingredients Drawer */}
-                                        {cleanIngredients.length > 0 && (
-                                            <div className="pt-1 border-t border-slate-700/60">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setIsSafeListOpen(!isSafeListOpen)}
-                                                    className="w-full flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-slate-700/40 text-slate-300 text-xs transition cursor-pointer select-none"
-                                                >
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                                                        <span className="font-semibold text-slate-200">
-                                                            {cleanIngredients.length} Permissible Ingredients
-                                                        </span>
-                                                        <span className="text-[10px] text-slate-400">
-                                                            Risk-free
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1 text-[11px] text-slate-400">
-                                                        <span>{isSafeListOpen ? 'Hide' : 'View'}</span>
-                                                        {isSafeListOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                                                    </div>
-                                                </button>
-
-                                                {isSafeListOpen && (
-                                                    <div className="mt-2 p-2.5 bg-slate-900/80 border border-slate-700/60 rounded-xl space-y-2 animate-in fade-in duration-200">
-                                                        <div className="flex flex-wrap gap-1.5">
-                                                            {cleanIngredients.map((item, idx) => (
-                                                                <span
-                                                                    key={idx}
-                                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-950/40 border border-emerald-500/25 text-emerald-300 text-[11px] font-medium"
-                                                                >
-                                                                    <Check size={10} className="text-emerald-400 shrink-0" />
-                                                                    <span>{item}</span>
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                        <p className="text-[10px] text-slate-400 italic">
-                                                            Parsed from product label and cross-referenced against the halal database.
-                                                        </p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {/* Quick Discrepancy Link */}
-                                        <div className="pt-1 flex items-center justify-between border-t border-slate-700/50 text-[11px]">
-                                            <span className="text-slate-400">Notice an ingredient misread?</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    onViewChange?.('report-issue', {
-                                                        relatedTo: 'product',
-                                                        subjectName: scanResult.logoDetected ? `${scanResult.logoBody} Product` : 'Scanned Food Packaging',
-                                                        issueType: 'Ingredient Incorrectly Flagged',
-                                                        description: `OCR detected text:\n${scanResult.ocrText || 'Label scan'}\nFlagged: ${(scanResult.flaggedIngredients || []).map(f => f.ingredient).join(', ')}`,
-                                                        evidenceUrl: scanResult.images?.[0] || ''
-                                                    });
-                                                }}
-                                                className="text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-2 transition cursor-pointer"
-                                            >
-                                                Report Discrepancy
-                                            </button>
-                                        </div>
                                     </div>
                                 );
                             })()}
@@ -695,26 +545,6 @@ export const LabelResultsSheet = ({
                                     <span>Search Brand in Verified Catalog</span>
                                 </button>
                             )}
-
-                            {/* Standard Reference Citation (Mobbin Bevel Pattern) */}
-                            <div className="p-3 rounded-xl bg-slate-800/60 border border-slate-700/80 flex items-center justify-between gap-3 text-xs">
-                                <div className="flex items-center gap-2.5 min-w-0">
-                                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
-                                        <BookOpen size={16} />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
-                                            Screening Standard
-                                        </span>
-                                        <p className="font-semibold text-slate-200 text-[11px] truncate">
-                                            SMIIC 1:2019 · Codex Alimentarius CXS 192-1995
-                                        </p>
-                                    </div>
-                                </div>
-                                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-500/30 px-2 py-0.5 rounded-full shrink-0">
-                                    Accredited Rulebase
-                                </span>
-                            </div>
 
                             {/* 5. Advisory Disclaimer Card */}
                             <div className="p-3 rounded-xl bg-slate-800/50 border border-slate-700/70 flex items-start gap-2.5 text-[11px] text-slate-300 leading-relaxed">
