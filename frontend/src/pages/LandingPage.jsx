@@ -303,91 +303,92 @@ export default function LandingPage({ onViewChange, userRole }) {
     >
       {/* Top Navigation Bar */}
       <header className="sticky top-0 z-50 w-full border-b border-slate-800/80 bg-[#0e1625]/95 backdrop-blur-md shadow-md shadow-black/20 transition-all">
-        <div className="max-w-7xl mx-auto flex items-center justify-between h-16 sm:h-20 px-4 sm:px-6 lg:px-8 gap-3 sm:gap-4">
-          <div className="flex items-center gap-3 lg:gap-5 min-w-0">
-            <div
-              className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0 xl:pr-6 xl:border-r xl:border-slate-800/80"
-              onClick={handleScrollToTop}
-              title="Scroll back to top"
-            >
-              <img
-                src="/halalverify-logo.png"
-                alt="HalalVerify Logo"
-                className="h-8 w-8 sm:h-10 sm:w-10 rounded-full border border-emerald-500/30 shadow-md group-hover:scale-105 transition duration-200"
-              />
-              <div>
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <span className="font-black text-sm sm:text-xl tracking-[0.1em] sm:tracking-[0.18em] text-white">HALALVERIFY</span>
-                  <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-emerald-950 text-emerald-400 border border-emerald-800/60 rounded-full">
-                    Zamboanga
-                  </span>
-                </div>
-                <p className="hidden 2xl:block text-[10px] sm:text-xs text-slate-400 tracking-wide">Verification &amp; Compliance Pipeline</p>
-              </div>
+        <div className="max-w-7xl mx-auto flex items-center justify-between h-16 sm:h-20 px-4 sm:px-6 lg:px-8 gap-4">
+          {/* Brand Logo */}
+          <div
+            className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0"
+            onClick={handleScrollToTop}
+            title="Scroll back to top"
+          >
+            <img
+              src="/halalverify-logo.png"
+              alt="HalalVerify Logo"
+              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full border border-emerald-500/30 shadow-md group-hover:scale-105 transition duration-200"
+            />
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="font-black text-sm sm:text-xl tracking-[0.1em] sm:tracking-[0.18em] text-white">HALALVERIFY</span>
+              <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-emerald-950 text-emerald-400 border border-emerald-800/60 rounded-full">
+                Zamboanga
+              </span>
             </div>
-
-            <nav className="hidden lg:flex items-center gap-3 xl:gap-5 text-xs xl:text-sm font-medium whitespace-nowrap">
-              <a
-                href="#features"
-                onClick={(e) => handleScrollToSection(e, 'features')}
-                className={`transition-colors duration-150 whitespace-nowrap shrink-0 ${
-                  activeSection === 'features'
-                    ? 'text-emerald-400 font-bold'
-                    : 'text-slate-300 hover:text-emerald-400'
-                }`}
-              >
-                Features
-              </a>
-              <a
-                href="#how-it-works"
-                onClick={(e) => handleScrollToSection(e, 'how-it-works')}
-                className={`transition-colors duration-150 whitespace-nowrap shrink-0 ${
-                  activeSection === 'how-it-works'
-                    ? 'text-emerald-400 font-bold'
-                    : 'text-slate-300 hover:text-emerald-400'
-                }`}
-              >
-                How It Works
-              </a>
-              <a
-                href="#certifiers"
-                onClick={(e) => handleScrollToSection(e, 'certifiers')}
-                className={`transition-colors duration-150 whitespace-nowrap shrink-0 ${
-                  activeSection === 'certifiers'
-                    ? 'text-emerald-400 font-bold'
-                    : 'text-slate-300 hover:text-emerald-400'
-                }`}
-              >
-                Certifiers
-              </a>
-              <button
-                onClick={() => onViewChange('products')}
-                className="text-slate-300 hover:text-emerald-400 transition-colors duration-150 font-medium whitespace-nowrap shrink-0 cursor-pointer"
-              >
-                Catalog
-              </button>
-              <button
-                onClick={() => onViewChange('map')}
-                className="text-slate-300 hover:text-emerald-400 transition-colors duration-150 font-medium whitespace-nowrap shrink-0 cursor-pointer"
-              >
-                Map
-              </button>
-            </nav>
           </div>
 
+          {/* Centered Navigation Links */}
+          <nav className="hidden lg:flex items-center gap-4 xl:gap-6 text-xs xl:text-sm font-medium whitespace-nowrap">
+            <a
+              href="#features"
+              onClick={(e) => handleScrollToSection(e, 'features')}
+              className={`transition-colors duration-150 whitespace-nowrap shrink-0 ${
+                activeSection === 'features'
+                  ? 'text-emerald-400 font-bold'
+                  : 'text-slate-300 hover:text-emerald-400'
+              }`}
+            >
+              Features
+            </a>
+            <a
+              href="#how-it-works"
+              onClick={(e) => handleScrollToSection(e, 'how-it-works')}
+              className={`transition-colors duration-150 whitespace-nowrap shrink-0 ${
+                activeSection === 'how-it-works'
+                  ? 'text-emerald-400 font-bold'
+                  : 'text-slate-300 hover:text-emerald-400'
+              }`}
+            >
+              How It Works
+            </a>
+            <a
+              href="#certifiers"
+              onClick={(e) => handleScrollToSection(e, 'certifiers')}
+              className={`transition-colors duration-150 whitespace-nowrap shrink-0 ${
+                activeSection === 'certifiers'
+                  ? 'text-emerald-400 font-bold'
+                  : 'text-slate-300 hover:text-emerald-400'
+              }`}
+            >
+              Certifiers
+            </a>
+            <button
+              type="button"
+              onClick={() => onViewChange('products')}
+              className="text-slate-300 hover:text-emerald-400 transition-colors duration-150 font-medium whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              Catalog
+            </button>
+            <button
+              type="button"
+              onClick={() => onViewChange('map')}
+              className="text-slate-300 hover:text-emerald-400 transition-colors duration-150 font-medium whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              Map
+            </button>
+          </nav>
+
+          {/* Right Action Buttons */}
           <div className="hidden lg:flex items-center gap-2 xl:gap-3 shrink-0 whitespace-nowrap">
             <button
               type="button"
               onClick={() => handleOpenContribution('establishment')}
-              className="flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-2.5 xl:px-3.5 h-9 text-xs xl:text-sm font-semibold text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:text-emerald-200 transition active:scale-95 shadow-xs whitespace-nowrap shrink-0 cursor-pointer"
+              className="hidden xl:flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 xl:px-3.5 h-9 text-xs xl:text-sm font-semibold text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:text-emerald-200 transition active:scale-95 shadow-xs whitespace-nowrap shrink-0 cursor-pointer"
               title="Submit an establishment or product to the registry"
             >
               <Plus size={14} strokeWidth={2.5} className="text-emerald-400" />
-              <span className="hidden xl:inline">Submit a Listing</span>
-              <span className="inline xl:hidden">Submit</span>
+              <span>Submit a Listing</span>
             </button>
+
             {userRole ? (
               <button
+                type="button"
                 onClick={() => onViewChange('dashboard')}
                 className="flex items-center gap-1.5 xl:gap-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 h-9 px-3.5 xl:px-4 text-xs xl:text-sm font-semibold text-white transition shadow-sm whitespace-nowrap shrink-0 cursor-pointer"
               >
@@ -396,6 +397,7 @@ export default function LandingPage({ onViewChange, userRole }) {
               </button>
             ) : (
               <button
+                type="button"
                 onClick={() => onViewChange('login')}
                 className="flex items-center gap-1.5 rounded-xl border border-slate-700/80 bg-slate-800/40 hover:bg-slate-800 text-slate-300 hover:text-white h-9 px-3 xl:px-3.5 text-xs xl:text-sm font-semibold transition whitespace-nowrap shrink-0 cursor-pointer"
               >
@@ -405,6 +407,7 @@ export default function LandingPage({ onViewChange, userRole }) {
             )}
 
             <button
+              type="button"
               onClick={() => onViewChange('scanner')}
               className="flex items-center gap-1.5 xl:gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 h-9 px-3.5 xl:px-4 text-xs xl:text-sm font-bold text-white shadow-md shadow-emerald-900/40 transition transform hover:-translate-y-0.5 active:translate-y-0 whitespace-nowrap shrink-0 cursor-pointer"
             >
