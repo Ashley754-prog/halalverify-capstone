@@ -56,8 +56,14 @@ const emptyHcbForm = {
     accreditation_details: '',
 };
 
-export const Registry = ({ userRole, onViewChange }) => {
-    const [registryMode, setRegistryMode] = useState('additives');
+export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) => {
+    const [registryMode, setRegistryMode] = useState(initialMode || 'additives');
+
+    useEffect(() => {
+        if (initialMode && ['additives', 'hcb', 'establishments'].includes(initialMode)) {
+            setRegistryMode(initialMode);
+        }
+    }, [initialMode]);
     const [dictSearch, setDictSearch] = useState('');
     const [localSearch, setLocalSearch] = useState('');
     const [hcbSearch, setHcbSearch] = useState('');

@@ -360,7 +360,13 @@ export default function App() {
           />
         );
       case 'registry':
-        return <Registry userRole={userRole} onViewChange={handleViewChange} />;
+        return (
+          <Registry
+            userRole={userRole}
+            onViewChange={handleViewChange}
+            initialMode={viewParams.registryMode || 'additives'}
+          />
+        );
       case 'scan-history':
         return <ScanHistory userRole={userRole} onViewChange={handleViewChange} />;
       case 'report-issue':

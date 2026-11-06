@@ -5,6 +5,7 @@ import {
   BookOpen,
   ArrowRight,
   ExternalLink,
+  ChevronRight,
 } from 'lucide-react';
 
 export default function LandingMarketingSections({ onViewChange, onScrollToTop, userRole }) {
@@ -215,28 +216,49 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
         className="sm:min-h-[calc(100dvh-5rem)] sm:flex sm:flex-col sm:justify-center py-10 sm:py-12 bg-[#EAF3ED] border-t border-[#DCE7E0] scroll-mt-16 sm:scroll-mt-20"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-xs sm:text-sm font-bold uppercase tracking-[0.25em] text-emerald-800">
-              Certifiers &bull; Philippine Halal Accreditation
-            </h2>
-            <p className="mt-2 text-xl sm:text-4xl font-extrabold text-[#17251F] tracking-tight">
-              Supported Certifying Bodies &amp; Local Scope
-            </p>
-            <p className="mt-2.5 sm:mt-3 text-xs sm:text-sm text-[#52645B] leading-relaxed">
-              HalalVerify is focused on the local food ecosystem of <strong>Zamboanga City</strong>, recognizing certifications issued by authorized Philippine Islamic bodies alongside international mutual recognition partners.
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div className="max-w-2xl text-center sm:text-left">
+              <h2 className="text-xs sm:text-sm font-bold uppercase tracking-[0.25em] text-emerald-800">
+                Certifiers &bull; Philippine Halal Accreditation
+              </h2>
+              <p className="mt-1.5 text-xl sm:text-3xl lg:text-4xl font-extrabold text-[#17251F] tracking-tight">
+                Supported Certifying Bodies &amp; Local Scope
+              </p>
+              <p className="mt-2 text-xs sm:text-sm text-[#52645B] leading-relaxed">
+                HalalVerify is focused on the local food ecosystem of <strong>Zamboanga City</strong>, recognizing certifications issued by authorized Philippine Islamic bodies alongside international mutual recognition partners.
+              </p>
+            </div>
+            <div className="flex items-center justify-center sm:justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => onViewChange('registry', { registryMode: 'hcb' })}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[#DCE7E0] bg-white px-3.5 py-2 text-xs sm:text-sm font-semibold text-[#17251F] shadow-2xs transition hover:border-emerald-400 hover:bg-[#F4F8F5] cursor-pointer"
+              >
+                <span>View all 19</span>
+                <ChevronRight size={15} />
+              </button>
+            </div>
           </div>
 
           <div className="mt-6 sm:mt-8 grid grid-cols-1 lg:grid-cols-6 gap-5 lg:gap-6 text-left">
-            {/* Philippine Halal Bodies (4 of 6 columns on desktop) */}
-            <div className="lg:col-span-4">
-              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-800 mb-3 text-center lg:text-left">
-                Philippine Halal Bodies
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5">
+            {/* Framed Group 1: Philippine Halal Bodies (4 of 6 columns on desktop) */}
+            <div className="lg:col-span-4 rounded-2xl bg-white/80 border-2 border-emerald-600/25 p-3.5 sm:p-5 shadow-xs flex flex-col">
+              <div className="flex items-center justify-between gap-2 mb-3.5 pb-2.5 border-b border-[#DCE7E0]">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 shrink-0" />
+                  <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-[0.16em] text-emerald-900">
+                    Philippine Halal Bodies
+                  </h3>
+                </div>
+                <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/80 border border-emerald-300/60 px-2.5 py-0.5 rounded-full shrink-0">
+                  Local &amp; National
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5 flex-1">
                 {[
                   {
                     name: 'NCMF',
+                    tag: 'PH Government',
                     logo: '/logos/NCMF.jpg',
                     fullName: 'National Commission on Muslim Filipinos',
                     description: 'Government agency supporting Muslim affairs and halal development in the Philippines.',
@@ -244,6 +266,7 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                   },
                   {
                     name: 'HDIP',
+                    tag: 'PH Accredited',
                     logo: '/logos/HDIP.jpg',
                     fullName: 'Halal Development Institute of the Philippines',
                     description: 'Philippine halal development and certification organization serving local businesses.',
@@ -251,6 +274,7 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                   },
                   {
                     name: 'IDCP',
+                    tag: 'PH Pioneer',
                     logo: '/logos/IDCP.jpg',
                     fullName: "Islamic Da'wah Council of the Philippines",
                     description: 'Islamic organization providing halal certification and related community services.',
@@ -258,17 +282,21 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                   },
                   {
                     name: 'DTI',
+                    tag: 'PH Trade Board',
                     logo: '/logos/DTI.svg',
                     fullName: 'Department of Trade and Industry',
                     description: 'Government trade agency supporting Philippine halal industry and export development.',
                     url: 'https://tradelinephilippines.dti.gov.ph/ca/web/tradeline-portal/philippine-halal-export-development',
                   },
                 ].map((body) => (
-                  <div key={body.name} className="flex min-h-[225px] flex-col items-center text-center rounded-xl border border-[#DCE7E0] bg-white p-3.5 sm:p-4 shadow-xs transition hover:border-emerald-600/40 hover:shadow-md">
+                  <div key={body.name} className="flex min-h-[240px] flex-col items-center text-center rounded-xl border border-[#DCE7E0] bg-white p-3.5 sm:p-4 shadow-2xs transition hover:border-emerald-600/40 hover:shadow-md">
                     <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full border-2 border-emerald-600/30 bg-white p-1 shadow-xs flex items-center justify-center overflow-hidden shrink-0">
                       <img src={body.logo} alt={`${body.name} logo`} className="h-full w-full object-contain rounded-full" loading="lazy" />
                     </div>
-                    <span className="mt-2.5 font-extrabold text-emerald-800 text-sm sm:text-base">{body.name}</span>
+                    <span className="mt-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                      {body.tag}
+                    </span>
+                    <span className="mt-1.5 font-extrabold text-emerald-800 text-sm sm:text-base">{body.name}</span>
                     <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-[#17251F] sm:text-xs leading-snug">{body.fullName}</p>
                     <p className="mt-2 flex-1 text-xs leading-relaxed text-[#52645B] sm:text-[13px]">{body.description}</p>
                     <a
@@ -284,15 +312,24 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
               </div>
             </div>
 
-            {/* International Halal Bodies (2 of 6 columns on desktop) */}
-            <div className="lg:col-span-2">
-              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-800 mb-3 text-center lg:text-left">
-                International Partners
-              </h3>
-              <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5">
+            {/* Framed Group 2: International Halal Bodies (2 of 6 columns on desktop) */}
+            <div className="lg:col-span-2 rounded-2xl bg-[#F4F8F6] border-2 border-teal-700/25 p-3.5 sm:p-5 shadow-xs flex flex-col">
+              <div className="flex items-center justify-between gap-2 mb-3.5 pb-2.5 border-b border-[#DCE7E0]">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-teal-600 shrink-0" />
+                  <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-[0.16em] text-teal-900">
+                    International Partners
+                  </h3>
+                </div>
+                <span className="text-[11px] font-bold text-teal-800 bg-teal-100/80 border border-teal-300/60 px-2.5 py-0.5 rounded-full shrink-0">
+                  Foreign Recognized
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5 flex-1">
                 {[
                   {
                     name: 'JAKIM',
+                    tag: 'Malaysia Partner',
                     logo: '/logos/JAKIM.svg',
                     fullName: 'Jabatan Kemajuan Islam Malaysia',
                     description: "Malaysia's Department of Islamic Development and national halal certification authority.",
@@ -300,24 +337,28 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                   },
                   {
                     name: 'MUIS',
+                    tag: 'Singapore Partner',
                     logo: '/logos/MUIS.svg',
                     fullName: 'Majlis Ugama Islam Singapura',
                     description: "Singapore's Islamic Religious Council, providing halal certification and verification services.",
                     url: 'https://halal.muis.gov.sg/account/login',
                   },
                 ].map((body) => (
-                  <div key={body.name} className="flex min-h-[225px] flex-col items-center text-center rounded-xl border border-[#DCE7E0] bg-white p-3.5 sm:p-4 shadow-xs transition hover:border-emerald-600/40 hover:shadow-md">
-                    <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full border-2 border-emerald-600/30 bg-white p-1 shadow-xs flex items-center justify-center overflow-hidden shrink-0">
+                  <div key={body.name} className="flex min-h-[240px] flex-col items-center text-center rounded-xl border border-[#DCE7E0] bg-white p-3.5 sm:p-4 shadow-2xs transition hover:border-teal-600/40 hover:shadow-md">
+                    <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full border-2 border-teal-600/30 bg-white p-1 shadow-xs flex items-center justify-center overflow-hidden shrink-0">
                       <img src={body.logo} alt={`${body.name} logo`} className="h-full w-full object-contain rounded-full" loading="lazy" />
                     </div>
-                    <span className="mt-2.5 font-extrabold text-emerald-800 text-sm sm:text-base">{body.name}</span>
+                    <span className="mt-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
+                      {body.tag}
+                    </span>
+                    <span className="mt-1.5 font-extrabold text-teal-900 text-sm sm:text-base">{body.name}</span>
                     <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-[#17251F] sm:text-xs leading-snug">{body.fullName}</p>
                     <p className="mt-2 flex-1 text-xs leading-relaxed text-[#52645B] sm:text-[13px]">{body.description}</p>
                     <a
                       href={body.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-3 w-full inline-flex items-center justify-center gap-1 rounded-lg border border-emerald-700/50 px-2 py-1.5 text-xs font-bold text-emerald-800 transition hover:border-emerald-600 hover:bg-[#EAF3ED]"
+                      className="mt-3 w-full inline-flex items-center justify-center gap-1 rounded-lg border border-teal-700/50 px-2 py-1.5 text-xs font-bold text-teal-800 transition hover:border-teal-600 hover:bg-[#EAF3ED]"
                     >
                       Official Website <ExternalLink size={11} />
                     </a>
