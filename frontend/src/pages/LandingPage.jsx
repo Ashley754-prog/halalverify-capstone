@@ -303,10 +303,10 @@ export default function LandingPage({ onViewChange, userRole }) {
     >
       {/* Top Navigation Bar */}
       <header className="sticky top-0 z-50 w-full border-b border-slate-800/80 bg-[#0e1625]/95 backdrop-blur-md shadow-md shadow-black/20 transition-all">
-        <div className="max-w-7xl mx-auto flex items-center justify-between h-16 sm:h-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto flex items-center justify-between h-16 sm:h-20 px-4 sm:px-6 lg:px-8 gap-3 sm:gap-4">
           <div className="flex items-center gap-3 lg:gap-5 min-w-0">
             <div
-              className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0 lg:pr-5 xl:pr-6 lg:border-r lg:border-slate-800/80"
+              className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0 xl:pr-6 xl:border-r xl:border-slate-800/80"
               onClick={handleScrollToTop}
               title="Scroll back to top"
             >
@@ -322,7 +322,7 @@ export default function LandingPage({ onViewChange, userRole }) {
                     Zamboanga
                   </span>
                 </div>
-                <p className="hidden xs:block text-[10px] sm:text-xs text-slate-400 tracking-wide">Verification &amp; Compliance Pipeline</p>
+                <p className="hidden 2xl:block text-[10px] sm:text-xs text-slate-400 tracking-wide">Verification &amp; Compliance Pipeline</p>
               </div>
             </div>
 
@@ -372,18 +372,20 @@ export default function LandingPage({ onViewChange, userRole }) {
               >
                 Map
               </button>
-              <button
-                onClick={() => handleOpenContribution('establishment')}
-                className="flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 xl:px-3.5 h-9 text-xs xl:text-sm font-semibold text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:text-emerald-200 transition active:scale-95 shadow-xs whitespace-nowrap shrink-0 cursor-pointer"
-                title="Submit an establishment or product to the registry"
-              >
-                <Plus size={14} strokeWidth={2.5} className="text-emerald-400" />
-                <span>Submit a Listing</span>
-              </button>
             </nav>
           </div>
 
-          <div className="hidden lg:flex items-center gap-2.5 xl:gap-3 shrink-0 whitespace-nowrap">
+          <div className="hidden lg:flex items-center gap-2 xl:gap-3 shrink-0 whitespace-nowrap">
+            <button
+              type="button"
+              onClick={() => handleOpenContribution('establishment')}
+              className="flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-2.5 xl:px-3.5 h-9 text-xs xl:text-sm font-semibold text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:text-emerald-200 transition active:scale-95 shadow-xs whitespace-nowrap shrink-0 cursor-pointer"
+              title="Submit an establishment or product to the registry"
+            >
+              <Plus size={14} strokeWidth={2.5} className="text-emerald-400" />
+              <span className="hidden xl:inline">Submit a Listing</span>
+              <span className="inline xl:hidden">Submit</span>
+            </button>
             {userRole ? (
               <button
                 onClick={() => onViewChange('dashboard')}
