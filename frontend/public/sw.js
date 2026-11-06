@@ -1,4 +1,4 @@
-const CACHE_NAME = "halalverify-cache-v54";
+const CACHE_NAME = "halalverify-cache-v55";
 const ASSETS_TO_CACHE = [
     "/",
     "/index.html",
@@ -41,15 +41,18 @@ self.addEventListener("fetch", (event) => {
         return;
     }
 
-    // Bypass caching for live backend API calls and telemetry endpoints
+    // Bypass caching for cross-origin resources, fonts, tiles, and live backend APIs
     if (
+        url.origin !== self.location.origin ||
         url.pathname.startsWith("/api") || 
         url.pathname.startsWith("/analyze") || 
         url.pathname.startsWith("/health") || 
         url.pathname.startsWith("/scan-history") || 
         url.pathname.startsWith("/dashboard-summary") ||
         url.hostname.includes("supabase.co") ||
-        url.hostname.includes("onrender.com")
+        url.hostname.includes("onrender.com") ||
+        url.hostname.includes("googleapis.com") ||
+        url.hostname.includes("gstatic.com")
     ) {
         return;
     }
