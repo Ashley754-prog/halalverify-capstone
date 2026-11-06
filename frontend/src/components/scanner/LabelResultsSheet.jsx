@@ -14,7 +14,6 @@ import {
     ScanSearch,
     Camera,
     Info,
-    FileText,
 } from 'lucide-react';
 import { simplifyHalalText, simplifyStatus } from '../../utils/textFormatters';
 import { CertifyingBodyDetailModal } from './CertifyingBodyDetailModal';
@@ -80,7 +79,6 @@ export const LabelResultsSheet = ({
 }) => {
     const [touchStartY, setTouchStartY] = useState(null);
     const [selectedHcbProfile, setSelectedHcbProfile] = useState(null);
-    const [activeTab, setActiveTab] = useState('overview');
 
 
     const displayedLogoSrc = resolveReferenceLogoSrc(scanResult);
@@ -222,55 +220,7 @@ export const LabelResultsSheet = ({
                         </div>
                     ) : !isLoading && scanResult ? (
                         <div className="space-y-3">
-                            {/* Segmented Tab Switcher (Style 1: Clean Segmented Tabs) */}
-                            {(() => {
-                                const visibleFlaggedCount = (scanResult.flaggedIngredients || []).filter((f) => {
-                                    const st = (f.status || '').toLowerCase().trim();
-                                    return !['halal', 'safe', 'compliant', 'verified', 'approved'].includes(st);
-                                }).length;
-
-                                return (
-                                    <div className="flex items-center p-1 bg-slate-950/80 border border-slate-800 rounded-xl">
-                                        <button
-                                            type="button"
-                                            onClick={() => setActiveTab('overview')}
-                                            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer select-none ${
-                                                activeTab === 'overview'
-                                                    ? 'bg-slate-800 text-white shadow-xs border border-slate-700/80'
-                                                    : 'text-slate-400 hover:text-slate-200'
-                                            }`}
-                                        >
-                                            <ShieldCheck size={14} className={activeTab === 'overview' ? 'text-emerald-400' : 'text-slate-500'} />
-                                            <span>Overview & Seal</span>
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => setActiveTab('ingredients')}
-                                            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer select-none ${
-                                                activeTab === 'ingredients'
-                                                    ? 'bg-slate-800 text-white shadow-xs border border-slate-700/80'
-                                                    : 'text-slate-400 hover:text-slate-200'
-                                            }`}
-                                        >
-                                            <FileText size={14} className={activeTab === 'ingredients' ? 'text-emerald-400' : 'text-slate-500'} />
-                                            <span>Ingredients</span>
-                                            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold font-mono ${
-                                                visibleFlaggedCount > 0
-                                                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                                                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                            }`}>
-                                                {visibleFlaggedCount > 0 ? visibleFlaggedCount : 'Clean'}
-                                            </span>
-                                        </button>
-                                    </div>
-                                );
-                            })()}
-
-                            {/* Tab 1 Content: Overview & Seal */}
-                            {activeTab === 'overview' && (
-                                <div className="space-y-3 animate-in fade-in duration-150">
-                                    {/* 1. Certifying Body / Halal Seal Hero Card */}
+                            {/* 1. Certifying Body / Halal Seal Hero Card (Placed #1 ABOVE Halal Status per Mock Defense revision) */}
                             {hasVerifiedSeal ? (
                                 <div
                                     role="button"
@@ -468,7 +418,62 @@ export const LabelResultsSheet = ({
                                 </div>
                             )}
 
+                            {/* 3. Screened Additives & Ingredients */}
+                            {(() => {
+                                const visibleFlagged = (scanResult.flaggedIngredients || []).filter((f) => {
+                                    const st = (f.status || '').toLowerCase().trim();
+                                    return !['halal', 'safe', 'compliant', 'verified', 'approved'].includes(st);
+                                });
+                                return (
+                                    <div className="bg-slate-800/80 border border-slate-700 rounded-xl p-3.5 space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                                                Ingredients & Additives
+                                            </span>
+                                            <span className="text-[10px] font-mono text-slate-400">
+                                                {visibleFlagged.length} Flagged
+                                            </span>
+                                        </div>
 
+                                        {visibleFlagged.length > 0 ? (
+                                            <div className="space-y-2 pt-1">
+                                                {visibleFlagged.map((flag, idx) => {
+                                                    const isHaram = (flag.status || '').toLowerCase().includes('haram') || (flag.status || '').toLowerCase().includes('prohibit');
+                                                    return (
+                                                        <div
+                                                            key={idx}
+                                                            className={`p-2.5 rounded-lg border text-xs space-y-1 ${
+                                                                isHaram
+                                                                    ? 'bg-red-950/60 border-red-500/40 text-red-200'
+                                                                    : 'bg-amber-950/60 border-amber-500/40 text-amber-200'
+                                                            }`}
+                                                        >
+                                                            <div className="flex items-center justify-between font-bold">
+                                                                <span>{simplifyHalalText(flag.ingredient)}</span>
+                                                                <span className={`text-[10px] uppercase px-1.5 py-0.2 rounded border ${
+                                                                    isHaram
+                                                                        ? 'bg-red-900/80 border-red-400/50 text-red-100'
+                                                                        : 'bg-amber-900/80 border-amber-400/50 text-amber-100'
+                                                                }`}>
+                                                                    {simplifyStatus(flag.status)}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-[11px] opacity-90 leading-relaxed">
+                                                                {simplifyHalalText(flag.reason)}
+                                                            </p>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <div className="p-2.5 bg-emerald-950/40 border border-emerald-500/30 rounded-lg text-xs text-emerald-300 flex items-center gap-2">
+                                                <CheckCircle2 size={15} className="text-emerald-400 shrink-0" />
+                                                <span>No prohibited or doubtful food additives found.</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
 
                             {/* 4. Multi-Section Continuation & Captured Photos Gallery */}
                             {onScanSecondary && (
@@ -539,114 +544,6 @@ export const LabelResultsSheet = ({
                                     <Package size={14} className="text-emerald-400 shrink-0" />
                                     <span>Search Brand in Verified Catalog</span>
                                 </button>
-                            )}
-                                </div>
-                            )}
-
-                            {/* Tab 2 Content: Ingredients & Additives */}
-                            {activeTab === 'ingredients' && (
-                                <div className="space-y-3 animate-in fade-in duration-150">
-                                    {/* Screened Additives & Ingredients */}
-                                    {(() => {
-                                        const visibleFlagged = (scanResult.flaggedIngredients || []).filter((f) => {
-                                            const st = (f.status || '').toLowerCase().trim();
-                                            return !['halal', 'safe', 'compliant', 'verified', 'approved'].includes(st);
-                                        });
-                                        return (
-                                            <div className="bg-slate-800/80 border border-slate-700 rounded-xl p-3.5 space-y-3">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                                                        Ingredients & Additives
-                                                    </span>
-                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                                                        visibleFlagged.length > 0
-                                                            ? 'bg-amber-950/70 border-amber-500/40 text-amber-300'
-                                                            : 'bg-emerald-950/70 border-emerald-500/35 text-emerald-300'
-                                                    }`}>
-                                                        {visibleFlagged.length > 0 ? `${visibleFlagged.length} Flagged` : 'All Compliant'}
-                                                    </span>
-                                                </div>
-
-                                                {visibleFlagged.length > 0 ? (
-                                                    <div className="space-y-2 pt-1">
-                                                        {visibleFlagged.map((flag, idx) => {
-                                                            const isHaram = (flag.status || '').toLowerCase().includes('haram') || (flag.status || '').toLowerCase().includes('prohibit');
-                                                            return (
-                                                                <div
-                                                                    key={idx}
-                                                                    className={`p-3 rounded-xl border text-xs space-y-1.5 ${
-                                                                        isHaram
-                                                                            ? 'bg-red-950/60 border-red-500/40 text-red-200'
-                                                                            : 'bg-amber-950/60 border-amber-500/40 text-amber-200'
-                                                                    }`}
-                                                                >
-                                                                    <div className="flex items-center justify-between font-bold">
-                                                                        <div className="flex items-center gap-2 min-w-0">
-                                                                            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                                                                                isHaram ? 'bg-red-500 ring-4 ring-red-500/20' : 'bg-amber-400 ring-4 ring-amber-400/20'
-                                                                            }`} />
-                                                                            <span className="truncate">{simplifyHalalText(flag.ingredient)}</span>
-                                                                        </div>
-                                                                        <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border shrink-0 ${
-                                                                            isHaram
-                                                                                ? 'bg-red-900/80 border-red-400/50 text-red-100'
-                                                                                : 'bg-amber-900/80 border-amber-400/50 text-amber-100'
-                                                                        }`}>
-                                                                            {simplifyStatus(flag.status)}
-                                                                        </span>
-                                                                    </div>
-                                                                    <p className="text-[11px] opacity-90 leading-relaxed pl-4.5">
-                                                                        {simplifyHalalText(flag.reason)}
-                                                                    </p>
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                ) : (
-                                                    <div className="p-3 bg-emerald-950/40 border border-emerald-500/30 rounded-xl text-xs text-emerald-300 flex items-center gap-2.5">
-                                                        <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
-                                                        <div>
-                                                            <p className="font-semibold text-emerald-200">No prohibited additives found</p>
-                                                            <p className="text-[11px] text-emerald-400/80">Every detected additive conforms to Philippine Halal standards.</p>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* OCR Extracted Text Preview */}
-                                                {scanResult.ocrText && (
-                                                    <div className="pt-2 border-t border-slate-700/60 space-y-1">
-                                                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
-                                                            Detected Label Text
-                                                        </span>
-                                                        <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-700/60 text-[11px] font-mono text-slate-300 max-h-32 overflow-y-auto leading-relaxed">
-                                                            {scanResult.ocrText}
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* Quick Discrepancy Link */}
-                                                <div className="pt-1 flex items-center justify-between border-t border-slate-700/50 text-[11px]">
-                                                    <span className="text-slate-400">Notice an OCR error?</span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            onViewChange?.('report-issue', {
-                                                                relatedTo: 'product',
-                                                                subjectName: scanResult.logoDetected ? `${scanResult.logoBody} Product` : 'Scanned Food Packaging',
-                                                                issueType: 'Ingredient Incorrectly Flagged',
-                                                                description: `OCR text:\n${scanResult.ocrText || 'Label scan'}\nFlagged: ${(scanResult.flaggedIngredients || []).map(f => f.ingredient).join(', ')}`,
-                                                                evidenceUrl: scanResult.images?.[0] || ''
-                                                            });
-                                                        }}
-                                                        className="text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-2 transition cursor-pointer"
-                                                    >
-                                                        Report Discrepancy
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })()}
-                                </div>
                             )}
 
                             {/* 5. Advisory Disclaimer Card */}
