@@ -4,7 +4,50 @@ import Pagination from '../ui/Pagination';
 import EmptyState from '../ui/EmptyState';
 import SearchBar from '../ui/SearchBar';
 
-function HcbCategoryIcon({ isGov, isIntl, isLocal }) {
+const HCB_LOGO_LOOKUP = {
+    IDCP: '/logos/IDCP.jpg',
+    HDIP: '/logos/HDIP.jpg',
+    NCMF: '/logos/NCMF.jpg',
+    DTI: '/logos/DTI.svg',
+    HICCIP: '/logos/HICCIP.png',
+    PRIME: '/logos/PRIME.png',
+    MINHA: '/logos/MinHA.png',
+    PHILCOSED: '/logos/Philcosed.png',
+    AHIP: '/logos/AHIP.png',
+    BPCC: '/logos/BPCC.png',
+    BUSC: '/logos/BUSC.png',
+    FIQHI: '/logos/FIQHI.png',
+    MASLAHA: '/logos/MASLAHA.png',
+    MMHCB: '/logos/MMHCB.png',
+    PUCOI: '/logos/PUCOI.png',
+    BPJPH: '/logos/BPJPH.png',
+    MUI: '/logos/BPJPH.png',
+    JAKIM: '/logos/JAKIM.svg',
+    MUIS: '/logos/MUIS.svg',
+    CICOT: '/logos/CICOT.svg',
+};
+
+function resolveHcbLogo(body) {
+    if (!body) return null;
+    if (body.logo_url) return body.logo_url;
+    const rawCode = (body.code || body.acronym || '').toUpperCase().trim();
+    if (HCB_LOGO_LOOKUP[rawCode]) return HCB_LOGO_LOOKUP[rawCode];
+    const combined = `${rawCode} ${(body.name || '').toUpperCase()}`;
+    for (const [key, src] of Object.entries(HCB_LOGO_LOOKUP)) {
+        if (combined.includes(key)) return src;
+    }
+    return null;
+}
+
+function HcbCategoryIcon({ body, isGov, isIntl, isLocal }) {
+    const logoSrc = resolveHcbLogo(body);
+    if (logoSrc) {
+        return (
+            <div className="w-12 h-12 rounded-full border-2 border-emerald-600/30 bg-white p-0.5 flex items-center justify-center shrink-0 shadow-xs overflow-hidden">
+                <img src={logoSrc} alt={body.code || body.name || 'HCB'} className="w-full h-full object-contain rounded-full" loading="lazy" />
+            </div>
+        );
+    }
     return (
         <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
             isGov ? 'bg-blue-100 text-blue-700' : isIntl ? 'bg-purple-100 text-purple-700' : isLocal ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
@@ -110,7 +153,7 @@ export default function HcbsRegistryTab({
                             <div key={body.id || body.code} className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between gap-3.5 hover:border-slate-300 transition shadow-xs">
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="flex items-center gap-3">
-                                        <HcbCategoryIcon isGov={isGov} isIntl={isIntl} isLocal={isLocal} />
+                                        <HcbCategoryIcon body={body} isGov={isGov} isIntl={isIntl} isLocal={isLocal} />
                                         <div>
                                             <div className="flex items-center gap-2">
                                                 <span className="font-mono font-bold text-xs bg-slate-200 text-slate-800 px-2 py-0.5 rounded">
