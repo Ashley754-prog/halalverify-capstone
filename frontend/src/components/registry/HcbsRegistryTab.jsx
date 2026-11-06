@@ -5,9 +5,9 @@ import EmptyState from '../ui/EmptyState';
 import SearchBar from '../ui/SearchBar';
 
 const HCB_LOGO_LOOKUP = {
-    IDCP: '/logos/IDCP.jpg',
-    HDIP: '/logos/HDIP.jpg',
-    NCMF: '/logos/NCMF.jpg',
+    IDCP: '/logos/IDCP.svg',
+    HDIP: '/logos/HDIP.svg',
+    NCMF: '/logos/NCMF.png',
     DTI: '/logos/DTI.svg',
     HICCIP: '/logos/HICCIP.png',
     PRIME: '/logos/PRIME.png',

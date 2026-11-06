@@ -122,9 +122,9 @@ export const calculateScanStats = (scans) => {
 };
 
 const CERTIFIER_LOGO_MAP = [
-    { keys: ['idcp', 'philippines2', 'da\'wah', 'dawah'], src: '/logos/IDCP.jpg' },
-    { keys: ['hdip', 'philippines3', 'halal development institute'], src: '/logos/HDIP.jpg' },
-    { keys: ['ncmf', 'national_halal_logo', 'philippines1', 'national halal seal', 'dti'], src: '/logos/NCMF.jpg' },
+    { keys: ['idcp', 'philippines2', 'da\'wah', 'dawah'], src: '/logos/IDCP.svg' },
+    { keys: ['hdip', 'philippines3', 'halal development institute'], src: '/logos/HDIP.svg' },
+    { keys: ['ncmf', 'national_halal_logo', 'philippines1', 'national halal seal', 'dti'], src: '/logos/NCMF.png' },
     { keys: ['hiccip'], src: '/logos/HICCIP.png' },
     { keys: ['prime'], src: '/logos/PRIME.png' },
     { keys: ['minha', 'mindanao halal authority'], src: '/logos/MinHA.png' },

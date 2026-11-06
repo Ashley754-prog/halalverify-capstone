@@ -244,12 +244,9 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
             {/* Framed Group 1: Philippine Halal Bodies (4 of 6 columns on desktop) */}
             <div className="lg:col-span-4 rounded-2xl bg-white/80 border-2 border-emerald-600/25 p-3.5 sm:p-5 shadow-xs flex flex-col">
               <div className="flex items-center justify-between gap-2 mb-3.5 pb-2.5 border-b border-[#DCE7E0]">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 shrink-0" />
-                  <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-[0.16em] text-emerald-900">
-                    Philippine Halal Bodies
-                  </h3>
-                </div>
+                <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-[0.16em] text-emerald-900">
+                  Philippine Halal Bodies
+                </h3>
                 <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/80 border border-emerald-300/60 px-2.5 py-0.5 rounded-full shrink-0">
                   Local &amp; National
                 </span>
@@ -259,7 +256,7 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                   {
                     name: 'NCMF',
                     tag: 'PH Government',
-                    logo: '/logos/NCMF.jpg',
+                    logo: '/logos/NCMF.png',
                     fullName: 'National Commission on Muslim Filipinos',
                     description: 'Government agency supporting Muslim affairs and halal development in the Philippines.',
                     url: 'https://www.foi.gov.ph/agencies/ncmf/',
@@ -267,7 +264,7 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                   {
                     name: 'HDIP',
                     tag: 'PH Accredited',
-                    logo: '/logos/HDIP.jpg',
+                    logo: '/logos/HDIP.svg',
                     fullName: 'Halal Development Institute of the Philippines',
                     description: 'Philippine halal development and certification organization serving local businesses.',
                     url: 'https://www.hdiphilippineshalal.com/',
@@ -275,7 +272,7 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                   {
                     name: 'IDCP',
                     tag: 'PH Pioneer',
-                    logo: '/logos/IDCP.jpg',
+                    logo: '/logos/IDCP.svg',
                     fullName: "Islamic Da'wah Council of the Philippines",
                     description: 'Islamic organization providing halal certification and related community services.',
                     url: 'https://www.idcphalal.org/',
@@ -315,12 +312,9 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
             {/* Framed Group 2: International Halal Bodies (2 of 6 columns on desktop) */}
             <div className="lg:col-span-2 rounded-2xl bg-[#F4F8F6] border-2 border-teal-700/25 p-3.5 sm:p-5 shadow-xs flex flex-col">
               <div className="flex items-center justify-between gap-2 mb-3.5 pb-2.5 border-b border-[#DCE7E0]">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-teal-600 shrink-0" />
-                  <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-[0.16em] text-teal-900">
-                    International Partners
-                  </h3>
-                </div>
+                <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-[0.16em] text-teal-900">
+                  International Partners
+                </h3>
                 <span className="text-[11px] font-bold text-teal-800 bg-teal-100/80 border border-teal-300/60 px-2.5 py-0.5 rounded-full shrink-0">
                   Foreign Recognized
                 </span>
