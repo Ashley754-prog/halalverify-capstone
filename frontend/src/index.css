@@ -10,6 +10,21 @@
     --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
+.landing-hero-background {
+    background-image: linear-gradient(rgba(244, 248, 245, 0.78), rgba(244, 248, 245, 0.9)), var(--hero-food-image);
+    background-size: 100% 100%, cover;
+    background-position: center, center;
+    background-repeat: no-repeat;
+}
+
+@media (max-width: 639px) {
+    .landing-hero-background {
+        background-image: linear-gradient(rgba(244, 248, 245, 0.94), rgba(244, 248, 245, 0.97)), var(--hero-food-image);
+        background-size: 100% 100%, auto 100%;
+        background-position: center, center;
+    }
+}
+
 html, body, #root {
     font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     overflow-x: hidden;

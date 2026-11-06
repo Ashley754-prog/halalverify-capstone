@@ -13,18 +13,35 @@ import {
   Building2,
   Plus,
   Menu,
+  ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import ContributionModal from '../components/submissions/ContributionModal';
 import AuthPromptModal from '../components/submissions/AuthPromptModal';
 import LandingMarketingSections from '../components/landing/LandingMarketingSections';
+import ProductCardDetail from '../components/landing/ProductCardDetail';
+import { getSafeUrl } from '../utils/security';
+import { getStatusConfig } from '../data/constants';
+
+function getEstablishmentTierLabel(establishment) {
+  return getStatusConfig(establishment).label;
+}
+
+function getEstablishmentImageUrl(establishment) {
+  return getSafeUrl(establishment.logo_url || establishment.certificate_url);
+}
 
 export default function LandingPage({ onViewChange, userRole }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState(null);
   const [allProducts, setAllProducts] = useState([]);
+  const [recentProducts, setRecentProducts] = useState([]);
+  const [activeRecentProductIndex, setActiveRecentProductIndex] = useState(0);
+  const [selectedRecentProduct, setSelectedRecentProduct] = useState(null);
   const [allEstablishments, setAllEstablishments] = useState([]);
+  const [recentEstablishments, setRecentEstablishments] = useState([]);
+  const [activeRecentEstablishmentIndex, setActiveRecentEstablishmentIndex] = useState(0);
   const [showContributionModal, setShowContributionModal] = useState(false);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [initialContributionTab, setInitialContributionTab] = useState('establishment');
@@ -42,8 +59,90 @@ export default function LandingPage({ onViewChange, userRole }) {
 
   const searchDebounceRef = useRef(null);
   const landingScrollRef = useRef(null);
+  const recentProductsScrollRef = useRef(null);
+  const recentProductsPauseUntilRef = useRef(0);
+  const recentEstablishmentsScrollRef = useRef(null);
+  const recentEstablishmentsPauseUntilRef = useRef(0);
   const programmaticScrollRef = useRef(false);
   const programmaticScrollTimerRef = useRef(null);
+
+  const scrollRecentProducts = (direction) => {
+    const carousel = recentProductsScrollRef.current;
+    const firstCard = carousel?.querySelector('[data-recent-product-card]');
+    if (!carousel || !firstCard) return;
+
+    recentProductsPauseUntilRef.current = Date.now() + 6000;
+    const gap = Number.parseFloat(getComputedStyle(carousel).columnGap) || 0;
+    carousel.scrollBy({
+      left: direction * (firstCard.getBoundingClientRect().width + gap),
+      behavior: 'smooth',
+    });
+  };
+
+  const scrollToRecentProduct = (index) => {
+    const carousel = recentProductsScrollRef.current;
+    const card = carousel?.querySelectorAll('[data-recent-product-card]')[index];
+    if (!carousel || !card) return;
+
+    recentProductsPauseUntilRef.current = Date.now() + 6000;
+    carousel.scrollTo({ left: card.offsetLeft - carousel.offsetLeft, behavior: 'smooth' });
+  };
+
+  const handleRecentProductsScroll = (event) => {
+    const carousel = event.currentTarget;
+    const cards = [...carousel.querySelectorAll('[data-recent-product-card]')];
+    if (!cards.length) return;
+
+    let closestIndex = 0;
+    let closestDistance = Infinity;
+    cards.forEach((card, index) => {
+      const distance = Math.abs(card.offsetLeft - carousel.offsetLeft - carousel.scrollLeft);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+    });
+    setActiveRecentProductIndex(closestIndex);
+  };
+
+  const scrollRecentEstablishments = (direction) => {
+    const carousel = recentEstablishmentsScrollRef.current;
+    const firstCard = carousel?.querySelector('[data-recent-establishment-card]');
+    if (!carousel || !firstCard) return;
+
+    recentEstablishmentsPauseUntilRef.current = Date.now() + 6000;
+    const gap = Number.parseFloat(getComputedStyle(carousel).columnGap) || 0;
+    carousel.scrollBy({
+      left: direction * (firstCard.getBoundingClientRect().width + gap),
+      behavior: 'smooth',
+    });
+  };
+
+  const scrollToRecentEstablishment = (index) => {
+    const carousel = recentEstablishmentsScrollRef.current;
+    const card = carousel?.querySelectorAll('[data-recent-establishment-card]')[index];
+    if (!carousel || !card) return;
+
+    recentEstablishmentsPauseUntilRef.current = Date.now() + 6000;
+    carousel.scrollTo({ left: card.offsetLeft - carousel.offsetLeft, behavior: 'smooth' });
+  };
+
+  const handleRecentEstablishmentsScroll = (event) => {
+    const carousel = event.currentTarget;
+    const cards = [...carousel.querySelectorAll('[data-recent-establishment-card]')];
+    if (!cards.length) return;
+
+    let closestIndex = 0;
+    let closestDistance = Infinity;
+    cards.forEach((card, index) => {
+      const distance = Math.abs(card.offsetLeft - carousel.offsetLeft - carousel.scrollLeft);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+    });
+    setActiveRecentEstablishmentIndex(closestIndex);
+  };
 
   // Scrollspy & Scroll Progress: dynamically track active section and topbar progress beam
   useEffect(() => {
@@ -100,6 +199,66 @@ export default function LandingPage({ onViewChange, userRole }) {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (recentProducts.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const intervalId = window.setInterval(() => {
+      const carousel = recentProductsScrollRef.current;
+      const firstCard = carousel?.querySelector('[data-recent-product-card]');
+      if (
+        !carousel ||
+        !firstCard ||
+        Date.now() < recentProductsPauseUntilRef.current ||
+        carousel.matches(':hover') ||
+        carousel.contains(document.activeElement)
+      ) {
+        return;
+      }
+
+      const gap = Number.parseFloat(getComputedStyle(carousel).columnGap) || 0;
+      const step = firstCard.getBoundingClientRect().width + gap;
+      const endPosition = carousel.scrollWidth - carousel.clientWidth;
+      const nextPosition = carousel.scrollLeft + step;
+
+      carousel.scrollTo({
+        left: nextPosition >= endPosition - 8 ? 0 : nextPosition,
+        behavior: 'smooth',
+      });
+    }, 4500);
+
+    return () => window.clearInterval(intervalId);
+  }, [recentProducts.length]);
+
+  useEffect(() => {
+    if (recentEstablishments.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const intervalId = window.setInterval(() => {
+      const carousel = recentEstablishmentsScrollRef.current;
+      const firstCard = carousel?.querySelector('[data-recent-establishment-card]');
+      if (
+        !carousel ||
+        !firstCard ||
+        Date.now() < recentEstablishmentsPauseUntilRef.current ||
+        carousel.matches(':hover') ||
+        carousel.contains(document.activeElement)
+      ) {
+        return;
+      }
+
+      const gap = Number.parseFloat(getComputedStyle(carousel).columnGap) || 0;
+      const step = firstCard.getBoundingClientRect().width + gap;
+      const endPosition = carousel.scrollWidth - carousel.clientWidth;
+      const nextPosition = carousel.scrollLeft + step;
+
+      carousel.scrollTo({
+        left: nextPosition >= endPosition - 8 ? 0 : nextPosition,
+        behavior: 'smooth',
+      });
+    }, 4500);
+
+    return () => window.clearInterval(intervalId);
+  }, [recentEstablishments.length]);
 
   // Mobile Menu accessibility: Lock background scroll and listen for Escape key
   useEffect(() => {
@@ -194,7 +353,7 @@ export default function LandingPage({ onViewChange, userRole }) {
     let isMounted = true;
     const loadRegistryData = async () => {
       try {
-        const [prodRes, estRes] = await Promise.all([
+        const [prodRes, estRes, recentProductsRes, recentEstablishmentsRes] = await Promise.all([
           supabase
             .from('products')
             .select('id, name, brand, category, status')
@@ -205,11 +364,32 @@ export default function LandingPage({ onViewChange, userRole }) {
             .select('id, name, address, halal_status')
             .not('halal_status', 'in', '(rejected,REJECTED,needs_review,pending,pending_review,flagged,suspended)')
             .limit(200),
+          supabase
+            .from('products')
+            .select('id, name, brand, category, status, image_url, created_at, expiry_date, manufacturers(name), certifying_bodies(name, code)')
+            .not('status', 'in', '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft)')
+            .order('created_at', { ascending: false })
+            .limit(6),
+          supabase
+            .from('establishments')
+            .select('id, name, type, address, city, halal_status, expiry_date, certificate_number, logo_url, certificate_url, description, admin_notes, created_at, certifying_bodies(name, code)')
+            .in('halal_status', ['verified', 'VERIFIED', 'halal_certified', 'Halal Certified'])
+            .or(`expiry_date.is.null,expiry_date.gte.${new Date().toISOString().slice(0, 10)}`)
+            .order('created_at', { ascending: false })
+            .limit(100),
         ]);
 
         if (isMounted) {
           if (prodRes.data) setAllProducts(prodRes.data);
           if (estRes.data) setAllEstablishments(estRes.data);
+          if (recentProductsRes.data) setRecentProducts(recentProductsRes.data);
+          if (recentEstablishmentsRes.data) {
+            setRecentEstablishments(
+              recentEstablishmentsRes.data
+                .filter((establishment) => getStatusConfig(establishment).key === 'verified')
+                .slice(0, 6)
+            );
+          }
         }
       } catch (err) {
         console.warn('Failed to pre-fetch registry data for search:', err);
@@ -299,10 +479,10 @@ export default function LandingPage({ onViewChange, userRole }) {
   return (
     <div
       ref={landingScrollRef}
-      className="h-full max-h-[100dvh] overflow-y-auto overflow-x-hidden scroll-smooth bg-[#0e1625] text-slate-100 selection:bg-emerald-500 selection:text-white w-full max-w-full"
+      className="h-full max-h-[100dvh] overflow-y-auto overflow-x-hidden scroll-smooth bg-[#F4F8F5] text-[#17251F] selection:bg-emerald-500 selection:text-white w-full max-w-full"
     >
       {/* Top Navigation Bar */}
-      <header className="sticky top-0 z-50 w-full border-b border-slate-800/80 bg-[#0e1625]/95 backdrop-blur-md shadow-md shadow-black/20 transition-all">
+      <header className="fixed top-3 left-1/2 z-50 w-[calc(100%-1rem)] sm:w-[calc(100%-2rem)] max-w-7xl -translate-x-1/2 rounded-2xl border border-[#DCE7E0]/80 bg-white/90 shadow-lg shadow-[#17251F]/10 backdrop-blur-md transition-all">
         <div className="max-w-7xl mx-auto flex items-center justify-between h-16 sm:h-20 px-4 sm:px-6 lg:px-8 gap-4">
           {/* Brand Logo */}
           <div
@@ -316,8 +496,8 @@ export default function LandingPage({ onViewChange, userRole }) {
               className="h-8 w-8 sm:h-10 sm:w-10 rounded-full border border-emerald-500/30 shadow-md group-hover:scale-105 transition duration-200"
             />
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="font-black text-sm sm:text-xl tracking-[0.1em] sm:tracking-[0.18em] text-white">HALALVERIFY</span>
-              <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-emerald-950 text-emerald-400 border border-emerald-800/60 rounded-full">
+              <span className="font-black text-sm sm:text-xl tracking-[0.1em] sm:tracking-[0.18em] text-[#17251F]">HALALVERIFY</span>
+              <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-[#EAF3ED] text-emerald-800 border border-emerald-200 rounded-full">
                 Zamboanga
               </span>
             </div>
@@ -330,8 +510,8 @@ export default function LandingPage({ onViewChange, userRole }) {
               onClick={(e) => handleScrollToSection(e, 'features')}
               className={`transition-colors duration-150 whitespace-nowrap shrink-0 ${
                 activeSection === 'features'
-                  ? 'text-emerald-400 font-bold'
-                  : 'text-slate-300 hover:text-emerald-400'
+                  ? 'text-emerald-800 font-bold'
+                  : 'text-[#52645B] hover:text-emerald-800'
               }`}
             >
               Features
@@ -341,8 +521,8 @@ export default function LandingPage({ onViewChange, userRole }) {
               onClick={(e) => handleScrollToSection(e, 'how-it-works')}
               className={`transition-colors duration-150 whitespace-nowrap shrink-0 ${
                 activeSection === 'how-it-works'
-                  ? 'text-emerald-400 font-bold'
-                  : 'text-slate-300 hover:text-emerald-400'
+                  ? 'text-emerald-800 font-bold'
+                  : 'text-[#52645B] hover:text-emerald-800'
               }`}
             >
               How It Works
@@ -352,8 +532,8 @@ export default function LandingPage({ onViewChange, userRole }) {
               onClick={(e) => handleScrollToSection(e, 'certifiers')}
               className={`transition-colors duration-150 whitespace-nowrap shrink-0 ${
                 activeSection === 'certifiers'
-                  ? 'text-emerald-400 font-bold'
-                  : 'text-slate-300 hover:text-emerald-400'
+                  ? 'text-emerald-800 font-bold'
+                  : 'text-[#52645B] hover:text-emerald-800'
               }`}
             >
               Certifiers
@@ -361,14 +541,14 @@ export default function LandingPage({ onViewChange, userRole }) {
             <button
               type="button"
               onClick={() => onViewChange('products')}
-              className="text-slate-300 hover:text-emerald-400 transition-colors duration-150 font-medium whitespace-nowrap shrink-0 cursor-pointer"
+              className="text-[#52645B] hover:text-emerald-800 transition-colors duration-150 font-medium whitespace-nowrap shrink-0 cursor-pointer"
             >
               Catalog
             </button>
             <button
               type="button"
               onClick={() => onViewChange('map')}
-              className="text-slate-300 hover:text-emerald-400 transition-colors duration-150 font-medium whitespace-nowrap shrink-0 cursor-pointer"
+              className="text-[#52645B] hover:text-emerald-800 transition-colors duration-150 font-medium whitespace-nowrap shrink-0 cursor-pointer"
             >
               Map
             </button>
@@ -379,10 +559,10 @@ export default function LandingPage({ onViewChange, userRole }) {
             <button
               type="button"
               onClick={() => handleOpenContribution('establishment')}
-              className="hidden xl:flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 xl:px-3.5 h-9 text-xs xl:text-sm font-semibold text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:text-emerald-200 transition active:scale-95 shadow-xs whitespace-nowrap shrink-0 cursor-pointer"
+              className="hidden xl:flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-[#EAF3ED] px-3 xl:px-3.5 h-9 text-xs xl:text-sm font-semibold text-emerald-800 hover:bg-emerald-100 hover:border-emerald-300 hover:text-emerald-900 transition active:scale-95 shadow-xs whitespace-nowrap shrink-0 cursor-pointer"
               title="Submit an establishment or product to the registry"
             >
-              <Plus size={14} strokeWidth={2.5} className="text-emerald-400" />
+              <Plus size={14} strokeWidth={2.5} className="text-emerald-800" />
               <span>Submit a Listing</span>
             </button>
 
@@ -390,18 +570,18 @@ export default function LandingPage({ onViewChange, userRole }) {
               <button
                 type="button"
                 onClick={() => onViewChange('dashboard')}
-                className="flex items-center gap-1.5 xl:gap-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 h-9 px-3.5 xl:px-4 text-xs xl:text-sm font-semibold text-white transition shadow-sm whitespace-nowrap shrink-0 cursor-pointer"
+                className="flex items-center gap-1.5 xl:gap-2 rounded-xl bg-white hover:bg-[#EAF3ED] border border-[#DCE7E0] h-9 px-3.5 xl:px-4 text-xs xl:text-sm font-semibold text-[#17251F] transition shadow-sm whitespace-nowrap shrink-0 cursor-pointer"
               >
-                <LayoutDashboard size={15} className="text-emerald-400" />
+                <LayoutDashboard size={15} className="text-emerald-700" />
                 <span>Dashboard</span>
               </button>
             ) : (
               <button
                 type="button"
                 onClick={() => onViewChange('login')}
-                className="flex items-center gap-1.5 rounded-xl border border-slate-700/80 bg-slate-800/40 hover:bg-slate-800 text-slate-300 hover:text-white h-9 px-3 xl:px-3.5 text-xs xl:text-sm font-semibold transition whitespace-nowrap shrink-0 cursor-pointer"
+                className="flex items-center gap-1.5 rounded-xl border border-[#DCE7E0] bg-white hover:bg-[#EAF3ED] text-[#52645B] hover:text-[#17251F] h-9 px-3 xl:px-3.5 text-xs xl:text-sm font-semibold transition whitespace-nowrap shrink-0 cursor-pointer"
               >
-                <LogIn size={15} className="text-slate-400" />
+                <LogIn size={15} className="text-[#52645B]" />
                 <span>Sign In</span>
               </button>
             )}
@@ -409,7 +589,7 @@ export default function LandingPage({ onViewChange, userRole }) {
             <button
               type="button"
               onClick={() => onViewChange('scanner')}
-              className="flex items-center gap-1.5 xl:gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 h-9 px-3.5 xl:px-4 text-xs xl:text-sm font-bold text-white shadow-md shadow-emerald-900/40 transition transform hover:-translate-y-0.5 active:translate-y-0 whitespace-nowrap shrink-0 cursor-pointer"
+              className="flex items-center gap-1.5 xl:gap-2 rounded-xl bg-gradient-to-r from-emerald-700 to-teal-700 hover:from-emerald-800 hover:to-teal-800 h-9 px-3.5 xl:px-4 text-xs xl:text-sm font-bold text-white shadow-md shadow-emerald-900/20 transition transform hover:-translate-y-0.5 active:translate-y-0 whitespace-nowrap shrink-0 cursor-pointer"
             >
               <Camera size={15} />
               <span>Start Scanning</span>
@@ -421,7 +601,7 @@ export default function LandingPage({ onViewChange, userRole }) {
               <button
                 type="button"
                 onClick={() => onViewChange('scanner')}
-                className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 px-3 py-1.5 text-xs font-bold text-white shadow-md shadow-emerald-900/40 transition active:scale-95 cursor-pointer"
+                className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-700 to-teal-700 hover:from-emerald-800 hover:to-teal-800 px-3 py-1.5 text-xs font-bold text-white shadow-md shadow-emerald-900/20 transition active:scale-95 cursor-pointer"
                 aria-label="Quick launch scanner"
               >
                 <Camera size={14} />
@@ -432,10 +612,10 @@ export default function LandingPage({ onViewChange, userRole }) {
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen((prev) => !prev)}
-              className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/80 transition focus:outline-none cursor-pointer"
+              className="p-2 rounded-xl text-[#52645B] hover:text-[#17251F] hover:bg-[#EAF3ED] transition focus:outline-none cursor-pointer"
               aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
             >
-              {isMobileMenuOpen ? <X size={22} className="text-emerald-400" /> : <Menu size={22} />}
+              {isMobileMenuOpen ? <X size={22} className="text-emerald-700" /> : <Menu size={22} />}
             </button>
           </div>
         </div>
@@ -443,15 +623,15 @@ export default function LandingPage({ onViewChange, userRole }) {
         {isMobileMenuOpen && (
           <>
             <div
-              className="fixed inset-0 top-16 sm:top-20 bg-slate-950/70 z-40 lg:hidden backdrop-blur-xs transition-opacity"
+              className="fixed inset-0 top-16 sm:top-20 bg-slate-950/25 z-40 lg:hidden backdrop-blur-xs transition-opacity"
               onClick={() => setIsMobileMenuOpen(false)}
               aria-hidden="true"
             />
-            <div className="relative z-50 lg:hidden border-t border-slate-800 bg-[#0e1625]/98 backdrop-blur-xl animate-in slide-in-from-top-3 duration-200 shadow-2xl max-h-[calc(100dvh-4.5rem)] overflow-y-auto">
+            <div className="relative z-50 lg:hidden border-t border-[#DCE7E0] bg-white/98 backdrop-blur-xl animate-in slide-in-from-top-3 duration-200 shadow-2xl max-h-[calc(100dvh-4.5rem)] overflow-y-auto">
               <div className="px-4 py-3.5 space-y-3">
                 {/* Group 1: EXPLORE */}
                 <div className="space-y-1">
-                  <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">
+                  <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-[#52645B] select-none">
                     Explore
                   </p>
                   <nav className="flex flex-col space-y-0.5 text-sm font-medium">
@@ -460,51 +640,51 @@ export default function LandingPage({ onViewChange, userRole }) {
                       onClick={(e) => handleScrollToSection(e, 'features')}
                       className={`flex items-center justify-between px-3 py-2 rounded-xl transition ${
                         activeSection === 'features'
-                          ? 'bg-emerald-950/60 text-emerald-400 font-bold border border-emerald-800/60'
-                          : 'text-slate-300 hover:text-white hover:bg-slate-800/60 font-medium'
+                          ? 'bg-[#EAF3ED] text-emerald-800 font-bold border border-emerald-200'
+                          : 'text-[#52645B] hover:text-[#17251F] hover:bg-[#F4F8F5] font-medium'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-slate-800/80 text-emerald-400 flex items-center justify-center shrink-0">
+                        <div className="w-7 h-7 rounded-lg bg-[#EAF3ED] text-emerald-700 flex items-center justify-center shrink-0">
                           <Sparkles size={15} />
                         </div>
                         <span className="text-xs sm:text-sm">Features</span>
                       </div>
-                      <ChevronRight size={14} className="text-slate-500" />
+                      <ChevronRight size={14} className="text-[#52645B]" />
                     </a>
                     <a
                       href="#how-it-works"
                       onClick={(e) => handleScrollToSection(e, 'how-it-works')}
                       className={`flex items-center justify-between px-3 py-2 rounded-xl transition ${
                         activeSection === 'how-it-works'
-                          ? 'bg-emerald-950/60 text-emerald-400 font-bold border border-emerald-800/60'
-                          : 'text-slate-300 hover:text-white hover:bg-slate-800/60 font-medium'
+                          ? 'bg-[#EAF3ED] text-emerald-800 font-bold border border-emerald-200'
+                          : 'text-[#52645B] hover:text-[#17251F] hover:bg-[#F4F8F5] font-medium'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-slate-800/80 text-emerald-400 flex items-center justify-center shrink-0">
+                        <div className="w-7 h-7 rounded-lg bg-[#EAF3ED] text-emerald-700 flex items-center justify-center shrink-0">
                           <CheckCircle2 size={15} />
                         </div>
                         <span className="text-xs sm:text-sm">How It Works</span>
                       </div>
-                      <ChevronRight size={14} className="text-slate-500" />
+                      <ChevronRight size={14} className="text-[#52645B]" />
                     </a>
                     <a
                       href="#certifiers"
                       onClick={(e) => handleScrollToSection(e, 'certifiers')}
                       className={`flex items-center justify-between px-3 py-2 rounded-xl transition ${
                         activeSection === 'certifiers'
-                          ? 'bg-emerald-950/60 text-emerald-400 font-bold border border-emerald-800/60'
-                          : 'text-slate-300 hover:text-white hover:bg-slate-800/60 font-medium'
+                          ? 'bg-[#EAF3ED] text-emerald-800 font-bold border border-emerald-200'
+                          : 'text-[#52645B] hover:text-[#17251F] hover:bg-[#F4F8F5] font-medium'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-slate-800/80 text-emerald-400 flex items-center justify-center shrink-0">
+                        <div className="w-7 h-7 rounded-lg bg-[#EAF3ED] text-emerald-700 flex items-center justify-center shrink-0">
                           <ShieldCheck size={15} />
                         </div>
                         <span className="text-xs sm:text-sm">Certifiers</span>
                       </div>
-                      <ChevronRight size={14} className="text-slate-500" />
+                      <ChevronRight size={14} className="text-[#52645B]" />
                     </a>
                     <button
                       type="button"
@@ -512,15 +692,15 @@ export default function LandingPage({ onViewChange, userRole }) {
                         setIsMobileMenuOpen(false);
                         onViewChange('products');
                       }}
-                      className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-left cursor-pointer font-medium"
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-[#52645B] hover:text-[#17251F] hover:bg-[#F4F8F5] transition text-left cursor-pointer font-medium"
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-slate-800/80 text-emerald-400 flex items-center justify-center shrink-0">
+                        <div className="w-7 h-7 rounded-lg bg-[#EAF3ED] text-emerald-700 flex items-center justify-center shrink-0">
                           <Package size={15} />
                         </div>
                         <span className="text-xs sm:text-sm">Product Catalog</span>
                       </div>
-                      <ChevronRight size={14} className="text-slate-500" />
+                      <ChevronRight size={14} className="text-[#52645B]" />
                     </button>
                     <button
                       type="button"
@@ -528,22 +708,22 @@ export default function LandingPage({ onViewChange, userRole }) {
                         setIsMobileMenuOpen(false);
                         onViewChange('map');
                       }}
-                      className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-left cursor-pointer font-medium"
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-[#52645B] hover:text-[#17251F] hover:bg-[#F4F8F5] transition text-left cursor-pointer font-medium"
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-slate-800/80 text-teal-400 flex items-center justify-center shrink-0">
+                        <div className="w-7 h-7 rounded-lg bg-[#EAF3ED] text-emerald-700 flex items-center justify-center shrink-0">
                           <MapPin size={15} />
                         </div>
                         <span className="text-xs sm:text-sm">Establishments Map</span>
                       </div>
-                      <ChevronRight size={14} className="text-slate-500" />
+                      <ChevronRight size={14} className="text-[#52645B]" />
                     </button>
                   </nav>
                 </div>
 
                 {/* Group 2: CONTRIBUTE */}
-                <div className="pt-2 border-t border-slate-800/80">
-                  <p className="px-2 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">
+                <div className="pt-2 border-t border-[#DCE7E0]">
+                  <p className="px-2 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-[#52645B] select-none">
                     Contribute
                   </p>
                   <button
@@ -552,36 +732,25 @@ export default function LandingPage({ onViewChange, userRole }) {
                       setIsMobileMenuOpen(false);
                       handleOpenContribution('establishment');
                     }}
-                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-900/40 hover:border-emerald-500/50 transition cursor-pointer active:scale-[0.99] group"
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-[#EAF3ED] border border-emerald-200 text-emerald-800 hover:bg-emerald-100 hover:border-emerald-300 transition cursor-pointer active:scale-[0.99] group"
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                      <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
                         <Plus size={15} strokeWidth={2.5} />
                       </div>
-                      <span className="text-xs sm:text-sm font-bold text-emerald-200">Submit Establishment / Product</span>
+                      <span className="text-xs sm:text-sm font-bold text-emerald-900">Submit Establishment / Product</span>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-emerald-800 border border-emerald-200">
                       Community
                     </span>
                   </button>
                 </div>
 
                 {/* Group 3: QUICK ACTIONS */}
-                <div className="pt-2 border-t border-slate-800/80 space-y-2">
-                  <p className="px-2 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">
-                    Quick Actions
+                <div className="pt-2 border-t border-[#DCE7E0] space-y-2">
+                  <p className="px-2 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-[#52645B] select-none">
+                    Account
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      onViewChange('scanner');
-                    }}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-950/60 transition active:scale-[0.98] cursor-pointer"
-                  >
-                    <Camera size={16} className="shrink-0" />
-                    <span>Start Optical Scanner</span>
-                  </button>
 
                   {userRole ? (
                     <button
@@ -590,9 +759,9 @@ export default function LandingPage({ onViewChange, userRole }) {
                         setIsMobileMenuOpen(false);
                         onViewChange('dashboard');
                       }}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700/80 text-slate-200 hover:text-white font-semibold text-xs sm:text-sm transition active:scale-[0.98] cursor-pointer"
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white hover:bg-[#EAF3ED] border border-[#DCE7E0] text-[#17251F] font-semibold text-xs sm:text-sm transition active:scale-[0.98] cursor-pointer"
                     >
-                      <LayoutDashboard size={15} className="text-emerald-400 shrink-0" />
+                      <LayoutDashboard size={15} className="text-emerald-700 shrink-0" />
                       <span>Open Dashboard</span>
                     </button>
                   ) : (
@@ -602,9 +771,9 @@ export default function LandingPage({ onViewChange, userRole }) {
                         setIsMobileMenuOpen(false);
                         onViewChange('login');
                       }}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700/80 text-slate-200 hover:text-white font-semibold text-xs sm:text-sm transition active:scale-[0.98] cursor-pointer"
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white hover:bg-[#EAF3ED] border border-[#DCE7E0] text-[#17251F] font-semibold text-xs sm:text-sm transition active:scale-[0.98] cursor-pointer"
                     >
-                      <LogIn size={15} className="text-emerald-400 shrink-0" />
+                      <LogIn size={15} className="text-emerald-700 shrink-0" />
                       <span>Sign In / Register</span>
                     </button>
                   )}
@@ -616,27 +785,32 @@ export default function LandingPage({ onViewChange, userRole }) {
       </header>
 
       {/* Hero Section */}
-      <section className="relative pt-8 pb-12 sm:pt-16 sm:pb-24 overflow-hidden">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-emerald-600/15 blur-[120px] rounded-full pointer-events-none" />
+      <section
+        className="landing-hero-background relative border-b border-[#DCE7E0] pt-24 pb-12 sm:pt-28 sm:pb-24 overflow-hidden"
+        style={{
+          '--hero-food-image': "url('/hero-background/hero-food-bg.png')",
+        }}
+      >
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-emerald-600/10 blur-[120px] rounded-full pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-3xl sm:max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-800/60 text-emerald-300 text-xs sm:text-sm font-semibold mb-5 sm:mb-6 backdrop-blur-sm shadow-inner">
-              <Sparkles size={14} className="text-emerald-400 shrink-0" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EAF3ED] border border-emerald-200 text-emerald-800 text-xs sm:text-sm font-semibold mb-5 sm:mb-6 backdrop-blur-sm shadow-inner">
+              <Sparkles size={14} className="text-emerald-700 shrink-0" />
               <span>Optical Character Recognition &amp; Verified Database</span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[54px] font-extrabold tracking-tight text-white leading-tight sm:leading-[1.15] max-w-3xl sm:max-w-4xl mx-auto">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[54px] font-extrabold tracking-tight text-[#17251F] leading-tight sm:leading-[1.15] max-w-3xl sm:max-w-4xl mx-auto">
               Verify Halal Authenticity{' '}
               <span className="block sm:inline mt-1 sm:mt-0">
                 in{' '}
-                <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-200 bg-clip-text text-transparent whitespace-nowrap">
+                <span className="bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-600 bg-clip-text text-transparent whitespace-nowrap">
                   Zamboanga City.
                 </span>
               </span>
             </h1>
 
-            <p className="mt-4 sm:mt-6 text-sm sm:text-base md:text-lg text-slate-300 leading-relaxed max-w-2xl mx-auto">
+            <p className="mt-4 sm:mt-6 text-sm sm:text-base md:text-lg text-[#52645B] leading-relaxed max-w-2xl mx-auto">
               Empowering consumers and families to inspect food packaging labels, detect certifying logos, and discover certified dining establishments across Zamboanga City, instantly and freely.
             </p>
 
@@ -649,12 +823,12 @@ export default function LandingPage({ onViewChange, userRole }) {
                   onChange={(e) => handleSearch(e.target.value)}
                   aria-label="Search products, brands, or verified establishments"
                   placeholder="Search product names, brands, or verified establishments in Zamboanga..."
-                  className="w-full rounded-xl sm:rounded-2xl border border-slate-700 bg-slate-900/90 py-3 pl-4 pr-20 sm:py-3.5 sm:pl-4 sm:pr-24 text-sm sm:text-base text-white placeholder:text-slate-400/90 outline-none transition duration-200 hover:border-slate-600 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/15 shadow-xl backdrop-blur-xl"
+                  className="w-full rounded-xl sm:rounded-2xl border border-[#DCE7E0] bg-white py-3 pl-4 pr-20 sm:py-3.5 sm:pl-4 sm:pr-24 text-sm sm:text-base text-[#17251F] placeholder:text-[#52645B]/70 outline-none transition duration-200 hover:border-emerald-300 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/15 shadow-xl backdrop-blur-xl"
                 />
                 <button
                   type="button"
                   onClick={() => handleSearch(searchQuery)}
-                  className={`absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-emerald-400 transition hover:bg-emerald-950 hover:text-emerald-300 ${searchQuery ? 'right-10 sm:right-12' : ''}`}
+                  className={`absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-emerald-700 transition hover:bg-[#EAF3ED] hover:text-emerald-900 ${searchQuery ? 'right-10 sm:right-12' : ''}`}
                   aria-label="Search"
                   title="Search"
                 >
@@ -664,7 +838,7 @@ export default function LandingPage({ onViewChange, userRole }) {
                   <button
                     type="button"
                     onClick={() => { setSearchQuery(''); setSearchResults(null); }}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 rounded-lg transition cursor-pointer"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#52645B] hover:text-[#17251F] p-1 rounded-lg transition cursor-pointer"
                     title="Clear search"
                   >
                     <X size={18} />
@@ -675,12 +849,12 @@ export default function LandingPage({ onViewChange, userRole }) {
               {searchQuery.trim() && searchResults && (
                 <div className="mt-3">
                   {searchResults.totalCount > 0 ? (
-                    <div className="rounded-2xl border border-slate-700 bg-slate-900/95 p-4 shadow-2xl space-y-2.5 backdrop-blur-xl max-h-80 overflow-y-auto">
-                      <div className="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800 pb-2">
+                    <div className="rounded-2xl border border-[#DCE7E0] bg-white p-4 shadow-2xl space-y-2.5 backdrop-blur-xl max-h-80 overflow-y-auto">
+                      <div className="flex items-center justify-between text-xs text-[#52645B] border-b border-[#DCE7E0] pb-2">
                         <span>Found {searchResults.totalCount} matching record(s)</span>
                         <button
                           onClick={() => onViewChange('products', { searchQuery })}
-                          className="text-emerald-400 hover:underline font-semibold cursor-pointer"
+                          className="text-emerald-800 hover:underline font-semibold cursor-pointer"
                         >
                           View In Catalog &rarr;
                         </button>
@@ -690,16 +864,16 @@ export default function LandingPage({ onViewChange, userRole }) {
                         <div
                           key={p.id}
                           onClick={() => onViewChange('products', { searchQuery: p.name })}
-                          className="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 cursor-pointer border border-slate-700/50 transition"
+                          className="flex items-center justify-between p-2.5 rounded-xl bg-white hover:bg-[#F4F8F5] cursor-pointer border border-[#DCE7E0] transition"
                         >
                           <div className="flex items-center gap-2.5">
-                            <Package size={18} className="text-emerald-400 shrink-0" />
+                            <Package size={18} className="text-emerald-700 shrink-0" />
                             <div>
-                              <p className="text-xs sm:text-sm font-bold text-white">{p.name}</p>
-                              <p className="text-[11px] text-slate-400">{p.brand} &bull; {p.category}</p>
+                              <p className="text-xs sm:text-sm font-bold text-[#17251F]">{p.name}</p>
+                              <p className="text-[11px] text-[#52645B]">{p.brand} &bull; {p.category}</p>
                             </div>
                           </div>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-950 text-emerald-300 border border-emerald-800">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#EAF3ED] text-emerald-800 border border-emerald-200">
                             {p.status || 'Halal'}
                           </span>
                         </div>
@@ -709,45 +883,45 @@ export default function LandingPage({ onViewChange, userRole }) {
                         <div
                           key={e.id}
                           onClick={() => onViewChange('map')}
-                          className="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 cursor-pointer border border-slate-700/50 transition"
+                          className="flex items-center justify-between p-2.5 rounded-xl bg-white hover:bg-[#F4F8F5] cursor-pointer border border-[#DCE7E0] transition"
                         >
                           <div className="flex items-center gap-2.5">
-                            <Building2 size={18} className="text-teal-400 shrink-0" />
+                            <Building2 size={18} className="text-teal-700 shrink-0" />
                             <div>
-                              <p className="text-xs sm:text-sm font-bold text-white">{e.name}</p>
-                              <p className="text-[11px] text-slate-400">{e.address}</p>
+                              <p className="text-xs sm:text-sm font-bold text-[#17251F]">{e.name}</p>
+                              <p className="text-[11px] text-[#52645B]">{e.address}</p>
                             </div>
                           </div>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-teal-950 text-teal-300 border border-teal-800">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-teal-50 text-teal-800 border border-teal-200">
                             {e.halal_status || 'Verified'}
                           </span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="rounded-2xl border border-emerald-500/50 bg-slate-900/95 p-6 shadow-2xl text-center backdrop-blur-xl space-y-3">
-                      <div className="w-12 h-12 rounded-full bg-emerald-950 border border-emerald-800 flex items-center justify-center text-emerald-400 mx-auto">
+                    <div className="rounded-2xl border border-emerald-200 bg-white p-6 shadow-2xl text-center backdrop-blur-xl space-y-3">
+                      <div className="w-12 h-12 rounded-full bg-[#EAF3ED] border border-emerald-200 flex items-center justify-center text-emerald-700 mx-auto">
                         <Camera size={22} />
                       </div>
-                      <h3 className="text-base sm:text-lg font-bold text-white">
+                      <h3 className="text-base sm:text-lg font-bold text-[#17251F]">
                         Product or Establishment not found. Scan package to verify.
                       </h3>
-                      <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto leading-relaxed">
+                      <p className="text-xs sm:text-sm text-[#52645B] max-w-md mx-auto leading-relaxed">
                         &quot;{searchQuery}&quot; was not found in the verified database. Use the visual scanner to inspect the package label, detect certifying seals, and parse ingredients.
                       </p>
                       <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
                         <button
                           onClick={() => onViewChange('scanner')}
-                          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-900/40 transition transform hover:-translate-y-0.5 active:translate-y-0 duration-150 cursor-pointer"
+                          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-900/20 transition transform hover:-translate-y-0.5 active:translate-y-0 duration-150 cursor-pointer"
                         >
                           <Camera size={18} />
                           <span>Scan Package with Camera</span>
                         </button>
                         <button
                           onClick={() => handleOpenContribution('establishment')}
-                          className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs sm:text-sm border border-slate-700 transition cursor-pointer"
+                          className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white hover:bg-[#EAF3ED] text-[#17251F] font-semibold text-xs sm:text-sm border border-[#DCE7E0] transition cursor-pointer"
                         >
-                          <Building2 size={16} className="text-teal-400" />
+                          <Building2 size={16} className="text-teal-700" />
                           <span>Submit to Registry</span>
                         </button>
                       </div>
@@ -762,7 +936,7 @@ export default function LandingPage({ onViewChange, userRole }) {
                 <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 max-w-md sm:max-w-none mx-auto">
                   <button
                     onClick={() => onViewChange('scanner')}
-                    className="h-11 sm:h-12 px-6 sm:px-7 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 font-bold text-white text-sm sm:text-base shadow-lg shadow-emerald-900/40 hover:shadow-emerald-900/60 transition duration-150 transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 cursor-pointer"
+                    className="h-11 sm:h-12 px-6 sm:px-7 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-700 to-teal-700 hover:from-emerald-800 hover:to-teal-800 font-bold text-white text-sm sm:text-base shadow-lg shadow-emerald-900/20 hover:shadow-emerald-900/30 transition duration-150 transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Camera size={19} className="shrink-0" />
                     <span>Launch Scanner</span>
@@ -770,30 +944,284 @@ export default function LandingPage({ onViewChange, userRole }) {
 
                   <button
                     onClick={() => onViewChange('products')}
-                    className="h-11 sm:h-12 px-5 sm:px-6 rounded-xl sm:rounded-2xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 font-semibold text-slate-200 hover:text-white text-sm sm:text-base transition duration-150 flex items-center justify-center gap-2 cursor-pointer"
+                    className="h-11 sm:h-12 px-5 sm:px-6 rounded-xl sm:rounded-2xl bg-white hover:bg-[#EAF3ED] border border-[#DCE7E0] hover:border-emerald-300 font-semibold text-[#17251F] text-sm sm:text-base transition duration-150 flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <Package size={18} className="shrink-0 text-slate-400" />
+                    <Package size={18} className="shrink-0 text-[#52645B]" />
                     <span>Browse Products</span>
                   </button>
 
                   <button
                     onClick={() => onViewChange('map')}
-                    className="h-11 sm:h-12 px-5 sm:px-6 rounded-xl sm:rounded-2xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 font-semibold text-slate-200 hover:text-white text-sm sm:text-base transition duration-150 flex items-center justify-center gap-2 cursor-pointer"
+                    className="h-11 sm:h-12 px-5 sm:px-6 rounded-xl sm:rounded-2xl bg-white hover:bg-[#EAF3ED] border border-[#DCE7E0] hover:border-emerald-300 font-semibold text-[#17251F] text-sm sm:text-base transition duration-150 flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <MapPin size={18} className="shrink-0 text-emerald-400" />
+                    <MapPin size={18} className="shrink-0 text-emerald-700" />
                     <span>Establishments Map</span>
                   </button>
                 </div>
 
-                <p className="mt-4 text-xs sm:text-sm text-slate-400 font-medium">
+                <p className="mt-4 text-xs sm:text-sm text-[#52645B] font-medium">
                   No account required for scanning and searches.
                 </p>
               </>
             )}
           </div>
 
+        </div>
+      </section>
+
+      <section className="bg-[#EAF3ED] px-4 py-10 sm:py-14 border-b border-[#DCE7E0]">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-5 sm:mb-7 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-800">From the local registry</p>
+              <h2 className="mt-1 text-xl sm:text-2xl font-extrabold text-[#17251F]">Recently Added Products</h2>
+            </div>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => onViewChange('products')}
+                className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[#DCE7E0] bg-white px-3 py-2 text-xs sm:text-sm font-semibold text-[#17251F] transition hover:border-emerald-300 hover:bg-[#F4F8F5]"
+              >
+                View all <ChevronRight size={15} />
+              </button>
+            </div>
+          </div>
+
+          {recentProducts.length > 0 ? (
+            <div className="relative" role="group" aria-label="Product carousel controls">
+              <button
+                type="button"
+                onClick={() => scrollRecentProducts(-1)}
+                aria-label="Previous products"
+                title="Previous products"
+                className="absolute left-1 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center bg-transparent text-emerald-900 transition hover:scale-110 hover:text-emerald-700 focus-visible:outline-2 focus-visible:outline-emerald-700"
+              >
+                <ChevronLeft size={32} strokeWidth={2.5} className="drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)]" />
+              </button>
+              <div
+                ref={recentProductsScrollRef}
+                onPointerDown={() => { recentProductsPauseUntilRef.current = Date.now() + 6000; }}
+                onScroll={handleRecentProductsScroll}
+                className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-3 sm:gap-4"
+                aria-label="Recently added products"
+              >
+                {recentProducts.map((product) => {
+                  const imageUrl = getSafeUrl(product.image_url);
+
+                  return (
+                    <article
+                      key={product.id}
+                      data-recent-product-card
+                      className="w-[84%] shrink-0 snap-start overflow-hidden rounded-lg border border-[#DCE7E0] bg-white sm:w-[calc((100%_-_1rem)/2)] lg:w-[calc((100%_-_2rem)/3)]"
+                    >
+                      <div className="relative aspect-[4/3] bg-[#F4F8F5]">
+                        <div className="absolute inset-0 flex items-center justify-center text-emerald-700/50">
+                          <Package size={38} strokeWidth={1.5} />
+                        </div>
+                        {imageUrl && (
+                          <img
+                            src={imageUrl}
+                            alt={product.name}
+                            loading="lazy"
+                            onError={(event) => event.currentTarget.classList.add('hidden')}
+                            className="absolute inset-0 h-full w-full object-contain p-4"
+                          />
+                        )}
+                      </div>
+                      <div className="flex min-h-32 flex-col p-3 sm:p-4">
+                        <p className="text-[11px] font-semibold text-[#52645B]">
+                          {product.brand || product.category || 'Local product'}
+                        </p>
+                        <h3 className="mt-1 line-clamp-2 text-sm font-bold text-[#17251F]">{product.name}</h3>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedRecentProduct(product)}
+                          className="mt-auto self-start pt-3 text-xs font-bold text-emerald-800 hover:text-emerald-950"
+                        >
+                          See details <span aria-hidden="true">&rarr;</span>
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+              <button
+                type="button"
+                onClick={() => scrollRecentProducts(1)}
+                aria-label="Next products"
+                title="Next products"
+                className="absolute right-1 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center bg-transparent text-emerald-900 transition hover:scale-110 hover:text-emerald-700 focus-visible:outline-2 focus-visible:outline-emerald-700"
+              >
+                <ChevronRight size={32} strokeWidth={2.5} className="drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)]" />
+              </button>
+              <div className="mt-3 flex justify-center gap-2" role="group" aria-label="Choose a product">
+                {recentProducts.map((product, index) => (
+                  <button
+                    key={product.id}
+                    type="button"
+                    onClick={() => scrollToRecentProduct(index)}
+                    aria-label={`Go to product ${index + 1}: ${product.name}`}
+                    aria-current={activeRecentProductIndex === index ? 'true' : undefined}
+                    className={`h-2.5 w-2.5 rounded-full transition-colors ${
+                      activeRecentProductIndex === index
+                        ? 'bg-emerald-700'
+                        : 'bg-emerald-900/20 hover:bg-emerald-700/50'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="rounded-lg border border-[#DCE7E0] bg-white p-5 text-sm text-[#52645B]">
+              Recently added products will appear here.
+            </p>
+          )}
+        </div>
+      </section>
+
+      <section className="bg-[#EAF3ED] px-4 py-10 sm:py-14 border-b border-[#DCE7E0]">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-5 sm:mb-7 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-800">Verified local places</p>
+              <h2 className="mt-1 text-xl sm:text-2xl font-extrabold text-[#17251F]">Recently Added Establishments</h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => onViewChange('map')}
+              className="inline-flex shrink-0 items-center gap-1 self-end rounded-lg border border-[#DCE7E0] bg-white px-3 py-2 text-xs sm:text-sm font-semibold text-[#17251F] transition hover:border-emerald-300 hover:bg-[#F4F8F5] sm:self-auto"
+            >
+              View map <MapPin size={15} />
+            </button>
+          </div>
+
+          {recentEstablishments.length > 0 ? (
+            <div className="relative" role="group" aria-label="Verified establishment carousel controls">
+              <button
+                type="button"
+                onClick={() => scrollRecentEstablishments(-1)}
+                aria-label="Previous establishments"
+                title="Previous establishments"
+                className="absolute left-1 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center bg-transparent text-emerald-900 transition hover:scale-110 hover:text-emerald-700 focus-visible:outline-2 focus-visible:outline-emerald-700"
+              >
+                <ChevronLeft size={32} strokeWidth={2.5} className="drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)]" />
+              </button>
+              <div
+                ref={recentEstablishmentsScrollRef}
+                onPointerDown={() => { recentEstablishmentsPauseUntilRef.current = Date.now() + 6000; }}
+                onScroll={handleRecentEstablishmentsScroll}
+                className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-3 sm:gap-4"
+                aria-label="Recently added verified establishments"
+              >
+                {recentEstablishments.map((establishment) => {
+                  const imageUrl = getEstablishmentImageUrl(establishment);
+
+                  return (
+                    <article
+                      key={establishment.id}
+                      data-recent-establishment-card
+                      className="flex min-h-[220px] w-[84%] shrink-0 snap-start flex-col overflow-hidden rounded-lg border border-[#DCE7E0] bg-white sm:w-[calc((100%_-_1rem)/2)] lg:w-[calc((100%_-_2rem)/3)]"
+                    >
+                      <div className="relative aspect-[4/3] bg-[#F4F8F5]">
+                        <div className="absolute inset-0 flex items-center justify-center text-emerald-700/50">
+                          <Building2 size={38} strokeWidth={1.5} />
+                        </div>
+                        {imageUrl && (
+                          <img
+                            src={imageUrl}
+                            alt={`${establishment.name} logo or certificate`}
+                            loading="lazy"
+                            onError={(event) => event.currentTarget.classList.add('hidden')}
+                            className="absolute inset-0 h-full w-full object-contain p-4"
+                          />
+                        )}
+                      </div>
+
+                      <div className="flex min-h-[220px] flex-1 flex-col p-4 sm:p-5">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-[11px] font-semibold text-[#52645B]">
+                              {establishment.type || 'Establishment'}
+                            </p>
+                            <h3 className="mt-1 line-clamp-2 text-sm font-bold text-[#17251F] sm:text-base">
+                              {establishment.name}
+                            </h3>
+                          </div>
+                          <span className="shrink-0 rounded-full border border-emerald-200 bg-[#EAF3ED] px-2 py-1 text-[10px] font-bold text-emerald-800">
+                            {getEstablishmentTierLabel(establishment)}
+                          </span>
+                        </div>
+
+                        <div className="mt-4 space-y-2 text-xs text-[#52645B]">
+                          <p className="flex items-start gap-2">
+                            <MapPin size={14} className="mt-0.5 shrink-0 text-emerald-700" />
+                            <span className="line-clamp-2">
+                              {[
+                                establishment.address,
+                                establishment.city && !establishment.address?.toLowerCase().includes(establishment.city.toLowerCase())
+                                  ? establishment.city
+                                  : null,
+                              ].filter(Boolean).join(', ') || 'Address not provided'}
+                            </span>
+                          </p>
+                          <p className="flex items-start gap-2">
+                            <ShieldCheck size={14} className="mt-0.5 shrink-0 text-emerald-700" />
+                            <span className="line-clamp-2">
+                              {establishment.certifying_bodies?.name || establishment.certifying_bodies?.code || 'Certifying body not listed'}
+                              {establishment.expiry_date && ` · Valid until ${establishment.expiry_date}`}
+                            </span>
+                          </p>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => onViewChange('map', { searchQuery: establishment.name })}
+                          className="mt-auto inline-flex items-center gap-1.5 self-start pt-4 text-xs font-bold text-emerald-800 transition hover:text-emerald-950"
+                        >
+                          <MapPin size={14} /> View on map
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+              <button
+                type="button"
+                onClick={() => scrollRecentEstablishments(1)}
+                aria-label="Next establishments"
+                title="Next establishments"
+                className="absolute right-1 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center bg-transparent text-emerald-900 transition hover:scale-110 hover:text-emerald-700 focus-visible:outline-2 focus-visible:outline-emerald-700"
+              >
+                <ChevronRight size={32} strokeWidth={2.5} className="drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)]" />
+              </button>
+              <div className="mt-3 flex justify-center gap-2" role="group" aria-label="Choose an establishment">
+                {recentEstablishments.map((establishment, index) => (
+                  <button
+                    key={establishment.id}
+                    type="button"
+                    onClick={() => scrollToRecentEstablishment(index)}
+                    aria-label={`Go to establishment ${index + 1}: ${establishment.name}`}
+                    aria-current={activeRecentEstablishmentIndex === index ? 'true' : undefined}
+                    className={`h-2.5 w-2.5 rounded-full transition-colors ${
+                      activeRecentEstablishmentIndex === index
+                        ? 'bg-emerald-700'
+                        : 'bg-emerald-900/20 hover:bg-emerald-700/50'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="rounded-lg border border-[#DCE7E0] bg-white p-5 text-sm text-[#52645B]">
+              Verified establishments will appear here when available.
+            </p>
+          )}
+        </div>
+      </section>
+
+        <section className="relative bg-[#EAF3ED] px-4 pt-8 pb-12 sm:pt-16 sm:pb-16">
           {/* Interactive Feature Mockup Preview */}
-          <div className="mt-8 sm:mt-16 max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto">
             <div className="relative rounded-xl sm:rounded-3xl border border-slate-700/80 bg-slate-900/90 p-2 sm:p-6 shadow-2xl shadow-emerald-950/40 backdrop-blur-xl">
               <div className="flex items-center justify-between border-b border-slate-800 pb-2 sm:pb-4 mb-3 sm:mb-5">
                 <div className="flex min-w-0 items-center gap-1 sm:gap-2">
@@ -855,7 +1283,6 @@ export default function LandingPage({ onViewChange, userRole }) {
               </div>
             </div>
           </div>
-        </div>
       </section>
 
       <LandingMarketingSections
@@ -876,6 +1303,11 @@ export default function LandingPage({ onViewChange, userRole }) {
         onClose={() => setShowAuthPrompt(false)}
         onNavigate={(v) => onViewChange(v)}
         actionTitle="Contribute to Registry"
+      />
+
+      <ProductCardDetail
+        product={selectedRecentProduct}
+        onClose={() => setSelectedRecentProduct(null)}
       />
     </div>
   );
