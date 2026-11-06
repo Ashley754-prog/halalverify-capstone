@@ -240,72 +240,37 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                     fullName: 'National Commission on Muslim Filipinos',
                     description: 'Government agency supporting Muslim affairs and halal development in the Philippines.',
                     url: 'https://www.foi.gov.ph/agencies/ncmf/',
-                    logo: '/logos/NCMF.jpg',
-                    scope: 'National Authority',
                   },
                   {
                     name: 'HDIP',
                     fullName: 'Halal Development Institute of the Philippines',
                     description: 'Philippine halal development and certification organization serving local businesses.',
                     url: 'https://www.hdiphilippineshalal.com/',
-                    logo: '/logos/HDIP.jpg',
-                    scope: 'DTI-PAB Accredited',
                   },
                   {
                     name: 'IDCP',
                     fullName: "Islamic Da'wah Council of the Philippines",
                     description: 'Islamic organization providing halal certification and related community services.',
                     url: 'https://www.idcphalal.org/',
-                    logo: '/logos/IDCP.jpg',
-                    scope: 'Pioneer PH Certifier',
                   },
                   {
                     name: 'DTI',
                     fullName: 'Department of Trade and Industry',
                     description: 'Government trade agency supporting Philippine halal industry and export development.',
                     url: 'https://tradelinephilippines.dti.gov.ph/ca/web/tradeline-portal/philippine-halal-export-development',
-                    logo: '/logos/DTI.png',
-                    scope: 'Trade & Export Board',
                   },
                 ].map((body) => (
-                  <div
-                    key={body.name}
-                    className="flex min-h-[220px] flex-col rounded-2xl border border-[#DCE7E0] bg-white p-3.5 sm:p-4 shadow-xs hover:border-emerald-500/40 hover:shadow-md hover:shadow-emerald-900/5 transition duration-200"
-                  >
-                    {/* Sprig Ecosystem Header: Circular Logo Medallion + Acronym & Scope Pill */}
-                    <div className="flex items-center gap-2.5">
-                      <div className="h-11 w-11 shrink-0 rounded-full border border-emerald-600/20 bg-white p-1 shadow-2xs flex items-center justify-center overflow-hidden">
-                        <img
-                          src={body.logo}
-                          alt={`${body.name} Logo`}
-                          className="h-full w-full object-contain rounded-full"
-                          loading="lazy"
-                        />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <span className="font-extrabold text-emerald-800 text-sm sm:text-base leading-tight block">
-                          {body.name}
-                        </span>
-                        <span className="inline-block text-[10px] font-semibold text-emerald-700 bg-[#EAF3ED] px-1.5 py-0.5 rounded-md mt-0.5">
-                          {body.scope}
-                        </span>
-                      </div>
-                    </div>
-
-                    <p className="mt-2.5 text-[11px] font-bold text-[#17251F] leading-snug sm:text-xs">
-                      {body.fullName}
-                    </p>
-                    <p className="mt-1 flex-1 text-xs leading-relaxed text-[#52645B] sm:text-[13px]">
-                      {body.description}
-                    </p>
+                  <div key={body.name} className="flex min-h-[175px] flex-col rounded-xl border border-[#DCE7E0] bg-white p-3 sm:p-4">
+                    <span className="font-extrabold text-emerald-800 text-sm sm:text-base">{body.name}</span>
+                    <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-[#52645B] sm:text-xs leading-snug">{body.fullName}</p>
+                    <p className="mt-2 flex-1 text-xs leading-relaxed text-[#52645B] sm:text-[13px]">{body.description}</p>
                     <a
                       href={body.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-700/40 bg-white px-2.5 py-1.5 text-xs font-bold text-emerald-800 transition hover:border-emerald-600 hover:bg-[#EAF3ED] active:scale-98"
+                      className="mt-3 inline-flex items-center justify-center gap-1 rounded-lg border border-emerald-700/50 px-2 py-1.5 text-xs font-bold text-emerald-800 transition hover:border-emerald-600 hover:bg-[#EAF3ED]"
                     >
-                      <span>Official Website</span>
-                      <ExternalLink size={11} />
+                      Official Website <ExternalLink size={11} />
                     </a>
                   </div>
                 ))}
@@ -324,56 +289,25 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                     fullName: 'Jabatan Kemajuan Islam Malaysia',
                     description: "Malaysia's Department of Islamic Development and national halal certification authority.",
                     url: 'https://www.islam.gov.my/ms/hukum-undang-undang/semakan-status-halal',
-                    logo: '/logos/JAKIM.png',
-                    scope: 'Malaysia Authority',
                   },
                   {
                     name: 'MUIS',
                     fullName: 'Majlis Ugama Islam Singapura',
                     description: "Singapore's Islamic Religious Council, providing halal certification and verification services.",
                     url: 'https://halal.muis.gov.sg/account/login',
-                    logo: '/logos/MUIS.svg',
-                    scope: 'Singapore Council',
                   },
                 ].map((body) => (
-                  <div
-                    key={body.name}
-                    className="flex min-h-[220px] flex-col rounded-2xl border border-[#DCE7E0] bg-white p-3.5 sm:p-4 shadow-xs hover:border-emerald-500/40 hover:shadow-md hover:shadow-emerald-900/5 transition duration-200"
-                  >
-                    {/* Sprig Ecosystem Header: Circular Logo Medallion + Acronym & Scope Pill */}
-                    <div className="flex items-center gap-2.5">
-                      <div className="h-11 w-11 shrink-0 rounded-full border border-emerald-600/20 bg-white p-1 shadow-2xs flex items-center justify-center overflow-hidden">
-                        <img
-                          src={body.logo}
-                          alt={`${body.name} Logo`}
-                          className="h-full w-full object-contain rounded-full"
-                          loading="lazy"
-                        />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <span className="font-extrabold text-emerald-800 text-sm sm:text-base leading-tight block">
-                          {body.name}
-                        </span>
-                        <span className="inline-block text-[10px] font-semibold text-emerald-700 bg-[#EAF3ED] px-1.5 py-0.5 rounded-md mt-0.5">
-                          {body.scope}
-                        </span>
-                      </div>
-                    </div>
-
-                    <p className="mt-2.5 text-[11px] font-bold text-[#17251F] leading-snug sm:text-xs">
-                      {body.fullName}
-                    </p>
-                    <p className="mt-1 flex-1 text-xs leading-relaxed text-[#52645B] sm:text-[13px]">
-                      {body.description}
-                    </p>
+                  <div key={body.name} className="flex min-h-[175px] flex-col rounded-xl border border-[#DCE7E0] bg-white p-3 sm:p-4">
+                    <span className="font-extrabold text-emerald-800 text-sm sm:text-base">{body.name}</span>
+                    <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-[#52645B] sm:text-xs leading-snug">{body.fullName}</p>
+                    <p className="mt-2 flex-1 text-xs leading-relaxed text-[#52645B] sm:text-[13px]">{body.description}</p>
                     <a
                       href={body.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-700/40 bg-white px-2.5 py-1.5 text-xs font-bold text-emerald-800 transition hover:border-emerald-600 hover:bg-[#EAF3ED] active:scale-98"
+                      className="mt-3 inline-flex items-center justify-center gap-1 rounded-lg border border-emerald-700/50 px-2 py-1.5 text-xs font-bold text-emerald-800 transition hover:border-emerald-600 hover:bg-[#EAF3ED]"
                     >
-                      <span>Official Website</span>
-                      <ExternalLink size={11} />
+                      Official Website <ExternalLink size={11} />
                     </a>
                   </div>
                 ))}
