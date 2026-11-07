@@ -281,25 +281,12 @@ def verify_establishment(
             notify_user(
                 submitted_by,
                 category="verification",
-                title="Establishment review update",
-                message=f'"{est_name}" was not approved: {rejection_reason}',
+                title="Establishment declined" if status_clean == "rejected" else "Establishment status update",
+                message=f'"{est_name}" was marked as {status_clean}. Note - {rejection_reason}',
                 entity_type="establishment",
                 entity_id=establishment_id,
                 action_view="profile",
             )
-
-    admin_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
-    if admin_id:
-        est_name = updated_row.get("name") or "Establishment"
-        notify_user(
-            admin_id,
-            category="verification",
-            title="Establishment review recorded",
-            message=f'You marked "{est_name}" as {status_clean}.',
-            entity_type="establishment",
-            entity_id=establishment_id,
-            action_view="verification-queue",
-        )
 
     return {
         "success": True,
@@ -499,13 +486,28 @@ def resolve_issue_report(
     if reporter_id:
         rep_subj = resolved_report.get("subject_name") or "Reported item"
         res_notes = (payload.resolution_notes or "").strip()
-        notif_msg = f'Your report regarding "{rep_subj}" was marked as {status_clean}.'
-        if res_notes:
-            notif_msg += f" Note: {res_notes}"
+        is_dismissed = status_clean == "dismissed" or res_notes.lower().startswith("dismissed")
+        if is_dismissed:
+            cleaned_note = re.sub(r"^dismissed\s*[:\-]?\s*", "", res_notes, flags=re.IGNORECASE).strip()
+            notif_title = "Report Dismissed"
+            notif_msg = f'Your report regarding "{rep_subj}" was dismissed.'
+            if cleaned_note:
+                notif_msg += f" Note - {cleaned_note}"
+        elif status_clean == "reviewing":
+            notif_title = "Report Under Review"
+            notif_msg = f'Your report regarding "{rep_subj}" is now under investigation.'
+            if res_notes:
+                notif_msg += f" Note - {res_notes}"
+        else:
+            notif_title = "Report Resolved"
+            notif_msg = f'Your report regarding "{rep_subj}" was marked as resolved.'
+            if res_notes:
+                notif_msg += f" Note - {res_notes}"
+
         notify_user(
             reporter_id,
             category="report",
-            title=f"Report {status_clean.capitalize()}",
+            title=notif_title,
             message=notif_msg,
             entity_type="issue_report",
             entity_id=report_id,
@@ -1070,6 +1072,16 @@ def auto_verify_all_pending(
 
             if update_fields:
                 supabase.table("establishments").update(update_fields).eq("id", est["id"]).execute()
+                if auto_approve and can_approve_est and est.get("submitted_by"):
+                    notify_user(
+                        est["submitted_by"],
+                        category="verification",
+                        title="Establishment approved",
+                        message=f'"{est.get("name", "Your establishment")}" has been verified via AI audit.',
+                        entity_type="establishment",
+                        entity_id=est["id"],
+                        action_view="profile",
+                    )
         except Exception as e:
             logger.error("Error auto-verifying establishment %s: %s", est.get("id"), e)
 
@@ -1116,6 +1128,16 @@ def auto_verify_all_pending(
 
             if update_fields:
                 supabase.table("products").update(update_fields).eq("id", prod["id"]).execute()
+                if auto_approve and can_approve_prod and prod.get("submitted_by"):
+                    notify_user(
+                        prod["submitted_by"],
+                        category="verification",
+                        title="Product approved",
+                        message=f'"{prod.get("name", "Your product")}" has been verified via AI screening.',
+                        entity_type="product",
+                        entity_id=prod["id"],
+                        action_view="profile",
+                    )
         except Exception as e:
             logger.error("Error auto-verifying product %s: %s", prod.get("id"), e)
 

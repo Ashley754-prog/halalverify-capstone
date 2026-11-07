@@ -338,7 +338,7 @@ export default function App() {
       case 'landing':
         return <LandingPage onViewChange={handleViewChange} userRole={userRole} />;
       case 'profile':
-        return <ProfilePage onViewChange={handleViewChange} />;
+        return <ProfilePage onViewChange={handleViewChange} initialFilter={viewParams.tab || 'all'} />;
       case 'dashboard':
         return <Dashboard userRole={userRole} onViewChange={handleViewChange} />;
       case 'scanner':
@@ -379,7 +379,7 @@ export default function App() {
         );
       case 'verification-queue':
         return userRole === 'admin' ? (
-          <VerificationQueue userRole={userRole} onViewChange={handleViewChange} />
+          <VerificationQueue userRole={userRole} onViewChange={handleViewChange} initialTab={viewParams.tab || 'establishments'} />
         ) : (
           <Dashboard userRole={userRole} onViewChange={handleViewChange} />
         );

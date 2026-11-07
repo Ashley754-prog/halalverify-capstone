@@ -58,3 +58,16 @@ WITH CHECK (recipient_id = auth.uid());
 -- Grant privileges to Supabase roles
 GRANT ALL ON TABLE public.notifications TO service_role;
 GRANT SELECT, UPDATE ON TABLE public.notifications TO authenticated;
+
+-- Enable Supabase Realtime on public.notifications
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables
+        WHERE pubname = 'supabase_realtime'
+          AND schemaname = 'public'
+          AND tablename = 'notifications'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+    END IF;
+END $$;

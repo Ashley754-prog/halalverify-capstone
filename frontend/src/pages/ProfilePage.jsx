@@ -21,7 +21,7 @@ import { API_BASE_URL } from '../utils/api';
 import EmptyState from '../components/ui/EmptyState';
 import Pagination from '../components/ui/Pagination';
 
-const ProfilePage = ({ onViewChange }) => {
+const ProfilePage = ({ onViewChange, initialFilter = 'all' }) => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [savedSuccess, setSavedSuccess] = useState(false);
@@ -36,7 +36,15 @@ const ProfilePage = ({ onViewChange }) => {
     const [myEstablishments, setMyEstablishments] = useState([]);
     const [myProducts, setMyProducts] = useState([]);
     const [myReports, setMyReports] = useState([]);
-    const [activeFilter, setActiveFilter] = useState('all');
+    const [activeFilter, setActiveFilter] = useState(
+        ['all', 'establishments', 'products', 'reports'].includes(initialFilter) ? initialFilter : 'all'
+    );
+
+    useEffect(() => {
+        if (['all', 'establishments', 'products', 'reports'].includes(initialFilter)) {
+            setActiveFilter(initialFilter);
+        }
+    }, [initialFilter]);
     const [subPage, setSubPage] = useState(1);
     const [subItemsPerPage, setSubItemsPerPage] = useState(6);
 

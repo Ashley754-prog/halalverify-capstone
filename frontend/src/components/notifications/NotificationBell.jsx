@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
     Bell,
-    Check,
     CheckCheck,
     Clock,
     CircleAlert,
@@ -78,32 +77,37 @@ export default function NotificationBell({ onViewChange }) {
 
     const fetchNotifications = useCallback(async () => {
         let loaded = false;
+
+        // 1. Primary fast path via direct Supabase query (works instantaneously on both local and deployed)
         try {
-            const res = await authFetch(`${API_BASE_URL}/api/v1/notifications?limit=25`);
-            if (res.ok) {
-                const data = await res.json();
-                setNotifications(data.data || []);
-                setUnreadCount(data.unread_count || 0);
-                loaded = true;
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user?.id) {
+                const { data, error } = await supabase
+                    .from('notifications')
+                    .select('*')
+                    .eq('recipient_id', session.user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(25);
+                if (!error && Array.isArray(data)) {
+                    setNotifications(data);
+                    setUnreadCount(data.filter((n) => !n.read_at).length);
+                    loaded = true;
+                }
             }
         } catch {
-            // Silently fall through to direct Supabase query
+            // Fall through to backend API if direct query encounters an issue
         }
 
+        // 2. Fallback to backend API if direct Supabase did not load
         if (!loaded) {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (session?.user?.id) {
-                    const { data, error } = await supabase
-                        .from('notifications')
-                        .select('*')
-                        .eq('recipient_id', session.user.id)
-                        .order('created_at', { ascending: false })
-                        .limit(25);
-                    if (!error && data) {
-                        setNotifications(data);
-                        setUnreadCount(data.filter((n) => !n.read_at).length);
-                    }
+                const res = await authFetch(`${API_BASE_URL}/api/v1/notifications?limit=25`, {
+                    timeout: 8000,
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setNotifications(data.data || []);
+                    setUnreadCount(data.unread_count || 0);
                 }
             } catch {
                 // Ignore fallback error
@@ -111,7 +115,7 @@ export default function NotificationBell({ onViewChange }) {
         }
     }, []);
 
-    // Initial fetch on mount & periodic 60s background refresh
+    // Initial fetch on mount, periodic 30s refresh, and instant event-driven refresh
     useEffect(() => {
         fetchNotifications();
 
@@ -119,47 +123,108 @@ export default function NotificationBell({ onViewChange }) {
             if (!document.hidden) {
                 fetchNotifications();
             }
-        }, 60000);
+        }, 30000);
 
-        return () => clearInterval(interval);
+        let delayedTimer = null;
+        const handleImmediateRefresh = () => {
+            fetchNotifications();
+            if (delayedTimer) clearTimeout(delayedTimer);
+            delayedTimer = setTimeout(() => {
+                fetchNotifications();
+            }, 800);
+        };
+
+        window.addEventListener('notifications-updated', handleImmediateRefresh);
+        window.addEventListener('verification-queue-changed', handleImmediateRefresh);
+        window.addEventListener('focus', fetchNotifications);
+
+        return () => {
+            clearInterval(interval);
+            if (delayedTimer) clearTimeout(delayedTimer);
+            window.removeEventListener('notifications-updated', handleImmediateRefresh);
+            window.removeEventListener('verification-queue-changed', handleImmediateRefresh);
+            window.removeEventListener('focus', fetchNotifications);
+        };
     }, [fetchNotifications]);
 
     // Realtime notification listener via Supabase
     useEffect(() => {
         let channel = null;
 
-        const setupRealtime = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session?.user?.id) return;
+        const setupRealtime = async (userId) => {
+            if (channel) {
+                supabase.removeChannel(channel);
+                channel = null;
+            }
+            if (!userId) return;
 
             channel = supabase
-                .channel(`notifs:${session.user.id}`)
+                .channel(`notifs:${userId}`)
                 .on(
                     'postgres_changes',
                     {
                         event: 'INSERT',
                         schema: 'public',
                         table: 'notifications',
-                        filter: `recipient_id=eq.${session.user.id}`,
+                        filter: `recipient_id=eq.${userId}`,
                     },
                     (payload) => {
                         if (payload.new) {
-                            setNotifications((prev) => [payload.new, ...prev.filter((p) => p.id !== payload.new.id)]);
-                            setUnreadCount((prev) => prev + 1);
+                            setNotifications((prev) => {
+                                const exists = prev.some((p) => p.id === payload.new.id);
+                                const next = [payload.new, ...prev.filter((p) => p.id !== payload.new.id)];
+                                if (!exists && !payload.new.read_at) {
+                                    setUnreadCount((c) => c + 1);
+                                }
+                                return next;
+                            });
+                        }
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'notifications',
+                        filter: `recipient_id=eq.${userId}`,
+                    },
+                    (payload) => {
+                        if (payload.new) {
+                            setNotifications((prev) => {
+                                const next = prev.map((p) => (p.id === payload.new.id ? payload.new : p));
+                                setUnreadCount(next.filter((n) => !n.read_at).length);
+                                return next;
+                            });
                         }
                     }
                 )
                 .subscribe();
         };
 
-        setupRealtime();
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session?.user?.id) {
+                setupRealtime(session.user.id);
+            }
+        });
+
+        const { data: authSub } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (session?.user?.id) {
+                setupRealtime(session.user.id);
+                fetchNotifications();
+            } else {
+                setNotifications([]);
+                setUnreadCount(0);
+            }
+        });
 
         return () => {
             if (channel) {
                 supabase.removeChannel(channel);
             }
+            authSub?.subscription?.unsubscribe();
         };
-    }, []);
+    }, [fetchNotifications]);
 
     // Close dropdown on outside click or Escape key
     useEffect(() => {
@@ -195,27 +260,30 @@ export default function NotificationBell({ onViewChange }) {
     };
 
     const handleItemClick = async (notif) => {
+        const nowIso = new Date().toISOString();
+
         // Optimistically mark as read in local state
         if (!notif.read_at) {
             setNotifications((prev) =>
                 prev.map((item) =>
                     item.id === notif.id
-                        ? { ...item, read_at: new Date().toISOString() }
+                        ? { ...item, read_at: nowIso }
                         : item
                 )
             );
             setUnreadCount((prev) => Math.max(0, prev - 1));
 
-            // Sync with backend and direct Supabase in background
+            // Sync with direct Supabase and backend in background
             try {
-                authFetch(`${API_BASE_URL}/api/v1/notifications/${notif.id}/read`, {
-                    method: 'PATCH',
-                }).catch(() => {});
                 supabase
                     .from('notifications')
-                    .update({ read_at: new Date().toISOString() })
+                    .update({ read_at: nowIso })
                     .eq('id', notif.id)
                     .then(() => {});
+                authFetch(`${API_BASE_URL}/api/v1/notifications/${notif.id}/read`, {
+                    method: 'PATCH',
+                    timeout: 8000,
+                }).catch(() => {});
             } catch {
                 // Background update failure is non-blocking
             }
@@ -223,9 +291,19 @@ export default function NotificationBell({ onViewChange }) {
 
         setIsOpen(false);
 
-        // Navigate to relevant view if requested
+        // Navigate to relevant view and specific tab if requested
         if (notif.action_view && typeof onViewChange === 'function') {
-            onViewChange(notif.action_view, notif.action_params || {});
+            const resolvedParams = { ...(notif.action_params || {}) };
+            if (!resolvedParams.tab && (notif.action_view === 'verification-queue' || notif.action_view === 'profile')) {
+                if (notif.entity_type === 'product') {
+                    resolvedParams.tab = 'products';
+                } else if (notif.entity_type === 'issue_report') {
+                    resolvedParams.tab = 'reports';
+                } else if (notif.entity_type === 'establishment') {
+                    resolvedParams.tab = 'establishments';
+                }
+            }
+            onViewChange(notif.action_view, resolvedParams);
         }
     };
 
@@ -233,7 +311,6 @@ export default function NotificationBell({ onViewChange }) {
         if (unreadCount === 0 || isMarkingAll) return;
         setIsMarkingAll(true);
 
-        // Optimistically update local state
         const nowIso = new Date().toISOString();
         setNotifications((prev) =>
             prev.map((item) => (item.read_at ? item : { ...item, read_at: nowIso }))
@@ -241,9 +318,18 @@ export default function NotificationBell({ onViewChange }) {
         setUnreadCount(0);
 
         try {
-            await authFetch(`${API_BASE_URL}/api/v1/notifications/read-all`, {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user?.id) {
+                await supabase
+                    .from('notifications')
+                    .update({ read_at: nowIso })
+                    .eq('recipient_id', session.user.id)
+                    .is('read_at', null);
+            }
+            authFetch(`${API_BASE_URL}/api/v1/notifications/read-all`, {
                 method: 'POST',
-            });
+                timeout: 8000,
+            }).catch(() => {});
         } catch {
             // Silently swallow
         } finally {

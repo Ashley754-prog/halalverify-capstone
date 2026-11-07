@@ -175,6 +175,8 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
 
             setSubmitted(true);
             setShowConfirmModal(false);
+            window.dispatchEvent(new CustomEvent('verification-queue-changed'));
+            window.dispatchEvent(new CustomEvent('notifications-updated'));
             setToast({
                 visible: true,
                 message: 'Report submitted successfully. Thank you for protecting halal integrity.',

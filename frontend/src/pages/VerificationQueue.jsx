@@ -17,8 +17,16 @@ import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
 import { isMachineNote, extractMenuHighlights, deriveEstablishmentTier } from '../utils/verificationNotes';
 
-export default function VerificationQueue({ onViewChange }) {
-    const [activeTab, setActiveTab] = useState('establishments'); // 'establishments' | 'products' | 'reports'
+export default function VerificationQueue({ onViewChange, initialTab = 'establishments' }) {
+    const [activeTab, setActiveTab] = useState(
+        ['establishments', 'products', 'reports'].includes(initialTab) ? initialTab : 'establishments'
+    ); // 'establishments' | 'products' | 'reports'
+
+    useEffect(() => {
+        if (['establishments', 'products', 'reports'].includes(initialTab)) {
+            setActiveTab(initialTab);
+        }
+    }, [initialTab]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState(null);
@@ -256,6 +264,7 @@ export default function VerificationQueue({ onViewChange }) {
                 type: 'success',
             });
             window.dispatchEvent(new CustomEvent('verification-queue-changed'));
+            window.dispatchEvent(new CustomEvent('notifications-updated'));
         } catch (err) {
             console.error('Failed to add menu item:', err);
             setToast({ visible: true, message: err.message || 'Could not save menu item.', type: 'error' });
@@ -324,6 +333,7 @@ export default function VerificationQueue({ onViewChange }) {
                 }
             }
             window.dispatchEvent(new CustomEvent('verification-queue-changed'));
+            window.dispatchEvent(new CustomEvent('notifications-updated'));
         } catch (err) {
             console.error('Delete dish failed:', err);
             setToast({ visible: true, message: err.message || 'Could not remove menu highlight.', type: 'error' });
@@ -375,6 +385,7 @@ export default function VerificationQueue({ onViewChange }) {
                         closeInspection();
                     }
                     window.dispatchEvent(new CustomEvent('verification-queue-changed'));
+            window.dispatchEvent(new CustomEvent('notifications-updated'));
                     fetchQueueData({ background: true });
                 } else {
                     const firstReason = evalData.audit_trail?.reasons?.[0];
@@ -422,6 +433,7 @@ export default function VerificationQueue({ onViewChange }) {
                         type: 'success',
                     });
                     window.dispatchEvent(new CustomEvent('verification-queue-changed'));
+            window.dispatchEvent(new CustomEvent('notifications-updated'));
                     fetchQueueData({ background: true });
                 } else {
                     setToast({
@@ -456,6 +468,7 @@ export default function VerificationQueue({ onViewChange }) {
                     type: 'success',
                 });
                 window.dispatchEvent(new CustomEvent('verification-queue-changed'));
+            window.dispatchEvent(new CustomEvent('notifications-updated'));
                 fetchQueueData({ background: true });
             } else {
                 setToast({ visible: true, message: 'Batch auto-verification failed.', type: 'error' });
@@ -523,6 +536,7 @@ export default function VerificationQueue({ onViewChange }) {
 
             closeInspection();
             window.dispatchEvent(new CustomEvent('verification-queue-changed'));
+            window.dispatchEvent(new CustomEvent('notifications-updated'));
             fetchQueueData({ background: true });
         } catch (err) {
             console.error('Failed to verify establishment:', err);
@@ -585,6 +599,7 @@ export default function VerificationQueue({ onViewChange }) {
                 closeInspection();
             }
             window.dispatchEvent(new CustomEvent('verification-queue-changed'));
+            window.dispatchEvent(new CustomEvent('notifications-updated'));
             fetchQueueData({ background: true });
         } catch (err) {
             console.error('Failed to verify product:', err);
@@ -649,6 +664,7 @@ export default function VerificationQueue({ onViewChange }) {
             setAdjudicatingReport(null);
             closeInspection();
             window.dispatchEvent(new CustomEvent('verification-queue-changed'));
+            window.dispatchEvent(new CustomEvent('notifications-updated'));
             fetchQueueData({ background: true });
         } catch (err) {
             console.error('Failed to resolve report:', err);

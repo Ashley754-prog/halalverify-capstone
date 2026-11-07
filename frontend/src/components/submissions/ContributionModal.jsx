@@ -247,6 +247,7 @@ export default function ContributionModal({
       }
 
       setIsSuccess(true);
+      window.dispatchEvent(new CustomEvent('notifications-updated'));
       onSubmitted?.();
     } catch (err) {
       console.error('Establishment submission error:', err);
@@ -316,6 +317,7 @@ export default function ContributionModal({
       }
 
       setIsSuccess(true);
+      window.dispatchEvent(new CustomEvent('notifications-updated'));
       onSubmitted?.();
     } catch (err) {
       console.error('Product submission error:', err);

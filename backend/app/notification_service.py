@@ -20,13 +20,45 @@ def _short(text: Optional[str], limit: int = 280) -> str:
     return cleaned[: limit - 1].rstrip() + "…"
 
 
+def _default_action_params(
+    entity_type: Optional[str],
+    action_view: Optional[str],
+    action_params: Optional[Dict[str, Any]],
+) -> Dict[str, Any]:
+    params = dict(action_params or {})
+    if "tab" not in params and action_view in {"profile", "verification-queue"}:
+        if entity_type == "establishment":
+            params["tab"] = "establishments"
+        elif entity_type == "product":
+            params["tab"] = "products"
+        elif entity_type == "issue_report":
+            params["tab"] = "reports"
+    return params
+
+
 def _insert(rows: list[Dict[str, Any]]) -> None:
     if not rows:
         return
-    try:
-        supabase.table("notifications").insert(rows).execute()
-    except Exception as exc:  # noqa: BLE001 - notifications must never break the caller
-        logger.warning("Notification insert skipped: %s", exc)
+    for row in rows:
+        try:
+            supabase.rpc(
+                "create_system_notification",
+                {
+                    "p_recipient_id": row["recipient_id"],
+                    "p_category": row["category"],
+                    "p_title": row["title"],
+                    "p_message": row.get("message"),
+                    "p_entity_type": row.get("entity_type"),
+                    "p_entity_id": row.get("entity_id"),
+                    "p_action_view": row.get("action_view"),
+                    "p_action_params": row.get("action_params") or {},
+                },
+            ).execute()
+        except Exception:
+            try:
+                supabase.table("notifications").insert(row).execute()
+            except Exception as exc:  # noqa: BLE001 - notifications must never break the caller
+                logger.warning("Notification insert skipped: %s", exc)
 
 
 def notify_user(
@@ -54,7 +86,7 @@ def notify_user(
                 "entity_type": entity_type,
                 "entity_id": str(entity_id) if entity_id else None,
                 "action_view": action_view,
-                "action_params": action_params or {},
+                "action_params": _default_action_params(entity_type, action_view, action_params),
             }
         ]
     )
@@ -83,6 +115,7 @@ def notify_admins(
     if not admin_ids:
         return
 
+    resolved_params = _default_action_params(entity_type, action_view, action_params)
     _insert(
         [
             {
@@ -93,7 +126,7 @@ def notify_admins(
                 "entity_type": entity_type,
                 "entity_id": str(entity_id) if entity_id else None,
                 "action_view": action_view,
-                "action_params": action_params or {},
+                "action_params": resolved_params,
             }
             for admin_id in admin_ids
         ]

@@ -242,6 +242,7 @@ export default function ReportIssueModal({
       }
 
       setIsSuccess(true);
+      window.dispatchEvent(new CustomEvent('notifications-updated'));
       onSubmitted?.();
       onSuccess?.();
     } catch (err) {
