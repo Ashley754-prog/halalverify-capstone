@@ -22,7 +22,7 @@ const HCB_LOGO_LOOKUP = {
     PUCOI: '/logos/PUCOI.png',
     BPJPH: '/logos/BPJPH.png',
     MUI: '/logos/BPJPH.png',
-    JAKIM: '/logos/JAKIM.svg',
+    JAKIM: '/logos/JAKIM.png',
     MUIS: '/logos/MUIS.svg',
     CICOT: '/logos/CICOT.svg',
 };

@@ -517,7 +517,7 @@ export const HCB_DIRECTORY = {
         code: 'JAKIM',
         name: 'Jabatan Kemajuan Islam Malaysia (Department of Islamic Development Malaysia)',
         shortName: 'JAKIM Malaysia',
-        logoSrc: '/logos/JAKIM.svg',
+        logoSrc: '/logos/JAKIM.png',
         category: 'International Recognized Partner',
         country: 'Malaysia',
         flag: '🇲🇾',

@@ -316,7 +316,7 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                 {[
                   {
                     name: 'JAKIM',
-                    logo: '/logos/JAKIM.svg',
+                    logo: '/logos/JAKIM.png',
                     fullName: 'Jabatan Kemajuan Islam Malaysia',
                     description: "Malaysia's Department of Islamic Development and national halal certification authority.",
                     url: 'https://www.islam.gov.my/ms/hukum-undang-undang/semakan-status-halal',
