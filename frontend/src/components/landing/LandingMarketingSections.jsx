@@ -19,7 +19,7 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-10">
             <h2 className="text-xs sm:text-sm font-bold uppercase tracking-[0.25em] text-emerald-800">
-              Features &bull; Core Capabilities
+              Features
             </h2>
             <p className="mt-2 text-xl sm:text-4xl font-extrabold text-[#17251F] tracking-tight">
               Designed for Everyday Shoppers &amp; Diners
@@ -129,7 +129,7 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-10">
             <h2 className="text-xs sm:text-sm font-bold uppercase tracking-[0.25em] text-emerald-800">
-              How It Works &bull; Simple Workflow
+              How It Works
             </h2>
             <p className="mt-2 text-xl sm:text-4xl font-extrabold text-[#17251F] tracking-tight">
               How HalalVerify Verifies Products
@@ -219,7 +219,7 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div className="max-w-2xl text-center sm:text-left">
               <h2 className="text-xs sm:text-sm font-bold uppercase tracking-[0.25em] text-emerald-800">
-                Certifiers &bull; Philippine Halal Accreditation
+                Accredited Certifiers
               </h2>
               <p className="mt-1.5 text-xl sm:text-3xl lg:text-4xl font-extrabold text-[#17251F] tracking-tight">
                 Supported Certifying Bodies &amp; Local Scope
