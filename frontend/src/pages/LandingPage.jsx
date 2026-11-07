@@ -87,6 +87,26 @@ const INITIAL_RECENT_ESTABLISHMENTS = [
     admin_notes: '[Tier: halal_certified] Synced from Muslim in Manila (ID: 1237). Amenities: Standard Dining.',
     description: 'Bandit Burger is a halal-certified smash burger restaurant on Veterans Avenue Extension in Zamboanga City certified by the Ulama Council of Zamboanga Peninsula.',
   },
+  {
+    id: 'bay-tal-mal-initial',
+    name: 'Bay Tal Mal Restaurant Zamboanga City',
+    type: 'Restaurant',
+    address: '4th Floor, SM City Mindpro, La Purisima St, Zamboanga City, 7000 Zamboanga del Sur, Philippines',
+    city: 'Zamboanga City',
+    halal_status: 'verified',
+    admin_notes: '[Tier: halal_certified] Synced from Muslim in Manila (ID: 468). Amenities: Air-Conditioned, Prayer Room Nearby.',
+    description: 'Bay Tal Mal Restaurant is a halal-certified Tausug and Moro restaurant at SM City Mindpro in Zamboanga City.',
+  },
+  {
+    id: 'black-plate-initial',
+    name: 'Black Plate Zamboanga',
+    type: 'Restaurant',
+    address: 'Mayor Jaldon St, Canelar, Zamboanga City, 7000 Zamboanga del Sur, Philippines',
+    city: 'Zamboanga City',
+    halal_status: 'verified',
+    admin_notes: '[Tier: muslim_owned] Synced from Muslim in Manila (ID: 1157). Amenities: Standard Dining.',
+    description: 'Black Plate Zamboanga is a Muslim-owned sizzling plate and grill house on Mayor Jaldon Street in Canelar, Zamboanga City.',
+  },
 ];
 
 function getEstablishmentTierLabel(establishment) {
@@ -486,7 +506,7 @@ export default function LandingPage({ onViewChange, userRole }) {
             .select('id, name, brand, category, status, image_url, created_at, expiry_date, manufacturers(name), certifying_bodies(name, code)')
             .not('status', 'in', '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft)')
             .order('created_at', { ascending: false })
-            .limit(6),
+            .limit(8),
           supabase
             .from('establishments')
             .select('id, name, type, address, city, halal_status, expiry_date, certificate_number, logo_url, certificate_url, description, admin_notes, created_at, facebook_url, website_url, certifying_bodies(name, code)')
@@ -517,17 +537,23 @@ export default function LandingPage({ onViewChange, userRole }) {
               INITIAL_RECENT_ESTABLISHMENTS[4];
             const bandit = approvedEstablishments.find((e) => e.name.toLowerCase().includes('bandit')) ||
               INITIAL_RECENT_ESTABLISHMENTS[5];
+            const bayTalMal = approvedEstablishments.find((e) => e.name.toLowerCase().includes('bay tal mal')) ||
+              INITIAL_RECENT_ESTABLISHMENTS[6];
+            const blackPlate = approvedEstablishments.find((e) => e.name.toLowerCase().includes('black plate')) ||
+              INITIAL_RECENT_ESTABLISHMENTS[7];
             const rest = approvedEstablishments.filter((e) =>
               !e.name.toLowerCase().includes('aldznisa') &&
               !e.name.toLowerCase().includes('al halal') &&
               !e.name.toLowerCase().includes('andy') &&
               !e.name.toLowerCase().includes('antiens') &&
               !e.name.toLowerCase().includes('bambas') &&
-              !e.name.toLowerCase().includes('bandit')
+              !e.name.toLowerCase().includes('bandit') &&
+              !e.name.toLowerCase().includes('bay tal mal') &&
+              !e.name.toLowerCase().includes('black plate')
             );
-            const featuredWithPhotos = [aldznisa, alHalal, andys, antiens, bambas, bandit].filter(Boolean);
+            const featuredWithPhotos = [aldznisa, alHalal, andys, antiens, bambas, bandit, bayTalMal, blackPlate].filter(Boolean);
             const combined = [...featuredWithPhotos, ...rest];
-            setRecentEstablishments(combined.slice(0, 6));
+            setRecentEstablishments(combined.slice(0, 8));
           }
         }
       } catch (err) {
