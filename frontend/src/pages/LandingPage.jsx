@@ -560,10 +560,10 @@ export default function LandingPage({ onViewChange, userRole }) {
               type="button"
               onClick={() => handleOpenContribution('establishment')}
               className="hidden xl:flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-[#EAF3ED] px-3 xl:px-3.5 h-9 text-xs xl:text-sm font-semibold text-emerald-800 hover:bg-emerald-100 hover:border-emerald-300 hover:text-emerald-900 transition active:scale-95 shadow-xs whitespace-nowrap shrink-0 cursor-pointer"
-              title="Submit an establishment or product to the registry"
+              title="Add an establishment or food place"
             >
               <Plus size={14} strokeWidth={2.5} className="text-emerald-800" />
-              <span>Submit a Listing</span>
+              <span>Add a Place</span>
             </button>
 
             {userRole ? (
@@ -797,7 +797,7 @@ export default function LandingPage({ onViewChange, userRole }) {
           <div className="text-center max-w-3xl sm:max-w-4xl mx-auto">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EAF3ED] border border-emerald-200 text-emerald-800 text-xs sm:text-sm font-semibold mb-5 sm:mb-6 backdrop-blur-sm shadow-inner">
               <Sparkles size={14} className="text-emerald-700 shrink-0" />
-              <span>Optical Character Recognition &amp; Verified Database</span>
+              <span>AI Food Label &amp; Ingredient Scanner</span>
             </div>
 
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[54px] font-extrabold tracking-tight text-[#17251F] leading-tight sm:leading-[1.15] max-w-3xl sm:max-w-4xl mx-auto">
