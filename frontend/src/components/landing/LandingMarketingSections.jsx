@@ -242,7 +242,7 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
 
           <div className="mt-6 sm:mt-8 grid grid-cols-1 lg:grid-cols-6 gap-5 lg:gap-6 text-left">
             {/* Framed Group 1: Philippine Halal Bodies (4 of 6 columns on desktop) */}
-            <div className="lg:col-span-4 rounded-2xl bg-white/80 border-2 border-emerald-600/25 p-3.5 sm:p-5 shadow-xs flex flex-col">
+            <div className="lg:col-span-4 rounded-2xl bg-[#F8FAF9]/80 border border-emerald-600/25 p-3.5 sm:p-5 shadow-xs flex flex-col">
               <div className="flex items-center justify-between gap-2 mb-3.5 pb-2.5 border-b border-[#DCE7E0]">
                 <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-[0.16em] text-emerald-900">
                   Philippine Authorities &amp; Certifiers
@@ -282,27 +282,27 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                     url: 'https://tradelinephilippines.dti.gov.ph/ca/web/tradeline-portal/philippine-halal-export-development',
                   },
                 ].map((body) => (
-                  <div key={body.name} className="group relative flex min-h-[250px] flex-col items-center justify-between text-center rounded-xl border border-emerald-600/35 bg-white pt-14 pb-3.5 px-3 sm:pt-16 sm:pb-4 sm:px-3.5 shadow-sm transition hover:border-emerald-600 hover:shadow-md">
-                    <div className="absolute -top-10 sm:-top-12 left-1/2 -translate-x-1/2 h-20 w-20 sm:h-24 sm:w-24 rounded-full border-2 border-emerald-600/40 bg-white p-0 shadow-md flex items-center justify-center overflow-hidden shrink-0 transition group-hover:scale-105 group-hover:border-emerald-600/60">
+                  <div key={body.name} className="group relative flex min-h-[260px] flex-col items-center justify-between text-center rounded-2xl border border-[#DCE7E0] bg-white pt-14 pb-3.5 px-3 sm:pt-16 sm:pb-4 sm:px-3.5 shadow-xs transition hover:border-emerald-600/40 hover:shadow-md">
+                    <div className="absolute -top-10 sm:-top-11 left-1/2 -translate-x-1/2 h-20 w-20 sm:h-22 sm:w-22 rounded-2xl border border-emerald-600/25 bg-white p-2.5 shadow-md flex items-center justify-center shrink-0 transition group-hover:scale-105 group-hover:border-emerald-600/40">
                       <img
                         src={body.logo}
                         alt={`${body.name} logo`}
-                        className={body.name === 'DTI' ? 'h-full w-full object-contain p-2' : 'h-full w-full object-contain scale-[1.03]'}
+                        className="h-full w-full object-contain"
                         loading="lazy"
                       />
                     </div>
                     <div className="w-full flex flex-col items-center">
-                      <span className="font-extrabold text-emerald-800 text-sm sm:text-base">{body.name}</span>
-                      <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-[#17251F] sm:text-xs leading-snug">{body.fullName}</p>
+                      <span className="font-extrabold text-emerald-800 text-sm sm:text-base tracking-wide">{body.name}</span>
+                      <p className="mt-1 text-[11px] font-bold uppercase tracking-wide text-[#17251F] sm:text-xs leading-snug">{body.fullName}</p>
                       <p className="mt-2 text-xs leading-relaxed text-[#52645B] sm:text-[13px]">{body.description}</p>
                     </div>
                     <a
                       href={body.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-3 w-full inline-flex items-center justify-center gap-1 rounded-lg border border-emerald-700/50 px-2 py-1.5 text-xs font-bold text-emerald-800 transition hover:border-emerald-600 hover:bg-[#EAF3ED]"
+                      className="mt-3.5 w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#DCE7E0] bg-white px-2 py-1.5 text-xs font-semibold text-[#17251F] transition hover:border-emerald-600 hover:text-emerald-800 hover:bg-[#F4F8F5]"
                     >
-                      Official Website <ExternalLink size={11} />
+                      Official Website <ExternalLink size={12} className="text-[#52645B]" />
                     </a>
                   </div>
                 ))}
@@ -310,7 +310,7 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
             </div>
 
             {/* Framed Group 2: International Halal Bodies (2 of 6 columns on desktop) */}
-            <div className="lg:col-span-2 rounded-2xl bg-[#F4F8F6] border-2 border-teal-700/25 p-3.5 sm:p-5 shadow-xs flex flex-col">
+            <div className="lg:col-span-2 rounded-2xl bg-[#F8FAF9]/80 border border-teal-700/25 p-3.5 sm:p-5 shadow-xs flex flex-col">
               <div className="flex items-center justify-between gap-2 mb-3.5 pb-2.5 border-b border-[#DCE7E0]">
                 <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-[0.16em] text-teal-900">
                   International Partners
@@ -336,27 +336,27 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                     url: 'https://halal.muis.gov.sg/account/login',
                   },
                 ].map((body) => (
-                  <div key={body.name} className="group relative flex min-h-[250px] flex-col items-center justify-between text-center rounded-xl border border-teal-600/35 bg-white pt-14 pb-3.5 px-3 sm:pt-16 sm:pb-4 sm:px-3.5 shadow-sm transition hover:border-teal-600 hover:shadow-md">
-                    <div className="absolute -top-10 sm:-top-12 left-1/2 -translate-x-1/2 h-20 w-20 sm:h-24 sm:w-24 rounded-full border-2 border-teal-600/40 bg-white p-0 shadow-md flex items-center justify-center overflow-hidden shrink-0 transition group-hover:scale-105 group-hover:border-teal-600/60">
+                  <div key={body.name} className="group relative flex min-h-[260px] flex-col items-center justify-between text-center rounded-2xl border border-[#DCE7E0] bg-white pt-14 pb-3.5 px-3 sm:pt-16 sm:pb-4 sm:px-3.5 shadow-xs transition hover:border-teal-600/40 hover:shadow-md">
+                    <div className="absolute -top-10 sm:-top-11 left-1/2 -translate-x-1/2 h-20 w-20 sm:h-22 sm:w-22 rounded-2xl border border-teal-600/25 bg-white p-2.5 shadow-md flex items-center justify-center shrink-0 transition group-hover:scale-105 group-hover:border-teal-600/40">
                       <img
                         src={body.logo}
                         alt={`${body.name} logo`}
-                        className="h-full w-full object-contain scale-[1.03]"
+                        className="h-full w-full object-contain"
                         loading="lazy"
                       />
                     </div>
                     <div className="w-full flex flex-col items-center">
-                      <span className="font-extrabold text-teal-900 text-sm sm:text-base">{body.name}</span>
-                      <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-[#17251F] sm:text-xs leading-snug">{body.fullName}</p>
+                      <span className="font-extrabold text-teal-900 text-sm sm:text-base tracking-wide">{body.name}</span>
+                      <p className="mt-1 text-[11px] font-bold uppercase tracking-wide text-[#17251F] sm:text-xs leading-snug">{body.fullName}</p>
                       <p className="mt-2 text-xs leading-relaxed text-[#52645B] sm:text-[13px]">{body.description}</p>
                     </div>
                     <a
                       href={body.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-3 w-full inline-flex items-center justify-center gap-1 rounded-lg border border-teal-700/50 px-2 py-1.5 text-xs font-bold text-teal-800 transition hover:border-teal-600 hover:bg-[#EAF3ED]"
+                      className="mt-3.5 w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#DCE7E0] bg-white px-2 py-1.5 text-xs font-semibold text-[#17251F] transition hover:border-teal-600 hover:text-teal-900 hover:bg-[#F4F8F5]"
                     >
-                      Official Website <ExternalLink size={11} />
+                      Official Website <ExternalLink size={12} className="text-[#52645B]" />
                     </a>
                   </div>
                 ))}
