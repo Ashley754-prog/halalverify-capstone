@@ -323,7 +323,7 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                   },
                   {
                     name: 'MUIS',
-                    logo: '/logos/MUIS.svg',
+                    logo: '/logos/MUIS.png',
                     fullName: 'Majlis Ugama Islam Singapura',
                     description: "Singapore's Islamic Religious Council, providing halal certification and verification services.",
                     url: 'https://halal.muis.gov.sg/account/login',

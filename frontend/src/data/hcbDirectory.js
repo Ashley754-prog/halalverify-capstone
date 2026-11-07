@@ -595,7 +595,7 @@ export const HCB_DIRECTORY = {
         code: 'MUIS',
         name: 'Majlis Ugama Islam Singapura (Islamic Religious Council of Singapore)',
         shortName: 'MUIS Singapore',
-        logoSrc: '/logos/MUIS.svg',
+        logoSrc: '/logos/MUIS.png',
         category: 'International Recognized Partner',
         country: 'Singapore',
         flag: '🇸🇬',
