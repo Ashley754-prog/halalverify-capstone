@@ -181,6 +181,13 @@ export default function LandingPage({ onViewChange, userRole }) {
     const cards = [...carousel.querySelectorAll('[data-recent-product-card]')];
     if (!cards.length) return;
 
+    const maxScroll = carousel.scrollWidth - carousel.clientWidth;
+    if (maxScroll > 0 && carousel.scrollLeft >= maxScroll - 6) {
+      const visibleStops = cards.filter((card) => card.offsetLeft - carousel.offsetLeft <= maxScroll + 8);
+      setActiveRecentProductIndex(Math.max(0, visibleStops.length - 1));
+      return;
+    }
+
     let closestIndex = 0;
     let closestDistance = Infinity;
     cards.forEach((card, index) => {
@@ -233,6 +240,13 @@ export default function LandingPage({ onViewChange, userRole }) {
     const carousel = event.currentTarget;
     const cards = [...carousel.querySelectorAll('[data-recent-establishment-card]')];
     if (!cards.length) return;
+
+    const maxScroll = carousel.scrollWidth - carousel.clientWidth;
+    if (maxScroll > 0 && carousel.scrollLeft >= maxScroll - 6) {
+      const visibleStops = cards.filter((card) => card.offsetLeft - carousel.offsetLeft <= maxScroll + 8);
+      setActiveRecentEstablishmentIndex(Math.max(0, visibleStops.length - 1));
+      return;
+    }
 
     let closestIndex = 0;
     let closestDistance = Infinity;
@@ -1183,20 +1197,30 @@ export default function LandingPage({ onViewChange, userRole }) {
                 <ChevronRight size={32} strokeWidth={2.5} className="drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)]" />
               </button>
               <div className="mt-3 flex justify-center gap-2" role="group" aria-label="Choose a product">
-                {recentProducts.map((product, index) => (
-                  <button
-                    key={product.id}
-                    type="button"
-                    onClick={() => scrollToRecentProduct(index)}
-                    aria-label={`Go to product ${index + 1}: ${product.name}`}
-                    aria-current={activeRecentProductIndex === index ? 'true' : undefined}
-                    className={`h-2.5 w-2.5 rounded-full transition-colors ${
-                      activeRecentProductIndex === index
-                        ? 'bg-emerald-700'
-                        : 'bg-emerald-900/20 hover:bg-emerald-700/50'
-                    }`}
-                  />
-                ))}
+                {recentProducts.map((product, index) => {
+                  const isHiddenOnTablet = index > Math.max(0, recentProducts.length - 2);
+                  const isHiddenOnDesktop = index > Math.max(0, recentProducts.length - 3);
+                  const responsiveDotClass = isHiddenOnTablet
+                    ? 'sm:hidden'
+                    : isHiddenOnDesktop
+                      ? 'lg:hidden'
+                      : '';
+
+                  return (
+                    <button
+                      key={product.id}
+                      type="button"
+                      onClick={() => scrollToRecentProduct(index)}
+                      aria-label={`Go to product ${index + 1}: ${product.name}`}
+                      aria-current={activeRecentProductIndex === index ? 'true' : undefined}
+                      className={`h-2.5 w-2.5 rounded-full transition-colors cursor-pointer ${responsiveDotClass} ${
+                        activeRecentProductIndex === index
+                          ? 'bg-emerald-700'
+                          : 'bg-emerald-900/20 hover:bg-emerald-700/50'
+                      }`}
+                    />
+                  );
+                })}
               </div>
             </div>
           ) : (
@@ -1333,20 +1357,30 @@ export default function LandingPage({ onViewChange, userRole }) {
                 <ChevronRight size={32} strokeWidth={2.5} className="drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)]" />
               </button>
               <div className="mt-3 flex justify-center gap-2" role="group" aria-label="Choose an establishment">
-                {recentEstablishments.map((establishment, index) => (
-                  <button
-                    key={establishment.id}
-                    type="button"
-                    onClick={() => scrollToRecentEstablishment(index)}
-                    aria-label={`Go to establishment ${index + 1}: ${establishment.name}`}
-                    aria-current={activeRecentEstablishmentIndex === index ? 'true' : undefined}
-                    className={`h-2.5 w-2.5 rounded-full transition-colors ${
-                      activeRecentEstablishmentIndex === index
-                        ? 'bg-emerald-700'
-                        : 'bg-emerald-900/20 hover:bg-emerald-700/50'
-                    }`}
-                  />
-                ))}
+                {recentEstablishments.map((establishment, index) => {
+                  const isHiddenOnTablet = index > Math.max(0, recentEstablishments.length - 2);
+                  const isHiddenOnDesktop = index > Math.max(0, recentEstablishments.length - 3);
+                  const responsiveDotClass = isHiddenOnTablet
+                    ? 'sm:hidden'
+                    : isHiddenOnDesktop
+                      ? 'lg:hidden'
+                      : '';
+
+                  return (
+                    <button
+                      key={establishment.id}
+                      type="button"
+                      onClick={() => scrollToRecentEstablishment(index)}
+                      aria-label={`Go to establishment ${index + 1}: ${establishment.name}`}
+                      aria-current={activeRecentEstablishmentIndex === index ? 'true' : undefined}
+                      className={`h-2.5 w-2.5 rounded-full transition-colors cursor-pointer ${responsiveDotClass} ${
+                        activeRecentEstablishmentIndex === index
+                          ? 'bg-emerald-700'
+                          : 'bg-emerald-900/20 hover:bg-emerald-700/50'
+                      }`}
+                    />
+                  );
+                })}
               </div>
             </div>
           ) : (
