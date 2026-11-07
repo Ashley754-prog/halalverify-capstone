@@ -79,6 +79,7 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
     const [establishments, setEstablishments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [mobileTab, setMobileTab] = useState(initialSearchQuery ? 'list' : 'map');
+    const [showMarkers, setShowMarkers] = useState(true);
 
     // Filters (Certifier filter removed per instructions)
     const [selectedStatus, setSelectedStatus] = useState('all');
@@ -472,54 +473,56 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
             if (markersLayerRef.current) {
                 markersLayerRef.current.clearLayers();
 
-                filteredList.forEach((est) => {
-                    if (!est.latitude || !est.longitude) return;
+                if (showMarkers) {
+                    filteredList.forEach((est) => {
+                        if (!est.latitude || !est.longitude) return;
 
-                    const statusConfig = getStatusConfig(est);
+                        const statusConfig = getStatusConfig(est);
 
-                    const marker = L.circleMarker([est.latitude, est.longitude], {
-                        radius: 9,
-                        fillColor: statusConfig.color,
-                        color: '#ffffff',
-                        weight: 2.5,
-                        opacity: 1,
-                        fillOpacity: 0.9,
-                    });
-
-                    // Compact single-line name badge on hover for pointer/mouse devices (never pop up over pins on touchscreens)
-                    const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
-                    if (!isTouchDevice) {
-                        marker.bindTooltip(est.name, {
-                            direction: 'top',
-                            offset: [0, -10],
+                        const marker = L.circleMarker([est.latitude, est.longitude], {
+                            radius: 9,
+                            fillColor: statusConfig.color,
+                            color: '#ffffff',
+                            weight: 2.5,
                             opacity: 1,
-                            sticky: false,
-                            className: 'custom-map-name-tooltip',
+                            fillOpacity: 0.9,
                         });
-                    }
 
-                    marker.on('click', (e) => {
-                        if (e && e.originalEvent) {
-                            L.DomEvent.stopPropagation(e);
+                        // Compact single-line name badge on hover for pointer/mouse devices (never pop up over pins on touchscreens)
+                        const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+                        if (!isTouchDevice) {
+                            marker.bindTooltip(est.name, {
+                                direction: 'top',
+                                offset: [0, -10],
+                                opacity: 1,
+                                sticky: false,
+                                className: 'custom-map-name-tooltip',
+                            });
                         }
-                        try {
-                            marker.closeTooltip();
-                        } catch {
-                            // Ignore tooltip dismiss on rapid re-click
-                        }
-                        setActivePreviewEst(est);
-                        if (mapInstanceRef.current) {
-                            mapInstanceRef.current.panTo([est.latitude, est.longitude], { animate: true, duration: 0.35 });
-                        }
+
+                        marker.on('click', (e) => {
+                            if (e && e.originalEvent) {
+                                L.DomEvent.stopPropagation(e);
+                            }
+                            try {
+                                marker.closeTooltip();
+                            } catch {
+                                // Ignore tooltip dismiss on rapid re-click
+                            }
+                            setActivePreviewEst(est);
+                            if (mapInstanceRef.current) {
+                                mapInstanceRef.current.panTo([est.latitude, est.longitude], { animate: true, duration: 0.35 });
+                            }
+                        });
+
+                        markersLayerRef.current.addLayer(marker);
                     });
-
-                    markersLayerRef.current.addLayer(marker);
-                });
+                }
             }
         } catch (e) {
             console.warn('Map layer update handled:', e);
         }
-    }, [filteredList, userLocation, mobileTab]);
+    }, [filteredList, showMarkers, userLocation, mobileTab]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -729,6 +732,20 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                 >
                     {/* Map Canvas rendered FIRST in DOM */}
                     <div ref={mapContainerRef} className="w-full h-full min-h-0 flex-1 z-0" />
+
+                    {/* Top-left Pins toggle */}
+                    <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 z-[1000] bg-white/95 backdrop-blur-sm rounded-xl border border-slate-300 p-1.5 sm:p-2 shadow-md flex items-center text-[11px] sm:text-xs">
+                        <label className="flex items-center gap-1.5 cursor-pointer font-semibold text-slate-700">
+                            <input
+                                type="checkbox"
+                                checked={showMarkers}
+                                onChange={(e) => setShowMarkers(e.target.checked)}
+                                className="rounded text-emerald-600 focus:ring-emerald-500"
+                            />
+                            <MapPin size={13} className="text-emerald-600 shrink-0" />
+                            <span>Pins ({filteredList.length})</span>
+                        </label>
+                    </div>
 
                     {/* Docked Establishment Preview Card */}
                     {activePreviewEst && (
