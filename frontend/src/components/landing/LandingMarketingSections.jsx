@@ -255,7 +255,6 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                 {[
                   {
                     name: 'NCMF',
-                    tag: 'PH Government',
                     logo: '/logos/NCMF.png',
                     fullName: 'National Commission on Muslim Filipinos',
                     description: 'Government agency supporting Muslim affairs and halal development in the Philippines.',
@@ -263,7 +262,6 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                   },
                   {
                     name: 'HDIP',
-                    tag: 'PH Accredited',
                     logo: '/logos/HDIP.png',
                     fullName: 'Halal Development Institute of the Philippines',
                     description: 'Philippine halal development and certification organization serving local businesses.',
@@ -271,7 +269,6 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                   },
                   {
                     name: 'IDCP',
-                    tag: 'PH Pioneer',
                     logo: '/logos/IDCP.png',
                     fullName: "Islamic Da'wah Council of the Philippines",
                     description: 'Islamic organization providing halal certification and related community services.',
@@ -279,7 +276,6 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                   },
                   {
                     name: 'DTI',
-                    tag: 'PH Trade Board',
                     logo: '/logos/DTI.png',
                     fullName: 'Department of Trade and Industry',
                     description: 'Government trade agency supporting Philippine halal industry and export development.',
@@ -290,10 +286,7 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                     <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full border-2 border-emerald-600/30 bg-white p-1 shadow-xs flex items-center justify-center overflow-hidden shrink-0">
                       <img src={body.logo} alt={`${body.name} logo`} className="h-full w-full object-contain rounded-full" loading="lazy" />
                     </div>
-                    <span className="mt-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
-                      {body.tag}
-                    </span>
-                    <span className="mt-1.5 font-extrabold text-emerald-800 text-sm sm:text-base">{body.name}</span>
+                    <span className="mt-2.5 font-extrabold text-emerald-800 text-sm sm:text-base">{body.name}</span>
                     <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-[#17251F] sm:text-xs leading-snug">{body.fullName}</p>
                     <p className="mt-2 flex-1 text-xs leading-relaxed text-[#52645B] sm:text-[13px]">{body.description}</p>
                     <a
@@ -323,7 +316,6 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                 {[
                   {
                     name: 'JAKIM',
-                    tag: 'Malaysia Partner',
                     logo: '/logos/JAKIM.svg',
                     fullName: 'Jabatan Kemajuan Islam Malaysia',
                     description: "Malaysia's Department of Islamic Development and national halal certification authority.",
@@ -331,7 +323,6 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                   },
                   {
                     name: 'MUIS',
-                    tag: 'Singapore Partner',
                     logo: '/logos/MUIS.svg',
                     fullName: 'Majlis Ugama Islam Singapura',
                     description: "Singapore's Islamic Religious Council, providing halal certification and verification services.",
@@ -342,10 +333,7 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                     <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full border-2 border-teal-600/30 bg-white p-1 shadow-xs flex items-center justify-center overflow-hidden shrink-0">
                       <img src={body.logo} alt={`${body.name} logo`} className="h-full w-full object-contain rounded-full" loading="lazy" />
                     </div>
-                    <span className="mt-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
-                      {body.tag}
-                    </span>
-                    <span className="mt-1.5 font-extrabold text-teal-900 text-sm sm:text-base">{body.name}</span>
+                    <span className="mt-2.5 font-extrabold text-teal-900 text-sm sm:text-base">{body.name}</span>
                     <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-[#17251F] sm:text-xs leading-snug">{body.fullName}</p>
                     <p className="mt-2 flex-1 text-xs leading-relaxed text-[#52645B] sm:text-[13px]">{body.description}</p>
                     <a
