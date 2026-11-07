@@ -219,13 +219,13 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div className="max-w-2xl text-center sm:text-left">
               <h2 className="text-xs sm:text-sm font-bold uppercase tracking-[0.25em] text-emerald-800">
-                Accredited Certifiers
+                Halal Standards &amp; Certifiers
               </h2>
               <p className="mt-1.5 text-xl sm:text-3xl lg:text-4xl font-extrabold text-[#17251F] tracking-tight">
-                Supported Certifying Bodies &amp; Local Scope
+                Recognized Certifications &amp; Regulatory Scope
               </p>
               <p className="mt-2 text-xs sm:text-sm text-[#52645B] leading-relaxed">
-                HalalVerify is focused on the local food ecosystem of <strong>Zamboanga City</strong>, recognizing certifications issued by authorized Philippine Islamic bodies alongside international mutual recognition partners.
+                HalalVerify aligns with Philippine national standards overseen by DTI and NCMF, recognizing food products certified by accredited local Islamic bodies and international partners in <strong>Zamboanga City</strong>.
               </p>
             </div>
             <div className="flex items-center justify-center sm:justify-end shrink-0">
@@ -245,7 +245,7 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
             <div className="lg:col-span-4 rounded-2xl bg-white/80 border-2 border-emerald-600/25 p-3.5 sm:p-5 shadow-xs flex flex-col">
               <div className="flex items-center justify-between gap-2 mb-3.5 pb-2.5 border-b border-[#DCE7E0]">
                 <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-[0.16em] text-emerald-900">
-                  Philippine Halal Bodies
+                  Philippine Authorities &amp; Certifiers
                 </h3>
                 <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/80 border border-emerald-300/60 px-2.5 py-0.5 rounded-full shrink-0">
                   Local &amp; National
