@@ -1322,35 +1322,6 @@ export default function LandingPage({ onViewChange, userRole }) {
                   );
                 })}
 
-                <article
-                  data-recent-establishment-card
-                  className="flex min-h-[220px] w-[84%] shrink-0 snap-start flex-col justify-between overflow-hidden rounded-lg border border-emerald-900/20 bg-gradient-to-br from-[#17251F] via-[#1b3427] to-[#122019] p-5 sm:p-6 text-white sm:w-[calc((100%_-_1rem)/2)] lg:w-[calc((100%_-_2rem)/3)] shadow-md"
-                >
-                  <div className="space-y-3">
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/15 px-2.5 py-1 text-[11px] font-bold text-emerald-300">
-                      <Sparkles size={12} />
-                      40+ Verified Places
-                    </span>
-                    <h3 className="text-base sm:text-lg font-bold leading-snug text-white">
-                      Explore All Places in Zamboanga City
-                    </h3>
-                    <p className="text-xs leading-relaxed text-emerald-100/80">
-                      Looking for more? Browse our complete interactive map with turn-by-turn directions, certifying bodies, and verified menus across all districts.
-                    </p>
-                  </div>
-
-                  <div className="pt-5">
-                    <button
-                      type="button"
-                      onClick={() => onViewChange('map')}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm transition hover:bg-emerald-500 cursor-pointer"
-                    >
-                      <MapPin size={15} />
-                      <span>Open Interactive Map</span>
-                      <ArrowRight size={14} />
-                    </button>
-                  </div>
-                </article>
               </div>
               <button
                 type="button"
