@@ -282,8 +282,8 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                     url: 'https://tradelinephilippines.dti.gov.ph/ca/web/tradeline-portal/philippine-halal-export-development',
                   },
                 ].map((body) => (
-                  <div key={body.name} className="flex min-h-[240px] flex-col items-center text-center rounded-xl border border-[#DCE7E0] bg-white p-3.5 sm:p-4 shadow-2xs transition hover:border-emerald-600/40 hover:shadow-md">
-                    <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full border-2 border-emerald-600/30 bg-white p-1 shadow-xs flex items-center justify-center overflow-hidden shrink-0">
+                  <div key={body.name} className="flex min-h-[260px] flex-col items-center text-center rounded-xl border border-[#DCE7E0] bg-white p-3.5 sm:p-4 shadow-2xs transition hover:border-emerald-600/40 hover:shadow-md">
+                    <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full border-2 border-emerald-600/30 bg-white p-2 shadow-xs flex items-center justify-center overflow-hidden shrink-0">
                       <img src={body.logo} alt={`${body.name} logo`} className="h-full w-full object-contain rounded-full" loading="lazy" />
                     </div>
                     <span className="mt-2.5 font-extrabold text-emerald-800 text-sm sm:text-base">{body.name}</span>
@@ -329,8 +329,8 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                     url: 'https://halal.muis.gov.sg/account/login',
                   },
                 ].map((body) => (
-                  <div key={body.name} className="flex min-h-[240px] flex-col items-center text-center rounded-xl border border-[#DCE7E0] bg-white p-3.5 sm:p-4 shadow-2xs transition hover:border-teal-600/40 hover:shadow-md">
-                    <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full border-2 border-teal-600/30 bg-white p-1 shadow-xs flex items-center justify-center overflow-hidden shrink-0">
+                  <div key={body.name} className="flex min-h-[260px] flex-col items-center text-center rounded-xl border border-[#DCE7E0] bg-white p-3.5 sm:p-4 shadow-2xs transition hover:border-teal-600/40 hover:shadow-md">
+                    <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full border-2 border-teal-600/30 bg-white p-2 shadow-xs flex items-center justify-center overflow-hidden shrink-0">
                       <img src={body.logo} alt={`${body.name} logo`} className="h-full w-full object-contain rounded-full" loading="lazy" />
                     </div>
                     <span className="mt-2.5 font-extrabold text-teal-900 text-sm sm:text-base">{body.name}</span>
