@@ -155,7 +155,7 @@ export default function EstablishmentsRegistryTab({
                     paginatedEstablishments.map((shop) => {
                         const statusConfig = getStatusConfig(shop);
                         const districtInfo = resolveZamboangaDistrict(shop);
-                        const evidenceUrl = getSafeUrl(shop.certificate_url || shop.logo_url);
+                        const evidenceUrl = getEstablishmentPhoto(shop) || getSafeUrl(shop.certificate_url || shop.logo_url);
                         const isFormallyCertified = Boolean(shop.certificate_number || statusConfig.key === 'verified');
                         const hasPrayer = Boolean(
                             shop.has_prayer_space ||
@@ -235,8 +235,22 @@ export default function EstablishmentsRegistryTab({
                                     </div>
                                 )}
 
-                                {(hasPrayer || hasAlcoholFree || evidenceUrl) && (
+                                {(hasPrayer || hasAlcoholFree || evidenceUrl || shop.facebook_url) && (
                                     <div className="flex flex-wrap gap-1.5 pt-0.5">
+                                        {shop.facebook_url && (
+                                            <a
+                                                href={getSafeUrl(shop.facebook_url)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-md transition"
+                                            >
+                                                <svg className="w-2.5 h-2.5 text-[#1877F2] fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                                                </svg>
+                                                <span>Facebook</span>
+                                                <ExternalLink size={9} />
+                                            </a>
+                                        )}
                                         {evidenceUrl && (
                                             <a
                                                 href={evidenceUrl}

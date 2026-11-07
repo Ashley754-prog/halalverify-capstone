@@ -76,6 +76,10 @@ def sync_muslim_in_manila():
         if not name:
             continue
 
+        # Skip duplicate Canelar entry (ID 662) since Bay Tal Mal relocated to SM Mindpro (ID 468)
+        if str(e.get("id")) == "662" or "bay tal mal restaurant - canelar" in name.lower():
+            continue
+
         address = e.get("address", "").strip()
         phone = e.get("phone", "").strip() if e.get("phone") else None
         desc = e.get("description", "").strip() if e.get("description") else None
@@ -123,7 +127,8 @@ def sync_muslim_in_manila():
 
         amenities_text = ", ".join(amenities_list) if amenities_list else "Standard Dining"
         admin_notes = f"{tier_tag} Synced from Muslim in Manila (ID: {e.get('id')}). Amenities: {amenities_text}."
-        source_url = e.get("googleMapsUrl") or f"https://musliminmanila.com/restaurants?q={e.get('slug')}"
+        slug = e.get("slug")
+        source_url = f"https://musliminmanila.com/restaurant/{slug}" if slug else "https://musliminmanila.com/restaurants?location=Zamboanga+City"
 
         record_data = {
             "name": name,
@@ -136,6 +141,8 @@ def sync_muslim_in_manila():
             "latitude": lat,
             "longitude": lng,
             "phone": phone,
+            "facebook_url": e.get("facebookUrl"),
+            "website_url": e.get("website"),
             "description": desc,
             "source": "Muslim in Manila Directory",
             "source_url": source_url,

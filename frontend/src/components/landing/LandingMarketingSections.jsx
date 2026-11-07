@@ -251,7 +251,7 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                   Local &amp; National
                 </span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5 flex-1">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-2.5 gap-y-12 sm:gap-x-3.5 sm:gap-y-14 pt-10 sm:pt-12 flex-1">
                 {[
                   {
                     name: 'NCMF',
@@ -282,13 +282,20 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                     url: 'https://tradelinephilippines.dti.gov.ph/ca/web/tradeline-portal/philippine-halal-export-development',
                   },
                 ].map((body) => (
-                  <div key={body.name} className="flex min-h-[260px] flex-col items-center text-center rounded-xl border border-emerald-600/35 bg-white p-3.5 sm:p-4 shadow-sm transition hover:border-emerald-600 hover:shadow-md">
-                    <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full border-2 border-emerald-600/30 bg-white p-2 shadow-xs flex items-center justify-center overflow-hidden shrink-0">
-                      <img src={body.logo} alt={`${body.name} logo`} className="h-full w-full object-contain rounded-full" loading="lazy" />
+                  <div key={body.name} className="group relative flex min-h-[250px] flex-col items-center justify-between text-center rounded-xl border border-emerald-600/35 bg-white pt-14 pb-3.5 px-3 sm:pt-16 sm:pb-4 sm:px-3.5 shadow-sm transition hover:border-emerald-600 hover:shadow-md">
+                    <div className="absolute -top-10 sm:-top-12 left-1/2 -translate-x-1/2 h-20 w-20 sm:h-24 sm:w-24 rounded-full border-2 border-emerald-600/40 bg-white p-0 shadow-md flex items-center justify-center overflow-hidden shrink-0 transition group-hover:scale-105 group-hover:border-emerald-600/60">
+                      <img
+                        src={body.logo}
+                        alt={`${body.name} logo`}
+                        className={body.name === 'DTI' ? 'h-full w-full object-contain p-2' : 'h-full w-full object-contain scale-[1.03]'}
+                        loading="lazy"
+                      />
                     </div>
-                    <span className="mt-2.5 font-extrabold text-emerald-800 text-sm sm:text-base">{body.name}</span>
-                    <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-[#17251F] sm:text-xs leading-snug">{body.fullName}</p>
-                    <p className="mt-2 flex-1 text-xs leading-relaxed text-[#52645B] sm:text-[13px]">{body.description}</p>
+                    <div className="w-full flex flex-col items-center">
+                      <span className="font-extrabold text-emerald-800 text-sm sm:text-base">{body.name}</span>
+                      <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-[#17251F] sm:text-xs leading-snug">{body.fullName}</p>
+                      <p className="mt-2 text-xs leading-relaxed text-[#52645B] sm:text-[13px]">{body.description}</p>
+                    </div>
                     <a
                       href={body.url}
                       target="_blank"
@@ -312,7 +319,7 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                   Foreign Recognized
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5 flex-1">
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5 pt-10 sm:pt-12 flex-1">
                 {[
                   {
                     name: 'JAKIM',
@@ -329,13 +336,20 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                     url: 'https://halal.muis.gov.sg/account/login',
                   },
                 ].map((body) => (
-                  <div key={body.name} className="flex min-h-[260px] flex-col items-center text-center rounded-xl border border-teal-600/35 bg-white p-3.5 sm:p-4 shadow-sm transition hover:border-teal-600 hover:shadow-md">
-                    <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full border-2 border-teal-600/30 bg-white p-2 shadow-xs flex items-center justify-center overflow-hidden shrink-0">
-                      <img src={body.logo} alt={`${body.name} logo`} className="h-full w-full object-contain rounded-full" loading="lazy" />
+                  <div key={body.name} className="group relative flex min-h-[250px] flex-col items-center justify-between text-center rounded-xl border border-teal-600/35 bg-white pt-14 pb-3.5 px-3 sm:pt-16 sm:pb-4 sm:px-3.5 shadow-sm transition hover:border-teal-600 hover:shadow-md">
+                    <div className="absolute -top-10 sm:-top-12 left-1/2 -translate-x-1/2 h-20 w-20 sm:h-24 sm:w-24 rounded-full border-2 border-teal-600/40 bg-white p-0 shadow-md flex items-center justify-center overflow-hidden shrink-0 transition group-hover:scale-105 group-hover:border-teal-600/60">
+                      <img
+                        src={body.logo}
+                        alt={`${body.name} logo`}
+                        className="h-full w-full object-contain scale-[1.03]"
+                        loading="lazy"
+                      />
                     </div>
-                    <span className="mt-2.5 font-extrabold text-teal-900 text-sm sm:text-base">{body.name}</span>
-                    <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-[#17251F] sm:text-xs leading-snug">{body.fullName}</p>
-                    <p className="mt-2 flex-1 text-xs leading-relaxed text-[#52645B] sm:text-[13px]">{body.description}</p>
+                    <div className="w-full flex flex-col items-center">
+                      <span className="font-extrabold text-teal-900 text-sm sm:text-base">{body.name}</span>
+                      <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-[#17251F] sm:text-xs leading-snug">{body.fullName}</p>
+                      <p className="mt-2 text-xs leading-relaxed text-[#52645B] sm:text-[13px]">{body.description}</p>
+                    </div>
                     <a
                       href={body.url}
                       target="_blank"

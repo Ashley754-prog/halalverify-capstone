@@ -349,3 +349,65 @@ export const getStatusConfig = (statusOrEst, rawNotes = '') => {
         weight: 0.5,
     };
 };
+
+export const LOCAL_ESTABLISHMENT_PHOTOS = {
+    'Al Halal Grill': '/establishments/al-halal-grill.jpg',
+    'Resto & Grill Al Halal': '/establishments/al-halal-grill.jpg',
+    'Aldznisa Halal Food': '/establishments/aldznisa-halal-food.jpg',
+    "Andy's Satti": '/establishments/andys-satti.jpg',
+    'Andys Satti': '/establishments/andys-satti.jpg',
+    'AntiEns Home of Authentic Muslim Cuisine': '/establishments/antiens.jpg',
+    'AntiEns': '/establishments/antiens.jpg',
+    'Antiens': '/establishments/antiens.jpg',
+    'Bambas by Chef Mick': '/establishments/bambas-by-chef-mick.jpg',
+    'Bambas': '/establishments/bambas-by-chef-mick.jpg',
+    'Bandit Burger': '/establishments/bandit-burger.jpg',
+    'Bandit': '/establishments/bandit-burger.jpg',
+    'Bay Tal Mal Restaurant Zamboanga City': '/establishments/bay-tal-mal.jpg',
+    'Bay Tal Mal': '/establishments/bay-tal-mal.jpg',
+    'Black Plate Zamboanga': '/establishments/black-plate.jpg',
+    'Black Plate': '/establishments/black-plate.jpg',
+    "Chick N' Cow Hotpot": '/establishments/chick-n-cow.jpg',
+    "Chick N' Cow": '/establishments/chick-n-cow.jpg',
+    "Chick n Cow": '/establishments/chick-n-cow.jpg',
+    'Dennis Coffee Garden': '/establishments/dennis-coffee-garden.jpg',
+    'Dennis Coffee Garden - KCC Mall': '/establishments/dennis-coffee-garden.jpg',
+    'Dennis Coffee Garden - Yubenco Tetuan': '/establishments/dennis-coffee-garden.jpg',
+    'Dennis Coffee Garden - Pilar Street': '/establishments/dennis-coffee-garden.jpg',
+    'Dennis Coffee': '/establishments/dennis-coffee-garden.jpg',
+    'Fourbzz': '/establishments/fourbzz.jpg',
+    'Fourbzz Park': '/establishments/fourbzz.jpg',
+    'Global Pot Restaurant & Catering - KCC Mall': '/establishments/global-pot.jpg',
+    'Global Pot Restaurant & Catering - Tetuan': '/establishments/global-pot.jpg',
+    'Global Pot Restaurant & Catering': '/establishments/global-pot.jpg',
+    'Global Pot': '/establishments/global-pot.jpg',
+    'GORS Halal Cuisine': '/establishments/gors-halal-cuisine.jpg',
+    'Gors Halal Cuisine': '/establishments/gors-halal-cuisine.jpg',
+    'Gors Halal Cuisine (Asinan)': '/establishments/gors-asinan.jpg',
+    'GORS': '/establishments/gors-halal-cuisine.jpg',
+    'Gors': '/establishments/gors-halal-cuisine.jpg',
+    'Halal Siotea': '/establishments/halal-siotea.jpg',
+    'Siotea': '/establishments/halal-siotea.jpg',
+    'IYA Coffee CafeResto - Lantaka (24/7)': '/establishments/iya-coffee-lantaka.jpg',
+    'IYA Coffee CafeResto - Lantaka': '/establishments/iya-coffee-lantaka.jpg',
+    'IYA Coffee Lantaka': '/establishments/iya-coffee-lantaka.jpg',
+    'IYA Coffee CafeResto - Tetuan': '/establishments/iya-coffee-tetuan.jpg',
+    'IYA Coffee Tetuan': '/establishments/iya-coffee-tetuan.jpg',
+    'IYA Coffee': '/establishments/iya-coffee-lantaka.jpg',
+    'IYA Coffee CafeResto': '/establishments/iya-coffee-lantaka.jpg',
+};
+
+export const getEstablishmentPhoto = (establishment) => {
+    if (!establishment) return null;
+    const name = establishment.name || '';
+    if (LOCAL_ESTABLISHMENT_PHOTOS[name]) {
+        return LOCAL_ESTABLISHMENT_PHOTOS[name];
+    }
+    const lower = name.toLowerCase();
+    for (const [key, path] of Object.entries(LOCAL_ESTABLISHMENT_PHOTOS)) {
+        if (lower.includes(key.toLowerCase()) || key.toLowerCase().includes(lower)) {
+            return path;
+        }
+    }
+    return null;
+};

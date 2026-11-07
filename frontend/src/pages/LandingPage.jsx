@@ -15,6 +15,7 @@ import {
   Menu,
   ChevronLeft,
   ChevronRight,
+  ArrowRight,
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import ContributionModal from '../components/submissions/ContributionModal';
@@ -22,13 +23,80 @@ import AuthPromptModal from '../components/submissions/AuthPromptModal';
 import LandingMarketingSections from '../components/landing/LandingMarketingSections';
 import ProductCardDetail from '../components/landing/ProductCardDetail';
 import { getSafeUrl } from '../utils/security';
-import { getStatusConfig } from '../data/constants';
+import { getStatusConfig, LOCAL_ESTABLISHMENT_PHOTOS, getEstablishmentPhoto } from '../data/constants';
+
+const INITIAL_RECENT_ESTABLISHMENTS = [
+  {
+    id: '80a35ff3-cf63-4c94-97cb-ba9cd807b6ef',
+    name: 'Aldznisa Halal Food',
+    type: 'Restaurant',
+    address: 'W34J+4JV, Lustre St, Zamboanga City, Zamboanga del Sur, Philippines',
+    city: 'Zamboanga City',
+    halal_status: 'verified',
+    admin_notes: '[Tier: muslim_owned] Synced from Muslim in Manila (ID: 1161). Amenities: Standard Dining.',
+    description: 'Aldznisa Halal Food is a Muslim-owned halal carinderia on Lustre Street in Zamboanga City, cooking Tausug and Muslim Filipino rice meals.',
+  },
+  {
+    id: 'b6e80b2a-6379-4e7a-9773-452fcf118d09',
+    name: 'Al Halal Grill',
+    type: 'Restaurant',
+    address: 'Governor Camins Avenue, Zamboanga City',
+    city: 'Zamboanga City',
+    halal_status: 'verified',
+    admin_notes: 'Formal Halal certified venue.',
+    description: 'Resto & Grill Al Halal serving grilled and authentic local halal dishes.',
+  },
+  {
+    id: 'a091b028-4a49-4123-9596-eeb47e410b49',
+    name: "Andy's Satti",
+    type: 'Restaurant',
+    address: 'W39Q+Q63, Don Toribio St, Zamboanga City, 7000 Zamboanga del Sur, Philippines',
+    city: 'Zamboanga City',
+    halal_status: 'verified',
+    admin_notes: '[Tier: muslim_owned] Synced from Muslim in Manila (ID: 660). Amenities: Parking.',
+    description: "Andy's Satti is a casual, Muslim-owned eatery in Zamboanga City specializing in satti with spicy-sweet sauce.",
+  },
+  {
+    id: '2963602c-699b-4f27-8bc5-cff67277df18',
+    name: 'AntiEns Home of Authentic Muslim Cuisine',
+    type: 'Restaurant',
+    address: 'Pilar St, Zamboanga City, 7000 Zamboanga del Sur, Philippines',
+    city: 'Zamboanga City',
+    halal_status: 'verified',
+    admin_notes: '[Tier: halal_certified] Synced from Muslim in Manila (ID: 657). Amenities: 100% Alcohol-Free Premises, Pork-Free Kitchen.',
+    description: 'Halal-certified Tausug restaurant serving biyungkus kagang, Latal traditional meal set, oco-oco, and Bang Bang Sug pastries.',
+  },
+  {
+    id: '313afb85-516c-40e5-a0de-6bce43c577d0',
+    name: 'Bambas by Chef Mick',
+    type: 'Restaurant',
+    address: 'MP Tower, Nuñez Ext. St, Barangay Zone IV, Zamboanga City, 7000 Zamboanga del Sur, Philippines',
+    city: 'Zamboanga City',
+    halal_status: 'verified',
+    admin_notes: '[Tier: muslim_friendly] Synced from Muslim in Manila (ID: 1156). Amenities: Standard Dining.',
+    description: 'Bambas by Chef Mick is a cozy halal dining spot at MP Tower serving Southeast Asian cuisine and beef kulma.',
+  },
+  {
+    id: 'bd22d2e5-955d-4de0-86c1-e2c410991a28',
+    name: 'Bandit Burger',
+    type: 'Restaurant',
+    address: 'Veterans Ave Ext., Zamboanga City, 7000 Zamboanga del Sur, Philippines',
+    city: 'Zamboanga City',
+    halal_status: 'verified',
+    facebook_url: 'https://www.facebook.com/banditburger',
+    admin_notes: '[Tier: halal_certified] Synced from Muslim in Manila (ID: 1237). Amenities: Standard Dining.',
+    description: 'Bandit Burger is a halal-certified smash burger restaurant on Veterans Avenue Extension in Zamboanga City certified by the Ulama Council of Zamboanga Peninsula.',
+  },
+];
 
 function getEstablishmentTierLabel(establishment) {
   return getStatusConfig(establishment).label;
 }
 
 function getEstablishmentImageUrl(establishment) {
+  if (!establishment) return null;
+  const localPhoto = getEstablishmentPhoto(establishment);
+  if (localPhoto) return localPhoto;
   return getSafeUrl(establishment.logo_url || establishment.certificate_url);
 }
 
@@ -40,8 +108,11 @@ export default function LandingPage({ onViewChange, userRole }) {
   const [activeRecentProductIndex, setActiveRecentProductIndex] = useState(0);
   const [selectedRecentProduct, setSelectedRecentProduct] = useState(null);
   const [allEstablishments, setAllEstablishments] = useState([]);
-  const [recentEstablishments, setRecentEstablishments] = useState([]);
+  const [recentEstablishments, setRecentEstablishments] = useState(INITIAL_RECENT_ESTABLISHMENTS);
   const [activeRecentEstablishmentIndex, setActiveRecentEstablishmentIndex] = useState(0);
+
+  const recentProductsDisplay = recentProducts;
+  const recentEstablishmentsDisplay = recentEstablishments;
   const [showContributionModal, setShowContributionModal] = useState(false);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [initialContributionTab, setInitialContributionTab] = useState('establishment');
@@ -68,15 +139,31 @@ export default function LandingPage({ onViewChange, userRole }) {
 
   const scrollRecentProducts = (direction) => {
     const carousel = recentProductsScrollRef.current;
-    const firstCard = carousel?.querySelector('[data-recent-product-card]');
-    if (!carousel || !firstCard) return;
+    const cards = carousel?.querySelectorAll('[data-recent-product-card]');
+    if (!carousel || !cards?.length) return;
 
     recentProductsPauseUntilRef.current = Date.now() + 6000;
     const gap = Number.parseFloat(getComputedStyle(carousel).columnGap) || 0;
-    carousel.scrollBy({
-      left: direction * (firstCard.getBoundingClientRect().width + gap),
-      behavior: 'smooth',
-    });
+    const step = cards[0].getBoundingClientRect().width + gap;
+    const maxScroll = carousel.scrollWidth - carousel.clientWidth;
+
+    if (direction > 0) {
+      if (carousel.scrollLeft >= maxScroll - 8 || activeRecentProductIndex >= recentProducts.length - 1) {
+        carousel.scrollTo({ left: 0, behavior: 'smooth' });
+        return;
+      }
+      carousel.scrollBy({ left: step, behavior: 'smooth' });
+    } else {
+      if (carousel.scrollLeft <= 8 || activeRecentProductIndex === 0) {
+        const lastIndex = Math.min(cards.length - 1, (recentProducts.length || 1) - 1);
+        const targetCard = cards[lastIndex];
+        if (targetCard) {
+          carousel.scrollTo({ left: targetCard.offsetLeft - carousel.offsetLeft, behavior: 'smooth' });
+        }
+        return;
+      }
+      carousel.scrollBy({ left: -step, behavior: 'smooth' });
+    }
   };
 
   const scrollToRecentProduct = (index) => {
@@ -86,6 +173,7 @@ export default function LandingPage({ onViewChange, userRole }) {
 
     recentProductsPauseUntilRef.current = Date.now() + 6000;
     carousel.scrollTo({ left: card.offsetLeft - carousel.offsetLeft, behavior: 'smooth' });
+    setActiveRecentProductIndex(index);
   };
 
   const handleRecentProductsScroll = (event) => {
@@ -102,20 +190,33 @@ export default function LandingPage({ onViewChange, userRole }) {
         closestIndex = index;
       }
     });
-    setActiveRecentProductIndex(closestIndex);
+    const baseCount = recentProducts.length || 1;
+    setActiveRecentProductIndex(closestIndex % baseCount);
   };
 
   const scrollRecentEstablishments = (direction) => {
     const carousel = recentEstablishmentsScrollRef.current;
-    const firstCard = carousel?.querySelector('[data-recent-establishment-card]');
-    if (!carousel || !firstCard) return;
+    const cards = carousel?.querySelectorAll('[data-recent-establishment-card]');
+    if (!carousel || !cards?.length) return;
 
     recentEstablishmentsPauseUntilRef.current = Date.now() + 6000;
     const gap = Number.parseFloat(getComputedStyle(carousel).columnGap) || 0;
-    carousel.scrollBy({
-      left: direction * (firstCard.getBoundingClientRect().width + gap),
-      behavior: 'smooth',
-    });
+    const step = cards[0].getBoundingClientRect().width + gap;
+    const maxScroll = carousel.scrollWidth - carousel.clientWidth;
+
+    if (direction > 0) {
+      if (carousel.scrollLeft >= maxScroll - 8) {
+        carousel.scrollTo({ left: 0, behavior: 'smooth' });
+        return;
+      }
+      carousel.scrollBy({ left: step, behavior: 'smooth' });
+    } else {
+      if (carousel.scrollLeft <= 8) {
+        carousel.scrollTo({ left: maxScroll, behavior: 'smooth' });
+        return;
+      }
+      carousel.scrollBy({ left: -step, behavior: 'smooth' });
+    }
   };
 
   const scrollToRecentEstablishment = (index) => {
@@ -125,6 +226,7 @@ export default function LandingPage({ onViewChange, userRole }) {
 
     recentEstablishmentsPauseUntilRef.current = Date.now() + 6000;
     carousel.scrollTo({ left: card.offsetLeft - carousel.offsetLeft, behavior: 'smooth' });
+    setActiveRecentEstablishmentIndex(index);
   };
 
   const handleRecentEstablishmentsScroll = (event) => {
@@ -141,7 +243,8 @@ export default function LandingPage({ onViewChange, userRole }) {
         closestIndex = index;
       }
     });
-    setActiveRecentEstablishmentIndex(closestIndex);
+    const baseCount = recentEstablishments.length || 1;
+    setActiveRecentEstablishmentIndex(closestIndex % baseCount);
   };
 
   // Scrollspy & Scroll Progress: dynamically track active section and topbar progress beam
@@ -372,7 +475,7 @@ export default function LandingPage({ onViewChange, userRole }) {
             .limit(6),
           supabase
             .from('establishments')
-            .select('id, name, type, address, city, halal_status, expiry_date, certificate_number, logo_url, certificate_url, description, admin_notes, created_at, certifying_bodies(name, code)')
+            .select('id, name, type, address, city, halal_status, expiry_date, certificate_number, logo_url, certificate_url, description, admin_notes, created_at, facebook_url, website_url, certifying_bodies(name, code)')
             .in('halal_status', ['verified', 'VERIFIED', 'halal_certified', 'Halal Certified'])
             .or(`expiry_date.is.null,expiry_date.gte.${new Date().toISOString().slice(0, 10)}`)
             .order('created_at', { ascending: false })
@@ -384,11 +487,33 @@ export default function LandingPage({ onViewChange, userRole }) {
           if (estRes.data) setAllEstablishments(estRes.data);
           if (recentProductsRes.data) setRecentProducts(recentProductsRes.data);
           if (recentEstablishmentsRes.data) {
-            setRecentEstablishments(
-              recentEstablishmentsRes.data
-                .filter((establishment) => getStatusConfig(establishment).key === 'verified')
-                .slice(0, 6)
+            const approvedEstablishments = recentEstablishmentsRes.data.filter((establishment) => {
+              const cfg = getStatusConfig(establishment);
+              return cfg.key !== 'needs_review' && cfg.key !== 'rejected' && cfg.key !== 'flagged';
+            });
+            const aldznisa = approvedEstablishments.find((e) => e.name.toLowerCase().includes('aldznisa')) ||
+              INITIAL_RECENT_ESTABLISHMENTS[0];
+            const alHalal = approvedEstablishments.find((e) => e.name.toLowerCase().includes('al halal')) ||
+              INITIAL_RECENT_ESTABLISHMENTS[1];
+            const andys = approvedEstablishments.find((e) => e.name.toLowerCase().includes('andy')) ||
+              INITIAL_RECENT_ESTABLISHMENTS[2];
+            const antiens = approvedEstablishments.find((e) => e.name.toLowerCase().includes('antiens')) ||
+              INITIAL_RECENT_ESTABLISHMENTS[3];
+            const bambas = approvedEstablishments.find((e) => e.name.toLowerCase().includes('bambas')) ||
+              INITIAL_RECENT_ESTABLISHMENTS[4];
+            const bandit = approvedEstablishments.find((e) => e.name.toLowerCase().includes('bandit')) ||
+              INITIAL_RECENT_ESTABLISHMENTS[5];
+            const rest = approvedEstablishments.filter((e) =>
+              !e.name.toLowerCase().includes('aldznisa') &&
+              !e.name.toLowerCase().includes('al halal') &&
+              !e.name.toLowerCase().includes('andy') &&
+              !e.name.toLowerCase().includes('antiens') &&
+              !e.name.toLowerCase().includes('bambas') &&
+              !e.name.toLowerCase().includes('bandit')
             );
+            const featuredWithPhotos = [aldznisa, alHalal, andys, antiens, bambas, bandit].filter(Boolean);
+            const combined = [...featuredWithPhotos, ...rest];
+            setRecentEstablishments(combined.slice(0, 6));
           }
         }
       } catch (err) {
@@ -1005,13 +1130,15 @@ export default function LandingPage({ onViewChange, userRole }) {
                 className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-3 sm:gap-4"
                 aria-label="Recently added products"
               >
-                {recentProducts.map((product) => {
+                {recentProductsDisplay.map((product) => {
                   const imageUrl = getSafeUrl(product.image_url);
 
                   return (
                     <article
                       key={product.id}
                       data-recent-product-card
+                      aria-hidden={product._isClone ? 'true' : undefined}
+                      tabIndex={product._isClone ? -1 : undefined}
                       className="w-[84%] shrink-0 snap-start overflow-hidden rounded-lg border border-[#DCE7E0] bg-white sm:w-[calc((100%_-_1rem)/2)] lg:w-[calc((100%_-_2rem)/3)]"
                     >
                       <div className="relative aspect-[4/3] bg-[#F4F8F5]">
@@ -1044,6 +1171,7 @@ export default function LandingPage({ onViewChange, userRole }) {
                     </article>
                   );
                 })}
+
               </div>
               <button
                 type="button"
@@ -1085,14 +1213,19 @@ export default function LandingPage({ onViewChange, userRole }) {
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-800">Verified local places</p>
               <h2 className="mt-1 text-xl sm:text-2xl font-extrabold text-[#17251F]">Recently Added Establishments</h2>
+              <p className="mt-1 text-xs sm:text-sm text-[#52645B]">
+                Showing featured dining spots from 40+ verified establishments across Zamboanga City.
+              </p>
             </div>
-            <button
-              type="button"
-              onClick={() => onViewChange('map')}
-              className="inline-flex shrink-0 items-center gap-1 self-end rounded-lg border border-[#DCE7E0] bg-white px-3 py-2 text-xs sm:text-sm font-semibold text-[#17251F] transition hover:border-emerald-300 hover:bg-[#F4F8F5] sm:self-auto"
-            >
-              View map <MapPin size={15} />
-            </button>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => onViewChange('map')}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[#DCE7E0] bg-white px-3 py-2 text-xs sm:text-sm font-semibold text-[#17251F] transition hover:border-emerald-300 hover:bg-[#F4F8F5]"
+              >
+                View all on map <ArrowRight size={15} />
+              </button>
+            </div>
           </div>
 
           {recentEstablishments.length > 0 ? (
@@ -1113,26 +1246,28 @@ export default function LandingPage({ onViewChange, userRole }) {
                 className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-3 sm:gap-4"
                 aria-label="Recently added verified establishments"
               >
-                {recentEstablishments.map((establishment) => {
+                {recentEstablishmentsDisplay.map((establishment) => {
                   const imageUrl = getEstablishmentImageUrl(establishment);
 
                   return (
                     <article
                       key={establishment.id}
                       data-recent-establishment-card
+                      aria-hidden={establishment._isClone ? 'true' : undefined}
+                      tabIndex={establishment._isClone ? -1 : undefined}
                       className="flex min-h-[220px] w-[84%] shrink-0 snap-start flex-col overflow-hidden rounded-lg border border-[#DCE7E0] bg-white sm:w-[calc((100%_-_1rem)/2)] lg:w-[calc((100%_-_2rem)/3)]"
                     >
-                      <div className="relative aspect-[4/3] bg-[#F4F8F5]">
+                      <div className="relative aspect-[4/3] bg-[#F4F8F5] overflow-hidden">
                         <div className="absolute inset-0 flex items-center justify-center text-emerald-700/50">
                           <Building2 size={38} strokeWidth={1.5} />
                         </div>
                         {imageUrl && (
                           <img
                             src={imageUrl}
-                            alt={`${establishment.name} logo or certificate`}
+                            alt={`${establishment.name} photo or logo`}
                             loading="lazy"
                             onError={(event) => event.currentTarget.classList.add('hidden')}
-                            className="absolute inset-0 h-full w-full object-contain p-4"
+                            className={`absolute inset-0 h-full w-full ${imageUrl.includes('/logos/') ? 'object-contain p-4' : 'object-cover'}`}
                           />
                         )}
                       </div>
@@ -1147,7 +1282,9 @@ export default function LandingPage({ onViewChange, userRole }) {
                               {establishment.name}
                             </h3>
                           </div>
-                          <span className="shrink-0 rounded-full border border-emerald-200 bg-[#EAF3ED] px-2 py-1 text-[10px] font-bold text-emerald-800">
+                          <span className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-bold ${
+                            getStatusConfig(establishment).badgeBg || 'border-emerald-200 bg-[#EAF3ED] text-emerald-800'
+                          }`}>
                             {getEstablishmentTierLabel(establishment)}
                           </span>
                         </div>
@@ -1184,6 +1321,36 @@ export default function LandingPage({ onViewChange, userRole }) {
                     </article>
                   );
                 })}
+
+                <article
+                  data-recent-establishment-card
+                  className="flex min-h-[220px] w-[84%] shrink-0 snap-start flex-col justify-between overflow-hidden rounded-lg border border-emerald-900/20 bg-gradient-to-br from-[#17251F] via-[#1b3427] to-[#122019] p-5 sm:p-6 text-white sm:w-[calc((100%_-_1rem)/2)] lg:w-[calc((100%_-_2rem)/3)] shadow-md"
+                >
+                  <div className="space-y-3">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/15 px-2.5 py-1 text-[11px] font-bold text-emerald-300">
+                      <Sparkles size={12} />
+                      40+ Verified Places
+                    </span>
+                    <h3 className="text-base sm:text-lg font-bold leading-snug text-white">
+                      Explore All Places in Zamboanga City
+                    </h3>
+                    <p className="text-xs leading-relaxed text-emerald-100/80">
+                      Looking for more? Browse our complete interactive map with turn-by-turn directions, certifying bodies, and verified menus across all districts.
+                    </p>
+                  </div>
+
+                  <div className="pt-5">
+                    <button
+                      type="button"
+                      onClick={() => onViewChange('map')}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm transition hover:bg-emerald-500 cursor-pointer"
+                    >
+                      <MapPin size={15} />
+                      <span>Open Interactive Map</span>
+                      <ArrowRight size={14} />
+                    </button>
+                  </div>
+                </article>
               </div>
               <button
                 type="button"
