@@ -20,8 +20,8 @@ import { CertifyingBodyDetailModal } from './CertifyingBodyDetailModal';
 import { getHcbProfile } from '../../data/hcbDirectory';
 
 const CERTIFIER_LOGO_MAP = [
-    { keys: ['idcp', 'philippines2', 'da\'wah', 'dawah'], src: '/logos/IDCP.svg' },
-    { keys: ['hdip', 'philippines3', 'halal development institute'], src: '/logos/HDIP.svg' },
+    { keys: ['idcp', 'philippines2', 'da\'wah', 'dawah'], src: '/logos/IDCP.png' },
+    { keys: ['hdip', 'philippines3', 'halal development institute'], src: '/logos/HDIP.png' },
     { keys: ['ncmf', 'national_halal_logo', 'philippines1', 'national halal seal', 'dti'], src: '/logos/NCMF.png' },
     { keys: ['hiccip'], src: '/logos/HICCIP.png' },
     { keys: ['prime'], src: '/logos/PRIME.png' },
