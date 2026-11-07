@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import {
     MapPin,
-    Flame,
     Store,
     Search,
     Compass,
@@ -24,7 +23,6 @@ import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet.heat';
 
 import { SEED_ESTABLISHMENTS } from '../data/seedEstablishments';
 
@@ -75,15 +73,12 @@ const ZAMBOANGA_CENTER = { lat: 6.9214, lng: 122.0790 };
 export default function EstablishmentsMap({ userRole, onViewChange, initialSearchQuery = '' }) {
     const mapContainerRef = useRef(null);
     const mapInstanceRef = useRef(null);
-    const heatLayerRef = useRef(null);
     const markersLayerRef = useRef(null);
     const userMarkerRef = useRef(null);
 
     const [establishments, setEstablishments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [mobileTab, setMobileTab] = useState(initialSearchQuery ? 'list' : 'map');
-    const [showHeatmap, setShowHeatmap] = useState(false);
-    const [showMarkers, setShowMarkers] = useState(true);
 
     // Filters (Certifier filter removed per instructions)
     const [selectedStatus, setSelectedStatus] = useState('all');
@@ -477,106 +472,54 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
             if (markersLayerRef.current) {
                 markersLayerRef.current.clearLayers();
 
-                if (showMarkers) {
-                    filteredList.forEach((est) => {
-                        if (!est.latitude || !est.longitude) return;
+                filteredList.forEach((est) => {
+                    if (!est.latitude || !est.longitude) return;
 
-                        const statusConfig = getStatusConfig(est);
+                    const statusConfig = getStatusConfig(est);
 
-                        const marker = L.circleMarker([est.latitude, est.longitude], {
-                            radius: 9,
-                            fillColor: statusConfig.color,
-                            color: '#ffffff',
-                            weight: 2.5,
+                    const marker = L.circleMarker([est.latitude, est.longitude], {
+                        radius: 9,
+                        fillColor: statusConfig.color,
+                        color: '#ffffff',
+                        weight: 2.5,
+                        opacity: 1,
+                        fillOpacity: 0.9,
+                    });
+
+                    // Compact single-line name badge on hover for pointer/mouse devices (never pop up over pins on touchscreens)
+                    const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+                    if (!isTouchDevice) {
+                        marker.bindTooltip(est.name, {
+                            direction: 'top',
+                            offset: [0, -10],
                             opacity: 1,
-                            fillOpacity: 0.9,
+                            sticky: false,
+                            className: 'custom-map-name-tooltip',
                         });
-
-                        // Compact single-line name badge on hover for pointer/mouse devices (never pop up over pins on touchscreens)
-                        const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
-                        if (!isTouchDevice) {
-                            marker.bindTooltip(est.name, {
-                                direction: 'top',
-                                offset: [0, -10],
-                                opacity: 1,
-                                sticky: false,
-                                className: 'custom-map-name-tooltip',
-                            });
-                        }
-
-                        marker.on('click', (e) => {
-                            if (e && e.originalEvent) {
-                                L.DomEvent.stopPropagation(e);
-                            }
-                            try {
-                                marker.closeTooltip();
-                            } catch {
-                                // Ignore tooltip dismiss on rapid re-click
-                            }
-                            setActivePreviewEst(est);
-                            if (mapInstanceRef.current) {
-                                mapInstanceRef.current.panTo([est.latitude, est.longitude], { animate: true, duration: 0.35 });
-                            }
-                        });
-
-                        markersLayerRef.current.addLayer(marker);
-                    });
-                }
-            }
-
-            if (heatLayerRef.current) {
-                try {
-                    map.removeLayer(heatLayerRef.current);
-                } catch {
-                    // Layer might have already been removed
-                }
-                heatLayerRef.current = null;
-            }
-
-            if (showHeatmap && filteredList.length > 0 && isContainerVisible) {
-                const heatPoints = filteredList
-                    .filter((e) => e.latitude && e.longitude)
-                    .map((e) => {
-                        const weight = getStatusConfig(e).weight;
-                        return [e.latitude, e.longitude, weight];
-                    });
-
-
-                if (heatPoints.length > 0 && L.heatLayer) {
-                    const heat = L.heatLayer(heatPoints, {
-                        radius: 35,
-                        blur: 22,
-                        maxZoom: 15,
-                        gradient: {
-                            0.2: '#34d399',
-                            0.5: '#fbbf24',
-                            0.8: '#f97316',
-                            1.0: '#ef4444',
-                        },
-                    }).addTo(map);
-
-                    heatLayerRef.current = heat;
-
-                    // Fix Leaflet.heat canvas redraw bug:
-                    // Force immediate canvas redraw so heatmap paints immediately without needing user to zoom in/out
-                    try {
-                        if (typeof heat._reset === 'function') {
-                            heat._reset();
-                        }
-                        if (typeof heat.redraw === 'function') {
-                            heat.redraw();
-                        }
-                        map.invalidateSize();
-                        map.fire('moveend');
-                    } catch (heatErr) {
-                        console.warn('Heatmap canvas redraw notice:', heatErr);
                     }
-                }
+
+                    marker.on('click', (e) => {
+                        if (e && e.originalEvent) {
+                            L.DomEvent.stopPropagation(e);
+                        }
+                        try {
+                            marker.closeTooltip();
+                        } catch {
+                            // Ignore tooltip dismiss on rapid re-click
+                        }
+                        setActivePreviewEst(est);
+                        if (mapInstanceRef.current) {
+                            mapInstanceRef.current.panTo([est.latitude, est.longitude], { animate: true, duration: 0.35 });
+                        }
+                    });
+
+                    markersLayerRef.current.addLayer(marker);
+                });
             }
         } catch (e) {
             console.warn('Map layer update handled:', e);
         }
-    }, [filteredList, showHeatmap, showMarkers, userLocation, mobileTab]);
+    }, [filteredList, userLocation, mobileTab]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -786,43 +729,6 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                 >
                     {/* Map Canvas rendered FIRST in DOM */}
                     <div ref={mapContainerRef} className="w-full h-full min-h-0 flex-1 z-0" />
-
-                    {/* Top-left Pins & Heatmap toggles placed AFTER map with z-[1000] */}
-                    <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 z-[1000] bg-white/95 backdrop-blur-sm rounded-xl border border-slate-300 p-1.5 sm:p-2 shadow-md flex flex-col gap-1.5 text-[11px] sm:text-xs">
-                        <div className="flex items-center gap-2 sm:gap-3">
-                            <label className="flex items-center gap-1.5 cursor-pointer font-semibold text-slate-700">
-                                <input
-                                    type="checkbox"
-                                    checked={showMarkers}
-                                    onChange={(e) => setShowMarkers(e.target.checked)}
-                                    className="rounded text-emerald-600 focus:ring-emerald-500"
-                                />
-                                <MapPin size={13} className="text-emerald-600 shrink-0" />
-                                <span>Pins ({filteredList.length})</span>
-                            </label>
-
-                            <div className="w-px h-3.5 bg-slate-200" />
-
-                            <label className="flex items-center gap-1.5 cursor-pointer font-semibold text-slate-700">
-                                <input
-                                    type="checkbox"
-                                    checked={showHeatmap}
-                                    onChange={(e) => setShowHeatmap(e.target.checked)}
-                                    className="rounded text-emerald-600 focus:ring-emerald-500"
-                                />
-                                <Flame size={13} className="text-red-500 shrink-0" />
-                                <span>Density Heatmap</span>
-                            </label>
-                        </div>
-
-                        {showHeatmap && (
-                            <div className="flex items-center gap-2 pt-1 border-t border-slate-200 text-[10px] text-slate-600">
-                                <span className="text-[9px] uppercase font-bold text-slate-500">Density:</span>
-                                <div className="h-1.5 w-16 sm:w-20 rounded-full bg-gradient-to-r from-emerald-400 via-amber-400 to-red-500 shadow-inner" />
-                                <span className="text-[9px] text-slate-500 font-semibold">Low → High</span>
-                            </div>
-                        )}
-                    </div>
 
                     {/* Docked Establishment Preview Card */}
                     {activePreviewEst && (
