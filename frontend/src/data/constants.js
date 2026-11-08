@@ -445,6 +445,9 @@ export const LOCAL_ESTABLISHMENT_PHOTOS = {
     "Ta'am Halal Pizza": '/establishments/taam-halal-pizza.jpg',
     'Taam': '/establishments/taam-halal-pizza.jpg',
     "Ta'am": '/establishments/taam-halal-pizza.jpg',
+    'Turkish Grille Plus': '/establishments/turkish-grille-plus.jpg',
+    'Turkish Grille': '/establishments/turkish-grille-plus.jpg',
+    'Turkish Grill': '/establishments/turkish-grille-plus.jpg',
 };
 
 export const getEstablishmentPhoto = (establishment) => {
