@@ -399,6 +399,10 @@ export const LOCAL_ESTABLISHMENT_PHOTOS = {
     'IYA Coffee Tetuan': '/establishments/iya-coffee-tetuan.jpg',
     'IYA Coffee': '/establishments/iya-coffee-lantaka.jpg',
     'IYA Coffee CafeResto': '/establishments/iya-coffee-lantaka.jpg',
+    "Jimmy's Satti Food Haus": '/establishments/jimmys-satti.jpg',
+    "Jimmy's Satti Haus": '/establishments/jimmys-satti.jpg',
+    "Jimmy's Satti Food House": '/establishments/jimmys-satti.jpg',
+    "Jimmy's Satti": '/establishments/jimmys-satti.jpg',
 };
 
 export const getEstablishmentPhoto = (establishment) => {
