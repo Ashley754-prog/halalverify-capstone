@@ -403,6 +403,8 @@ export const LOCAL_ESTABLISHMENT_PHOTOS = {
     "Jimmy's Satti Haus": '/establishments/jimmys-satti.jpg',
     "Jimmy's Satti Food House": '/establishments/jimmys-satti.jpg',
     "Jimmy's Satti": '/establishments/jimmys-satti.jpg',
+    'JL Halal BBQ': '/establishments/jl-halal-bbq.jpg',
+    'JL Halal': '/establishments/jl-halal-bbq.jpg',
 };
 
 export const getEstablishmentPhoto = (establishment) => {
