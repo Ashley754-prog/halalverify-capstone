@@ -420,6 +420,7 @@ export const LOCAL_ESTABLISHMENT_PHOTOS = {
     'Nashville Hot Chicken by Damban': '/establishments/nashville-hot-chicken-damban.jpg',
     'Nashville Hot Chicken': '/establishments/nashville-hot-chicken-damban.jpg',
     'Damban': '/establishments/nashville-hot-chicken-damban.jpg',
+    'My Halal Kitchen': '/establishments/my-halal-kitchen.jpg',
 };
 
 export const getEstablishmentPhoto = (establishment) => {
