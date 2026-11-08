@@ -232,7 +232,8 @@ export const Dashboard = ({ userRole, onViewChange }) => {
                 </div>
             )}
 
-            {/* Pipeline Architecture & Capstone System Specs (Expandable for Regular Users, Always Visible for Admin) */}
+            {/* Pipeline Architecture & Capstone System Specs (Hidden from regular users, visible only to admin and developers) */}
+            {isAdmin && (
             <div className="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
                 <button
                     type="button"
@@ -309,6 +310,7 @@ export const Dashboard = ({ userRole, onViewChange }) => {
                     </div>
                 )}
             </div>
+            )}
         </div>
     );
 };
