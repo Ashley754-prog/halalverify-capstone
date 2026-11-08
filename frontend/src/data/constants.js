@@ -425,6 +425,10 @@ export const LOCAL_ESTABLISHMENT_PHOTOS = {
     'Ranao Ragat Restaurant': '/establishments/ranaoragat.jpg',
     'RanaoRagat': '/establishments/ranaoragat.jpg',
     'Ranao Ragat': '/establishments/ranaoragat.jpg',
+    'Royalle Chillie Restaurant': '/establishments/royalle-chillie.jpg',
+    'Royalle Chillie': '/establishments/royalle-chillie.jpg',
+    'Chillies': '/establishments/royalle-chillie.jpg',
+    'Chillie': '/establishments/royalle-chillie.jpg',
 };
 
 export const getEstablishmentPhoto = (establishment) => {
