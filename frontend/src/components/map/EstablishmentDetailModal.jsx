@@ -175,7 +175,7 @@ export default function EstablishmentDetailModal({
 
                     <div className="w-full sm:w-auto flex items-center gap-2">
                         <a
-                            href={`https://www.google.com/maps/dir/?api=1&destination=${establishment.latitude},${establishment.longitude}`}
+                            href={`https://www.google.com/maps/dir/?api=1&destination=${establishment.name && establishment.address ? encodeURIComponent(`${establishment.name}, ${establishment.address}`) : `${establishment.latitude},${establishment.longitude}`}`}
                             target="_blank"
                             rel="noreferrer"
                             className="flex-1 sm:flex-none px-4 py-2 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-xl flex items-center justify-center gap-1.5 transition shadow-sm"

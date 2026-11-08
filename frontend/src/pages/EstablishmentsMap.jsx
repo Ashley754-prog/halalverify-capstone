@@ -968,7 +968,7 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                                 )}
                                 {activePreviewEst.latitude && activePreviewEst.longitude && (
                                     <a
-                                        href={`https://www.google.com/maps/dir/?api=1&destination=${activePreviewEst.latitude},${activePreviewEst.longitude}`}
+                                        href={`https://www.google.com/maps/dir/?api=1&destination=${activePreviewEst.name && activePreviewEst.address ? encodeURIComponent(`${activePreviewEst.name}, ${activePreviewEst.address}`) : `${activePreviewEst.latitude},${activePreviewEst.longitude}`}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="py-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition flex items-center justify-center gap-1 shrink-0"

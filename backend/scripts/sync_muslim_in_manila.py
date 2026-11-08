@@ -93,7 +93,10 @@ def sync_muslim_in_manila():
             except (ValueError, TypeError):
                 pass
 
-        if "kcc mall" in name.lower() or "kcc mall" in address.lower():
+        if "malaysian steamboat" in name.lower():
+            lat = 6.9165
+            lng = 122.0898
+        elif "kcc mall" in name.lower() or "kcc mall" in address.lower():
             lat = 6.9197
             lng = 122.0717
         elif lat is None or lng is None:
