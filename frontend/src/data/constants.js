@@ -429,6 +429,13 @@ export const LOCAL_ESTABLISHMENT_PHOTOS = {
     'Royalle Chillie': '/establishments/royalle-chillie.jpg',
     'Chillies': '/establishments/royalle-chillie.jpg',
     'Chillie': '/establishments/royalle-chillie.jpg',
+    "Sam's Lebanese Delights": '/establishments/sams-lebanese-delights.jpg',
+    'Sams Lebanese Delights': '/establishments/sams-lebanese-delights.jpg',
+    'Sam’s Lebanese Delights': '/establishments/sams-lebanese-delights.jpg',
+    "Sam's Lebanese Delight Restaurant": '/establishments/sams-lebanese-delights.jpg',
+    'Sam’s Lebanese Delight Restaurant': '/establishments/sams-lebanese-delights.jpg',
+    'Sams Lebanese Delight Restaurant': '/establishments/sams-lebanese-delights.jpg',
+    'Lebanese Delights': '/establishments/sams-lebanese-delights.jpg',
 };
 
 export const getEstablishmentPhoto = (establishment) => {
