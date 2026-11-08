@@ -421,6 +421,10 @@ export const LOCAL_ESTABLISHMENT_PHOTOS = {
     'Nashville Hot Chicken': '/establishments/nashville-hot-chicken-damban.jpg',
     'Damban': '/establishments/nashville-hot-chicken-damban.jpg',
     'My Halal Kitchen': '/establishments/my-halal-kitchen.jpg',
+    'RanaoRagat Restaurant': '/establishments/ranaoragat.jpg',
+    'Ranao Ragat Restaurant': '/establishments/ranaoragat.jpg',
+    'RanaoRagat': '/establishments/ranaoragat.jpg',
+    'Ranao Ragat': '/establishments/ranaoragat.jpg',
 };
 
 export const getEstablishmentPhoto = (establishment) => {
