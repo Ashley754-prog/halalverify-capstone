@@ -440,6 +440,11 @@ export const LOCAL_ESTABLISHMENT_PHOTOS = {
     "Sugnaws Kitchen": '/establishments/sugnaws-kitchen.jpg',
     'Sugnaw’s Kitchen': '/establishments/sugnaws-kitchen.jpg',
     'Sugnaw': '/establishments/sugnaws-kitchen.jpg',
+    'TAAM Halal Pizza': '/establishments/taam-halal-pizza.jpg',
+    'Taam Halal Pizza': '/establishments/taam-halal-pizza.jpg',
+    "Ta'am Halal Pizza": '/establishments/taam-halal-pizza.jpg',
+    'Taam': '/establishments/taam-halal-pizza.jpg',
+    "Ta'am": '/establishments/taam-halal-pizza.jpg',
 };
 
 export const getEstablishmentPhoto = (establishment) => {
