@@ -416,6 +416,10 @@ export const LOCAL_ESTABLISHMENT_PHOTOS = {
     'Mamang’s Greasy Spoon': '/establishments/mamangs-greasy-spoon.jpg',
     "Mamang's": '/establishments/mamangs-greasy-spoon.jpg',
     'Mamangs': '/establishments/mamangs-greasy-spoon.jpg',
+    'Nashville Hot Chicken by Damban (Halal)': '/establishments/nashville-hot-chicken-damban.jpg',
+    'Nashville Hot Chicken by Damban': '/establishments/nashville-hot-chicken-damban.jpg',
+    'Nashville Hot Chicken': '/establishments/nashville-hot-chicken-damban.jpg',
+    'Damban': '/establishments/nashville-hot-chicken-damban.jpg',
 };
 
 export const getEstablishmentPhoto = (establishment) => {
