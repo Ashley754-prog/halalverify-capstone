@@ -405,6 +405,9 @@ export const LOCAL_ESTABLISHMENT_PHOTOS = {
     "Jimmy's Satti": '/establishments/jimmys-satti.jpg',
     'JL Halal BBQ': '/establishments/jl-halal-bbq.jpg',
     'JL Halal': '/establishments/jl-halal-bbq.jpg',
+    "Johnny's Morning Sun Satti": '/establishments/johnnys-morning-sun-satti.jpg',
+    "Johnnys Morning Sun Satti": '/establishments/johnnys-morning-sun-satti.jpg',
+    'Morning Sun Satti': '/establishments/johnnys-morning-sun-satti.jpg',
 };
 
 export const getEstablishmentPhoto = (establishment) => {
