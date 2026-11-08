@@ -94,22 +94,105 @@ select option {
     display: none !important;
 }
 
-/* Leaflet map selected pin floating badge */
-.leaflet-tooltip.selected-map-name-badge {
-    background: #064e3b !important;
-    color: #ffffff !important;
-    font-size: 11px !important;
-    font-weight: 800 !important;
-    padding: 4px 10px !important;
-    border-radius: 8px !important;
-    border: 1.5px solid #34d399 !important;
-    box-shadow: 0 4px 14px rgba(6, 78, 59, 0.45) !important;
-    white-space: nowrap !important;
-    pointer-events: none !important;
-    user-select: none !important;
-    letter-spacing: 0.01em !important;
+/* Custom HTML map pins preventing vector scaling during zoom animations */
+.map-pin-container {
+    background: transparent !important;
+    border: none !important;
 }
 
-.leaflet-tooltip.selected-map-name-badge::before {
-    border-top-color: #064e3b !important;
+.map-pin-circle {
+    width: 18px;
+    height: 18px;
+    border-radius: 9999px;
+    border: 2.5px solid #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    transition: transform 0.15s ease, opacity 0.2s ease;
+    cursor: pointer;
+}
+
+.map-pin-circle:hover {
+    transform: scale(1.18);
+}
+
+.map-pin-circle.map-pin-dimmed {
+    opacity: 0.55;
+    transform: scale(0.9);
+}
+
+.map-pin-selected-container {
+    background: transparent !important;
+    border: none !important;
+    z-index: 1000 !important;
+}
+
+.selected-pin-wrapper {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.selected-pin-halo {
+    position: absolute;
+    width: 38px;
+    height: 38px;
+    border-radius: 9999px;
+    opacity: 0.25;
+    border: 2px solid;
+    animation: selectedPinPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    pointer-events: none;
+}
+
+@keyframes selectedPinPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.28;
+    }
+    50% {
+        transform: scale(1.15);
+        opacity: 0.12;
+    }
+}
+
+.selected-pin-core {
+    position: relative;
+    width: 22px;
+    height: 22px;
+    border-radius: 9999px;
+    border: 3.5px solid #ffffff;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+    z-index: 2;
+}
+
+.selected-pin-name-label {
+    position: absolute;
+    bottom: calc(100% + 2px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #064e3b;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 8px;
+    border: 1.5px solid #34d399;
+    box-shadow: 0 4px 14px rgba(6, 78, 59, 0.45);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 10;
+    letter-spacing: 0.01em;
+}
+
+.selected-pin-name-label::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: #064e3b transparent transparent transparent;
 }

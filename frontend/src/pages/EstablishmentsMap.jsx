@@ -483,13 +483,16 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                         const statusConfig = getStatusConfig(est);
                         const hasSelection = Boolean(selectedEst);
 
-                        const marker = L.circleMarker([est.latitude, est.longitude], {
-                            radius: hasSelection ? 8 : 9,
-                            fillColor: statusConfig.color,
-                            color: '#ffffff',
-                            weight: hasSelection ? 2 : 2.5,
-                            opacity: hasSelection ? 0.65 : 1,
-                            fillOpacity: hasSelection ? 0.55 : 0.9,
+                        const normalIcon = L.divIcon({
+                            className: 'map-pin-container',
+                            html: `<div class="map-pin-circle ${hasSelection ? 'map-pin-dimmed' : ''}" style="background-color: ${statusConfig.color};"></div>`,
+                            iconSize: [18, 18],
+                            iconAnchor: [9, 9],
+                        });
+
+                        const marker = L.marker([est.latitude, est.longitude], {
+                            icon: normalIcon,
+                            keyboard: false,
                         });
 
                         // Compact single-line name badge on hover for pointer/mouse devices (never pop up over pins on touchscreens)
@@ -522,39 +525,27 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                         markersLayerRef.current.addLayer(marker);
                     });
 
-                    // 2. Render selected marker last so its halo and badge float above all other pins
+                    // 2. Render selected marker with fixed HTML divIcon so it stays crisp and never scales or distorts during zoom animations
                     if (selectedEst) {
                         const statusConfig = getStatusConfig(selectedEst);
 
-                        // Outer soft halo ring
-                        const halo = L.circleMarker([selectedEst.latitude, selectedEst.longitude], {
-                            radius: 20,
-                            fillColor: statusConfig.color,
-                            fillOpacity: 0.22,
-                            color: statusConfig.color,
-                            weight: 2,
-                            opacity: 0.85,
-                            interactive: false,
-                        });
-                        markersLayerRef.current.addLayer(halo);
-
-                        // Prominent selected center pin
-                        const selectedMarker = L.circleMarker([selectedEst.latitude, selectedEst.longitude], {
-                            radius: 12,
-                            fillColor: statusConfig.color,
-                            color: '#ffffff',
-                            weight: 3.5,
-                            opacity: 1,
-                            fillOpacity: 1,
+                        const selectedIcon = L.divIcon({
+                            className: 'map-pin-selected-container',
+                            html: `
+                                <div class="selected-pin-wrapper">
+                                    <div class="selected-pin-halo" style="background-color: ${statusConfig.color}; border-color: ${statusConfig.color};"></div>
+                                    <div class="selected-pin-core" style="background-color: ${statusConfig.color};"></div>
+                                    <div class="selected-pin-name-label">${selectedEst.name}</div>
+                                </div>
+                            `,
+                            iconSize: [44, 44],
+                            iconAnchor: [22, 22],
                         });
 
-                        // Permanent floating name label directly above the active pin
-                        selectedMarker.bindTooltip(selectedEst.name, {
-                            permanent: true,
-                            direction: 'top',
-                            offset: [0, -14],
-                            opacity: 1,
-                            className: 'selected-map-name-badge',
+                        const selectedMarker = L.marker([selectedEst.latitude, selectedEst.longitude], {
+                            icon: selectedIcon,
+                            zIndexOffset: 1000,
+                            keyboard: false,
                         });
 
                         selectedMarker.on('click', (e) => {
@@ -568,7 +559,6 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                         });
 
                         markersLayerRef.current.addLayer(selectedMarker);
-                        selectedMarker.bringToFront();
                     }
                 }
             }
@@ -597,7 +587,7 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
         setTimeout(() => {
             if (mapInstanceRef.current) {
                 mapInstanceRef.current.invalidateSize();
-                mapInstanceRef.current.flyTo([est.latitude, est.longitude], 16, { duration: 1.2 });
+                mapInstanceRef.current.flyTo([est.latitude, est.longitude], 16, { duration: 0.85 });
             }
         }, 150);
     };
