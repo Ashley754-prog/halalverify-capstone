@@ -1167,7 +1167,7 @@ export default function LandingPage({ onViewChange, userRole }) {
                 onClick={() => scrollRecentProducts(-1)}
                 aria-label="Previous products"
                 title="Previous products"
-                className="absolute left-1 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center bg-transparent text-white transition hover:scale-110 hover:text-emerald-300 focus-visible:outline-2 focus-visible:outline-emerald-700"
+                className="hidden sm:flex absolute left-1 top-1/2 z-10 h-12 w-12 -translate-y-1/2 items-center justify-center bg-transparent text-white transition hover:scale-110 hover:text-emerald-300 focus-visible:outline-2 focus-visible:outline-emerald-700"
               >
                 <ChevronLeft size={34} strokeWidth={3} className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" />
               </button>
@@ -1226,7 +1226,7 @@ export default function LandingPage({ onViewChange, userRole }) {
                 onClick={() => scrollRecentProducts(1)}
                 aria-label="Next products"
                 title="Next products"
-                className="absolute right-1 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center bg-transparent text-white transition hover:scale-110 hover:text-emerald-300 focus-visible:outline-2 focus-visible:outline-emerald-700"
+                className="hidden sm:flex absolute right-1 top-1/2 z-10 h-12 w-12 -translate-y-1/2 items-center justify-center bg-transparent text-white transition hover:scale-110 hover:text-emerald-300 focus-visible:outline-2 focus-visible:outline-emerald-700"
               >
                 <ChevronRight size={34} strokeWidth={3} className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" />
               </button>
@@ -1293,7 +1293,7 @@ export default function LandingPage({ onViewChange, userRole }) {
                 onClick={() => scrollRecentEstablishments(-1)}
                 aria-label="Previous establishments"
                 title="Previous establishments"
-                className="absolute left-1 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center bg-transparent text-white transition hover:scale-110 hover:text-emerald-300 focus-visible:outline-2 focus-visible:outline-emerald-700"
+                className="hidden sm:flex absolute left-1 top-1/2 z-10 h-12 w-12 -translate-y-1/2 items-center justify-center bg-transparent text-white transition hover:scale-110 hover:text-emerald-300 focus-visible:outline-2 focus-visible:outline-emerald-700"
               >
                 <ChevronLeft size={34} strokeWidth={3} className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" />
               </button>
@@ -1386,7 +1386,7 @@ export default function LandingPage({ onViewChange, userRole }) {
                 onClick={() => scrollRecentEstablishments(1)}
                 aria-label="Next establishments"
                 title="Next establishments"
-                className="absolute right-1 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center bg-transparent text-white transition hover:scale-110 hover:text-emerald-300 focus-visible:outline-2 focus-visible:outline-emerald-700"
+                className="hidden sm:flex absolute right-1 top-1/2 z-10 h-12 w-12 -translate-y-1/2 items-center justify-center bg-transparent text-white transition hover:scale-110 hover:text-emerald-300 focus-visible:outline-2 focus-visible:outline-emerald-700"
               >
                 <ChevronRight size={34} strokeWidth={3} className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" />
               </button>
