@@ -103,6 +103,17 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
         if (!navigator.geolocation) return;
         navigator.geolocation.getCurrentPosition(
             (pos) => {
+                const distToCenter = calculateDistanceKm(
+                    pos.coords.latitude,
+                    pos.coords.longitude,
+                    ZAMBOANGA_CENTER.lat,
+                    ZAMBOANGA_CENTER.lng
+                );
+                // If browser reports coordinates far outside Zamboanga City (e.g. ISP router in Dipolog, Cebu, Manila),
+                // ignore it so we don't skew distances or misplace user location
+                if (distToCenter && distToCenter > 70) {
+                    return;
+                }
                 setUserLocation({
                     lat: pos.coords.latitude,
                     lng: pos.coords.longitude,
@@ -289,12 +300,32 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
         setIsLocating(true);
         navigator.geolocation.getCurrentPosition(
             (pos) => {
+                const distToCenter = calculateDistanceKm(
+                    pos.coords.latitude,
+                    pos.coords.longitude,
+                    ZAMBOANGA_CENTER.lat,
+                    ZAMBOANGA_CENTER.lng
+                );
+                setIsLocating(false);
+
+                if (distToCenter && distToCenter > 70) {
+                    setToast({
+                        visible: true,
+                        message: 'Your network or browser reported a location outside Zamboanga City. Showing Zamboanga City map.',
+                        type: 'info',
+                    });
+                    if (mapInstanceRef.current) {
+                        mapInstanceRef.current.invalidateSize();
+                        mapInstanceRef.current.flyTo([ZAMBOANGA_CENTER.lat, ZAMBOANGA_CENTER.lng], 13, { duration: 1.0 });
+                    }
+                    return;
+                }
+
                 const coords = {
                     lat: pos.coords.latitude,
                     lng: pos.coords.longitude,
                 };
                 setUserLocation(coords);
-                setIsLocating(false);
 
                 if (mapInstanceRef.current) {
                     mapInstanceRef.current.invalidateSize();
