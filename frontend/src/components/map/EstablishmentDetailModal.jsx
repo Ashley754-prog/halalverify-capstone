@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React from 'react';
 import {
     MapPin,
     ShieldCheck,
@@ -8,7 +8,6 @@ import {
     Mail,
     ExternalLink,
     UtensilsCrossed,
-    CheckCircle2,
     Flag,
     Navigation,
     Store,
@@ -20,8 +19,6 @@ import {
 import Modal from '../ui/Modal';
 import { getSafeUrl } from '../../utils/security';
 import { getStatusConfig, resolveZamboangaDistrict, getEstablishmentPhoto } from '../../data/constants';
-import { supabase } from '../../lib/supabaseClient';
-import { extractMenuHighlights } from '../../utils/verificationNotes';
 
 export default function EstablishmentDetailModal({
     establishment,
@@ -29,64 +26,6 @@ export default function EstablishmentDetailModal({
     onClose,
     onFlagEstablishment,
 }) {
-    const [menuItems, setMenuItems] = useState(establishment?.products || []);
-    const [loadingMenu, setLoadingMenu] = useState(false);
-
-    useEffect(() => {
-        if (!establishment?.id) {
-            setMenuItems([]);
-            return;
-        }
-
-        const dishes = extractMenuHighlights(establishment);
-        if (dishes.length > 0) {
-            setMenuItems(dishes.map((name, idx) => ({
-                id: `dish-${idx}`,
-                name,
-                category: 'Food Item',
-                status: 'VERIFIED',
-            })));
-            return;
-        }
-
-        if (establishment.products && establishment.products.length > 0) {
-            setMenuItems(establishment.products);
-            return;
-        }
-
-        let isMounted = true;
-        const fetchDishes = async () => {
-            try {
-                setLoadingMenu(true);
-                const { data, error } = await supabase
-                    .from('products')
-                    .select('id, name, category, status')
-                    .eq('establishment_id', establishment.id)
-                    .not('status', 'in', '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft)');
-
-                if (!error && isMounted && data && data.length > 0) {
-                    setMenuItems(data);
-                } else if (isMounted && establishment.product_names && establishment.product_names.length > 0) {
-                    setMenuItems(establishment.product_names.map((name, idx) => ({
-                        id: `p-${idx}`,
-                        name,
-                        category: 'Food Item',
-                        status: 'VERIFIED',
-                    })));
-                } else if (isMounted) {
-                    setMenuItems([]);
-                }
-            } catch (err) {
-                console.warn('Could not load dishes for establishment:', err);
-            } finally {
-                if (isMounted) setLoadingMenu(false);
-            }
-        };
-
-        fetchDishes();
-        return () => { isMounted = false; };
-    }, [establishment]);
-
     if (!establishment) return null;
 
     const statusConfig = getStatusConfig(establishment);
@@ -526,80 +465,6 @@ export default function EstablishmentDetailModal({
                     </div>
                 )}
 
-                {/* Truthful Menu Highlights & Specialties Section */}
-                <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-bold text-slate-800">
-                            {isFormallyCertified ? "Menu Highlights & Specialties" : "Reported Menu & Specialties"}
-                        </h4>
-                        {isFormallyCertified ? (
-                            <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md">
-                                {establishment.certifying_bodies?.code || 'Certified'} Kitchen
-                            </span>
-                        ) : statusConfig.key === 'muslim_owned' ? (
-                            <span className="text-[10px] font-bold text-sky-800 bg-sky-50 border border-sky-200/80 px-2 py-0.5 rounded-md">
-                                Muslim-Owned Kitchen
-                            </span>
-                        ) : statusConfig.key === 'muslim_friendly' ? (
-                            <span className="text-[10px] font-bold text-indigo-800 bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-md">
-                                Muslim-Friendly Menu
-                            </span>
-                        ) : statusConfig.key === 'vegetarian_vegan' ? (
-                            <span className="text-[10px] font-bold text-teal-800 bg-teal-50 border border-teal-200/80 px-2 py-0.5 rounded-md">
-                                Plant-Based Menu
-                            </span>
-                        ) : (
-                            <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-md">
-                                Self-Reported / Unaudited
-                            </span>
-                        )}
-                    </div>
-
-                    {!isFormallyCertified && menuItems && menuItems.length > 0 && (
-                        <p className="text-[11px] text-slate-500 leading-snug">
-                            Menu items below are sourced from public directory profiles. Individual dishes and kitchen inventory have not been audited or verified compliant by an accredited Halal Certification Body (HCB).
-                        </p>
-                    )}
-
-                    {loadingMenu ? (
-                        <div className="p-3 rounded-xl border border-slate-200 bg-slate-50 text-center text-xs text-slate-400">
-                            Loading menu specialties...
-                        </div>
-                    ) : menuItems && menuItems.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {menuItems.map((p) => (
-                                <div
-                                    key={p.id || p.name}
-                                    className="p-2.5 rounded-xl border border-slate-200 bg-slate-50/70 flex items-center justify-between text-xs"
-                                >
-                                    <div className="truncate mr-2">
-                                        <span className="font-semibold text-slate-800 block truncate">
-                                            {p.name}
-                                        </span>
-                                        <span className="text-[10px] text-slate-400">
-                                            {p.category || 'Food Item'}
-                                        </span>
-                                    </div>
-                                    {isFormallyCertified ? (
-                                        <span className="shrink-0 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/70 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                            <CheckCircle2 size={10} /> Listed Dish
-                                        </span>
-                                    ) : (
-                                        <span className="shrink-0 text-[10px] font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
-                                            Reported
-                                        </span>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="p-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 text-center text-xs text-slate-500">
-                            {isFormallyCertified
-                                ? 'No individual dishes itemized in directory record. Refer to physical establishment menu.'
-                                : 'No individual menu items reported in directory profile. Refer to physical establishment menu.'}
-                        </div>
-                    )}
-                </div>
             </div>
         </Modal>
     );
