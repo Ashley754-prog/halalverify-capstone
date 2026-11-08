@@ -230,7 +230,9 @@ export default function EstablishmentDetailModal({
                         <div className="grid grid-cols-2 gap-2 pt-1 border-t border-sky-200/60 text-[11px]">
                             <div>
                                 <span className="text-slate-500 block">Classification:</span>
-                                <span className="font-bold text-sky-800">Community Listed</span>
+                                <span className="font-bold text-sky-800">
+                                    {relationshipLabel === 'Owner Declared' ? 'Owner Declared' : 'Community Listed'}
+                                </span>
                             </div>
                             <div>
                                 <span className="text-slate-500 block">Kitchen Standard:</span>
