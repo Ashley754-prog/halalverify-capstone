@@ -107,15 +107,22 @@ def sync_muslim_in_manila():
         is_muslim_owned = str(e.get("muslimOwned", "")).lower() in ["yes", "true", "1"]
         cert_acronym = e.get("halal_certifier") or (e.get("certifier") or {}).get("acronym")
 
-        if level_slug == "halal_certified":
+        # Formally certified requires both halal_certified level and an accredited HCB
+        if level_slug == "halal_certified" and cert_acronym:
             tier_tag = "[Tier: halal_certified]"
+            halal_tier = "halal_certified"
+            cert_body_id = hcb_map.get(cert_acronym)
+            cert_no = f"MIM-HCB-{e.get('id')}"
         elif is_muslim_owned:
             tier_tag = "[Tier: muslim_owned]"
+            halal_tier = "muslim_owned"
+            cert_body_id = None
+            cert_no = None
         else:
             tier_tag = "[Tier: muslim_friendly]"
-
-        cert_body_id = hcb_map.get(cert_acronym) if cert_acronym else None
-        cert_no = f"MIM-HCB-{e.get('id')}" if cert_body_id else f"MIM-{e.get('id')}"
+            halal_tier = "muslim_friendly"
+            cert_body_id = None
+            cert_no = None
 
         amenities_list = []
         if e.get("prayerAreaAvailable"):
@@ -142,6 +149,7 @@ def sync_muslim_in_manila():
             "address": address,
             "city": "Zamboanga City",
             "halal_status": "verified",
+            "halal_tier": halal_tier,
             "certificate_number": cert_no,
             "certifying_body_id": cert_body_id,
             "latitude": lat,
@@ -158,7 +166,7 @@ def sync_muslim_in_manila():
         }
 
         # Check if exists
-        existing_id = existing_by_cert.get(cert_no) or existing_by_name.get(name.lower())
+        existing_id = (cert_no and existing_by_cert.get(cert_no)) or existing_by_name.get(name.lower())
 
         if existing_id:
             supabase.table("establishments").update(record_data).eq("id", existing_id).execute()

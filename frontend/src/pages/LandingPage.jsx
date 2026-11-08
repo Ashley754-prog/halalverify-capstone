@@ -43,8 +43,9 @@ const INITIAL_RECENT_ESTABLISHMENTS = [
     address: 'Governor Camins Avenue, Zamboanga City',
     city: 'Zamboanga City',
     halal_status: 'verified',
-    admin_notes: 'Formal Halal certified venue.',
-    description: 'Resto & Grill Al Halal serving grilled and authentic local halal dishes.',
+    halal_tier: 'muslim_friendly',
+    admin_notes: '[Tier: muslim_friendly] Synced from Muslim in Manila (ID: 1157). Amenities: Pork-Free Kitchen.',
+    description: 'Al Halal Grill is a halal barbecue house serving grilled and skewed chicken and beef with rice.',
   },
   {
     id: 'a091b028-4a49-4123-9596-eeb47e410b49',
@@ -509,7 +510,7 @@ export default function LandingPage({ onViewChange, userRole }) {
             .limit(8),
           supabase
             .from('establishments')
-            .select('id, name, type, address, city, halal_status, expiry_date, certificate_number, logo_url, certificate_url, description, admin_notes, created_at, facebook_url, website_url, certifying_bodies(name, code)')
+            .select('id, name, type, address, city, halal_status, halal_tier, expiry_date, certificate_number, logo_url, certificate_url, description, admin_notes, created_at, facebook_url, website_url, certifying_bodies(name, code)')
             .in('halal_status', ['verified', 'VERIFIED', 'halal_certified', 'Halal Certified'])
             .or(`expiry_date.is.null,expiry_date.gte.${new Date().toISOString().slice(0, 10)}`)
             .order('created_at', { ascending: false })

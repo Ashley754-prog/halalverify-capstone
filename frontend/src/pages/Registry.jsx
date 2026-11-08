@@ -226,7 +226,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
             });
         } else {
             const statusConfig = getStatusConfig(item);
-            const isCert = statusConfig.key === 'verified' || Boolean(item.certificate_number);
+            const isCert = (statusConfig.key === 'verified' || item.halal_tier === 'halal_certified') && Boolean(item.certifying_body_id || item.certifying_bodies);
             const validTiers = ['halal_certified', 'muslim_owned', 'muslim_friendly', 'vegetarian_vegan'];
             let tierKey;
             if (item.halal_tier && validTiers.includes(item.halal_tier)) {
@@ -240,7 +240,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
             } else if (statusConfig.key === 'vegetarian_vegan') {
                 tierKey = 'vegetarian_vegan';
             } else {
-                tierKey = 'halal_certified';
+                tierKey = 'muslim_friendly';
             }
 
             const hasPrayer = Boolean(

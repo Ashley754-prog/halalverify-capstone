@@ -94,9 +94,8 @@ export default function EstablishmentDetailModal({
     const evidenceUrl = getEstablishmentPhoto(establishment) || getSafeUrl(establishment.certificate_url || establishment.logo_url || establishment.photo_url);
 
     const isFormallyCertified = Boolean(
-        statusConfig.key === 'verified' ||
-        establishment.certificate_number ||
-        establishment.certifying_bodies
+        (statusConfig.key === 'verified' || establishment.halal_tier === 'halal_certified') &&
+        (establishment.certifying_bodies || establishment.certifying_body_id)
     );
 
     const relationshipLabel = (
