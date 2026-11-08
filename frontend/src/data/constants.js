@@ -408,6 +408,9 @@ export const LOCAL_ESTABLISHMENT_PHOTOS = {
     "Johnny's Morning Sun Satti": '/establishments/johnnys-morning-sun-satti.jpg',
     "Johnnys Morning Sun Satti": '/establishments/johnnys-morning-sun-satti.jpg',
     'Morning Sun Satti': '/establishments/johnnys-morning-sun-satti.jpg',
+    'Malaysian Steamboat Seafood (Tausug Restaurant)': '/establishments/malaysian-steamboat.jpg',
+    'Malaysian Steamboat Seafood': '/establishments/malaysian-steamboat.jpg',
+    'Malaysian Steamboat': '/establishments/malaysian-steamboat.jpg',
 };
 
 export const getEstablishmentPhoto = (establishment) => {
