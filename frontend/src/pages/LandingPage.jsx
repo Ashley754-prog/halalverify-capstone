@@ -1167,9 +1167,9 @@ export default function LandingPage({ onViewChange, userRole }) {
                 onClick={() => scrollRecentProducts(-1)}
                 aria-label="Previous products"
                 title="Previous products"
-                className="absolute left-1 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center bg-transparent text-emerald-900 transition hover:scale-110 hover:text-emerald-700 focus-visible:outline-2 focus-visible:outline-emerald-700"
+                className="hidden sm:flex absolute -left-3 sm:-left-4 top-1/2 z-20 h-10 w-10 sm:h-11 sm:w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-emerald-900 shadow-md border border-[#DCE7E0] transition hover:bg-emerald-600 hover:text-white hover:border-emerald-600 hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-emerald-700"
               >
-                <ChevronLeft size={32} strokeWidth={2.5} className="drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)]" />
+                <ChevronLeft size={20} strokeWidth={2.5} />
               </button>
               <div
                 ref={recentProductsScrollRef}
@@ -1211,9 +1211,10 @@ export default function LandingPage({ onViewChange, userRole }) {
                         <button
                           type="button"
                           onClick={() => setSelectedRecentProduct(product)}
-                          className="mt-auto self-start pt-3 text-xs font-bold text-emerald-800 hover:text-emerald-950"
+                          className="mt-auto inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3.5 py-2 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200/90 font-bold text-xs transition hover:bg-emerald-600 hover:text-white hover:border-emerald-600 active:scale-95 shadow-xs"
                         >
-                          See details <span aria-hidden="true">&rarr;</span>
+                          <span>See details</span>
+                          <ArrowRight size={13} className="shrink-0" />
                         </button>
                       </div>
                     </article>
@@ -1226,9 +1227,9 @@ export default function LandingPage({ onViewChange, userRole }) {
                 onClick={() => scrollRecentProducts(1)}
                 aria-label="Next products"
                 title="Next products"
-                className="absolute right-1 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center bg-transparent text-emerald-900 transition hover:scale-110 hover:text-emerald-700 focus-visible:outline-2 focus-visible:outline-emerald-700"
+                className="hidden sm:flex absolute -right-3 sm:-right-4 top-1/2 z-20 h-10 w-10 sm:h-11 sm:w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-emerald-900 shadow-md border border-[#DCE7E0] transition hover:bg-emerald-600 hover:text-white hover:border-emerald-600 hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-emerald-700"
               >
-                <ChevronRight size={32} strokeWidth={2.5} className="drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)]" />
+                <ChevronRight size={20} strokeWidth={2.5} />
               </button>
               <div className="mt-3 flex justify-center gap-2" role="group" aria-label="Choose a product">
                 {recentProducts.map((product, index) => {
@@ -1293,9 +1294,9 @@ export default function LandingPage({ onViewChange, userRole }) {
                 onClick={() => scrollRecentEstablishments(-1)}
                 aria-label="Previous establishments"
                 title="Previous establishments"
-                className="absolute left-1 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center bg-transparent text-emerald-900 transition hover:scale-110 hover:text-emerald-700 focus-visible:outline-2 focus-visible:outline-emerald-700"
+                className="hidden sm:flex absolute -left-3 sm:-left-4 top-1/2 z-20 h-10 w-10 sm:h-11 sm:w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-emerald-900 shadow-md border border-[#DCE7E0] transition hover:bg-emerald-600 hover:text-white hover:border-emerald-600 hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-emerald-700"
               >
-                <ChevronLeft size={32} strokeWidth={2.5} className="drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)]" />
+                <ChevronLeft size={20} strokeWidth={2.5} />
               </button>
               <div
                 ref={recentEstablishmentsScrollRef}
@@ -1371,9 +1372,10 @@ export default function LandingPage({ onViewChange, userRole }) {
                         <button
                           type="button"
                           onClick={() => onViewChange('map', { searchQuery: establishment.name })}
-                          className="mt-auto inline-flex items-center gap-1.5 self-start pt-4 text-xs font-bold text-emerald-800 transition hover:text-emerald-950"
+                          className="mt-auto inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3.5 py-2 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200/90 font-bold text-xs transition hover:bg-emerald-600 hover:text-white hover:border-emerald-600 active:scale-95 shadow-xs"
                         >
-                          <MapPin size={14} /> View on map
+                          <MapPin size={13} className="shrink-0" />
+                          <span>View on map</span>
                         </button>
                       </div>
                     </article>
@@ -1386,9 +1388,9 @@ export default function LandingPage({ onViewChange, userRole }) {
                 onClick={() => scrollRecentEstablishments(1)}
                 aria-label="Next establishments"
                 title="Next establishments"
-                className="absolute right-1 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center bg-transparent text-emerald-900 transition hover:scale-110 hover:text-emerald-700 focus-visible:outline-2 focus-visible:outline-emerald-700"
+                className="hidden sm:flex absolute -right-3 sm:-right-4 top-1/2 z-20 h-10 w-10 sm:h-11 sm:w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-emerald-900 shadow-md border border-[#DCE7E0] transition hover:bg-emerald-600 hover:text-white hover:border-emerald-600 hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-emerald-700"
               >
-                <ChevronRight size={32} strokeWidth={2.5} className="drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)]" />
+                <ChevronRight size={20} strokeWidth={2.5} />
               </button>
               <div className="mt-3 flex justify-center gap-2" role="group" aria-label="Choose an establishment">
                 {recentEstablishments.map((establishment, index) => {
