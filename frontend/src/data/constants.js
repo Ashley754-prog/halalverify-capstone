@@ -10,13 +10,14 @@ export const ZAMBOANGA_DISTRICTS = [
 
 const DISTRICT_2_KEYWORDS = [
   'district 2', 'district ii', 'east coast',
-  'tetuan', 'kcc', 'camino nuevo', 'tugbungan', 'guiwan', 'putik',
+  'tetuan', 'tugbungan', 'guiwan', 'putik',
   'divisoria', 'boalan', 'zambowood', 'lumbangan', 'lunzuran',
   'pasobolong', 'salaan', 'cabaluay', 'cacao', 'mercedes',
   'taluksangay', 'culianan', 'guisao', 'lanzones', 'victoria',
   'bolong', 'manicahan', 'bunguiao', 'sangali', 'curuan',
   'quiniput', 'vitali', 'licomo', 'mampang', 'talon-talon', 'talon talon',
   'kasanyangan', 'arena blanco', 'tupilac', 'tigtabon', 'buenavista',
+  'sta. catalina', 'sta catalina', 'santa catalina', 'lustre st',
 ];
 
 const DISTRICT_1_KEYWORDS = [
@@ -26,10 +27,12 @@ const DISTRICT_1_KEYWORDS = [
   'jaldon', 'canelar', 'sta. maria', 'sta maria', 'santa maria', 'pasonanca',
   'tumaga', 'san jose cawa', 'san jose gusu', 'cawa-cawa', 'baliwasan',
   'san roque', 'suterville', 'campo islam', 'mariki', 'rio hondo',
-  'sta. barbara', 'sta barbara', 'santa barbara', 'sta. catalina', 'santa catalina',
+  'sta. barbara', 'sta barbara', 'santa barbara',
   'calarian', 'sinunuc', 'maasin', 'cawit', 'recodo', 'ayala',
   'talisayan', 'pamucutan', 'baluno', 'patalon', 'labuan', 'limpapa',
-  'malagutay', 'tulungatung', 'upper calarian', 'southcom', 'pilar st', 'valderrosa',
+  'malagutay', 'tulungatung', 'upper calarian', 'southcom', 'pilar st',
+  'valderrosa', 'valderosa', 'paseo del mar', 'lantaka', 'fort pilar', 'plaza pershing',
+  'camino nuevo', 'kcc',
 ];
 
 /**
