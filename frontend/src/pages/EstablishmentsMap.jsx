@@ -474,18 +474,22 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                 markersLayerRef.current.clearLayers();
 
                 if (showMarkers) {
-                    filteredList.forEach((est) => {
-                        if (!est.latitude || !est.longitude) return;
+                    const validEsts = filteredList.filter((e) => e.latitude && e.longitude);
+                    const selectedEst = activePreviewEst && validEsts.find((e) => e.id === activePreviewEst.id);
+                    const otherEsts = selectedEst ? validEsts.filter((e) => e.id !== selectedEst.id) : validEsts;
 
+                    // 1. Render all other markers first (slightly dimmed if one is selected)
+                    otherEsts.forEach((est) => {
                         const statusConfig = getStatusConfig(est);
+                        const hasSelection = Boolean(selectedEst);
 
                         const marker = L.circleMarker([est.latitude, est.longitude], {
-                            radius: 9,
+                            radius: hasSelection ? 8 : 9,
                             fillColor: statusConfig.color,
                             color: '#ffffff',
-                            weight: 2.5,
-                            opacity: 1,
-                            fillOpacity: 0.9,
+                            weight: hasSelection ? 2 : 2.5,
+                            opacity: hasSelection ? 0.65 : 1,
+                            fillOpacity: hasSelection ? 0.55 : 0.9,
                         });
 
                         // Compact single-line name badge on hover for pointer/mouse devices (never pop up over pins on touchscreens)
@@ -517,12 +521,61 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
 
                         markersLayerRef.current.addLayer(marker);
                     });
+
+                    // 2. Render selected marker last so its halo and badge float above all other pins
+                    if (selectedEst) {
+                        const statusConfig = getStatusConfig(selectedEst);
+
+                        // Outer soft halo ring
+                        const halo = L.circleMarker([selectedEst.latitude, selectedEst.longitude], {
+                            radius: 20,
+                            fillColor: statusConfig.color,
+                            fillOpacity: 0.22,
+                            color: statusConfig.color,
+                            weight: 2,
+                            opacity: 0.85,
+                            interactive: false,
+                        });
+                        markersLayerRef.current.addLayer(halo);
+
+                        // Prominent selected center pin
+                        const selectedMarker = L.circleMarker([selectedEst.latitude, selectedEst.longitude], {
+                            radius: 12,
+                            fillColor: statusConfig.color,
+                            color: '#ffffff',
+                            weight: 3.5,
+                            opacity: 1,
+                            fillOpacity: 1,
+                        });
+
+                        // Permanent floating name label directly above the active pin
+                        selectedMarker.bindTooltip(selectedEst.name, {
+                            permanent: true,
+                            direction: 'top',
+                            offset: [0, -14],
+                            opacity: 1,
+                            className: 'selected-map-name-badge',
+                        });
+
+                        selectedMarker.on('click', (e) => {
+                            if (e && e.originalEvent) {
+                                L.DomEvent.stopPropagation(e);
+                            }
+                            setActivePreviewEst(selectedEst);
+                            if (mapInstanceRef.current) {
+                                mapInstanceRef.current.panTo([selectedEst.latitude, selectedEst.longitude], { animate: true, duration: 0.35 });
+                            }
+                        });
+
+                        markersLayerRef.current.addLayer(selectedMarker);
+                        selectedMarker.bringToFront();
+                    }
                 }
             }
         } catch (e) {
             console.warn('Map layer update handled:', e);
         }
-    }, [filteredList, showMarkers, userLocation, mobileTab]);
+    }, [filteredList, showMarkers, userLocation, mobileTab, activePreviewEst]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -911,7 +964,7 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
 
                 <EstablishmentsSidebarList
                     filteredList={filteredList}
-                    selectedEstablishment={selectedEstablishment}
+                    selectedEstablishment={activePreviewEst || selectedEstablishment}
                     loading={loading}
                     mobileTab={mobileTab}
                     onSelectEstablishment={flyToEstablishment}

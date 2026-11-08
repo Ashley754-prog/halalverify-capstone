@@ -66,14 +66,19 @@ export default function EstablishmentsSidebarList({
                                     onClick={() => onSelectEstablishment(est)}
                                     className={`p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between space-y-2 ${
                                         isSelected
-                                            ? 'border-emerald-500 bg-emerald-50/50 shadow-sm'
+                                            ? 'border-2 border-emerald-600 bg-emerald-50/80 shadow-md ring-2 ring-emerald-500/20'
                                             : 'border-slate-100 hover:border-slate-300 bg-slate-50/50 hover:bg-white'
                                     }`}
                                 >
                                     <div className="flex items-start justify-between gap-1.5">
-                                        <h4 className="text-xs font-bold text-slate-900 leading-tight">
-                                            {est.name}
-                                        </h4>
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                            {isSelected && (
+                                                <span className="h-2 w-2 rounded-full bg-emerald-600 shrink-0 animate-pulse" />
+                                            )}
+                                            <h4 className={`text-xs font-bold leading-tight ${isSelected ? 'text-emerald-950 font-extrabold' : 'text-slate-900'}`}>
+                                                {est.name}
+                                            </h4>
+                                        </div>
                                         <span
                                             className={`text-[9px] font-bold px-2 py-0.5 rounded-md shrink-0 border ${statusConfig.badgeBg}`}
                                         >
