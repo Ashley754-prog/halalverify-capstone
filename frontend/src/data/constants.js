@@ -436,6 +436,10 @@ export const LOCAL_ESTABLISHMENT_PHOTOS = {
     'Sam’s Lebanese Delight Restaurant': '/establishments/sams-lebanese-delights.jpg',
     'Sams Lebanese Delight Restaurant': '/establishments/sams-lebanese-delights.jpg',
     'Lebanese Delights': '/establishments/sams-lebanese-delights.jpg',
+    "Sugnaw's Kitchen": '/establishments/sugnaws-kitchen.jpg',
+    "Sugnaws Kitchen": '/establishments/sugnaws-kitchen.jpg',
+    'Sugnaw’s Kitchen': '/establishments/sugnaws-kitchen.jpg',
+    'Sugnaw': '/establishments/sugnaws-kitchen.jpg',
 };
 
 export const getEstablishmentPhoto = (establishment) => {
