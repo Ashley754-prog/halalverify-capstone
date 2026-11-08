@@ -158,6 +158,7 @@ def sync_muslim_in_manila():
             "facebook_url": e.get("facebookUrl"),
             "website_url": e.get("website"),
             "description": desc,
+            "submitter_role": "official" if cert_body_id else "owner",
             "source": "Muslim in Manila Directory",
             "source_url": source_url,
             "synced_at": now_iso,

@@ -37,15 +37,22 @@ export default function EstablishmentDetailModal({
         (establishment.certifying_bodies || establishment.certifying_body_id)
     );
 
-    const relationshipLabel = (
-        establishment.submitter_role === 'owner' ||
-        (establishment.source && establishment.source.toLowerCase().includes('owner'))
-    ) ? 'Business Owner / Staff' : (
-        establishment.submitter_role === 'community' ||
-        (establishment.source && establishment.source.toLowerCase().includes('community'))
-    ) ? 'Customer / Scout' : (
-        establishment.source || 'Official Registry Record'
+    const isDirectoryVenue = Boolean(
+        establishment.source &&
+        (establishment.source.toLowerCase().includes('directory') || establishment.source.toLowerCase().includes('manila'))
     );
+
+    const relationshipLabel = isFormallyCertified
+        ? 'Official Registry'
+        : isDirectoryVenue
+        ? 'Owner Declared'
+        : (
+            establishment.submitter_role === 'owner' ||
+            (establishment.source && establishment.source.toLowerCase().includes('owner'))
+        ) ? 'Business Owner' : (
+            establishment.submitter_role === 'community' ||
+            (establishment.source && establishment.source.toLowerCase().includes('community'))
+        ) ? 'Community Submission' : 'Directory Record';
 
     const hasPrayerSpace = Boolean(
         establishment.has_prayer_space ||
