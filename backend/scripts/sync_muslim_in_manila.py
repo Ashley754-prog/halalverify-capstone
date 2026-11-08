@@ -170,8 +170,8 @@ def sync_muslim_in_manila():
         existing_id = (cert_no and existing_by_cert.get(cert_no)) or existing_by_name.get(name.lower())
 
         if existing_id:
-            # Preserve existing curated description so sync does not overwrite original summaries
-            update_data = {k: v for k, v in record_data.items() if k != "description"}
+            # Preserve existing curated description and specific establishment type so sync does not overwrite
+            update_data = {k: v for k, v in record_data.items() if k not in ["description", "type"]}
             supabase.table("establishments").update(update_data).eq("id", existing_id).execute()
             updated_count += 1
         else:

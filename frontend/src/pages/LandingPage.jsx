@@ -29,7 +29,7 @@ const INITIAL_RECENT_ESTABLISHMENTS = [
   {
     id: '80a35ff3-cf63-4c94-97cb-ba9cd807b6ef',
     name: 'Aldznisa Halal Food',
-    type: 'Restaurant',
+    type: 'Halal Carinderia',
     address: 'W34J+4JV, Lustre St, Zamboanga City, Zamboanga del Sur, Philippines',
     city: 'Zamboanga City',
     halal_status: 'verified',
@@ -40,7 +40,7 @@ const INITIAL_RECENT_ESTABLISHMENTS = [
   {
     id: 'b6e80b2a-6379-4e7a-9773-452fcf118d09',
     name: 'Al Halal Grill',
-    type: 'Restaurant',
+    type: 'Barbecue House',
     address: '193 Don Toribio St, Zamboanga City, Philippines',
     city: 'Zamboanga City',
     halal_status: 'verified',
@@ -51,7 +51,7 @@ const INITIAL_RECENT_ESTABLISHMENTS = [
   {
     id: 'a091b028-4a49-4123-9596-eeb47e410b49',
     name: "Andy's Satti",
-    type: 'Restaurant',
+    type: 'Satti House',
     address: 'W39Q+Q63, Don Toribio St, Zamboanga City, 7000 Zamboanga del Sur, Philippines',
     city: 'Zamboanga City',
     halal_status: 'verified',
@@ -62,7 +62,7 @@ const INITIAL_RECENT_ESTABLISHMENTS = [
   {
     id: '2963602c-699b-4f27-8bc5-cff67277df18',
     name: 'AntiEns Home of Authentic Muslim Cuisine',
-    type: 'Restaurant',
+    type: 'Tausug Cuisine Restaurant',
     address: 'Pilar St, Zamboanga City, 7000 Zamboanga del Sur, Philippines',
     city: 'Zamboanga City',
     halal_status: 'verified',
@@ -73,7 +73,7 @@ const INITIAL_RECENT_ESTABLISHMENTS = [
   {
     id: '313afb85-516c-40e5-a0de-6bce43c577d0',
     name: 'Bambas by Chef Mick',
-    type: 'Restaurant',
+    type: 'Casual Dining Bistro',
     address: 'MP Tower, Nuñez Ext. St, Barangay Zone IV, Zamboanga City, 7000 Zamboanga del Sur, Philippines',
     city: 'Zamboanga City',
     halal_status: 'verified',
@@ -84,7 +84,7 @@ const INITIAL_RECENT_ESTABLISHMENTS = [
   {
     id: 'bd22d2e5-955d-4de0-86c1-e2c410991a28',
     name: 'Bandit Burger',
-    type: 'Restaurant',
+    type: 'Burger House',
     address: 'Veterans Ave Ext., Zamboanga City, 7000 Zamboanga del Sur, Philippines',
     city: 'Zamboanga City',
     halal_status: 'verified',
@@ -96,7 +96,7 @@ const INITIAL_RECENT_ESTABLISHMENTS = [
   {
     id: 'bay-tal-mal-initial',
     name: 'Bay Tal Mal Restaurant Zamboanga City',
-    type: 'Restaurant',
+    type: 'Moro & Tausug Restaurant',
     address: '4th Floor, SM City Mindpro, La Purisima St, Zamboanga City, 7000 Zamboanga del Sur, Philippines',
     city: 'Zamboanga City',
     halal_status: 'verified',
@@ -107,7 +107,7 @@ const INITIAL_RECENT_ESTABLISHMENTS = [
   {
     id: 'black-plate-initial',
     name: 'Black Plate Zamboanga',
-    type: 'Restaurant',
+    type: 'Sizzling & Grill House',
     address: 'Mayor Jaldon St, Canelar, Zamboanga City, 7000 Zamboanga del Sur, Philippines',
     city: 'Zamboanga City',
     halal_status: 'verified',
