@@ -411,6 +411,11 @@ export const LOCAL_ESTABLISHMENT_PHOTOS = {
     'Malaysian Steamboat Seafood (Tausug Restaurant)': '/establishments/malaysian-steamboat.jpg',
     'Malaysian Steamboat Seafood': '/establishments/malaysian-steamboat.jpg',
     'Malaysian Steamboat': '/establishments/malaysian-steamboat.jpg',
+    "Mamang's Greasy Spoon": '/establishments/mamangs-greasy-spoon.jpg',
+    'Mamangs Greasy Spoon': '/establishments/mamangs-greasy-spoon.jpg',
+    'Mamang’s Greasy Spoon': '/establishments/mamangs-greasy-spoon.jpg',
+    "Mamang's": '/establishments/mamangs-greasy-spoon.jpg',
+    'Mamangs': '/establishments/mamangs-greasy-spoon.jpg',
 };
 
 export const getEstablishmentPhoto = (establishment) => {
