@@ -219,26 +219,13 @@ export default function EstablishmentDetailModal({
                                 Muslim-Owned Kitchen
                             </span>
                             <span className="font-bold text-[10px] text-sky-800 bg-white px-2 py-0.5 rounded border border-sky-300">
-                                Pork-Free & Muslim Operated
+                                Owner Self-Declaration
                             </span>
                         </div>
 
                         <p className="text-slate-600 text-[11px] leading-relaxed">
-                            Owned and operated by Muslim proprietors with all meat sourced from halal suppliers. Strictly pork-free premises with dedicated utensils.
+                            Operated by Muslim proprietors stating a halal food offering. Because this venue operates without formal third-party audit, patrons are encouraged to confirm specific kitchen practices and ingredient sourcing directly.
                         </p>
-
-                        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-sky-200/60 text-[11px]">
-                            <div>
-                                <span className="text-slate-500 block">Classification:</span>
-                                <span className="font-bold text-sky-800">
-                                    {relationshipLabel === 'Owner Declared' ? 'Owner Declared' : 'Community Listed'}
-                                </span>
-                            </div>
-                            <div>
-                                <span className="text-slate-500 block">Kitchen Standard:</span>
-                                <span className="font-bold text-sky-700">Pork-Free Kitchen</span>
-                            </div>
-                        </div>
                     </div>
                 ) : statusConfig.key === 'muslim_friendly' ? (
                     <div className="rounded-xl bg-indigo-50/70 border border-indigo-200 p-3 text-xs space-y-1.5">
@@ -248,24 +235,13 @@ export default function EstablishmentDetailModal({
                                 Muslim-Friendly Accommodations
                             </span>
                             <span className="font-bold text-[10px] text-indigo-800 bg-white px-2 py-0.5 rounded border border-indigo-300">
-                                Pork-Free Options
+                                Dietary Options
                             </span>
                         </div>
 
                         <p className="text-slate-600 text-[11px] leading-relaxed">
-                            Establishment provides dedicated pork-free options and food preparation accommodations for Muslim diners. Not under formal third-party certification.
+                            Establishment provides dedicated pork-free options and food accommodations for Muslim diners. Not under formal third-party certification.
                         </p>
-
-                        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-indigo-200/60 text-[11px]">
-                            <div>
-                                <span className="text-slate-500 block">Classification:</span>
-                                <span className="font-bold text-indigo-800">Lifestyle Accommodation</span>
-                            </div>
-                            <div>
-                                <span className="text-slate-500 block">Kitchen Standard:</span>
-                                <span className="font-bold text-indigo-700">Pork-Free Dishes</span>
-                            </div>
-                        </div>
                     </div>
                 ) : statusConfig.key === 'vegetarian_vegan' ? (
                     <div className="rounded-xl bg-teal-50/70 border border-teal-200 p-3 text-xs space-y-1.5">
@@ -282,17 +258,6 @@ export default function EstablishmentDetailModal({
                         <p className="text-slate-600 text-[11px] leading-relaxed">
                             Vegetarian and plant-based menu with zero meat or animal-derived ingredients, eliminating halal slaughter and non-halal gelatin concerns.
                         </p>
-
-                        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-teal-200/60 text-[11px]">
-                            <div>
-                                <span className="text-slate-500 block">Classification:</span>
-                                <span className="font-bold text-teal-800">Dietary Safe</span>
-                            </div>
-                            <div>
-                                <span className="text-slate-500 block">Kitchen Standard:</span>
-                                <span className="font-bold text-teal-700">Meat-Free Kitchen</span>
-                            </div>
-                        </div>
                     </div>
                 ) : (
                     <div className="rounded-xl bg-amber-50/80 border border-amber-200 p-3 text-xs space-y-1.5">
