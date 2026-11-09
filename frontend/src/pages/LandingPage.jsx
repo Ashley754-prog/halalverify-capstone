@@ -47,6 +47,8 @@ const INITIAL_RECENT_ESTABLISHMENTS = [
     halal_tier: 'muslim_friendly',
     admin_notes: '[Tier: muslim_friendly] Synced from Muslim in Manila (ID: 1157). Amenities: Pork-Free Kitchen.',
     description: 'Local barbecue grill house on Don Toribio Street in Zamboanga City, serving flame-grilled chicken, beef skewers, and rice meals. Operates an owner-declared pork-free kitchen with dine-in and takeout options.',
+    facebook_url: 'https://www.facebook.com/profile.php?id=100063764421505',
+    logo_url: '/establishments/al-halal-grill.jpg',
   },
   {
     id: 'a091b028-4a49-4123-9596-eeb47e410b49',
