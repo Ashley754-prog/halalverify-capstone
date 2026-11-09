@@ -10,7 +10,7 @@ import {
     ShieldCheck,
     ExternalLink,
 } from 'lucide-react';
-import { getStatusConfig, ZAMBOANGA_DISTRICTS, resolveZamboangaDistrict } from '../../data/constants';
+import { getStatusConfig, ZAMBOANGA_DISTRICTS, resolveZamboangaDistrict, getEstablishmentPhoto } from '../../data/constants';
 import { getSafeUrl } from '../../utils/security';
 import Pagination from '../ui/Pagination';
 import EmptyState from '../ui/EmptyState';
