@@ -70,20 +70,22 @@ export default function EstablishmentsSidebarList({
                                             : 'border-slate-100 hover:border-slate-300 bg-slate-50/50 hover:bg-white'
                                     }`}
                                 >
-                                    <div className="flex items-start justify-between gap-1.5">
-                                        <div className="flex items-center gap-1.5 min-w-0">
-                                            {isSelected && (
-                                                <span className="h-2 w-2 rounded-full bg-emerald-600 shrink-0 animate-pulse" />
-                                            )}
-                                            <h4 className={`text-xs font-bold leading-tight ${isSelected ? 'text-emerald-950 font-extrabold' : 'text-slate-900'}`}>
-                                                {est.name}
-                                            </h4>
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-1.5">
+                                                {isSelected && (
+                                                    <span className="h-2 w-2 rounded-full bg-emerald-600 shrink-0 animate-pulse" />
+                                                )}
+                                                <h4 className={`text-xs font-bold leading-tight ${isSelected ? 'text-emerald-950 font-extrabold' : 'text-slate-900'}`}>
+                                                    {est.name}
+                                                </h4>
+                                            </div>
                                             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-0.5 truncate">
                                                 {est.type || 'Restaurant'}
                                             </p>
                                         </div>
                                         <span
-                                            className={`text-[9px] font-bold px-2 py-0.5 rounded-md shrink-0 border ${statusConfig.badgeBg}`}
+                                            className={`text-[9px] font-bold px-2 py-0.5 rounded-md shrink-0 border mt-0.5 ${statusConfig.badgeBg}`}
                                         >
                                             {statusConfig.label}
                                         </span>

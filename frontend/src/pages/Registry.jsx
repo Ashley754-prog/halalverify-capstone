@@ -584,6 +584,21 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
         }
     };
 
+    const activeEstablishmentsCount = establishments.filter((shop) => {
+        const sLower = (shop.halal_status || '').toLowerCase().trim();
+        return !(
+            sLower === 'rejected' ||
+            sLower.includes('reject') ||
+            sLower === 'flagged' ||
+            sLower === 'suspended' ||
+            sLower === 'expired' ||
+            sLower === 'needs_review' ||
+            sLower === 'pending' ||
+            sLower.includes('pending') ||
+            sLower.includes('needs_review')
+        );
+    }).length;
+
     return (
         <div className="p-3 sm:p-6 md:p-8 space-y-3 sm:space-y-5 w-full min-h-full pb-8">
             {/* Module Title and Actions Header */}
@@ -679,7 +694,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     <span className={`text-[9px] sm:text-[10px] font-mono px-1 sm:px-1.5 py-0.2 rounded-full shrink-0 ${
                         registryMode === 'establishments' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200/80 text-slate-600'
                     }`}>
-                        {establishments.length}
+                        {activeEstablishmentsCount}
                     </span>
                 </button>
             </div>
