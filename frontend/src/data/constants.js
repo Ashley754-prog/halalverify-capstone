@@ -393,6 +393,8 @@ export const LOCAL_ESTABLISHMENT_PHOTOS = {
     'Gors Halal Cuisine (Asinan)': '/establishments/gors-asinan.jpg',
     'GORS': '/establishments/gors-halal-cuisine.jpg',
     'Gors': '/establishments/gors-halal-cuisine.jpg',
+    'Halal Habit': '/establishments/halal-habit.jpg',
+    'Halal Habits': '/establishments/halal-habit.jpg',
     'Halal Siotea': '/establishments/halal-siotea.jpg',
     'Siotea': '/establishments/halal-siotea.jpg',
     'IYA Coffee CafeResto - Lantaka (24/7)': '/establishments/iya-coffee-lantaka.jpg',
