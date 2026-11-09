@@ -1,4 +1,5 @@
 import { Cookie, CupSoda, Fish, Leaf, Package, Wheat } from 'lucide-react';
+import { getCuratedProductImage } from '../../data/curatedProductImages';
 import { getSafeUrl } from '../../utils/security';
 
 function getCategoryIcon(category = '') {
@@ -13,7 +14,8 @@ function getCategoryIcon(category = '') {
 }
 
 export default function ProductImage({ product, className = '' }) {
-    const imageUrl = getSafeUrl(product?.image_url);
+    const curatedImage = product?.image_url ? null : getCuratedProductImage(product);
+    const imageUrl = getSafeUrl(product?.image_url) || curatedImage?.imageUrl;
     const categoryIcon = getCategoryIcon(product?.category);
 
     return (
@@ -23,7 +25,7 @@ export default function ProductImage({ product, className = '' }) {
             <div className="flex flex-col items-center gap-2 px-4 text-center">
                 {categoryIcon}
                 <span className="text-[10px] font-semibold text-slate-500">
-                    {product?.category || 'Product'} photo unavailable
+                    No image available for this product.
                 </span>
             </div>
             {imageUrl && (
@@ -34,6 +36,16 @@ export default function ProductImage({ product, className = '' }) {
                     onError={(event) => event.currentTarget.classList.add('hidden')}
                     className="absolute inset-0 h-full w-full bg-white object-contain p-4"
                 />
+            )}
+            {curatedImage?.sourceUrl && (
+                <a
+                    href={curatedImage.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="absolute bottom-1 right-1 rounded bg-white/90 px-1.5 py-0.5 text-[9px] font-medium text-slate-600 underline underline-offset-2"
+                >
+                    Photo: Open Food Facts
+                </a>
             )}
         </div>
     );

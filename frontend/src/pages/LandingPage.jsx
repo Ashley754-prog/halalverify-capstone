@@ -23,6 +23,7 @@ import AuthPromptModal from '../components/submissions/AuthPromptModal';
 import LandingMarketingSections from '../components/landing/LandingMarketingSections';
 import ProductCardDetail from '../components/landing/ProductCardDetail';
 import ProductImage from '../components/catalog/ProductImage';
+import { CURATED_PRODUCT_NAMES, getCuratedProductImage } from '../data/curatedProductImages';
 import { getSafeUrl } from '../utils/security';
 import { getStatusConfig, getEstablishmentPhoto } from '../data/constants';
 
@@ -145,7 +146,8 @@ function selectFeaturedProducts(products, limit = 8) {
     remaining.forEach((product, index) => {
       const brand = (product.brand || product.manufacturers?.name || product.name || '').trim().toLowerCase();
       const category = (product.category || '').trim().toLowerCase();
-      const score = (brandCounts.get(brand) || 0) * 2 + (categoryCounts.get(category) || 0);
+      const imagePriority = getCuratedProductImage(product) ? -100 : 0;
+      const score = imagePriority + (brandCounts.get(brand) || 0) * 2 + (categoryCounts.get(category) || 0);
 
       if (score < bestScore) {
         bestScore = score;
@@ -534,7 +536,7 @@ export default function LandingPage({ onViewChange, userRole }) {
     let isMounted = true;
     const loadRegistryData = async () => {
       try {
-        const [prodRes, estRes, recentProductsRes, recentEstablishmentsRes] = await Promise.all([
+        const [prodRes, estRes, recentProductsRes, featuredImageProductsRes, recentEstablishmentsRes] = await Promise.all([
           supabase
             .from('products')
             .select('id, name, brand, category, status')
@@ -553,6 +555,12 @@ export default function LandingPage({ onViewChange, userRole }) {
             .order('created_at', { ascending: false })
             .limit(500),
           supabase
+            .from('products')
+            .select('id, name, brand, category, status, image_url, created_at, expiry_date, certificate_no, certifying_body_id, source, source_url, manufacturers(name), certifying_bodies(name, code)')
+            .in('name', CURATED_PRODUCT_NAMES)
+            .in('status', ['Halal', 'halal', 'HALAL', 'Verified', 'verified', 'VERIFIED'])
+            .or(`and(certifying_body_id.not.is.null,expiry_date.is.null),and(certifying_body_id.not.is.null,expiry_date.gte.${new Date().toISOString().slice(0, 10)}),and(certificate_no.not.is.null,expiry_date.is.null),and(certificate_no.not.is.null,expiry_date.gte.${new Date().toISOString().slice(0, 10)})`),
+          supabase
             .from('establishments')
             .select('id, name, type, address, city, halal_status, halal_tier, expiry_date, certificate_number, logo_url, certificate_url, description, admin_notes, created_at, facebook_url, website_url, certifying_bodies(name, code)')
             .in('halal_status', ['verified', 'VERIFIED', 'halal_certified', 'Halal Certified'])
@@ -564,7 +572,14 @@ export default function LandingPage({ onViewChange, userRole }) {
         if (isMounted) {
           if (prodRes.data) setAllProducts(prodRes.data);
           if (estRes.data) setAllEstablishments(estRes.data);
-          if (recentProductsRes.data) setRecentProducts(selectFeaturedProducts(recentProductsRes.data));
+          if (recentProductsRes.data) {
+            const featuredProductCandidates = [
+              ...(featuredImageProductsRes.data || []),
+              ...recentProductsRes.data,
+            ];
+            const uniqueProducts = [...new Map(featuredProductCandidates.map((product) => [product.id, product])).values()];
+            setRecentProducts(selectFeaturedProducts(uniqueProducts));
+          }
           if (recentEstablishmentsRes.data) {
             const approvedEstablishments = recentEstablishmentsRes.data.filter((establishment) => {
               const cfg = getStatusConfig(establishment);

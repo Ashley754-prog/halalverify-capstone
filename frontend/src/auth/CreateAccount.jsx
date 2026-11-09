@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Eye, EyeOff, Compass, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Compass, ChevronRight, X } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { signInWithProvider } from '../lib/auth';
 
@@ -147,8 +147,8 @@ export const CreateAccount = ({ onViewChange, layout = 'create' }) => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0e1625] px-4 py-6 sm:py-10">
-      <div className="my-auto grid min-h-0 w-full max-w-4xl grid-cols-1 overflow-hidden rounded-3xl bg-white shadow-2xl transition-all duration-500 md:grid-cols-2">
+    <div className="flex h-dvh min-h-0 items-center justify-center overflow-hidden bg-[#0e1625] px-4 py-3 sm:py-6">
+      <div className="relative grid h-[82dvh] max-h-[48rem] min-h-0 w-full max-w-4xl grid-cols-1 overflow-hidden rounded-3xl bg-white shadow-2xl transition-all duration-500 md:h-full md:grid-cols-2">
         {/* Brand Showcase Panel (Visible on Desktop) */}
         <div className={`hidden md:flex flex-col items-center justify-center bg-linear-to-br from-[#064e3b] via-[#047857] to-[#10b981] p-8 lg:p-10 text-white transition-all duration-500 ease-out ${layout === 'create' ? 'md:order-2' : 'md:order-1'} ${mounted ? 'opacity-100 translate-x-0' : layout === 'create' ? 'opacity-0 translate-x-8' : 'opacity-0 -translate-x-8'}`}>
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-200">System Gateway</p>
@@ -161,29 +161,28 @@ export const CreateAccount = ({ onViewChange, layout = 'create' }) => {
           </p>
         </div>
 
+        <button
+          type="button"
+          onClick={() => onViewChange?.('landing')}
+          aria-label="Return to home"
+          title="Return to home"
+          className="absolute right-3 top-3 z-10 rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 md:text-white md:hover:bg-white/15 md:hover:text-white md:focus-visible:ring-white"
+        >
+          <X size={20} aria-hidden="true" />
+        </button>
+
         {/* Form Panel */}
-        <div className={`flex min-h-0 items-center justify-center bg-white p-6 sm:p-8 md:p-10 transition-all duration-500 ${layout === 'create' ? 'md:order-1' : 'md:order-2'} ${mounted ? 'opacity-100 translate-x-0' : layout === 'create' ? 'opacity-0 -translate-x-8' : 'opacity-0 translate-x-8'}`}>
-          <form onSubmit={handleCreateAccount} className="no-scrollbar flex w-full max-w-md flex-col justify-start py-1">
+        <div className={`relative flex min-h-0 items-center justify-center overflow-hidden bg-white p-4 sm:p-8 md:p-10 transition-all duration-500 ${layout === 'create' ? 'md:order-1' : 'md:order-2'} ${mounted ? 'opacity-100 translate-x-0' : layout === 'create' ? 'opacity-0 -translate-x-8' : 'opacity-0 translate-x-8'}`}>
+          <form onSubmit={handleCreateAccount} className="no-scrollbar flex h-full min-h-0 w-full max-w-md flex-col justify-start overflow-y-auto overscroll-contain py-1">
             {/* Mobile Brand Header */}
             <div className="md:hidden flex items-center justify-center gap-2 mb-3">
               <img src="/halalverify-logo.png" alt="HalalVerify Logo" className="h-8 w-8 rounded-full object-cover shadow-xs" />
-              <span className="font-black tracking-wider text-slate-900 text-base">HALALVERIFY</span>
-            </div>
-
-            <div className="mb-3 flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => onViewChange?.('landing')}
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-slate-900 transition p-1 rounded-lg hover:bg-slate-100 active:scale-95 cursor-pointer"
-              >
-                <ArrowLeft size={16} />
-                <span>Return to Home</span>
-              </button>
+              <span className="font-black tracking-wider text-slate-900 text-sm sm:text-base">HALALVERIFY</span>
             </div>
 
             {/* Title and Subtitle matching benchmark accessibility */}
             <div className="mb-4 text-center">
-              <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-emerald-950">Access Your Account</h3>
+              <h3 className="text-xl sm:text-3xl font-extrabold tracking-tight text-emerald-950">Access Your Account</h3>
             </div>
 
             {/* Benchmark Pill Toggle Switch */}
@@ -191,13 +190,13 @@ export const CreateAccount = ({ onViewChange, layout = 'create' }) => {
               <button
                 type="button"
                 onClick={() => onViewChange?.('login')}
-                className="flex-1 rounded-full py-3 text-base font-semibold text-slate-600 hover:text-slate-900 transition cursor-pointer"
+                className="flex-1 rounded-full py-2.5 sm:py-3 text-sm sm:text-base font-semibold text-slate-600 hover:text-slate-900 transition cursor-pointer"
               >
                 Sign In
               </button>
               <button
                 type="button"
-                className="flex-1 rounded-full py-3 text-base font-bold text-white bg-emerald-800 shadow-xs cursor-default"
+                className="flex-1 rounded-full py-2.5 sm:py-3 text-sm sm:text-base font-bold text-white bg-emerald-800 shadow-xs cursor-default"
               >
                 Register
               </button>
@@ -207,43 +206,43 @@ export const CreateAccount = ({ onViewChange, layout = 'create' }) => {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3.5">
                 <div>
-                  <label className="mb-2 block text-base font-bold text-slate-800">First Name</label>
+                  <label className="mb-2 block text-sm sm:text-base font-bold text-slate-800">First Name</label>
                   <input
                     required
                     type="text"
                     value={form.firstName}
                     onChange={e => handleChange('firstName', e.target.value)}
                     placeholder="John"
-                    className="h-12 w-full rounded-xl border border-slate-300 bg-slate-50/80 px-4 text-base font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-500/25"
+                    className="h-11 sm:h-12 w-full rounded-xl border border-slate-300 bg-slate-50/80 px-3 sm:px-4 text-sm sm:text-base font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-500/25"
                   />
                 </div>
                 <div>
-                  <label className="mb-2 block text-base font-bold text-slate-800">Last Name</label>
+                  <label className="mb-2 block text-sm sm:text-base font-bold text-slate-800">Last Name</label>
                   <input
                     required
                     type="text"
                     value={form.lastName}
                     onChange={e => handleChange('lastName', e.target.value)}
                     placeholder="Doe"
-                    className="h-12 w-full rounded-xl border border-slate-300 bg-slate-50/80 px-4 text-base font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-500/25"
+                    className="h-11 sm:h-12 w-full rounded-xl border border-slate-300 bg-slate-50/80 px-3 sm:px-4 text-sm sm:text-base font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-500/25"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-2 block text-base font-bold text-slate-800">Email Address</label>
+                <label className="mb-2 block text-sm sm:text-base font-bold text-slate-800">Email Address</label>
                 <input
                   required
                   type="email"
                   value={form.email}
                   onChange={e => handleChange('email', e.target.value)}
                   placeholder="your@email.com"
-                  className="h-12 w-full rounded-xl border border-slate-300 bg-slate-50/80 px-4 text-base font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-500/25"
+                  className="h-11 sm:h-12 w-full rounded-xl border border-slate-300 bg-slate-50/80 px-3 sm:px-4 text-sm sm:text-base font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-500/25"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-base font-bold text-slate-800">Password</label>
+                <label className="mb-2 block text-sm sm:text-base font-bold text-slate-800">Password</label>
                 <div className="relative">
                   <input
                     required
@@ -251,7 +250,7 @@ export const CreateAccount = ({ onViewChange, layout = 'create' }) => {
                     value={form.password}
                     onChange={e => handleChange('password', e.target.value)}
                     placeholder="Create a password"
-                    className="h-12 w-full rounded-xl border border-slate-300 bg-slate-50/80 px-4 pr-12 text-base font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-500/25"
+                    className="h-11 sm:h-12 w-full rounded-xl border border-slate-300 bg-slate-50/80 px-3 sm:px-4 pr-12 text-sm sm:text-base font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-500/25"
                   />
                   <button
                     type="button"
@@ -265,7 +264,7 @@ export const CreateAccount = ({ onViewChange, layout = 'create' }) => {
               </div>
 
               <div>
-                <label className="mb-2 block text-base font-bold text-slate-800">Confirm Password</label>
+                <label className="mb-2 block text-sm sm:text-base font-bold text-slate-800">Confirm Password</label>
                 <div className="relative">
                   <input
                     required
@@ -273,7 +272,7 @@ export const CreateAccount = ({ onViewChange, layout = 'create' }) => {
                     value={form.confirmPassword}
                     onChange={e => handleChange('confirmPassword', e.target.value)}
                     placeholder="Confirm your password"
-                    className="h-12 w-full rounded-xl border border-slate-300 bg-slate-50/80 px-4 pr-12 text-base font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-500/25"
+                    className="h-11 sm:h-12 w-full rounded-xl border border-slate-300 bg-slate-50/80 px-3 sm:px-4 pr-12 text-sm sm:text-base font-medium text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-500/25"
                   />
                   <button
                     type="button"
@@ -303,7 +302,7 @@ export const CreateAccount = ({ onViewChange, layout = 'create' }) => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="h-12 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-base font-bold tracking-wide text-white transition active:scale-95 duration-150 shadow-md shadow-emerald-900/20 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+                className="h-11 sm:h-12 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-sm sm:text-base font-bold tracking-wide text-white transition active:scale-95 duration-150 shadow-md shadow-emerald-900/20 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
               >
                 {isLoading ? 'Creating Account...' : 'Register'}
               </button>
@@ -319,7 +318,7 @@ export const CreateAccount = ({ onViewChange, layout = 'create' }) => {
                     type="button"
                     onClick={() => handleProviderSignIn('google')}
                     disabled={Boolean(oauthLoading)}
-                    className="h-12 flex w-full items-center justify-center gap-2.5 rounded-xl border border-slate-300 bg-white text-base font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+                    className="h-11 sm:h-12 flex w-full items-center justify-center gap-2.5 rounded-xl border border-slate-300 bg-white text-sm sm:text-base font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                   >
                     <span className="text-lg font-black leading-none text-[#4285f4]">G</span>
                     {oauthLoading === 'google' ? 'Opening...' : 'Continue with Google'}
@@ -339,7 +338,7 @@ export const CreateAccount = ({ onViewChange, layout = 'create' }) => {
                       <Compass size={18} />
                     </div>
                     <div>
-                      <p className="text-base font-bold text-slate-900 group-hover:text-emerald-800 transition flex items-center gap-1.5">
+                      <p className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-emerald-800 transition flex items-center gap-1.5">
                         Continue as Guest
                         <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
                           Instant
