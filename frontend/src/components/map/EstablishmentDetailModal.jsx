@@ -168,7 +168,7 @@ export default function EstablishmentDetailModal({
                         </p>
                         <div className="text-[10px] text-slate-400 flex items-center gap-1 pt-1">
                             <ShieldCheck size={11} className="text-slate-400 shrink-0" />
-                            <span>Verified listing · Source: {establishment.source || (establishment.submitter_role === 'owner' ? 'Business Owner Submission' : 'Official Halal Registry')}</span>
+                            <span>Source: {establishment.source || (establishment.submitter_role === 'owner' ? 'Business Owner Submission' : 'Official Halal Registry')}</span>
                         </div>
                     </div>
                 </div>
