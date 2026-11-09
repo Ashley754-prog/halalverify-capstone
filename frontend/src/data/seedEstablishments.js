@@ -163,6 +163,7 @@ export const SEED_ESTABLISHMENTS = [
         "email": null,
         "description": "Chick N' Cow Hotpot is a halal hotpot and grill restaurant on MCLL Highway in Barangay Putik, Zamboanga City. Certified halal by UCZP (Ulama Council of Zamboanga Peninsula). No pork is brought into the kitchen and no alcohol is served.",
         "source_url": "https://musliminmanila.com",
+        "facebook_url": "https://www.facebook.com/chickncowhotpot",
         "certifying_bodies": {
             "code": "UCZP",
             "name": "Ulama Council of Zamboanga Peninsula"
