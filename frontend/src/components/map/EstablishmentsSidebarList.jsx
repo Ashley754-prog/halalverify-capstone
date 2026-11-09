@@ -78,6 +78,9 @@ export default function EstablishmentsSidebarList({
                                             <h4 className={`text-xs font-bold leading-tight ${isSelected ? 'text-emerald-950 font-extrabold' : 'text-slate-900'}`}>
                                                 {est.name}
                                             </h4>
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-0.5 truncate">
+                                                {est.type || 'Restaurant'}
+                                            </p>
                                         </div>
                                         <span
                                             className={`text-[9px] font-bold px-2 py-0.5 rounded-md shrink-0 border ${statusConfig.badgeBg}`}

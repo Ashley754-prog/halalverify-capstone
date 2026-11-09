@@ -880,6 +880,9 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                                 <h4 className="text-sm font-bold text-slate-900 leading-snug line-clamp-1">
                                     {activePreviewEst.name}
                                 </h4>
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-0.5 truncate">
+                                    {activePreviewEst.type || 'Restaurant'}
+                                </p>
                                 <p className="text-xs text-slate-500 flex items-start gap-1 mt-0.5 line-clamp-1">
                                     <MapPin size={12} className="text-slate-400 shrink-0 mt-0.5" />
                                     <span>{activePreviewEst.address || activePreviewEst.city || 'Zamboanga City'}</span>

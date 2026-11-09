@@ -167,6 +167,9 @@ export default function EstablishmentDetailModal({
                         <h3 className="text-lg font-black text-slate-900 leading-tight">
                             {establishment.name}
                         </h3>
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">
+                            {establishment.type || 'Restaurant'}
+                        </p>
                         <p className="text-xs text-slate-500 flex items-center gap-1.5 mt-1">
                             <MapPin size={13} className="text-emerald-600 shrink-0" />
                             <span>{establishment.address || 'Zamboanga City, Philippines'}</span>

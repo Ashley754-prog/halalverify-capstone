@@ -400,7 +400,7 @@ export default function RegistryModals({
                             <div>
                                 <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Facebook Page URL</label>
                                 <input
-                                    type="url"
+                                    type="text"
                                     value={modalForm.facebook_url || ''}
                                     onChange={(e) => setModalForm(prev => ({ ...prev, facebook_url: e.target.value }))}
                                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
@@ -477,7 +477,7 @@ export default function RegistryModals({
                                     />
                                 </label>
                                 <input
-                                    type="url"
+                                    type="text"
                                     value={modalForm.photo_url || modalForm.certificate_url || ''}
                                     onChange={(e) => setModalForm((prev) => ({
                                         ...prev,
