@@ -717,6 +717,7 @@ export const SEED_ESTABLISHMENTS = [
         "certificate_number": null,
         "phone": null,
         "email": null,
+        "facebook_url": "https://www.facebook.com/mamangsgreasyspoon",
         "description": "Halal restaurant on the iconic Paseo del Mar in Zamboanga City, serving Tausug dulang/latal platters, grilled seafood, and traditional Moro dishes.",
         "source_url": "https://musliminmanila.com",
         "certifying_bodies": null,
