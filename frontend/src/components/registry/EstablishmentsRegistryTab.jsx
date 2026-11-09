@@ -174,9 +174,9 @@ export default function EstablishmentsRegistryTab({
                         return (
                             <div
                                 key={shop.id}
-                                className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between gap-2.5 h-full min-w-0 overflow-hidden hover:border-slate-300 hover:bg-white transition shadow-xs"
+                                className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between gap-3 h-full min-w-0 overflow-hidden hover:border-slate-300 hover:bg-white hover:shadow-md transition"
                             >
-                                <div className="relative -mx-3.5 -mt-3.5 mb-1 flex aspect-[16/9] items-center justify-center overflow-hidden rounded-t-2xl bg-gradient-to-br from-emerald-50 via-white to-sky-50 text-emerald-700/40 sm:-mx-4 sm:-mt-4">
+                                <div className="relative -mx-3.5 -mt-3.5 flex aspect-[16/9] items-center justify-center overflow-hidden rounded-t-2xl bg-gradient-to-br from-emerald-50 via-white to-sky-50 text-emerald-700/40 sm:-mx-4 sm:-mt-4">
                                     <Store size={32} strokeWidth={1.5} aria-hidden="true" />
                                     {establishmentImageUrl && (
                                         <img
@@ -187,49 +187,75 @@ export default function EstablishmentsRegistryTab({
                                             className="absolute inset-0 h-full w-full object-cover"
                                         />
                                     )}
+                                    <span className={`absolute top-2.5 right-2.5 text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs backdrop-blur-md border ${statusConfig.badgeBg}`}>
+                                        {statusConfig.label}
+                                    </span>
                                 </div>
-                                <div className="space-y-1.5 min-w-0 w-full overflow-hidden">
-                                    <div className="flex justify-between items-start gap-2 min-w-0">
-                                        <h4 className="text-sm sm:text-base font-bold text-slate-900 leading-snug line-clamp-2 min-w-0">
-                                            {shop.name}
-                                        </h4>
-                                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full shrink-0 border ${statusConfig.badgeBg}`}>
-                                            {statusConfig.label}
-                                        </span>
-                                    </div>
+                                <div className="space-y-1.5 min-w-0 w-full flex-1">
+                                    <h4
+                                        className="text-sm sm:text-base font-bold text-slate-900 leading-snug line-clamp-2 min-w-0"
+                                        title={shop.name}
+                                    >
+                                        {shop.name}
+                                    </h4>
 
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">
-                                        {shop.type || 'Restaurant'}
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 truncate">
+                                        <span>{shop.type || 'Restaurant'}</span>
+                                        {districtInfo && (
+                                            <>
+                                                <span className="text-slate-300">•</span>
+                                                <span className="text-slate-500 font-semibold">{districtInfo.shortLabel}</span>
+                                            </>
+                                        )}
                                     </p>
 
                                     <button
                                         type="button"
                                         onClick={() => onViewChange?.('map', { searchQuery: shop.name })}
-                                        className="w-full max-w-full overflow-hidden text-xs text-slate-500 hover:text-emerald-700 flex items-center gap-1 min-w-0 text-left transition group cursor-pointer"
-                                        title={shop.address || 'Zamboanga City'}
+                                        className="w-full max-w-full overflow-hidden text-xs text-slate-500 hover:text-emerald-700 flex items-center gap-1.5 min-w-0 text-left transition group cursor-pointer pt-0.5"
+                                        title="Click to view establishment on interactive GPS Map"
                                     >
                                         <MapPin size={12} className="text-slate-400 group-hover:text-emerald-600 shrink-0 transition" />
-                                        <span className="truncate flex-1 min-w-0 group-hover:underline">{shop.address || 'Zamboanga City'}</span>
+                                        <span className="truncate flex-1 min-w-0 group-hover:underline text-[11px] sm:text-xs text-slate-600">{shop.address || 'Zamboanga City'}</span>
+                                        <span className="text-[9px] font-bold text-emerald-600 opacity-0 group-hover:opacity-100 transition shrink-0 hidden sm:inline">Map ↗</span>
                                     </button>
                                 </div>
 
                                 {isFormallyCertified && shop.certificate_number && (
-                                    <div className="flex items-center justify-between gap-2 text-xs bg-emerald-50/60 px-2.5 py-1.5 rounded-xl border border-emerald-100 font-mono text-slate-600 min-w-0 overflow-hidden">
-                                        <span className="font-bold text-slate-800 text-[11px] truncate min-w-0">
-                                            {shop.certificate_number}
-                                        </span>
-                                        <span className="font-bold text-emerald-700 text-[10px] font-sans shrink-0">
-                                            {shop.expiry_date || 'Active'}
-                                        </span>
-                                    </div>
+                                    evidenceUrl ? (
+                                        <a
+                                            href={evidenceUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center justify-between gap-2 text-xs bg-emerald-50/80 hover:bg-emerald-100/80 px-2.5 py-1.5 rounded-xl border border-emerald-200/80 font-mono text-slate-700 min-w-0 overflow-hidden transition group"
+                                            title="Click to inspect official certificate document"
+                                        >
+                                            <div className="flex items-center gap-1.5 min-w-0 truncate">
+                                                <ShieldCheck size={12} className="text-emerald-700 shrink-0" />
+                                                <span className="font-bold text-slate-800 text-[11px] truncate group-hover:text-emerald-900">
+                                                    {shop.certificate_number}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-1 shrink-0">
+                                                <span className="font-bold text-emerald-700 text-[10px] font-sans">
+                                                    {shop.expiry_date || 'Active'}
+                                                </span>
+                                                <ExternalLink size={10} className="text-emerald-600 group-hover:text-emerald-800" />
+                                            </div>
+                                        </a>
+                                    ) : (
+                                        <div className="flex items-center justify-between gap-2 text-xs bg-emerald-50/60 px-2.5 py-1.5 rounded-xl border border-emerald-100 font-mono text-slate-600 min-w-0 overflow-hidden">
+                                            <span className="font-bold text-slate-800 text-[11px] truncate min-w-0">
+                                                {shop.certificate_number}
+                                            </span>
+                                            <span className="font-bold text-emerald-700 text-[10px] font-sans shrink-0">
+                                                {shop.expiry_date || 'Active'}
+                                            </span>
+                                        </div>
+                                    )
                                 )}
 
                                 <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                                    {districtInfo && (
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${districtInfo.badgeClass}`}>
-                                            {districtInfo.shortLabel}
-                                        </span>
-                                    )}
                                     {shop.facebook_url && (
                                         <a
                                             href={getSafeUrl(shop.facebook_url)}
@@ -244,7 +270,7 @@ export default function EstablishmentsRegistryTab({
                                             <ExternalLink size={9} />
                                         </a>
                                     )}
-                                    {evidenceUrl && (
+                                    {(!isFormallyCertified || !shop.certificate_number) && evidenceUrl && (
                                         <a
                                             href={evidenceUrl}
                                             target="_blank"
@@ -272,7 +298,7 @@ export default function EstablishmentsRegistryTab({
 
                                 {/* Card Actions */}
                                 {isAdmin ? (
-                                    <div className="flex gap-2 pt-1 border-t border-slate-200/60">
+                                    <div className="flex gap-2 pt-1.5 border-t border-slate-200/60 mt-auto">
                                         <button
                                             onClick={() => onOpenModal('edit-establishment', shop)}
                                             className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 py-1.5 rounded-lg transition-colors shadow-2xs cursor-pointer"
@@ -287,7 +313,7 @@ export default function EstablishmentsRegistryTab({
                                         </button>
                                     </div>
                                 ) : (
-                                    <div className="pt-1 border-t border-slate-200/60">
+                                    <div className="pt-1.5 border-t border-slate-200/60 mt-auto">
                                         <button
                                             type="button"
                                             onClick={() => onReportEstablishment(shop)}
