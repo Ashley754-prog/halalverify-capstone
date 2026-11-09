@@ -44,7 +44,7 @@ export default function RegistryModals({
             if (!upErr) {
                 const { data: pub } = supabase.storage.from('submissions').getPublicUrl(filePath);
                 if (pub?.publicUrl) {
-                    setModalForm((prev) => ({ ...prev, certificate_url: pub.publicUrl }));
+                    setModalForm((prev) => ({ ...prev, certificate_url: pub.publicUrl, photo_url: pub.publicUrl }));
                     return;
                 }
             }
@@ -52,7 +52,7 @@ export default function RegistryModals({
             const reader = new FileReader();
             reader.onload = () => {
                 if (typeof reader.result === 'string') {
-                    setModalForm((prev) => ({ ...prev, certificate_url: reader.result }));
+                    setModalForm((prev) => ({ ...prev, certificate_url: reader.result, photo_url: reader.result }));
                 }
             };
             reader.readAsDataURL(file);
@@ -409,33 +409,8 @@ export default function RegistryModals({
                             </div>
                         </div>
 
-                        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
-                            <div>
-                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">City Jurisdiction</label>
-                                <input
-                                    value={modalForm.city || 'Zamboanga City'}
-                                    onChange={(e) => setModalForm(prev => ({ ...prev, city: e.target.value }))}
-                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
-                                />
-                            </div>
-                            <div>
-                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Submitter Relationship</label>
-                                <select
-                                    value={modalForm.source?.includes('Owner') ? 'owner' : 'community'}
-                                    onChange={(e) => setModalForm(prev => ({
-                                        ...prev,
-                                        source: e.target.value === 'owner' ? 'Business Owner Submission' : 'Community User Submission'
-                                    }))}
-                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:border-emerald-500 focus:outline-none"
-                                >
-                                    <option value="owner">Business Owner / Staff (Proprietor)</option>
-                                    <option value="community">Customer / Community Scout (Visitor)</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        {/* Adaptive Halal Tier Box */}
-                        {(modalForm.halal_tier === 'halal_certified' || modalForm.halal_tier === 'verified') ? (
+                        {/* Formal Halal Certification Credentials */}
+                        {(modalForm.halal_tier === 'halal_certified' || modalForm.halal_tier === 'verified') && (
                             <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-3">
                                 <p className="text-xs font-semibold text-emerald-800">
                                     Formal Halal Certification Credentials
@@ -461,58 +436,22 @@ export default function RegistryModals({
                                     </div>
                                 </div>
                             </div>
-                        ) : modalForm.halal_tier === 'muslim_owned' ? (
-                            <div className="p-3.5 rounded-xl bg-sky-50 border border-sky-200">
-                                <p className="text-xs font-bold text-sky-900">
-                                    Community Standard: Muslim-Owned (Pork-Free Kitchen)
-                                </p>
-                                <p className="text-xs text-sky-700 mt-1 leading-relaxed">
-                                    This establishment operates under 100% Muslim ownership and serves strictly pork-free, alcohol-free food without requiring formal third-party certification.
-                                </p>
-                            </div>
-                        ) : modalForm.halal_tier === 'muslim_friendly' ? (
-                            <div className="p-3.5 rounded-xl bg-indigo-50 border border-indigo-200">
-                                <p className="text-xs font-bold text-indigo-900">
-                                    Community Standard: Muslim-Friendly Venue
-                                </p>
-                                <p className="text-xs text-indigo-700 mt-1 leading-relaxed">
-                                    Offers dedicated pork-free or alcohol-free preparations, or provides dedicated prayer amenities for Muslim patrons.
-                                </p>
-                            </div>
-                        ) : modalForm.halal_tier === 'vegetarian_vegan' ? (
-                            <div className="p-3.5 rounded-xl bg-teal-50 border border-teal-200">
-                                <p className="text-xs font-bold text-teal-900">
-                                    Dietary Standard: Vegetarian / Vegan
-                                </p>
-                                <p className="text-xs text-teal-700 mt-1 leading-relaxed">
-                                    Plant-based menu serving zero meat or animal by-products, naturally compliant with Halal dietary requirements.
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200">
-                                <p className="text-xs font-bold text-amber-900">
-                                    Review Status: Standard Registry Listing
-                                </p>
-                                <p className="text-xs text-amber-700 mt-1 leading-relaxed">
-                                    General establishment entry awaiting standard compliance audit.
-                                </p>
-                            </div>
                         )}
 
-                        {/* Halal Certificate / Storefront Verification Evidence Upload */}
+                        {/* Unified Venue Photo / Certificate Evidence Upload */}
                         <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
                             <div className="flex items-center justify-between gap-2">
                                 <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
-                                    Halal Certificate / Storefront Evidence
+                                    Venue Photo / Certificate Evidence
                                 </span>
-                                {modalForm.certificate_url && (
+                                {(modalForm.photo_url || modalForm.certificate_url) && (
                                     <a
-                                        href={modalForm.certificate_url}
+                                        href={modalForm.photo_url || modalForm.certificate_url}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="text-[11px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-1"
                                     >
-                                        <span>Preview Uploaded Evidence</span>
+                                        <span>Preview Image</span>
                                         <ExternalLink size={11} />
                                     </a>
                                 )}
@@ -527,7 +466,7 @@ export default function RegistryModals({
                                     ) : (
                                         <>
                                             <Upload size={13} className="text-emerald-600" />
-                                            <span>Upload Certificate Photo</span>
+                                            <span>Upload Photo</span>
                                         </>
                                     )}
                                     <input
@@ -539,39 +478,16 @@ export default function RegistryModals({
                                 </label>
                                 <input
                                     type="url"
-                                    value={modalForm.certificate_url || ''}
-                                    onChange={(e) => setModalForm((prev) => ({ ...prev, certificate_url: e.target.value }))}
-                                    placeholder="Or paste certificate / evidence image URL..."
+                                    value={modalForm.photo_url || modalForm.certificate_url || ''}
+                                    onChange={(e) => setModalForm((prev) => ({
+                                        ...prev,
+                                        photo_url: e.target.value,
+                                        certificate_url: e.target.value,
+                                    }))}
+                                    placeholder="Or paste photo / certificate image URL..."
                                     className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
                                 />
                             </div>
-                        </div>
-
-                        {/* Storefront / Venue Display Photo URL */}
-                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
-                            <div className="flex items-center justify-between gap-2">
-                                <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
-                                    Storefront / Venue Display Photo URL
-                                </span>
-                                {modalForm.photo_url && (
-                                    <a
-                                        href={modalForm.photo_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-[11px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-1"
-                                    >
-                                        <span>Preview Photo</span>
-                                        <ExternalLink size={11} />
-                                    </a>
-                                )}
-                            </div>
-                            <input
-                                type="url"
-                                value={modalForm.photo_url || ''}
-                                onChange={(e) => setModalForm((prev) => ({ ...prev, photo_url: e.target.value }))}
-                                placeholder="Paste storefront / dish display photo image URL..."
-                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
-                            />
                         </div>
 
                         {/* Guest Amenities & Facilities */}

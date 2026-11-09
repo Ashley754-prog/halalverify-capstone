@@ -172,11 +172,11 @@ export default function EstablishmentsRegistryTab({
                         return (
                             <div
                                 key={shop.id}
-                                className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between gap-2.5 sm:gap-3 h-full hover:border-slate-300 hover:bg-white transition shadow-xs"
+                                className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between gap-2.5 h-full min-w-0 overflow-hidden hover:border-slate-300 hover:bg-white transition shadow-xs"
                             >
-                                <div className="space-y-2">
-                                    <div className="flex justify-between items-start gap-2">
-                                        <h4 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">
+                                <div className="space-y-1.5 min-w-0 w-full overflow-hidden">
+                                    <div className="flex justify-between items-start gap-2 min-w-0">
+                                        <h4 className="text-sm sm:text-base font-bold text-slate-900 leading-snug line-clamp-2 min-w-0">
                                             {shop.name}
                                         </h4>
                                         <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full shrink-0 border ${statusConfig.badgeBg}`}>
@@ -184,107 +184,77 @@ export default function EstablishmentsRegistryTab({
                                         </span>
                                     </div>
 
-                                    <div className="flex items-center gap-1.5 text-xs text-slate-500 flex-wrap">
-                                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            {shop.type || 'Restaurant'}
-                                        </span>
-                                        {districtInfo && (
-                                            <>
-                                                <span className="text-slate-300">·</span>
-                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${districtInfo.badgeClass}`}>
-                                                    {districtInfo.shortLabel}
-                                                </span>
-                                            </>
-                                        )}
-                                    </div>
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">
+                                        {shop.type || 'Restaurant'}
+                                    </p>
 
                                     <button
                                         type="button"
                                         onClick={() => onViewChange?.('map', { searchQuery: shop.name })}
-                                        className="text-xs text-slate-500 hover:text-emerald-700 flex items-center gap-1 min-w-0 text-left transition group cursor-pointer"
-                                        title="Click to view location on GPS Map"
+                                        className="w-full max-w-full overflow-hidden text-xs text-slate-500 hover:text-emerald-700 flex items-center gap-1 min-w-0 text-left transition group cursor-pointer"
+                                        title={shop.address || 'Zamboanga City'}
                                     >
                                         <MapPin size={12} className="text-slate-400 group-hover:text-emerald-600 shrink-0 transition" />
-                                        <span className="truncate group-hover:underline">{shop.address || 'Zamboanga City'}</span>
+                                        <span className="truncate flex-1 min-w-0 group-hover:underline">{shop.address || 'Zamboanga City'}</span>
                                     </button>
                                 </div>
 
-                                {/* Dynamic, Compact Single-Row Metadata Box */}
-                                {isFormallyCertified ? (
-                                    <div className="flex items-center justify-between text-xs bg-emerald-50/60 px-2.5 py-1.5 rounded-xl border border-emerald-100 font-mono text-slate-600">
-                                        <div className="flex items-center gap-1.5 min-w-0">
-                                            <span className="text-[9px] uppercase tracking-wider text-slate-400 font-sans font-bold shrink-0">Cert ID:</span>
-                                            <span className="font-bold text-slate-800 text-[11px] sm:text-xs truncate">{shop.certificate_number || 'N/A'}</span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 shrink-0 pl-2">
-                                            <span className="text-[9px] uppercase tracking-wider text-slate-400 font-sans font-bold">Expires:</span>
-                                            <span className="font-bold text-emerald-800 text-[11px] sm:text-xs">{shop.expiry_date || 'Active'}</span>
-                                        </div>
-                                    </div>
-                                ) : statusConfig.key === 'muslim_owned' ? (
-                                    <div className="flex items-center justify-between text-xs bg-sky-50/70 px-2.5 py-1.5 rounded-xl border border-sky-100 font-sans text-slate-600">
-                                        <span className="text-[11px] sm:text-xs font-semibold text-slate-700">Pork-Free Kitchen</span>
-                                        <span className="font-semibold text-sky-800 text-[11px] sm:text-xs">100% Muslim Proprietor</span>
-                                    </div>
-                                ) : statusConfig.key === 'muslim_friendly' ? (
-                                    <div className="flex items-center justify-between text-xs bg-indigo-50/70 px-2.5 py-1.5 rounded-xl border border-indigo-100 font-sans text-slate-600">
-                                        <span className="text-[11px] sm:text-xs font-semibold text-slate-700">Dedicated Halal Menu</span>
-                                        <span className="font-semibold text-indigo-800 text-[11px] sm:text-xs">Pork-Free Preparation</span>
-                                    </div>
-                                ) : statusConfig.key === 'vegetarian_vegan' ? (
-                                    <div className="flex items-center justify-between text-xs bg-teal-50/70 px-2.5 py-1.5 rounded-xl border border-teal-100 font-sans text-slate-600">
-                                        <span className="text-[11px] sm:text-xs font-semibold text-slate-700">Plant-Based Diet</span>
-                                        <span className="font-semibold text-teal-800 text-[11px] sm:text-xs">Zero Meat / Animal By-products</span>
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center justify-between text-xs bg-amber-50/70 px-2.5 py-1.5 rounded-xl border border-amber-200/70 font-sans text-slate-600">
-                                        <span className="text-[11px] sm:text-xs font-semibold text-amber-900">Pending Review</span>
-                                        <span className="font-semibold text-slate-700 text-[11px] sm:text-xs">Audit Verification</span>
+                                {isFormallyCertified && shop.certificate_number && (
+                                    <div className="flex items-center justify-between gap-2 text-xs bg-emerald-50/60 px-2.5 py-1.5 rounded-xl border border-emerald-100 font-mono text-slate-600 min-w-0 overflow-hidden">
+                                        <span className="font-bold text-slate-800 text-[11px] truncate min-w-0">
+                                            {shop.certificate_number}
+                                        </span>
+                                        <span className="font-bold text-emerald-700 text-[10px] font-sans shrink-0">
+                                            {shop.expiry_date || 'Active'}
+                                        </span>
                                     </div>
                                 )}
 
-                                {(hasPrayer || hasAlcoholFree || evidenceUrl || shop.facebook_url) && (
-                                    <div className="flex flex-wrap gap-1.5 pt-0.5">
-                                        {shop.facebook_url && (
-                                            <a
-                                                href={getSafeUrl(shop.facebook_url)}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-md transition"
-                                            >
-                                                <svg className="w-2.5 h-2.5 text-[#1877F2] fill-current" viewBox="0 0 24 24" aria-hidden="true">
-                                                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                                                </svg>
-                                                <span>Facebook</span>
-                                                <ExternalLink size={9} />
-                                            </a>
-                                        )}
-                                        {evidenceUrl && (
-                                            <a
-                                                href={evidenceUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-100/80 hover:bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-md transition"
-                                            >
-                                                <ShieldCheck size={11} className="text-emerald-700" />
-                                                <span>Evidence</span>
-                                                <ExternalLink size={10} />
-                                            </a>
-                                        )}
-                                        {hasPrayer && (
-                                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md">
-                                                <Compass size={11} className="text-emerald-600" />
-                                                Prayer Space
-                                            </span>
-                                        )}
-                                        {hasAlcoholFree && (
-                                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md">
-                                                <ShieldCheck size={11} className="text-emerald-600" />
-                                                Alcohol-Free
-                                            </span>
-                                        )}
-                                    </div>
-                                )}
+                                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                    {districtInfo && (
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${districtInfo.badgeClass}`}>
+                                            {districtInfo.shortLabel}
+                                        </span>
+                                    )}
+                                    {shop.facebook_url && (
+                                        <a
+                                            href={getSafeUrl(shop.facebook_url)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-md transition"
+                                        >
+                                            <svg className="w-2.5 h-2.5 text-[#1877F2] fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                                            </svg>
+                                            <span>Facebook</span>
+                                            <ExternalLink size={9} />
+                                        </a>
+                                    )}
+                                    {evidenceUrl && (
+                                        <a
+                                            href={evidenceUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-100/80 hover:bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-md transition"
+                                        >
+                                            <ShieldCheck size={11} className="text-emerald-700" />
+                                            <span>Evidence</span>
+                                            <ExternalLink size={10} />
+                                        </a>
+                                    )}
+                                    {hasPrayer && (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md">
+                                            <Compass size={11} className="text-emerald-600" />
+                                            Prayer
+                                        </span>
+                                    )}
+                                    {hasAlcoholFree && (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md">
+                                            <ShieldCheck size={11} className="text-emerald-600" />
+                                            Alcohol-Free
+                                        </span>
+                                    )}
+                                </div>
 
                                 {/* Card Actions */}
                                 {isAdmin ? (
