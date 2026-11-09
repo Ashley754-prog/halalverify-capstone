@@ -41,6 +41,8 @@ const emptyEstablishmentForm = {
     certNo: '',
     expiry: '',
     certificate_url: '',
+    facebook_url: '',
+    photo_url: '',
 };
 
 const emptyHcbForm = {
@@ -268,6 +270,8 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 is_alcohol_free: hasAlcohol,
                 description: item.description || '',
                 certificate_url: item.certificate_url || item.logo_url || '',
+                facebook_url: item.facebook_url || '',
+                photo_url: item.photo_url || item.image_url || '',
             });
         }
     };
@@ -503,7 +507,9 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     phone: safeTrim(modalForm.phone),
                     admin_notes: adminNotes,
                     certificate_url: safeTrim(modalForm.certificate_url),
-                    logo_url: safeTrim(modalForm.certificate_url),
+                    logo_url: safeTrim(modalForm.photo_url || modalForm.certificate_url),
+                    facebook_url: safeTrim(modalForm.facebook_url) || null,
+                    photo_url: safeTrim(modalForm.photo_url) || null,
                 });
 
                 setEstablishments(prev => [created, ...prev]);
@@ -546,7 +552,9 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                         source: modalForm.source || selectedItem.source || 'Official Halal Registry',
                         description: description,
                         certificate_url: safeTrim(modalForm.certificate_url),
-                        logo_url: safeTrim(modalForm.certificate_url),
+                        logo_url: safeTrim(modalForm.photo_url || modalForm.certificate_url),
+                    facebook_url: safeTrim(modalForm.facebook_url) || null,
+                    photo_url: safeTrim(modalForm.photo_url) || null,
                     }
                 );
 
@@ -752,6 +760,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     onOpenModal={openModal}
                     onDeleteEstablishment={handleDeleteEstablishment}
                     onReportEstablishment={handleReportEstablishment}
+                    onViewChange={onViewChange}
                 />
                 </div>
             )}

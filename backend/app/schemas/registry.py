@@ -72,6 +72,8 @@ class EstablishmentCreate(BaseModel):
     amenities: Optional[list[str]] = None
     menu_highlights: Optional[list[str]] = None
     submitter_role: Optional[str] = "community"
+    facebook_url: Optional[str] = None
+    photo_url: Optional[str] = None
 
 
 class EstablishmentUpdate(BaseModel):
@@ -97,6 +99,8 @@ class EstablishmentUpdate(BaseModel):
     amenities: Optional[list[str]] = None
     menu_highlights: Optional[list[str]] = None
     submitter_role: Optional[str] = None
+    facebook_url: Optional[str] = None
+    photo_url: Optional[str] = None
 
 
 class EstablishmentSubmissionRequest(BaseModel):

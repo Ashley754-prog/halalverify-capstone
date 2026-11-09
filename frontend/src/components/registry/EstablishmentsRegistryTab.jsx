@@ -24,6 +24,7 @@ export default function EstablishmentsRegistryTab({
     onOpenModal,
     onDeleteEstablishment,
     onReportEstablishment,
+    onViewChange,
 }) {
     const [statusFilter, setStatusFilter] = useState('all');
     const [districtFilter, setDistrictFilter] = useState('all');
@@ -173,32 +174,39 @@ export default function EstablishmentsRegistryTab({
                                 key={shop.id}
                                 className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between gap-2.5 sm:gap-3 h-full hover:border-slate-300 hover:bg-white transition shadow-xs"
                             >
-                                <div className="space-y-1.5">
+                                <div className="space-y-2">
                                     <div className="flex justify-between items-start gap-2">
-                                        <div className="flex flex-wrap items-center gap-1.5">
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                                {shop.type || 'Restaurant'}
-                                            </span>
-                                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200/80">
-                                                {shop.source?.includes('Owner') || shop.submitter_role === 'owner' ? 'Owner / Staff' : 'Community Scout'}
-                                            </span>
-                                            {districtInfo && (
-                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${districtInfo.badgeClass}`}>
-                                                    {districtInfo.shortLabel}
-                                                </span>
-                                            )}
-                                        </div>
+                                        <h4 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">
+                                            {shop.name}
+                                        </h4>
                                         <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full shrink-0 border ${statusConfig.badgeBg}`}>
                                             {statusConfig.label}
                                         </span>
                                     </div>
-                                    <h4 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">
-                                        {shop.name}
-                                    </h4>
-                                    <p className="text-xs text-slate-500 flex items-center gap-1 min-w-0" title={shop.address || 'Zamboanga City'}>
-                                        <MapPin size={12} className="text-slate-400 shrink-0" />
-                                        <span className="truncate">{shop.address || 'Zamboanga City'}</span>
-                                    </p>
+
+                                    <div className="flex items-center gap-1.5 text-xs text-slate-500 flex-wrap">
+                                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                            {shop.type || 'Restaurant'}
+                                        </span>
+                                        {districtInfo && (
+                                            <>
+                                                <span className="text-slate-300">·</span>
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${districtInfo.badgeClass}`}>
+                                                    {districtInfo.shortLabel}
+                                                </span>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => onViewChange?.('map', { searchQuery: shop.name })}
+                                        className="text-xs text-slate-500 hover:text-emerald-700 flex items-center gap-1 min-w-0 text-left transition group cursor-pointer"
+                                        title="Click to view location on GPS Map"
+                                    >
+                                        <MapPin size={12} className="text-slate-400 group-hover:text-emerald-600 shrink-0 transition" />
+                                        <span className="truncate group-hover:underline">{shop.address || 'Zamboanga City'}</span>
+                                    </button>
                                 </div>
 
                                 {/* Dynamic, Compact Single-Row Metadata Box */}
@@ -216,22 +224,22 @@ export default function EstablishmentsRegistryTab({
                                 ) : statusConfig.key === 'muslim_owned' ? (
                                     <div className="flex items-center justify-between text-xs bg-sky-50/70 px-2.5 py-1.5 rounded-xl border border-sky-100 font-sans text-slate-600">
                                         <span className="text-[11px] sm:text-xs font-semibold text-slate-700">Pork-Free Kitchen</span>
-                                        <span className="font-bold text-sky-800 text-[11px] sm:text-xs">Muslim-Owned</span>
+                                        <span className="font-semibold text-sky-800 text-[11px] sm:text-xs">100% Muslim Proprietor</span>
                                     </div>
                                 ) : statusConfig.key === 'muslim_friendly' ? (
                                     <div className="flex items-center justify-between text-xs bg-indigo-50/70 px-2.5 py-1.5 rounded-xl border border-indigo-100 font-sans text-slate-600">
-                                        <span className="text-[11px] sm:text-xs font-semibold text-slate-700">Halal Options</span>
-                                        <span className="font-bold text-indigo-800 text-[11px] sm:text-xs">Pork-Free</span>
+                                        <span className="text-[11px] sm:text-xs font-semibold text-slate-700">Dedicated Halal Menu</span>
+                                        <span className="font-semibold text-indigo-800 text-[11px] sm:text-xs">Pork-Free Preparation</span>
                                     </div>
                                 ) : statusConfig.key === 'vegetarian_vegan' ? (
                                     <div className="flex items-center justify-between text-xs bg-teal-50/70 px-2.5 py-1.5 rounded-xl border border-teal-100 font-sans text-slate-600">
                                         <span className="text-[11px] sm:text-xs font-semibold text-slate-700">Plant-Based Diet</span>
-                                        <span className="font-bold text-teal-800 text-[11px] sm:text-xs">Zero Meat</span>
+                                        <span className="font-semibold text-teal-800 text-[11px] sm:text-xs">Zero Meat / Animal By-products</span>
                                     </div>
                                 ) : (
                                     <div className="flex items-center justify-between text-xs bg-amber-50/70 px-2.5 py-1.5 rounded-xl border border-amber-200/70 font-sans text-slate-600">
                                         <span className="text-[11px] sm:text-xs font-semibold text-amber-900">Pending Review</span>
-                                        <span className="font-bold text-slate-700 text-[11px] sm:text-xs truncate max-w-[120px]">{shop.source || 'Community'}</span>
+                                        <span className="font-semibold text-slate-700 text-[11px] sm:text-xs">Audit Verification</span>
                                     </div>
                                 )}
 
