@@ -228,7 +228,7 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                 HalalVerify aligns with Philippine national standards overseen by DTI and NCMF, recognizing food products certified by accredited local Islamic bodies and international partners in <strong>Zamboanga City</strong>.
               </p>
             </div>
-            <div className="flex items-center justify-center sm:justify-end shrink-0">
+            <div className="flex w-full items-center justify-end sm:w-auto shrink-0">
               <button
                 type="button"
                 onClick={() => onViewChange('registry', { registryMode: 'hcb' })}

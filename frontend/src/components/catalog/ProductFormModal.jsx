@@ -209,7 +209,7 @@ export default function ProductFormModal({
                     <div className="sm:col-span-2 space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200/80">
                         <div className="flex items-center justify-between gap-2">
                             <label className="text-xs font-bold text-slate-700">
-                                Halal Certificate / Packaging Evidence Photo <span className="font-normal text-slate-400">(Optional)</span>
+                                Product Photo / Packaging Evidence <span className="font-normal text-slate-400">(Optional)</span>
                             </label>
                             {modalForm.image_url && (
                                 <a
@@ -218,7 +218,7 @@ export default function ProductFormModal({
                                     rel="noopener noreferrer"
                                     className="text-[11px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-1"
                                 >
-                                    <span>Preview Evidence</span>
+                                    <span>Preview Photo</span>
                                     <ExternalLink size={11} />
                                 </a>
                             )}
@@ -233,7 +233,7 @@ export default function ProductFormModal({
                                 ) : (
                                     <>
                                         <Upload size={13} className="text-emerald-600" />
-                                        <span>Upload Certificate / Photo</span>
+                                        <span>Upload Product Photo</span>
                                     </>
                                 )}
                                 <input
@@ -247,7 +247,7 @@ export default function ProductFormModal({
                                 type="url"
                                 value={modalForm.image_url || ''}
                                 onChange={(e) => setModalForm((prev) => ({ ...prev, image_url: e.target.value }))}
-                                placeholder="Or paste certificate / packaging photo URL..."
+                                placeholder="Or paste a product photo URL..."
                                 className="flex-1 rounded-xl border border-slate-200 bg-white p-2 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
                             />
                         </div>

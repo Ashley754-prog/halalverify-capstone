@@ -22,8 +22,9 @@ import ContributionModal from '../components/submissions/ContributionModal';
 import AuthPromptModal from '../components/submissions/AuthPromptModal';
 import LandingMarketingSections from '../components/landing/LandingMarketingSections';
 import ProductCardDetail from '../components/landing/ProductCardDetail';
+import ProductImage from '../components/catalog/ProductImage';
 import { getSafeUrl } from '../utils/security';
-import { getStatusConfig, LOCAL_ESTABLISHMENT_PHOTOS, getEstablishmentPhoto } from '../data/constants';
+import { getStatusConfig, getEstablishmentPhoto } from '../data/constants';
 
 const INITIAL_RECENT_ESTABLISHMENTS = [
   {
@@ -128,6 +129,39 @@ function getEstablishmentImageUrl(establishment) {
   const localPhoto = getEstablishmentPhoto(establishment);
   if (localPhoto) return localPhoto;
   return getSafeUrl(establishment.logo_url || establishment.certificate_url);
+}
+
+function selectFeaturedProducts(products, limit = 8) {
+  const candidates = Array.isArray(products) ? products : [];
+  const selected = [];
+  const remaining = [...candidates];
+  const brandCounts = new Map();
+  const categoryCounts = new Map();
+
+  while (selected.length < limit && remaining.length > 0) {
+    let bestIndex = 0;
+    let bestScore = Number.POSITIVE_INFINITY;
+
+    remaining.forEach((product, index) => {
+      const brand = (product.brand || product.manufacturers?.name || product.name || '').trim().toLowerCase();
+      const category = (product.category || '').trim().toLowerCase();
+      const score = (brandCounts.get(brand) || 0) * 2 + (categoryCounts.get(category) || 0);
+
+      if (score < bestScore) {
+        bestScore = score;
+        bestIndex = index;
+      }
+    });
+
+    const [product] = remaining.splice(bestIndex, 1);
+    const brand = (product.brand || product.manufacturers?.name || product.name || '').trim().toLowerCase();
+    const category = (product.category || '').trim().toLowerCase();
+    selected.push(product);
+    brandCounts.set(brand, (brandCounts.get(brand) || 0) + 1);
+    categoryCounts.set(category, (categoryCounts.get(category) || 0) + 1);
+  }
+
+  return selected;
 }
 
 export default function LandingPage({ onViewChange, userRole }) {
@@ -513,10 +547,11 @@ export default function LandingPage({ onViewChange, userRole }) {
             .limit(200),
           supabase
             .from('products')
-            .select('id, name, brand, category, status, image_url, created_at, expiry_date, manufacturers(name), certifying_bodies(name, code)')
-            .not('status', 'in', '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft)')
+            .select('id, name, brand, category, status, image_url, created_at, expiry_date, certificate_no, certifying_body_id, source, source_url, manufacturers(name), certifying_bodies(name, code)')
+            .in('status', ['Halal', 'halal', 'HALAL', 'Verified', 'verified', 'VERIFIED'])
+            .or(`and(certifying_body_id.not.is.null,expiry_date.is.null),and(certifying_body_id.not.is.null,expiry_date.gte.${new Date().toISOString().slice(0, 10)}),and(certificate_no.not.is.null,expiry_date.is.null),and(certificate_no.not.is.null,expiry_date.gte.${new Date().toISOString().slice(0, 10)})`)
             .order('created_at', { ascending: false })
-            .limit(8),
+            .limit(500),
           supabase
             .from('establishments')
             .select('id, name, type, address, city, halal_status, halal_tier, expiry_date, certificate_number, logo_url, certificate_url, description, admin_notes, created_at, facebook_url, website_url, certifying_bodies(name, code)')
@@ -529,7 +564,7 @@ export default function LandingPage({ onViewChange, userRole }) {
         if (isMounted) {
           if (prodRes.data) setAllProducts(prodRes.data);
           if (estRes.data) setAllEstablishments(estRes.data);
-          if (recentProductsRes.data) setRecentProducts(recentProductsRes.data);
+          if (recentProductsRes.data) setRecentProducts(selectFeaturedProducts(recentProductsRes.data));
           if (recentEstablishmentsRes.data) {
             const approvedEstablishments = recentEstablishmentsRes.data.filter((establishment) => {
               const cfg = getStatusConfig(establishment);
@@ -1148,8 +1183,8 @@ export default function LandingPage({ onViewChange, userRole }) {
         <div className="max-w-7xl mx-auto">
           <div className="mb-5 sm:mb-7 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-800">From the local registry</p>
-              <h2 className="mt-1 text-xl sm:text-2xl font-extrabold text-[#17251F]">Recently Added Products</h2>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-800">Certified products from the registry</p>
+              <h2 className="mt-1 text-xl sm:text-2xl font-extrabold text-[#17251F]">Verified Halal Products</h2>
             </div>
             <div className="flex items-center justify-end gap-2">
               <button
@@ -1169,7 +1204,7 @@ export default function LandingPage({ onViewChange, userRole }) {
                 onClick={() => scrollRecentProducts(-1)}
                 aria-label="Previous products"
                 title="Previous products"
-                className="hidden sm:flex absolute left-1 top-1/2 z-10 h-12 w-12 -translate-y-1/2 items-center justify-center bg-transparent text-white transition hover:scale-110 hover:text-emerald-300 focus-visible:outline-2 focus-visible:outline-emerald-700"
+                className="absolute left-1 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-transparent text-emerald-700 transition hover:scale-110 hover:bg-transparent focus-visible:outline-2 focus-visible:outline-emerald-700 sm:h-12 sm:w-12"
               >
                 <ChevronLeft size={34} strokeWidth={3} className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" />
               </button>
@@ -1181,8 +1216,6 @@ export default function LandingPage({ onViewChange, userRole }) {
                 aria-label="Recently added products"
               >
                 {recentProductsDisplay.map((product) => {
-                  const imageUrl = getSafeUrl(product.image_url);
-
                   return (
                     <article
                       key={product.id}
@@ -1191,25 +1224,15 @@ export default function LandingPage({ onViewChange, userRole }) {
                       tabIndex={product._isClone ? -1 : undefined}
                       className="w-[84%] shrink-0 snap-start overflow-hidden rounded-lg border border-[#DCE7E0] bg-white sm:w-[calc((100%_-_1rem)/2)] lg:w-[calc((100%_-_2rem)/3)]"
                     >
-                      <div className="relative aspect-[4/3] bg-[#F4F8F5]">
-                        <div className="absolute inset-0 flex items-center justify-center text-emerald-700/50">
-                          <Package size={38} strokeWidth={1.5} />
-                        </div>
-                        {imageUrl && (
-                          <img
-                            src={imageUrl}
-                            alt={product.name}
-                            loading="lazy"
-                            onError={(event) => event.currentTarget.classList.add('hidden')}
-                            className="absolute inset-0 h-full w-full object-contain p-4"
-                          />
-                        )}
-                      </div>
+                      <ProductImage product={product} />
                       <div className="flex min-h-32 flex-col p-3 sm:p-4">
                         <p className="text-[11px] font-semibold text-[#52645B]">
-                          {product.brand || product.category || 'Local product'}
+                          {product.brand || product.certifying_bodies?.name || product.category || 'Certified product'}
                         </p>
                         <h3 className="mt-1 line-clamp-2 text-sm font-bold text-[#17251F]">{product.name}</h3>
+                        <p className="mt-1 text-[10px] font-semibold text-emerald-800">
+                          {product.certifying_bodies?.name || (product.certificate_no ? `Certificate ${product.certificate_no}` : 'Halal certified')}
+                        </p>
                         <button
                           type="button"
                           onClick={() => setSelectedRecentProduct(product)}
@@ -1228,7 +1251,7 @@ export default function LandingPage({ onViewChange, userRole }) {
                 onClick={() => scrollRecentProducts(1)}
                 aria-label="Next products"
                 title="Next products"
-                className="hidden sm:flex absolute right-1 top-1/2 z-10 h-12 w-12 -translate-y-1/2 items-center justify-center bg-transparent text-white transition hover:scale-110 hover:text-emerald-300 focus-visible:outline-2 focus-visible:outline-emerald-700"
+                className="absolute right-1 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-transparent text-emerald-700 transition hover:scale-110 hover:bg-transparent focus-visible:outline-2 focus-visible:outline-emerald-700 sm:h-12 sm:w-12"
               >
                 <ChevronRight size={34} strokeWidth={3} className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" />
               </button>
@@ -1295,7 +1318,7 @@ export default function LandingPage({ onViewChange, userRole }) {
                 onClick={() => scrollRecentEstablishments(-1)}
                 aria-label="Previous establishments"
                 title="Previous establishments"
-                className="hidden sm:flex absolute left-1 top-1/2 z-10 h-12 w-12 -translate-y-1/2 items-center justify-center bg-transparent text-white transition hover:scale-110 hover:text-emerald-300 focus-visible:outline-2 focus-visible:outline-emerald-700"
+                className="absolute left-1 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-transparent text-emerald-700 transition hover:scale-110 hover:bg-transparent focus-visible:outline-2 focus-visible:outline-emerald-700 sm:h-12 sm:w-12"
               >
                 <ChevronLeft size={34} strokeWidth={3} className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" />
               </button>
@@ -1388,7 +1411,7 @@ export default function LandingPage({ onViewChange, userRole }) {
                 onClick={() => scrollRecentEstablishments(1)}
                 aria-label="Next establishments"
                 title="Next establishments"
-                className="hidden sm:flex absolute right-1 top-1/2 z-10 h-12 w-12 -translate-y-1/2 items-center justify-center bg-transparent text-white transition hover:scale-110 hover:text-emerald-300 focus-visible:outline-2 focus-visible:outline-emerald-700"
+                className="absolute right-1 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-transparent text-emerald-700 transition hover:scale-110 hover:bg-transparent focus-visible:outline-2 focus-visible:outline-emerald-700 sm:h-12 sm:w-12"
               >
                 <ChevronRight size={34} strokeWidth={3} className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" />
               </button>

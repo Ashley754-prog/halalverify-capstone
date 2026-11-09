@@ -19,6 +19,7 @@ import {
 import { getSafeUrl } from '../../utils/security';
 import { simplifyStatus } from '../../utils/textFormatters';
 import { resolveZamboangaDistrict } from '../../data/constants';
+import ProductImage from './ProductImage';
 
 function getProductCertifierBadge(product) {
     const raw = `${product.certifying_bodies?.code || ''} ${product.certifying_bodies?.name || ''} ${product.source || ''}`.toLowerCase();
@@ -84,6 +85,10 @@ export default function ProductCard({
             style={{ contentVisibility: 'auto', containIntrinsicSize: '0 260px' }}
             className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 p-3 sm:p-5 mb-4 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-3 sm:space-y-4 min-w-0"
         >
+            <ProductImage
+                product={product}
+                className="-mx-3 -mt-3 rounded-t-xl sm:-mx-5 sm:-mt-5 sm:rounded-t-2xl"
+            />
             <div className="space-y-2 sm:space-y-3">
                 {/* Header: Brand & Status Badge */}
                 <div className="flex items-start justify-between gap-2">

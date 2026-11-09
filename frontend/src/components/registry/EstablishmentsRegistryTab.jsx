@@ -8,6 +8,7 @@ import {
     MapPin,
     Compass,
     ShieldCheck,
+    Store,
     ExternalLink,
 } from 'lucide-react';
 import { getStatusConfig, ZAMBOANGA_DISTRICTS, resolveZamboangaDistrict, getEstablishmentPhoto } from '../../data/constants';
@@ -156,6 +157,7 @@ export default function EstablishmentsRegistryTab({
                     paginatedEstablishments.map((shop) => {
                         const statusConfig = getStatusConfig(shop);
                         const districtInfo = resolveZamboangaDistrict(shop);
+                        const establishmentImageUrl = getEstablishmentPhoto(shop) || getSafeUrl(shop.photo_url || shop.image_url || shop.logo_url);
                         const evidenceUrl = getEstablishmentPhoto(shop) || getSafeUrl(shop.certificate_url || shop.logo_url);
                         const isFormallyCertified = Boolean(shop.certificate_number || statusConfig.key === 'verified');
                         const hasPrayer = Boolean(
@@ -174,6 +176,18 @@ export default function EstablishmentsRegistryTab({
                                 key={shop.id}
                                 className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between gap-2.5 h-full min-w-0 overflow-hidden hover:border-slate-300 hover:bg-white transition shadow-xs"
                             >
+                                <div className="relative -mx-3.5 -mt-3.5 mb-1 flex aspect-[16/9] items-center justify-center overflow-hidden rounded-t-2xl bg-gradient-to-br from-emerald-50 via-white to-sky-50 text-emerald-700/40 sm:-mx-4 sm:-mt-4">
+                                    <Store size={32} strokeWidth={1.5} aria-hidden="true" />
+                                    {establishmentImageUrl && (
+                                        <img
+                                            src={establishmentImageUrl}
+                                            alt={`${shop.name} establishment`}
+                                            loading="lazy"
+                                            onError={(event) => event.currentTarget.classList.add('hidden')}
+                                            className="absolute inset-0 h-full w-full object-cover"
+                                        />
+                                    )}
+                                </div>
                                 <div className="space-y-1.5 min-w-0 w-full overflow-hidden">
                                     <div className="flex justify-between items-start gap-2 min-w-0">
                                         <h4 className="text-sm sm:text-base font-bold text-slate-900 leading-snug line-clamp-2 min-w-0">
