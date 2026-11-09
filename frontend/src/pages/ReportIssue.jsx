@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Flag, ScanSearch, FileText, Store, CheckCircle, Upload, X, FileImage, ShieldCheck } from 'lucide-react';
+import { Flag, ScanSearch, FileText, Store, CheckCircle, Upload, X, FileImage, ShieldCheck, Lock } from 'lucide-react';
 import Modal from '../components/ui/Modal';
 import Toast from '../components/ui/Toast';
 import { supabase } from '../lib/supabaseClient';
@@ -13,6 +13,27 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
     const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
+    const [currentUserId, setCurrentUserId] = useState(null);
+    const [checkingAuth, setCheckingAuth] = useState(true);
+
+    useEffect(() => {
+        let isMounted = true;
+        const checkAuth = async () => {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (isMounted) {
+                    setCurrentUserId(session?.user?.id || null);
+                    setCheckingAuth(false);
+                }
+            } catch {
+                if (isMounted) setCheckingAuth(false);
+            }
+        };
+        checkAuth();
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     const [form, setForm] = useState(() => ({
         issueType: initialParams?.issueType || '',
@@ -239,6 +260,47 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
                     type={toast.type}
                     onClose={() => setToast({ visible: false, message: '', type: 'info' })}
                 />
+            </div>
+        );
+    }
+
+    const isGuest = !checkingAuth && !userRole && !currentUserId;
+
+    if (isGuest) {
+        return (
+            <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 flex-1 max-w-4xl mx-auto w-full">
+                <div>
+                    <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-800">Report an Issue</h1>
+                    <p className="text-xs sm:text-sm text-slate-500">Flag incorrect scanner results, non-compliant venues, or database inaccuracies for administrative audit under Zamboanga Ordinance No. 489.</p>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center max-w-lg mx-auto space-y-4 shadow-sm my-6">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+                        <Lock size={22} />
+                    </div>
+                    <div>
+                        <h3 className="text-base sm:text-lg font-bold text-slate-900">Account Required to Submit Reports</h3>
+                        <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm mx-auto">
+                            Sign in or register to submit community issue reports. This ensures administrative follow-up on non-compliant venues and protects the registry from spam.
+                        </p>
+                    </div>
+                    <div className="flex items-center justify-center gap-3 pt-2">
+                        <button
+                            type="button"
+                            onClick={() => onViewChange?.('login')}
+                            className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-sm transition cursor-pointer active:scale-95"
+                        >
+                            Sign In / Register
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => onViewChange?.('registry')}
+                            className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs sm:text-sm transition cursor-pointer active:scale-95"
+                        >
+                            Explore Registry
+                        </button>
+                    </div>
+                </div>
             </div>
         );
     }
