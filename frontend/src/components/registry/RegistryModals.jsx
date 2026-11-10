@@ -423,14 +423,14 @@ export default function RegistryModals({
                                                 {ESTABLISHMENT_TYPES.map((cat) => (
                                                     <option key={cat} value={cat}>{cat}</option>
                                                 ))}
-                                                <option value="__custom__">+ Other / Custom Category...</option>
+                                                <option value="__custom__">Other</option>
                                             </select>
                                             {isCustom && (
                                                 <input
                                                     type="text"
                                                     value={modalForm.type || ''}
                                                     onChange={(e) => setModalForm(prev => ({ ...prev, type: e.target.value, isCustomType: true }))}
-                                                    placeholder="Type custom category name (e.g. Barbecue House)..."
+                                                    placeholder="Specify category, e.g. Barbecue House"
                                                     className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
                                                     autoFocus
                                                 />
@@ -491,8 +491,8 @@ export default function RegistryModals({
                                     }}
                                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:border-emerald-500 focus:outline-none cursor-pointer"
                                 >
-                                    <option value="owner">Owner / Staff (Business Verified)</option>
-                                    <option value="community">Customer / Scout (Community Reported)</option>
+                                    <option value="owner">Owner / Staff</option>
+                                    <option value="community">Customer / Scout</option>
                                 </select>
                             </div>
                             <div>

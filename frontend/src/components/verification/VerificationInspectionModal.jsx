@@ -520,7 +520,7 @@ export default function VerificationInspectionModal({
                                                     {ESTABLISHMENT_TYPES.map((cat) => (
                                                         <option key={cat} value={cat}>{cat}</option>
                                                     ))}
-                                                    <option value="__custom__">+ Other / Custom Category...</option>
+                                                    <option value="__custom__">Other</option>
                                                 </select>
                                                 {isCustom && (
                                                     <input
@@ -531,7 +531,7 @@ export default function VerificationInspectionModal({
                                                                 prev ? { ...prev, type: e.target.value, isCustomType: true } : prev
                                                             )
                                                         }
-                                                        placeholder="Type custom category (e.g. Barbecue House)..."
+                                                        placeholder="Specify category, e.g. Barbecue House"
                                                         className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-800 bg-white focus:border-emerald-500 focus:outline-none text-xs"
                                                         autoFocus
                                                     />
@@ -615,8 +615,8 @@ export default function VerificationInspectionModal({
                                         }}
                                         className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-800 bg-slate-50/60 focus:bg-white focus:border-emerald-500 focus:outline-none cursor-pointer"
                                     >
-                                        <option value="owner">Owner / Staff (Business Verified)</option>
-                                        <option value="community">Customer / Scout (Community Reported)</option>
+                                        <option value="owner">Owner / Staff</option>
+                                        <option value="community">Customer / Scout</option>
                                     </select>
                                 </div>
                                 <div>
