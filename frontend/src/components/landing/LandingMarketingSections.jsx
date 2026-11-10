@@ -378,10 +378,6 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
             <span className="font-bold text-[#17251F] group-hover:text-emerald-800 tracking-wider transition">HALALVERIFY ZAMBOANGA</span>
           </div>
 
-          <p className="text-center text-[#52645B]">
-            Capstone Research Project &bull; Western Mindanao State University &bull; Zamboanga City
-          </p>
-
           <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
             <button onClick={() => onViewChange('scanner')} className="hover:text-emerald-800 transition">Scanner</button>
             <button onClick={() => onViewChange('products')} className="hover:text-emerald-800 transition">Catalog</button>
