@@ -280,6 +280,20 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 (item.source && item.source.toLowerCase().includes('owner')) ? 'owner' : 'community'
             );
 
+            const rawStatus = (item.halal_status || item.status || '').toLowerCase().trim();
+            const normalizedStatus =
+                ['needs_review', 'pending', 'pending_review', 'review', 'pending_verification'].includes(rawStatus)
+                    ? 'needs_review'
+                    : ['suspended', 'flagged'].includes(rawStatus)
+                    ? 'suspended'
+                    : ['relocated', 'moved'].includes(rawStatus)
+                    ? 'relocated'
+                    : ['permanently_closed', 'closed'].includes(rawStatus)
+                    ? 'permanently_closed'
+                    : ['demolished'].includes(rawStatus)
+                    ? 'demolished'
+                    : 'verified';
+
             setModalForm({
                 name: item.name || '',
                 type: item.type || 'Restaurant',
@@ -288,7 +302,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 phone: item.phone || '',
                 certNo: item.certificate_number || item.certNo || '',
                 expiry: item.expiry_date || item.expiry || '',
-                status: item.halal_status || item.status || 'verified',
+                status: normalizedStatus,
                 halal_tier: tierKey,
                 admin_notes: item.admin_notes || '',
                 submitter_role: detectedRole,

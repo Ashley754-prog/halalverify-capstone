@@ -505,9 +505,9 @@ def create_establishment(establishment: EstablishmentCreate, user: dict = Depend
 
     if payload.get("halal_status"):
         st = payload["halal_status"].strip().lower()
-        if st in ["verified", "halal", "approved"]:
+        if st in ["verified", "halal", "approved", "muslim_owned", "muslim_friendly", "vegetarian_vegan", "community_listed", "community", "halal_certified", "active", "published"]:
             payload["halal_status"] = "verified"
-        elif st in ["needs_review", "pending", "review", "doubtful"]:
+        elif st in ["needs_review", "pending", "review", "doubtful", "pending_review", "pending_verification"]:
             payload["halal_status"] = "needs_review"
         elif st in ["flagged", "warning"]:
             payload["halal_status"] = "flagged"
@@ -524,7 +524,7 @@ def create_establishment(establishment: EstablishmentCreate, user: dict = Depend
         elif st in ["demolished"]:
             payload["halal_status"] = "demolished"
         else:
-            payload["halal_status"] = "needs_review"
+            payload["halal_status"] = "verified"
 
     if "photo_url" in payload:
         if not payload.get("logo_url"):
@@ -574,9 +574,9 @@ def update_establishment(establishment_id: str, establishment: EstablishmentUpda
 
     if payload.get("halal_status"):
         st = payload["halal_status"].strip().lower()
-        if st in ["verified", "halal", "approved"]:
+        if st in ["verified", "halal", "approved", "muslim_owned", "muslim_friendly", "vegetarian_vegan", "community_listed", "community", "halal_certified", "active", "published"]:
             payload["halal_status"] = "verified"
-        elif st in ["needs_review", "pending", "review", "doubtful"]:
+        elif st in ["needs_review", "pending", "review", "doubtful", "pending_review", "pending_verification"]:
             payload["halal_status"] = "needs_review"
         elif st in ["flagged", "warning"]:
             payload["halal_status"] = "flagged"
@@ -593,7 +593,7 @@ def update_establishment(establishment_id: str, establishment: EstablishmentUpda
         elif st in ["demolished"]:
             payload["halal_status"] = "demolished"
         else:
-            payload["halal_status"] = "needs_review"
+            payload["halal_status"] = "verified"
 
     if "photo_url" in payload:
         if not payload.get("logo_url"):
