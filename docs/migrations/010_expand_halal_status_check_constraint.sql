@@ -31,6 +31,13 @@ CHECK (lower(halal_status) = ANY (ARRAY[
     'closed'::text
 ]));
 
+-- Optional column compatibility for payload sync
+ALTER TABLE public.establishments ADD COLUMN IF NOT EXISTS photo_url TEXT;
+ALTER TABLE public.establishments ADD COLUMN IF NOT EXISTS verification_tier TEXT;
+
+-- Grant table-level permissions to authenticated role for RLS enforcement
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.establishments TO authenticated;
+
 -- Admin write policies for establishments table
 DROP POLICY IF EXISTS "Admins can insert establishments" ON public.establishments;
 CREATE POLICY "Admins can insert establishments" ON public.establishments

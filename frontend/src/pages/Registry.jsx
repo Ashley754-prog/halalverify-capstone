@@ -588,7 +588,9 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                         .insert(estCreatePayload)
                         .select()
                         .single();
-                    if (!error && data) {
+                    if (error) {
+                        console.warn('Direct Supabase insert returned error, attempting backend fallback:', error);
+                    } else if (data) {
                         created = data;
                     }
                 } catch (sbErr) {
@@ -597,6 +599,13 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
 
                 if (!created) {
                     created = await saveRegistryRecord('/registry/establishments', 'POST', estCreatePayload);
+                    if (estCreatePayload.halal_status && estCreatePayload.halal_status !== 'needs_review' && created?.id) {
+                        await supabase
+                            .from('establishments')
+                            .update({ halal_status: estCreatePayload.halal_status })
+                            .eq('id', created.id);
+                        created.halal_status = estCreatePayload.halal_status;
+                    }
                 }
 
                 const safeCreated = {
@@ -671,7 +680,9 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                         .eq('id', selectedItem.id)
                         .select()
                         .single();
-                    if (!error && data) {
+                    if (error) {
+                        console.warn('Direct Supabase update returned error, attempting backend fallback:', error);
+                    } else if (data) {
                         updated = data;
                     }
                 } catch (sbErr) {
@@ -684,6 +695,15 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                         'PATCH',
                         patchPayload
                     );
+                    if (patchPayload.halal_status && patchPayload.halal_status !== 'needs_review') {
+                        await supabase
+                            .from('establishments')
+                            .update({ halal_status: patchPayload.halal_status })
+                            .eq('id', selectedItem.id);
+                        if (updated) {
+                            updated.halal_status = patchPayload.halal_status;
+                        }
+                    }
                 }
 
                 const resolvedLogoUrl = modalForm.photo_url === 'none'
@@ -726,7 +746,9 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                         .eq('id', selectedItem.id)
                         .select()
                         .single();
-                    if (!error && data) {
+                    if (error) {
+                        console.warn('Direct Supabase flag update returned error:', error);
+                    } else if (data) {
                         updated = data;
                     }
                 } catch (sbErr) {
@@ -739,6 +761,15 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                         'PATCH',
                         patchPayload
                     );
+                    if (patchPayload.halal_status && patchPayload.halal_status !== 'needs_review') {
+                        await supabase
+                            .from('establishments')
+                            .update({ halal_status: patchPayload.halal_status })
+                            .eq('id', selectedItem.id);
+                        if (updated) {
+                            updated.halal_status = patchPayload.halal_status;
+                        }
+                    }
                 }
 
                 setEstablishments(prev =>
