@@ -266,11 +266,11 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
             } else if (item.description && item.description.includes('Amenities:')) {
                 initialAmenities = item.description.split('Amenities:')[1].split('|').map(s => s.trim()).filter(Boolean);
             }
+            const REMOVED_AMENITY_KEYS = ['alcohol', 'wudu', 'ablution', 'halal meat', 'pork-free', 'pork free'];
+            initialAmenities = initialAmenities.filter(a => !REMOVED_AMENITY_KEYS.some(k => a.toLowerCase().includes(k)));
+
             if (hasPrayer && !initialAmenities.some(a => a.toLowerCase().includes('prayer'))) {
                 initialAmenities.push('Dedicated Prayer Space (Musalah)');
-            }
-            if (hasAlcohol && !initialAmenities.some(a => a.toLowerCase().includes('alcohol'))) {
-                initialAmenities.push('100% Alcohol-Free Premises');
             }
 
             setModalForm({
@@ -517,14 +517,11 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     adminNotes = '[Tier: halal_certified] Formally Certified Halal Establishment';
                 }
 
-                const amList = Array.isArray(modalForm.amenities) && modalForm.amenities.length > 0
-                    ? modalForm.amenities
-                    : [];
+                const REMOVED_AMENITY_KEYS = ['alcohol', 'wudu', 'ablution', 'halal meat', 'pork-free', 'pork free'];
+                const amList = (Array.isArray(modalForm.amenities) ? modalForm.amenities : [])
+                    .filter(a => !REMOVED_AMENITY_KEYS.some(k => a.toLowerCase().includes(k)));
                 if (modalForm.has_prayer_space && !amList.some(a => a.toLowerCase().includes('prayer'))) {
                     amList.push('Dedicated Prayer Space (Musalah)');
-                }
-                if (modalForm.is_alcohol_free && !amList.some(a => a.toLowerCase().includes('alcohol'))) {
-                    amList.push('100% Alcohol-Free Premises');
                 }
                 const description = amList.length > 0 ? `Amenities: ${amList.join(' | ')}` : (modalForm.description || null);
 
@@ -571,14 +568,11 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     adminNotes = '[Tier: halal_certified] Formally Certified Halal Establishment';
                 }
 
-                const amList = Array.isArray(modalForm.amenities) && modalForm.amenities.length > 0
-                    ? modalForm.amenities
-                    : [];
+                const REMOVED_AMENITY_KEYS = ['alcohol', 'wudu', 'ablution', 'halal meat', 'pork-free', 'pork free'];
+                const amList = (Array.isArray(modalForm.amenities) ? modalForm.amenities : [])
+                    .filter(a => !REMOVED_AMENITY_KEYS.some(k => a.toLowerCase().includes(k)));
                 if (modalForm.has_prayer_space && !amList.some(a => a.toLowerCase().includes('prayer'))) {
                     amList.push('Dedicated Prayer Space (Musalah)');
-                }
-                if (modalForm.is_alcohol_free && !amList.some(a => a.toLowerCase().includes('alcohol'))) {
-                    amList.push('100% Alcohol-Free Premises');
                 }
 
                 let description = modalForm.description || selectedItem.description || null;

@@ -370,16 +370,16 @@ export default function EstablishmentDetailModal({
 
                 {/* Dining Amenities & Facilities */}
                 {(() => {
-                    const rawList = Array.isArray(establishment.amenities)
+                    const REMOVED_AMENITY_KEYS = ['alcohol', 'wudu', 'ablution', 'halal meat', 'pork-free', 'pork free'];
+                    const rawList = (Array.isArray(establishment.amenities)
                         ? [...establishment.amenities]
                         : (establishment.description && establishment.description.includes('Amenities:'))
                             ? establishment.description.split('Amenities:')[1].split('|').map(s => s.trim()).filter(Boolean)
-                            : [];
+                            : []
+                    ).filter(a => !REMOVED_AMENITY_KEYS.some(k => String(a).toLowerCase().includes(k)));
+
                     if (hasPrayerSpace && !rawList.some(a => String(a).toLowerCase().includes('prayer'))) {
                         rawList.push('Dedicated Prayer Space (Musalah)');
-                    }
-                    if (isAlcoholFree && !rawList.some(a => String(a).toLowerCase().includes('alcohol'))) {
-                        rawList.push('100% Alcohol-Free Premises');
                     }
                     if (rawList.length === 0) return null;
 

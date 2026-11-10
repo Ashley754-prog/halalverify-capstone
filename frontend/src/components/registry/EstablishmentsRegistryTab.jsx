@@ -312,16 +312,16 @@ export default function EstablishmentsRegistryTab({
                                         return s.length > 18 ? `${s.slice(0, 16)}…` : s;
                                     };
 
-                                    const rawAmenitiesList = Array.isArray(shop.amenities)
+                                    const REMOVED_AMENITY_KEYS = ['alcohol', 'wudu', 'ablution', 'halal meat', 'pork-free', 'pork free'];
+                                    const rawAmenitiesList = (Array.isArray(shop.amenities)
                                         ? [...shop.amenities]
                                         : (shop.description && shop.description.includes('Amenities:'))
                                             ? shop.description.split('Amenities:')[1].split('|').map(s => s.trim()).filter(Boolean)
-                                            : [];
+                                            : []
+                                    ).filter(a => !REMOVED_AMENITY_KEYS.some(k => String(a).toLowerCase().includes(k)));
+
                                     if (hasPrayer && !rawAmenitiesList.some(a => String(a).toLowerCase().includes('prayer'))) {
                                         rawAmenitiesList.push('Dedicated Prayer Space (Musalah)');
-                                    }
-                                    if (hasAlcoholFree && !rawAmenitiesList.some(a => String(a).toLowerCase().includes('alcohol'))) {
-                                        rawAmenitiesList.push('100% Alcohol-Free Premises');
                                     }
 
                                     const displayAmenities = Array.from(new Set(rawAmenitiesList.map(formatAmenityLabel)));

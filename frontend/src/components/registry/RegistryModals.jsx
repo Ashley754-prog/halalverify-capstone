@@ -9,10 +9,6 @@ const ADDITIVE_ORIGINS = ['Plant', 'Animal', 'Insect', 'Synthetic / Mineral', 'M
 const HCB_CATEGORIES = ['Local & Regional HCB', 'National HCB', 'Government Oversight', 'International Authority'];
 const STANDARD_AMENITIES = [
     'Dedicated Prayer Space (Musalah)',
-    '100% Alcohol-Free Premises',
-    'Pork-Free Kitchen',
-    'Halal Meat Sourced',
-    'Wudu (Ablution) Facility',
     'Family Dining Section',
 ];
 
@@ -618,7 +614,7 @@ export default function RegistryModals({
                                     value={customAmenityInput}
                                     onChange={(e) => setCustomAmenityInput(e.target.value)}
                                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomAmenity(e); } }}
-                                    placeholder="Add custom facility (e.g. Separate Halal Utensils)..."
+                                    placeholder="Add custom facility (e.g. Free Wi-Fi, Outdoor Dining)..."
                                     className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
                                 />
                                 <button
