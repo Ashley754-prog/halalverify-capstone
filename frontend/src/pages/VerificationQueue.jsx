@@ -176,8 +176,10 @@ export default function VerificationQueue({ onViewChange, initialTab = 'establis
                 setSelectedStatus('');
             } else if (derivedTier === 'halal_certified') {
                 setSelectedStatus('verified');
-            } else if (['muslim_owned', 'muslim_friendly', 'vegetarian_vegan', 'pork_free_declared'].includes(derivedTier)) {
+            } else if (['muslim_owned', 'muslim_friendly'].includes(derivedTier)) {
                 setSelectedStatus(derivedTier);
+            } else if (derivedTier === 'pork_free_declared') {
+                setSelectedStatus('muslim_friendly');
             } else {
                 setSelectedStatus('');
             }
@@ -503,6 +505,10 @@ export default function VerificationQueue({ onViewChange, initialTab = 'establis
                     certifying_body_id: selectedHcbId || undefined,
                     name: inspectingItem.name || undefined,
                     address: inspectingItem.address || undefined,
+                    type: inspectingItem.type || undefined,
+                    phone: inspectingItem.phone || inspectingItem.contact_number || undefined,
+                    source_url: inspectingItem.source_url || inspectingItem.social_media_url || undefined,
+                    amenities: inspectingItem.amenities || undefined,
                     menu_highlights: newMenuItemName && newMenuItemName.trim()
                         ? Array.from(new Set([...extractMenuHighlights(inspectingItem), newMenuItemName.trim()]))
                         : undefined,

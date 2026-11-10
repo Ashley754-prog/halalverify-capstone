@@ -23,6 +23,19 @@ import {
 import Modal from '../ui/Modal';
 import { getSafeUrl } from '../../utils/security';
 import { formatSystemNotice, formatShortDate, extractMenuHighlights } from '../../utils/verificationNotes';
+import { ESTABLISHMENT_TYPES } from '../../data/constants';
+
+const STANDARD_AMENITIES = [
+    'Dedicated Prayer Space (Musalah)',
+    'Family Dining Section',
+];
+
+const DEPRECATED_AMENITIES = [
+    '100% alcohol-free premises',
+    'pork-free kitchen',
+    'halal meat sourced',
+    'wudu (ablution) facility',
+];
 
 export default function VerificationInspectionModal({
     inspectingItem,
@@ -94,20 +107,6 @@ export default function VerificationInspectionModal({
 
 
     const systemNotice = formatSystemNotice(inspectingItem.admin_notes);
-    const hasPrayerSpace = Boolean(
-        inspectingItem.has_prayer_space ||
-            (inspectingItem.description &&
-                (inspectingItem.description.toLowerCase().includes('prayer') ||
-                    inspectingItem.description.toLowerCase().includes('musalah'))) ||
-            (Array.isArray(inspectingItem.amenities) &&
-                inspectingItem.amenities.some((a) => String(a).toLowerCase().includes('prayer')))
-    );
-    const hasAlcoholFree = Boolean(
-        inspectingItem.is_alcohol_free ||
-            (inspectingItem.description && inspectingItem.description.toLowerCase().includes('alcohol')) ||
-            (Array.isArray(inspectingItem.amenities) &&
-                inspectingItem.amenities.some((a) => String(a).toLowerCase().includes('alcohol')))
-    );
     const contactPhone = inspectingItem.phone || inspectingItem.contact_number;
     const webLink = inspectingItem.source_url || inspectingItem.social_media_url;
 
@@ -212,8 +211,6 @@ export default function VerificationInspectionModal({
                                     ? 'Approve as Muslim-Owned'
                                     : selectedStatus === 'muslim_friendly'
                                     ? 'Approve as Muslim-Friendly'
-                                    : selectedStatus === 'vegetarian_vegan'
-                                    ? 'Approve as Plant-Based'
                                     : 'Approve & Publish'}
                             </span>
                         </button>
@@ -492,10 +489,56 @@ export default function VerificationInspectionModal({
                                     />
                                 </div>
                                 <div>
-                                    <span className="text-slate-600 font-semibold block text-[11px] mb-1">Category</span>
-                                    <span className="font-semibold text-slate-800 block py-1.5">
-                                        {inspectingItem.type || 'Restaurant'}
-                                    </span>
+                                    <label htmlFor="inspect-venue-category" className="text-slate-600 font-semibold block text-[11px] mb-1">
+                                        Venue Category (Editable)
+                                    </label>
+                                    {(() => {
+                                        const currentType = inspectingItem.type ?? 'Restaurant';
+                                        const isStandard = ESTABLISHMENT_TYPES.includes(currentType);
+                                        const isCustom = inspectingItem.isCustomType || (!isStandard && Boolean(currentType));
+                                        const selectValue = isCustom ? '__custom__' : currentType;
+
+                                        return (
+                                            <div className="space-y-1.5">
+                                                <select
+                                                    id="inspect-venue-category"
+                                                    value={selectValue}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        if (val === '__custom__') {
+                                                            setInspectingItem?.((prev) =>
+                                                                prev ? { ...prev, isCustomType: true, type: isStandard ? '' : (prev.type || '') } : prev
+                                                            );
+                                                        } else {
+                                                            setInspectingItem?.((prev) =>
+                                                                prev ? { ...prev, isCustomType: false, type: val } : prev
+                                                            );
+                                                        }
+                                                    }}
+                                                    className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-800 bg-slate-50/60 focus:bg-white focus:border-emerald-500 focus:outline-none cursor-pointer"
+                                                >
+                                                    {ESTABLISHMENT_TYPES.map((cat) => (
+                                                        <option key={cat} value={cat}>{cat}</option>
+                                                    ))}
+                                                    <option value="__custom__">+ Other / Custom Category...</option>
+                                                </select>
+                                                {isCustom && (
+                                                    <input
+                                                        type="text"
+                                                        value={inspectingItem.type || ''}
+                                                        onChange={(e) =>
+                                                            setInspectingItem?.((prev) =>
+                                                                prev ? { ...prev, type: e.target.value, isCustomType: true } : prev
+                                                            )
+                                                        }
+                                                        placeholder="Type custom category (e.g. Barbecue House)..."
+                                                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-800 bg-white focus:border-emerald-500 focus:outline-none text-xs"
+                                                        autoFocus
+                                                    />
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                                 <div>
                                     <label htmlFor="inspect-est-address" className="text-slate-600 font-semibold block text-[11px] mb-1">
@@ -515,53 +558,145 @@ export default function VerificationInspectionModal({
                                     />
                                 </div>
                                 <div>
-                                    <span className="text-slate-600 font-semibold block text-[11px] mb-1">Contact Phone</span>
-                                    {contactPhone ? (
-                                        <a href={`tel:${contactPhone}`} className="font-semibold text-emerald-700 hover:underline flex items-center gap-1 py-1.5">
-                                            <Phone size={11} />
-                                            {contactPhone}
+                                    <label htmlFor="inspect-est-phone" className="text-slate-600 font-semibold block text-[11px] mb-1">
+                                        Contact Phone (Editable)
+                                    </label>
+                                    <div className="flex items-center gap-1.5">
+                                        <input
+                                            id="inspect-est-phone"
+                                            type="text"
+                                            value={inspectingItem.phone || inspectingItem.contact_number || ''}
+                                            placeholder="e.g. 09171234567"
+                                            onChange={(e) =>
+                                                setInspectingItem?.((prev) =>
+                                                    prev ? { ...prev, phone: e.target.value, contact_number: e.target.value } : prev
+                                                )
+                                            }
+                                            className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-800 bg-slate-50/60 focus:bg-white focus:border-emerald-500 focus:outline-none"
+                                        />
+                                        {contactPhone && (
+                                            <a
+                                                href={`tel:${contactPhone}`}
+                                                className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-emerald-700 transition shrink-0"
+                                                title={`Call ${contactPhone}`}
+                                                aria-label={`Call ${contactPhone}`}
+                                            >
+                                                <Phone size={13} />
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="pt-1">
+                                <label htmlFor="inspect-est-website" className="text-slate-600 font-semibold block text-[11px] mb-1">
+                                    Website / Social Link (Editable)
+                                </label>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        id="inspect-est-website"
+                                        type="text"
+                                        value={inspectingItem.source_url || inspectingItem.social_media_url || ''}
+                                        placeholder="e.g. https://facebook.com/venue"
+                                        onChange={(e) =>
+                                            setInspectingItem?.((prev) =>
+                                                prev ? { ...prev, source_url: e.target.value, social_media_url: e.target.value } : prev
+                                            )
+                                        }
+                                        className="flex-1 rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-800 bg-slate-50/60 focus:bg-white focus:border-emerald-500 focus:outline-none"
+                                    />
+                                    {webLink && getSafeUrl(webLink) && (
+                                        <a
+                                            href={getSafeUrl(webLink)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition shrink-0"
+                                            title="Open link in new tab"
+                                            aria-label="Open link in new tab"
+                                        >
+                                            <ExternalLink size={13} />
                                         </a>
-                                    ) : (
-                                        <span className="text-slate-400 block py-1.5">Not provided</span>
                                     )}
                                 </div>
                             </div>
 
-                            {webLink && (
-                                <div className="pt-1">
-                                    <span className="text-slate-600 block text-[11px] mb-1">Website / Social Link</span>
-                                    <a
-                                        href={getSafeUrl(webLink)}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-xs font-semibold text-emerald-700 hover:underline flex items-center gap-1.5 truncate"
-                                    >
-                                        <Globe size={12} className="shrink-0" />
-                                        <span className="truncate">{webLink}</span>
-                                        <ExternalLink size={11} className="shrink-0" />
-                                    </a>
-                                </div>
-                            )}
+                            {(() => {
+                                let list = Array.isArray(inspectingItem.amenities) ? [...inspectingItem.amenities] : [];
+                                if (inspectingItem.has_prayer_space && !list.some(a => String(a).toLowerCase().includes('prayer') || String(a).toLowerCase().includes('musalah'))) {
+                                    list.push('Dedicated Prayer Space (Musalah)');
+                                }
+                                const activeAmenities = list.filter(a => !DEPRECATED_AMENITIES.includes(String(a).toLowerCase().trim()));
 
-                            {(hasPrayerSpace || hasAlcoholFree) && (
-                                <div className="pt-1">
-                                    <span className="text-slate-600 block text-[11px] mb-1">Amenities</span>
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {hasPrayerSpace && (
-                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                                                <Compass size={11} />
-                                                Prayer Space (Musalah)
-                                            </span>
-                                        )}
-                                        {hasAlcoholFree && (
-                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                                                <ShieldCheck size={11} />
-                                                Alcohol-Free
-                                            </span>
-                                        )}
+                                return (
+                                    <div className="pt-2 border-t border-slate-100">
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <span className="text-slate-600 font-semibold block text-[11px]">Guest Amenities & Facilities</span>
+                                            <span className="text-[10px] text-slate-400">Click to toggle</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {STANDARD_AMENITIES.map((facility) => {
+                                                const isSelected = activeAmenities.some(
+                                                    (a) => a.toLowerCase().trim() === facility.toLowerCase().trim()
+                                                );
+                                                return (
+                                                    <button
+                                                        key={facility}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const nextAmenities = isSelected
+                                                                ? activeAmenities.filter((a) => a.toLowerCase().trim() !== facility.toLowerCase().trim())
+                                                                : [...activeAmenities, facility];
+                                                            setInspectingItem?.((prev) =>
+                                                                prev ? {
+                                                                    ...prev,
+                                                                    amenities: nextAmenities,
+                                                                    has_prayer_space: nextAmenities.some(a => a.toLowerCase().includes('prayer')),
+                                                                } : prev
+                                                            );
+                                                        }}
+                                                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer border ${
+                                                            isSelected
+                                                                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 shadow-xs'
+                                                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                                                        }`}
+                                                    >
+                                                        {facility.toLowerCase().includes('prayer') ? (
+                                                            <Compass size={11} className={isSelected ? 'text-emerald-700' : 'text-slate-400'} />
+                                                        ) : (
+                                                            <Store size={11} className={isSelected ? 'text-emerald-700' : 'text-slate-400'} />
+                                                        )}
+                                                        <span>{facility}</span>
+                                                    </button>
+                                                );
+                                            })}
+                                            {activeAmenities
+                                                .filter((a) => !STANDARD_AMENITIES.some((std) => std.toLowerCase().trim() === a.toLowerCase().trim()))
+                                                .map((custom) => (
+                                                    <span
+                                                        key={custom}
+                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300"
+                                                    >
+                                                        <CheckCircle2 size={11} className="text-emerald-700" />
+                                                        <span>{custom}</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const next = activeAmenities.filter((a) => a !== custom);
+                                                                setInspectingItem?.((prev) =>
+                                                                    prev ? { ...prev, amenities: next } : prev
+                                                                );
+                                                            }}
+                                                            className="text-emerald-600 hover:text-rose-600 ml-0.5 cursor-pointer"
+                                                            title={`Remove ${custom}`}
+                                                        >
+                                                            <X size={11} />
+                                                        </button>
+                                                    </span>
+                                                ))}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                );
+                            })()}
                         </div>
                     )}
 
@@ -580,13 +715,12 @@ export default function VerificationInspectionModal({
                                     id="inspect-classification-tier"
                                     value={selectedStatus}
                                     onChange={(e) => setSelectedStatus(e.target.value)}
-                                    className="w-full rounded-xl border border-slate-300 p-2 text-xs font-semibold text-slate-800 bg-white focus:border-emerald-500 focus:outline-none"
+                                    className="w-full rounded-xl border border-slate-300 p-2 text-xs font-semibold text-slate-800 bg-white focus:border-emerald-500 focus:outline-none cursor-pointer"
                                 >
                                     <option value="" disabled>Select verification tier…</option>
                                     <option value="verified">Formally Halal Certified</option>
                                     <option value="muslim_owned">Muslim-Owned Kitchen (Pork-Free)</option>
                                     <option value="muslim_friendly">Muslim-Friendly Venue</option>
-                                    <option value="vegetarian_vegan">Vegetarian / Vegan</option>
                                 </select>
                             </div>
                         )}
@@ -663,9 +797,7 @@ export default function VerificationInspectionModal({
                                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 font-semibold text-teal-800 ml-auto border border-teal-200">
                                         {selectedStatus === 'muslim_owned'
                                             ? 'Muslim-Owned'
-                                            : selectedStatus === 'muslim_friendly'
-                                            ? 'Muslim-Friendly'
-                                            : 'Plant-Based'}
+                                            : 'Muslim-Friendly'}
                                     </span>
                                 </div>
                                 <p className="text-[11px] text-teal-800 leading-relaxed">

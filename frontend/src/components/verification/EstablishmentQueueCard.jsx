@@ -23,7 +23,6 @@ export default function EstablishmentQueueCard({
         halal_certified: 'bg-emerald-50 text-emerald-800 border-emerald-200',
         muslim_owned: 'bg-sky-50 text-sky-800 border-sky-200',
         muslim_friendly: 'bg-indigo-50 text-indigo-800 border-indigo-200',
-        vegetarian_vegan: 'bg-teal-50 text-teal-800 border-teal-200',
     };
 
     return (
