@@ -158,7 +158,8 @@ export default function EstablishmentsRegistryTab({
                         const statusConfig = getStatusConfig(shop);
                         const districtInfo = resolveZamboangaDistrict(shop);
                         const establishmentImageUrl = getEstablishmentPhoto(shop) || getSafeUrl(shop.photo_url || shop.image_url || shop.logo_url);
-                        const evidenceUrl = getEstablishmentPhoto(shop) || getSafeUrl(shop.certificate_url || shop.logo_url);
+                        const rawCertUrl = shop.certificate_url ? getSafeUrl(shop.certificate_url) : null;
+                        const hasActualCertificateDoc = Boolean(rawCertUrl && rawCertUrl !== establishmentImageUrl);
                         const isFormallyCertified = Boolean(shop.certificate_number || statusConfig.key === 'verified');
                         const hasPrayer = Boolean(
                             shop.has_prayer_space ||
@@ -176,21 +177,34 @@ export default function EstablishmentsRegistryTab({
                                 key={shop.id}
                                 className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between gap-3 h-full min-w-0 overflow-hidden hover:border-slate-300 hover:bg-white hover:shadow-md transition"
                             >
-                                <div className="relative -mx-3.5 -mt-3.5 flex aspect-[16/9] items-center justify-center overflow-hidden rounded-t-2xl bg-gradient-to-br from-emerald-50 via-white to-sky-50 text-emerald-700/40 sm:-mx-4 sm:-mt-4">
-                                    <Store size={32} strokeWidth={1.5} aria-hidden="true" />
-                                    {establishmentImageUrl && (
+                                {establishmentImageUrl ? (
+                                    <a
+                                        href={establishmentImageUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="relative -mx-3.5 -mt-3.5 flex aspect-[16/9] items-center justify-center overflow-hidden rounded-t-2xl bg-gradient-to-br from-emerald-50 via-white to-sky-50 text-emerald-700/40 sm:-mx-4 sm:-mt-4 group/photo cursor-pointer"
+                                        title="Click to view full photo"
+                                    >
+                                        <Store size={32} strokeWidth={1.5} aria-hidden="true" />
                                         <img
                                             src={establishmentImageUrl}
                                             alt={`${shop.name} establishment`}
                                             loading="lazy"
                                             onError={(event) => event.currentTarget.classList.add('hidden')}
-                                            className="absolute inset-0 h-full w-full object-cover"
+                                            className="absolute inset-0 h-full w-full object-cover group-hover/photo:scale-105 transition duration-300"
                                         />
-                                    )}
-                                    <span className={`absolute top-2.5 right-2.5 text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs backdrop-blur-md border ${statusConfig.badgeBg}`}>
-                                        {statusConfig.label}
-                                    </span>
-                                </div>
+                                        <span className={`absolute top-2.5 right-2.5 text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs backdrop-blur-md border ${statusConfig.badgeBg}`}>
+                                            {statusConfig.label}
+                                        </span>
+                                    </a>
+                                ) : (
+                                    <div className="relative -mx-3.5 -mt-3.5 flex aspect-[16/9] items-center justify-center overflow-hidden rounded-t-2xl bg-gradient-to-br from-emerald-50 via-white to-sky-50 text-emerald-700/40 sm:-mx-4 sm:-mt-4">
+                                        <Store size={32} strokeWidth={1.5} aria-hidden="true" />
+                                        <span className={`absolute top-2.5 right-2.5 text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xs backdrop-blur-md border ${statusConfig.badgeBg}`}>
+                                            {statusConfig.label}
+                                        </span>
+                                    </div>
+                                )}
                                 <div className="space-y-1.5 min-w-0 w-full flex-1">
                                     <h4
                                         className="text-sm sm:text-base font-bold text-slate-900 leading-snug line-clamp-2 min-w-0"
@@ -222,9 +236,9 @@ export default function EstablishmentsRegistryTab({
                                 </div>
 
                                 {isFormallyCertified && shop.certificate_number && (
-                                    evidenceUrl ? (
+                                    hasActualCertificateDoc ? (
                                         <a
-                                            href={evidenceUrl}
+                                            href={rawCertUrl}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="flex items-center justify-between gap-2 text-xs bg-emerald-50/80 hover:bg-emerald-100/80 px-2.5 py-1.5 rounded-xl border border-emerald-200/80 font-mono text-slate-700 min-w-0 overflow-hidden transition group"
@@ -244,10 +258,13 @@ export default function EstablishmentsRegistryTab({
                                             </div>
                                         </a>
                                     ) : (
-                                        <div className="flex items-center justify-between gap-2 text-xs bg-emerald-50/60 px-2.5 py-1.5 rounded-xl border border-emerald-100 font-mono text-slate-600 min-w-0 overflow-hidden">
-                                            <span className="font-bold text-slate-800 text-[11px] truncate min-w-0">
-                                                {shop.certificate_number}
-                                            </span>
+                                        <div className="flex items-center justify-between gap-2 text-xs bg-emerald-50/70 px-2.5 py-1.5 rounded-xl border border-emerald-100 font-mono text-slate-700 min-w-0 overflow-hidden">
+                                            <div className="flex items-center gap-1.5 min-w-0 truncate">
+                                                <ShieldCheck size={12} className="text-emerald-600 shrink-0" />
+                                                <span className="font-bold text-slate-800 text-[11px] truncate">
+                                                    {shop.certificate_number}
+                                                </span>
+                                            </div>
                                             <span className="font-bold text-emerald-700 text-[10px] font-sans shrink-0">
                                                 {shop.expiry_date || 'Active'}
                                             </span>
@@ -268,18 +285,6 @@ export default function EstablishmentsRegistryTab({
                                             </svg>
                                             <span>Facebook</span>
                                             <ExternalLink size={9} />
-                                        </a>
-                                    )}
-                                    {(!isFormallyCertified || !shop.certificate_number) && evidenceUrl && (
-                                        <a
-                                            href={evidenceUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-100/80 hover:bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-md transition"
-                                        >
-                                            <ShieldCheck size={11} className="text-emerald-700" />
-                                            <span>Evidence</span>
-                                            <ExternalLink size={10} />
                                         </a>
                                     )}
                                     {hasPrayer && (

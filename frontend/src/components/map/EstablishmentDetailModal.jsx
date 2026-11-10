@@ -30,7 +30,10 @@ export default function EstablishmentDetailModal({
 
     const statusConfig = getStatusConfig(establishment);
     const districtInfo = resolveZamboangaDistrict(establishment);
-    const evidenceUrl = getEstablishmentPhoto(establishment) || getSafeUrl(establishment.certificate_url || establishment.logo_url || establishment.photo_url);
+    const venuePhotoUrl = getEstablishmentPhoto(establishment) || getSafeUrl(establishment.logo_url || establishment.photo_url);
+    const rawCertDocUrl = establishment.certificate_url ? getSafeUrl(establishment.certificate_url) : null;
+    const isActualCertDoc = Boolean(rawCertDocUrl && rawCertDocUrl !== venuePhotoUrl);
+    const evidenceUrl = (isActualCertDoc ? rawCertDocUrl : null) || venuePhotoUrl;
 
     const isFormallyCertified = Boolean(
         (statusConfig.key === 'verified' || establishment.halal_tier === 'halal_certified') &&
@@ -317,7 +320,7 @@ export default function EstablishmentDetailModal({
                                 ) : (
                                     <Camera size={14} className="text-slate-600 shrink-0" />
                                 )}
-                                {isFormallyCertified
+                                {isActualCertDoc
                                     ? 'Halal Certificate / Audit Document'
                                     : 'Storefront / Signboard Photo'}
                             </span>
