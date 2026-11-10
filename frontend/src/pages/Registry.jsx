@@ -19,7 +19,7 @@ import RegistryModals, { normalizeAdditiveCode } from '../components/registry/Re
 import RegistryDeleteModal from '../components/registry/RegistryDeleteModal';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
-import { getStatusConfig, ESTABLISHMENT_TYPES } from '../data/constants';
+import { getStatusConfig, ESTABLISHMENT_TYPES, geocodeZamboangaAddress } from '../data/constants';
 import { extractMenuHighlights } from '../utils/verificationNotes';
 
 const emptyAdditiveForm = {
@@ -557,11 +557,17 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 const description = descParts.join(' | ') || (modalForm.description || null);
 
                 const role = modalForm.submitter_role || 'community';
+                const cleanAddress = safeTrim(modalForm.address) || 'Zamboanga City';
+                const cleanCity = safeTrim(modalForm.city) || 'Zamboanga City';
+                const createCoords = await geocodeZamboangaAddress(cleanAddress, cleanCity);
+
                 const estCreatePayload = {
                     name: requireText(modalForm.name, 'Establishment name'),
                     type: safeTrim(modalForm.type) || 'Restaurant',
-                    address: safeTrim(modalForm.address) || 'Zamboanga City',
-                    city: safeTrim(modalForm.city) || 'Zamboanga City',
+                    address: cleanAddress,
+                    city: cleanCity,
+                    latitude: createCoords.latitude,
+                    longitude: createCoords.longitude,
                     certificate_number: tier === 'halal_certified' ? safeTrim(modalForm.certNo) : null,
                     expiry_date: tier === 'halal_certified' ? safeTrim(modalForm.expiry) : null,
                     halal_status: modalForm.status || 'verified',
@@ -610,6 +616,8 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
 
                 const safeCreated = {
                     ...created,
+                    latitude: createCoords.latitude,
+                    longitude: createCoords.longitude,
                     halal_tier: tier,
                     halal_status: modalForm.status || 'verified',
                     submitter_role: role,
@@ -648,11 +656,25 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 const description = descParts.join(' | ') || (modalForm.description || null);
 
                 const role = modalForm.submitter_role || 'community';
+                const cleanAddress = safeTrim(modalForm.address);
+                const cleanCity = safeTrim(modalForm.city) || 'Zamboanga City';
+                const addressChanged = cleanAddress && cleanAddress.toLowerCase() !== safeTrim(selectedItem.address).toLowerCase();
+                const missingCoords = !selectedItem.latitude || !selectedItem.longitude;
+                let coordsPatch = {};
+                if (addressChanged || missingCoords) {
+                    const resolvedCoords = await geocodeZamboangaAddress(cleanAddress || cleanCity, cleanCity);
+                    coordsPatch = {
+                        latitude: resolvedCoords.latitude,
+                        longitude: resolvedCoords.longitude,
+                    };
+                }
+
                 const patchPayload = {
                     name: requireText(modalForm.name, 'Establishment name'),
                     type: safeTrim(modalForm.type) || 'Restaurant',
-                    address: safeTrim(modalForm.address),
-                    city: safeTrim(modalForm.city) || 'Zamboanga City',
+                    address: cleanAddress,
+                    city: cleanCity,
+                    ...coordsPatch,
                     certificate_number: (tier === 'halal_certified' || tier === 'verified') ? safeTrim(modalForm.certNo) : null,
                     expiry_date: (tier === 'halal_certified' || tier === 'verified') ? safeTrim(modalForm.expiry) : null,
                     halal_status: modalForm.status || 'verified',
@@ -698,7 +720,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     if (patchPayload.halal_status && patchPayload.halal_status !== 'needs_review') {
                         await supabase
                             .from('establishments')
-                            .update({ halal_status: patchPayload.halal_status })
+                            .update({ halal_status: patchPayload.halal_status, ...coordsPatch })
                             .eq('id', selectedItem.id);
                         if (updated) {
                             updated.halal_status = patchPayload.halal_status;
@@ -717,6 +739,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 const safeUpdated = {
                     ...selectedItem,
                     ...updated,
+                    ...coordsPatch,
                     halal_tier: tier,
                     halal_status: modalForm.status || 'verified',
                     submitter_role: role,

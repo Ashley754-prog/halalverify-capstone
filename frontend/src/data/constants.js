@@ -512,3 +512,130 @@ export const getEstablishmentPhoto = (establishment) => {
     }
     return null;
 };
+
+const DEFAULT_ZAMBOANGA_LAT = 6.9075;
+const DEFAULT_ZAMBOANGA_LNG = 122.0770;
+
+const ZAMBOANGA_COORDINATE_LOOKUP = {
+    'don toribio': [6.907671, 122.076997],
+    'pasonanca': [6.9520, 122.0720],
+    'zone i': [6.9075, 122.0760],
+    'zone ii': [6.9100, 122.0730],
+    'zone iii': [6.9142, 122.0745],
+    'governor alvarez': [6.9142, 122.0745],
+    'gov. alvarez': [6.9142, 122.0745],
+    'gov alvarez': [6.9142, 122.0745],
+    'zone iv': [6.9040, 122.0780],
+    'pilar': [6.9040, 122.0780],
+    'pettit': [6.9040, 122.0780],
+    'canelar': [6.9165, 122.0685],
+    'santa maria': [6.9320, 122.0710],
+    'sta. maria': [6.9320, 122.0710],
+    'sta maria': [6.9320, 122.0710],
+    'gov. ramos': [6.9320, 122.0710],
+    'gov ramos': [6.9320, 122.0710],
+    'galvez': [6.9320, 122.0710],
+    'tetuan': [6.9230, 122.0880],
+    'baliwasan': [6.9180, 122.0580],
+    'san roque': [6.9380, 122.0850],
+    'guiwan': [6.9280, 122.0980],
+    'tumaga': [6.9390, 122.0670],
+    'santa catalina': [6.9120, 122.0870],
+    'sta. catalina': [6.9120, 122.0870],
+    'sta catalina': [6.9120, 122.0870],
+    'lustre': [6.9120, 122.0870],
+    'ayala': [6.9600, 121.9600],
+    'putik': [6.9400, 122.1100],
+    'talon-talon': [6.9020, 122.1050],
+    'talon talon': [6.9020, 122.1050],
+    'suterville': [6.9150, 122.0490],
+    'calarian': [6.9250, 122.0280],
+    'divisoria': [6.9530, 122.1380],
+    'cabatangan': [6.9380, 122.0550],
+    'san jose': [6.9210, 122.0490],
+    'sinunuc': [6.9290, 122.0080],
+    'recodo': [6.9450, 121.9850],
+    'culianan': [6.9610, 122.1580],
+    'boalan': [6.9550, 122.1180],
+    'mercedes': [6.9680, 122.1390],
+    'mampang': [6.9150, 122.1250],
+    'veterans': [6.9120, 122.0760],
+    'mayor jaldon': [6.9110, 122.0735],
+    'jaldon': [6.9110, 122.0735],
+    'nuñez': [6.9130, 122.0700],
+    'nunez': [6.9130, 122.0700],
+    'la purisima': [6.9080, 122.0770],
+    'pueblo': [6.9075, 122.0770],
+    'kcc': [6.9180, 122.0820],
+    'sm mindpro': [6.9090, 122.0740],
+    'tugbungan': [6.9235, 122.0940],
+    'camino nuevo': [6.9125, 122.0810],
+    'santa barbara': [6.9095, 122.0835],
+    'sta. barbara': [6.9095, 122.0835],
+    'sta barbara': [6.9095, 122.0835],
+    'rio hondo': [6.9035, 122.0850],
+    'campo islam': [6.9155, 122.0540],
+    'cawa-cawa': [6.9115, 122.0630],
+    'paseo del mar': [6.9025, 122.0805],
+};
+
+/**
+ * Resolves GPS latitude and longitude coordinates for an address in Zamboanga City.
+ * Queries OpenStreetMap Nominatim first and falls back to the local Zamboanga barangay dictionary.
+ */
+export const geocodeZamboangaAddress = async (address, city = 'Zamboanga City') => {
+    const addrClean = (address || '').trim();
+    const cityClean = (city || 'Zamboanga City').trim();
+    const addrLower = addrClean.toLowerCase();
+
+    if (addrLower.includes('don toribio')) {
+        return { latitude: 6.907671, longitude: 122.076997 };
+    }
+
+    if (addrClean) {
+        try {
+            const query = addrLower.includes('zamboanga')
+                ? `${addrClean}, Philippines`
+                : `${addrClean}, ${cityClean}, Philippines`;
+            const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 1800);
+            const res = await fetch(url, {
+                signal: controller.signal,
+                headers: { Accept: 'application/json' },
+            });
+            clearTimeout(timeoutId);
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    const lat = parseFloat(data[0].lat);
+                    const lon = parseFloat(data[0].lon);
+                    if (lat >= 6.80 && lat <= 7.45 && lon >= 121.80 && lon <= 122.45) {
+                        return {
+                            latitude: Number(lat.toFixed(6)),
+                            longitude: Number(lon.toFixed(6)),
+                        };
+                    }
+                }
+            }
+        } catch {
+            // Fall back to curated Zamboanga City barangay dictionary
+        }
+    }
+
+    let baseLat = DEFAULT_ZAMBOANGA_LAT;
+    let baseLng = DEFAULT_ZAMBOANGA_LNG;
+
+    for (const [key, [kLat, kLng]] of Object.entries(ZAMBOANGA_COORDINATE_LOOKUP)) {
+        if (addrLower.includes(key)) {
+            baseLat = kLat;
+            baseLng = kLng;
+            break;
+        }
+    }
+
+    return {
+        latitude: Number(baseLat.toFixed(6)),
+        longitude: Number(baseLng.toFixed(6)),
+    };
+};

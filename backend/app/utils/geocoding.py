@@ -10,6 +10,7 @@ DEFAULT_ZAMBOANGA_LNG = 122.0770
 
 # Recognized barangays, streets, and zones across Zamboanga City
 ZAMBOANGA_BARANGAY_COORDINATES = {
+    "don toribio": (6.907671, 122.076997),
     "zone i": (6.9075, 122.0760),
     "zone ii": (6.9100, 122.0730),
     "zone iii": (6.9142, 122.0745),
