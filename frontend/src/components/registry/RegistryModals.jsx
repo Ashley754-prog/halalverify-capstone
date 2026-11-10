@@ -476,9 +476,7 @@ export default function RegistryModals({
                                     <option value="verified">Operational / Published</option>
                                     <option value="needs_review">Needs Review</option>
                                     <option value="suspended">Suspended</option>
-                                    <option value="relocated">Relocated / Moved</option>
                                     <option value="permanently_closed">Permanently Closed</option>
-                                    <option value="demolished">Demolished / Ceased Operations</option>
                                 </select>
                             </div>
                         </div>

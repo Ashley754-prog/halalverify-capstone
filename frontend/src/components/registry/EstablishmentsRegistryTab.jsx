@@ -123,14 +123,8 @@ export default function EstablishmentsRegistryTab({
         if (statusFilter === 'suspended') {
             return cfg.key === 'suspended' || cfg.key === 'flagged' || shopStatus === 'suspended' || shopStatus === 'flagged';
         }
-        if (statusFilter === 'relocated') {
-            return cfg.key === 'relocated' || shopStatus === 'relocated' || shopStatus.includes('relocat');
-        }
         if (statusFilter === 'permanently_closed') {
-            return cfg.key === 'permanently_closed' || shopStatus === 'permanently_closed' || shopStatus.includes('close');
-        }
-        if (statusFilter === 'demolished') {
-            return cfg.key === 'demolished' || shopStatus === 'demolished' || shopStatus.includes('demolish');
+            return cfg.key === 'permanently_closed' || shopStatus === 'permanently_closed' || shopStatus.includes('close') || shopStatus.includes('demolish');
         }
 
         return true;
@@ -201,9 +195,7 @@ export default function EstablishmentsRegistryTab({
                     >
                         <option value="all_active">Operational / Published</option>
                         <option value="suspended">Suspended</option>
-                        <option value="relocated">Relocated / Moved</option>
                         <option value="permanently_closed">Permanently Closed</option>
-                        <option value="demolished">Demolished / Ceased Operations</option>
                         {isAdmin && (
                             <>
                                 <option value="all">All Records (Admin)</option>

@@ -286,12 +286,8 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     ? 'needs_review'
                     : ['suspended', 'flagged'].includes(rawStatus)
                     ? 'suspended'
-                    : ['relocated', 'moved'].includes(rawStatus)
-                    ? 'relocated'
-                    : ['permanently_closed', 'closed'].includes(rawStatus)
+                    : ['permanently_closed', 'closed', 'demolished', 'relocated', 'moved'].includes(rawStatus)
                     ? 'permanently_closed'
-                    : ['demolished'].includes(rawStatus)
-                    ? 'demolished'
                     : 'verified';
 
             setModalForm({
@@ -415,7 +411,15 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 setHcbs(prev => prev.filter(entry => entry.id !== item.id));
                 updateToast('Certifying body removed from registry.', 'success');
             } else if (type === 'establishment') {
-                await deleteRegistryRecord(`/registry/establishments/${item.id}`);
+                try {
+                    const { error: sbErr } = await supabase
+                        .from('establishments')
+                        .delete()
+                        .eq('id', item.id);
+                    if (sbErr) throw sbErr;
+                } catch (sbDelErr) {
+                    await deleteRegistryRecord(`/registry/establishments/${item.id}`);
+                }
                 setEstablishments(prev => prev.filter(entry => entry.id !== item.id));
                 updateToast('Establishment deleted from database.', 'success');
             }
@@ -553,7 +557,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 const description = descParts.join(' | ') || (modalForm.description || null);
 
                 const role = modalForm.submitter_role || 'community';
-                const created = await saveRegistryRecord('/registry/establishments', 'POST', {
+                const estCreatePayload = {
                     name: requireText(modalForm.name, 'Establishment name'),
                     type: safeTrim(modalForm.type) || 'Restaurant',
                     address: safeTrim(modalForm.address) || 'Zamboanga City',
@@ -575,7 +579,25 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     logo_url: modalForm.photo_url === 'none' ? 'none' : safeTrim(modalForm.photo_url || modalForm.certificate_url),
                     facebook_url: safeTrim(modalForm.facebook_url) || null,
                     photo_url: modalForm.photo_url === 'none' ? 'none' : (safeTrim(modalForm.photo_url) || null),
-                });
+                };
+
+                let created = null;
+                try {
+                    const { data, error } = await supabase
+                        .from('establishments')
+                        .insert(estCreatePayload)
+                        .select()
+                        .single();
+                    if (!error && data) {
+                        created = data;
+                    }
+                } catch (sbErr) {
+                    console.warn('Direct Supabase insert failed, attempting backend fallback:', sbErr);
+                }
+
+                if (!created) {
+                    created = await saveRegistryRecord('/registry/establishments', 'POST', estCreatePayload);
+                }
 
                 const safeCreated = {
                     ...created,
@@ -617,33 +639,52 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 const description = descParts.join(' | ') || (modalForm.description || null);
 
                 const role = modalForm.submitter_role || 'community';
-                const updated = await saveRegistryRecord(
-                    `/registry/establishments/${selectedItem.id}`,
-                    'PATCH',
-                    {
-                        name: requireText(modalForm.name, 'Establishment name'),
-                        type: safeTrim(modalForm.type) || 'Restaurant',
-                        address: safeTrim(modalForm.address),
-                        city: safeTrim(modalForm.city) || 'Zamboanga City',
-                        certificate_number: (tier === 'halal_certified' || tier === 'verified') ? safeTrim(modalForm.certNo) : null,
-                        expiry_date: (tier === 'halal_certified' || tier === 'verified') ? safeTrim(modalForm.expiry) : null,
-                        halal_status: modalForm.status || 'verified',
-                        halal_tier: tier,
-                        submitter_role: role,
-                        amenities: amList,
-                        menu_highlights: dishList,
-                        phone: safeTrim(modalForm.phone),
-                        admin_notes: adminNotes,
-                        source: modalForm.source || (role === 'owner' ? 'Business Owner Submission' : 'Community User Submission'),
-                        description: description,
-                        certificate_url: (tier === 'halal_certified' || tier === 'verified')
-                            ? (modalForm.photo_url === 'none' ? null : safeTrim(modalForm.certificate_url))
-                            : null,
-                        logo_url: modalForm.photo_url === 'none' ? 'none' : safeTrim(modalForm.photo_url || modalForm.certificate_url),
-                        facebook_url: safeTrim(modalForm.facebook_url) || null,
-                        photo_url: modalForm.photo_url === 'none' ? 'none' : (safeTrim(modalForm.photo_url) || null),
+                const patchPayload = {
+                    name: requireText(modalForm.name, 'Establishment name'),
+                    type: safeTrim(modalForm.type) || 'Restaurant',
+                    address: safeTrim(modalForm.address),
+                    city: safeTrim(modalForm.city) || 'Zamboanga City',
+                    certificate_number: (tier === 'halal_certified' || tier === 'verified') ? safeTrim(modalForm.certNo) : null,
+                    expiry_date: (tier === 'halal_certified' || tier === 'verified') ? safeTrim(modalForm.expiry) : null,
+                    halal_status: modalForm.status || 'verified',
+                    halal_tier: tier,
+                    submitter_role: role,
+                    amenities: amList,
+                    menu_highlights: dishList,
+                    phone: safeTrim(modalForm.phone),
+                    admin_notes: adminNotes,
+                    source: modalForm.source || (role === 'owner' ? 'Business Owner Submission' : 'Community User Submission'),
+                    description: description,
+                    certificate_url: (tier === 'halal_certified' || tier === 'verified')
+                        ? (modalForm.photo_url === 'none' ? null : safeTrim(modalForm.certificate_url))
+                        : null,
+                    logo_url: modalForm.photo_url === 'none' ? 'none' : safeTrim(modalForm.photo_url || modalForm.certificate_url),
+                    facebook_url: safeTrim(modalForm.facebook_url) || null,
+                    photo_url: modalForm.photo_url === 'none' ? 'none' : (safeTrim(modalForm.photo_url) || null),
+                };
+
+                let updated = null;
+                try {
+                    const { data, error } = await supabase
+                        .from('establishments')
+                        .update(patchPayload)
+                        .eq('id', selectedItem.id)
+                        .select()
+                        .single();
+                    if (!error && data) {
+                        updated = data;
                     }
-                );
+                } catch (sbErr) {
+                    console.warn('Direct Supabase update failed, attempting backend fallback:', sbErr);
+                }
+
+                if (!updated) {
+                    updated = await saveRegistryRecord(
+                        `/registry/establishments/${selectedItem.id}`,
+                        'PATCH',
+                        patchPayload
+                    );
+                }
 
                 const resolvedLogoUrl = modalForm.photo_url === 'none'
                     ? 'none'
@@ -673,13 +714,32 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 );
                 updateToast('Establishment record saved to database.', 'success');
             } else if (activeModal === 'flag-establishment') {
-                const updated = await saveRegistryRecord(
-                    `/registry/establishments/${selectedItem.id}`,
-                    'PATCH',
-                    {
-                        halal_status: modalForm.status || 'needs_review',
+                const patchPayload = {
+                    halal_status: modalForm.status || 'needs_review',
+                };
+
+                let updated = null;
+                try {
+                    const { data, error } = await supabase
+                        .from('establishments')
+                        .update(patchPayload)
+                        .eq('id', selectedItem.id)
+                        .select()
+                        .single();
+                    if (!error && data) {
+                        updated = data;
                     }
-                );
+                } catch (sbErr) {
+                    console.warn('Direct Supabase flag update failed, attempting backend fallback:', sbErr);
+                }
+
+                if (!updated) {
+                    updated = await saveRegistryRecord(
+                        `/registry/establishments/${selectedItem.id}`,
+                        'PATCH',
+                        patchPayload
+                    );
+                }
 
                 setEstablishments(prev =>
                     prev.map(item => item.id === selectedItem.id ? updated : item)
