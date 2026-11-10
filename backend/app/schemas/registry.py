@@ -129,6 +129,8 @@ class EstablishmentSubmissionRequest(BaseModel):
         if not v:
             return None
         v_clean = v.strip()
+        if v_clean.lower() == 'none':
+            return 'none'
         if not (v_clean.startswith("http://") or v_clean.startswith("https://") or v_clean.startswith("data:image/")):
             raise ValueError("URL must use http, https, or safe data URI")
         return v_clean

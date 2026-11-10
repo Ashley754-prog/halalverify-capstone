@@ -556,7 +556,7 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
             score += 20
             audit_notes.append(f"Active contact number validated: {contact_phone} (+20 pts)")
 
-        has_photo = bool(payload.get("logo_url") or payload.get("certificate_url"))
+        has_photo = bool((payload.get("logo_url") and payload.get("logo_url") != "none") or (payload.get("certificate_url") and payload.get("certificate_url") != "none"))
         if has_photo:
             score += 20
             audit_notes.append("Visual evidence verified: Storefront or menu photo attached (+20 pts)")

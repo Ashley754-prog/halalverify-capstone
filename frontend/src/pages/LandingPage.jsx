@@ -127,9 +127,10 @@ function getEstablishmentTierLabel(establishment) {
 
 function getEstablishmentImageUrl(establishment) {
   if (!establishment) return null;
-  const localPhoto = getEstablishmentPhoto(establishment);
-  if (localPhoto) return localPhoto;
-  return getSafeUrl(establishment.logo_url || establishment.certificate_url);
+  if (establishment.logo_url === 'none' || establishment.photo_url === 'none') return null;
+  const customPhoto = getSafeUrl(establishment.logo_url || establishment.certificate_url);
+  if (customPhoto) return customPhoto;
+  return getEstablishmentPhoto(establishment);
 }
 
 function selectFeaturedProducts(products, limit = 8) {

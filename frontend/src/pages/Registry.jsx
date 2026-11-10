@@ -541,10 +541,10 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     description: description,
                     phone: safeTrim(modalForm.phone),
                     admin_notes: adminNotes,
-                    certificate_url: safeTrim(modalForm.certificate_url),
-                    logo_url: safeTrim(modalForm.photo_url || modalForm.certificate_url),
+                    certificate_url: modalForm.photo_url === 'none' ? null : safeTrim(modalForm.certificate_url),
+                    logo_url: modalForm.photo_url === 'none' ? 'none' : safeTrim(modalForm.photo_url || modalForm.certificate_url),
                     facebook_url: safeTrim(modalForm.facebook_url) || null,
-                    photo_url: safeTrim(modalForm.photo_url) || null,
+                    photo_url: modalForm.photo_url === 'none' ? 'none' : (safeTrim(modalForm.photo_url) || null),
                 });
 
                 const safeCreated = {
@@ -603,12 +603,20 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                         admin_notes: adminNotes,
                         source: modalForm.source || selectedItem.source || 'Official Halal Registry',
                         description: description,
-                        certificate_url: safeTrim(modalForm.certificate_url),
-                        logo_url: safeTrim(modalForm.photo_url || modalForm.certificate_url),
+                        certificate_url: modalForm.photo_url === 'none' ? null : safeTrim(modalForm.certificate_url),
+                        logo_url: modalForm.photo_url === 'none' ? 'none' : safeTrim(modalForm.photo_url || modalForm.certificate_url),
                         facebook_url: safeTrim(modalForm.facebook_url) || null,
-                        photo_url: safeTrim(modalForm.photo_url) || null,
+                        photo_url: modalForm.photo_url === 'none' ? 'none' : (safeTrim(modalForm.photo_url) || null),
                     }
                 );
+
+                const resolvedLogoUrl = modalForm.photo_url === 'none'
+                    ? 'none'
+                    : (updated?.logo_url !== undefined ? updated.logo_url : safeTrim(modalForm.photo_url || modalForm.certificate_url));
+
+                const resolvedPhotoUrl = modalForm.photo_url === 'none'
+                    ? 'none'
+                    : (updated?.photo_url !== undefined ? updated.photo_url : (safeTrim(modalForm.photo_url) || null));
 
                 const safeUpdated = {
                     ...selectedItem,
@@ -618,6 +626,8 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     amenities: amList,
                     admin_notes: adminNotes,
                     description: description,
+                    logo_url: resolvedLogoUrl,
+                    photo_url: resolvedPhotoUrl,
                 };
 
                 setEstablishments(prev =>

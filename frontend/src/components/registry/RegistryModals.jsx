@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Upload, Loader2, ExternalLink } from 'lucide-react';
 import Modal from '../ui/Modal';
-import { ESTABLISHMENT_TYPES, ESTABLISHMENT_HALAL_TIERS } from '../../data/constants';
+import { ESTABLISHMENT_TYPES, ESTABLISHMENT_HALAL_TIERS, getEstablishmentPhoto } from '../../data/constants';
 import { supabase } from '../../lib/supabaseClient';
 
 const ADDITIVE_STATUSES = ['Halal', 'Doubtful', 'Haram'];
@@ -520,56 +520,80 @@ export default function RegistryModals({
                         )}
 
                         {/* Simplified Venue Photo Upload */}
-                        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2.5">
-                            <div className="flex items-center justify-between gap-2">
-                                <span className="text-xs font-bold uppercase tracking-wide text-slate-700">
-                                    Venue Storefront Photo
-                                </span>
-                                {(modalForm.photo_url || modalForm.certificate_url) && (
-                                    <a
-                                        href={modalForm.photo_url || modalForm.certificate_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-[11px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-1"
-                                    >
-                                        <span>View Full Photo</span>
-                                        <ExternalLink size={11} />
-                                    </a>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <label className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer transition shadow-xs active:scale-[0.98] shrink-0">
-                                    {isUploadingCert ? (
-                                        <>
-                                            <Loader2 size={14} className="animate-spin text-white" />
-                                            <span>Uploading Image...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Upload size={14} />
-                                            <span>{modalForm.photo_url || modalForm.certificate_url ? 'Change Photo' : 'Upload Photo'}</span>
-                                        </>
-                                    )}
-                                    <input
-                                        type="file"
-                                        accept="image/jpeg,image/png,image/webp"
-                                        onChange={handleCertFileUpload}
-                                        className="hidden"
-                                    />
-                                </label>
-                                {(modalForm.photo_url || modalForm.certificate_url) ? (
-                                    <button
-                                        type="button"
-                                        onClick={() => setModalForm(prev => ({ ...prev, photo_url: '', certificate_url: '' }))}
-                                        className="text-xs font-bold text-red-600 hover:text-red-700 hover:underline cursor-pointer"
-                                    >
-                                        Remove Photo
-                                    </button>
-                                ) : (
-                                    <span className="text-xs text-slate-400 italic">No custom photo uploaded</span>
-                                )}
-                            </div>
-                        </div>
+                        {(() => {
+                            const hasActivePhoto = Boolean(
+                                modalForm.photo_url && modalForm.photo_url !== 'none'
+                            );
+                            const hasRemovedPhoto = modalForm.photo_url === 'none';
+                            const defaultPhoto = getEstablishmentPhoto({ name: modalForm.name });
+                            const isShowingDefault = !hasActivePhoto && !hasRemovedPhoto && Boolean(defaultPhoto);
+
+                            return (
+                                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2.5">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="text-xs font-bold uppercase tracking-wide text-slate-700">
+                                            Venue Storefront Photo
+                                        </span>
+                                        {(hasActivePhoto || isShowingDefault) && (
+                                            <a
+                                                href={hasActivePhoto ? modalForm.photo_url : defaultPhoto}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-[11px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-1"
+                                            >
+                                                <span>View Full Photo</span>
+                                                <ExternalLink size={11} />
+                                            </a>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <label className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer transition shadow-xs active:scale-[0.98] shrink-0">
+                                            {isUploadingCert ? (
+                                                <>
+                                                    <Loader2 size={14} className="animate-spin text-white" />
+                                                    <span>Uploading Image...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Upload size={14} />
+                                                    <span>{hasActivePhoto || isShowingDefault ? 'Change Photo' : 'Upload Photo'}</span>
+                                                </>
+                                            )}
+                                            <input
+                                                type="file"
+                                                accept="image/jpeg,image/png,image/webp"
+                                                onChange={handleCertFileUpload}
+                                                className="hidden"
+                                            />
+                                        </label>
+                                        {(hasActivePhoto || isShowingDefault) ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => setModalForm(prev => ({ ...prev, photo_url: 'none', certificate_url: '' }))}
+                                                className="text-xs font-bold text-red-600 hover:text-red-700 hover:underline cursor-pointer"
+                                            >
+                                                Remove Photo
+                                            </button>
+                                        ) : hasRemovedPhoto ? (
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-medium text-slate-500 italic">Photo removed (placeholder active)</span>
+                                                {defaultPhoto && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setModalForm(prev => ({ ...prev, photo_url: '', certificate_url: '' }))}
+                                                        className="text-xs font-semibold text-emerald-700 hover:underline cursor-pointer"
+                                                    >
+                                                        Restore Default
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <span className="text-xs text-slate-400 italic">No custom photo uploaded</span>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })()}
 
                         {/* Guest Amenities & Facilities */}
                         <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2.5">

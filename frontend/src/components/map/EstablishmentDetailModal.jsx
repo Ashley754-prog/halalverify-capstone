@@ -30,9 +30,11 @@ export default function EstablishmentDetailModal({
 
     const statusConfig = getStatusConfig(establishment);
     const districtInfo = resolveZamboangaDistrict(establishment);
-    const venuePhotoUrl = getEstablishmentPhoto(establishment) || getSafeUrl(establishment.logo_url || establishment.photo_url);
+    const hasExplicitNoPhoto = establishment.logo_url === 'none' || establishment.photo_url === 'none';
+    const customPhoto = getSafeUrl(establishment.logo_url || establishment.photo_url);
+    const venuePhotoUrl = hasExplicitNoPhoto ? null : (customPhoto || getEstablishmentPhoto(establishment));
     const rawCertDocUrl = establishment.certificate_url ? getSafeUrl(establishment.certificate_url) : null;
-    const isActualCertDoc = Boolean(rawCertDocUrl && rawCertDocUrl !== venuePhotoUrl);
+    const isActualCertDoc = Boolean(rawCertDocUrl && rawCertDocUrl !== venuePhotoUrl && rawCertDocUrl !== 'none');
     const evidenceUrl = (isActualCertDoc ? rawCertDocUrl : null) || venuePhotoUrl;
 
     const isFormallyCertified = Boolean(
