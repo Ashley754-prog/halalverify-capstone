@@ -377,22 +377,49 @@ export default function RegistryModals({
                             <div>
                                 <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Venue Category</label>
                                 {(() => {
-                                    const currentType = modalForm.type || 'Restaurant';
-                                    const isLegacyType = Boolean(currentType && !ESTABLISHMENT_TYPES.includes(currentType));
+                                    const currentType = modalForm.type ?? 'Restaurant';
+                                    const isStandard = ESTABLISHMENT_TYPES.includes(currentType);
+                                    const isCustom = modalForm.isCustomType || (!isStandard && Boolean(currentType));
+                                    const selectValue = isCustom ? '__custom__' : currentType;
 
                                     return (
-                                        <select
-                                            value={currentType}
-                                            onChange={(e) => setModalForm(prev => ({ ...prev, type: e.target.value, isCustomType: false }))}
-                                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none cursor-pointer"
-                                        >
-                                            {isLegacyType && (
-                                                <option value={currentType}>{currentType}</option>
+                                        <div className="space-y-2">
+                                            <select
+                                                value={selectValue}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    if (val === '__custom__') {
+                                                        setModalForm(prev => ({
+                                                            ...prev,
+                                                            isCustomType: true,
+                                                            type: isStandard ? '' : (prev.type || ''),
+                                                        }));
+                                                    } else {
+                                                        setModalForm(prev => ({
+                                                            ...prev,
+                                                            type: val,
+                                                            isCustomType: false,
+                                                        }));
+                                                    }
+                                                }}
+                                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none cursor-pointer"
+                                            >
+                                                {ESTABLISHMENT_TYPES.map((cat) => (
+                                                    <option key={cat} value={cat}>{cat}</option>
+                                                ))}
+                                                <option value="__custom__">+ Other / Custom Category...</option>
+                                            </select>
+                                            {isCustom && (
+                                                <input
+                                                    type="text"
+                                                    value={modalForm.type || ''}
+                                                    onChange={(e) => setModalForm(prev => ({ ...prev, type: e.target.value, isCustomType: true }))}
+                                                    placeholder="Type custom category name (e.g. Barbecue House)..."
+                                                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                                    autoFocus
+                                                />
                                             )}
-                                            {ESTABLISHMENT_TYPES.map((cat) => (
-                                                <option key={cat} value={cat}>{cat}</option>
-                                            ))}
-                                        </select>
+                                        </div>
                                     );
                                 })()}
                             </div>

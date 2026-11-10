@@ -19,7 +19,7 @@ import RegistryModals, { normalizeAdditiveCode } from '../components/registry/Re
 import RegistryDeleteModal from '../components/registry/RegistryDeleteModal';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
-import { getStatusConfig } from '../data/constants';
+import { getStatusConfig, ESTABLISHMENT_TYPES } from '../data/constants';
 
 const emptyAdditiveForm = {
     code: '',
@@ -292,7 +292,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 certificate_url: item.certificate_url || '',
                 facebook_url: item.facebook_url || '',
                 photo_url: item.logo_url || item.photo_url || item.image_url || '',
-                isCustomType: false,
+                isCustomType: Boolean(item.type && !ESTABLISHMENT_TYPES.includes(item.type)),
             });
         }
     };
