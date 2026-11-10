@@ -33,7 +33,6 @@ const VENUE_STATUS_PILLS = [
     { key: 'verified', label: 'Halal Certified' },
     { key: 'muslim_owned', label: 'Muslim-Owned' },
     { key: 'muslim_friendly', label: 'Muslim-Friendly' },
-    { key: 'vegetarian_vegan', label: 'Plant-Based' },
 ];
 
 const MODERATION_PILLS = [
@@ -195,7 +194,16 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                     let withCoords = sbData.filter((e) => e.latitude && e.longitude);
                     withCoords = withCoords.filter((e) => {
                         const st = (e.halal_status || '').toLowerCase().trim();
-                        if (st === 'rejected' || st.includes('reject') || st === 'flagged' || st === 'suspended' || st === 'expired') {
+                        if (
+                            st === 'rejected' ||
+                            st.includes('reject') ||
+                            st === 'flagged' ||
+                            st === 'suspended' ||
+                            st === 'expired' ||
+                            st === 'permanently_closed' ||
+                            st === 'demolished' ||
+                            st === 'relocated'
+                        ) {
                             return selectedStatus === 'flagged' || selectedStatus === 'rejected';
                         }
                         if (st === 'needs_review' || st === 'pending' || st.includes('pending') || st.includes('needs_review')) {
@@ -207,7 +215,16 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                     if (selectedStatus === 'all') {
                         withCoords = withCoords.filter((e) => {
                             const cfg = getStatusConfig(e);
-                            return cfg.key !== 'needs_review' && cfg.key !== 'pending_review' && cfg.key !== 'flagged' && cfg.key !== 'rejected';
+                            return (
+                                cfg.key !== 'needs_review' &&
+                                cfg.key !== 'pending_review' &&
+                                cfg.key !== 'flagged' &&
+                                cfg.key !== 'rejected' &&
+                                cfg.key !== 'suspended' &&
+                                cfg.key !== 'permanently_closed' &&
+                                cfg.key !== 'demolished' &&
+                                cfg.key !== 'relocated'
+                            );
                         });
                     } else {
                         withCoords = withCoords.filter((e) => {

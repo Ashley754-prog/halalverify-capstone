@@ -175,14 +175,6 @@ export const ESTABLISHMENT_HALAL_TIERS = [
     badge: 'Friendly',
     color: 'indigo',
   },
-  {
-    id: 'vegetarian_vegan',
-    category: 'community',
-    label: 'Vegetarian / Vegan',
-    description: 'Serves zero meat, poultry, or fish, providing suitable dining options for Muslims.',
-    badge: 'Plant-Based',
-    color: 'teal',
-  },
 ];
 
 export const PRODUCT_HALAL_TIERS = [

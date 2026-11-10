@@ -26,7 +26,8 @@ export default function EstablishmentsRegistryTab({
     onReportEstablishment,
     onViewChange,
 }) {
-    const [statusFilter, setStatusFilter] = useState('all');
+    const [standardFilter, setStandardFilter] = useState('all');
+    const [statusFilter, setStatusFilter] = useState('all_active');
     const [districtFilter, setDistrictFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(8);
@@ -85,24 +86,51 @@ export default function EstablishmentsRegistryTab({
             return false;
         }
 
-        if (statusFilter !== 'all') {
-            if (statusFilter === 'verified') return cfg.key === 'verified';
-            if (statusFilter === 'muslim_owned') return cfg.key === 'muslim_owned' || cfg.key === 'community';
-            if (statusFilter === 'muslim_friendly') return cfg.key === 'muslim_friendly';
-            if (statusFilter === 'vegetarian_vegan') return cfg.key === 'vegetarian_vegan';
-            if (statusFilter === 'needs_review') return cfg.key === 'needs_review' || cfg.key === 'pending_review' || shopStatus === 'needs_review' || shopStatus.includes('pending');
-            if (statusFilter === 'suspended') return cfg.key === 'suspended' || cfg.key === 'flagged' || shopStatus === 'suspended' || shopStatus === 'flagged';
-            if (statusFilter === 'closed_demolished') return cfg.key === 'permanently_closed' || cfg.key === 'demolished' || cfg.key === 'relocated' || shopStatus.includes('close') || shopStatus.includes('demolish') || shopStatus.includes('relocat');
-            return false;
+        // 1. Verification Standard Filter (Halal Tier)
+        if (standardFilter !== 'all') {
+            const tier = shop.halal_tier || cfg.key;
+            if (standardFilter === 'halal_certified' || standardFilter === 'verified') {
+                if (tier !== 'halal_certified' && cfg.key !== 'verified') return false;
+            } else if (standardFilter === 'muslim_owned') {
+                if (tier !== 'muslim_owned' && cfg.key !== 'muslim_owned' && cfg.key !== 'community') return false;
+            } else if (standardFilter === 'muslim_friendly') {
+                if (tier !== 'muslim_friendly' && cfg.key !== 'muslim_friendly') return false;
+            }
         }
 
-        return !isNonActiveStatus;
+        // 2. Registry Status Filter
+        if (statusFilter === 'all_active') {
+            return !isNonActiveStatus;
+        }
+        if (statusFilter === 'all') {
+            return true;
+        }
+        if (statusFilter === 'verified') {
+            return !isNonActiveStatus;
+        }
+        if (statusFilter === 'needs_review') {
+            return cfg.key === 'needs_review' || cfg.key === 'pending_review' || shopStatus === 'needs_review' || shopStatus.includes('pending');
+        }
+        if (statusFilter === 'suspended') {
+            return cfg.key === 'suspended' || cfg.key === 'flagged' || shopStatus === 'suspended' || shopStatus === 'flagged';
+        }
+        if (statusFilter === 'relocated') {
+            return cfg.key === 'relocated' || shopStatus === 'relocated' || shopStatus.includes('relocat');
+        }
+        if (statusFilter === 'permanently_closed') {
+            return cfg.key === 'permanently_closed' || shopStatus === 'permanently_closed' || shopStatus.includes('close');
+        }
+        if (statusFilter === 'demolished') {
+            return cfg.key === 'demolished' || shopStatus === 'demolished' || shopStatus.includes('demolish');
+        }
+
+        return true;
     });
 
     // Reset pagination to page 1 whenever filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [districtFilter, statusFilter, localSearch]);
+    }, [districtFilter, standardFilter, statusFilter, localSearch]);
 
     const totalItems = filteredEstablishments.length;
     const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
@@ -112,7 +140,8 @@ export default function EstablishmentsRegistryTab({
 
     const handleResetFilters = () => {
         setLocalSearch('');
-        setStatusFilter('all');
+        setStandardFilter('all');
+        setStatusFilter('all_active');
         setDistrictFilter('all');
     };
 
@@ -129,11 +158,11 @@ export default function EstablishmentsRegistryTab({
                     </p>
                 </div>
 
-                <div className="grid grid-cols-2 md:flex md:items-center gap-2 w-full md:w-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:items-center gap-2 w-full md:w-auto">
                     <select
                         value={districtFilter}
                         onChange={(e) => setDistrictFilter(e.target.value)}
-                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full md:w-auto"
+                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full lg:w-auto"
                         aria-label="Filter by Zamboanga District"
                     >
                         {ZAMBOANGA_DISTRICTS.map((d) => (
@@ -144,30 +173,39 @@ export default function EstablishmentsRegistryTab({
                     </select>
 
                     <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full md:w-auto"
+                        value={standardFilter}
+                        onChange={(e) => setStandardFilter(e.target.value)}
+                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full lg:w-auto"
                         aria-label="Filter by verification standard"
                     >
                         <option value="all">All Standards ({activeEstablishmentsCount})</option>
-                        <option value="verified">Certified</option>
+                        <option value="halal_certified">Halal Certified</option>
                         <option value="muslim_owned">Muslim-Owned</option>
                         <option value="muslim_friendly">Muslim-Friendly</option>
-                        <option value="vegetarian_vegan">Plant-Based</option>
-                        {isAdmin && (
-                            <>
-                                <option value="needs_review">Pending Review</option>
-                                <option value="suspended">Suspended</option>
-                                <option value="closed_demolished">Closed / Demolished</option>
-                            </>
-                        )}
                     </select>
+
+                    {isAdmin && (
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full lg:w-auto"
+                            aria-label="Filter by registry status"
+                        >
+                            <option value="all_active">Operational / Published</option>
+                            <option value="all">All Statuses (Admin)</option>
+                            <option value="needs_review">Needs Review</option>
+                            <option value="suspended">Suspended</option>
+                            <option value="relocated">Relocated / Moved</option>
+                            <option value="permanently_closed">Permanently Closed</option>
+                            <option value="demolished">Demolished / Ceased Operations</option>
+                        </select>
+                    )}
 
                     <SearchBar
                         value={localSearch}
                         onChange={setLocalSearch}
                         placeholder="Search name, street, cuisine..."
-                        className="col-span-2 md:col-span-1 md:w-72"
+                        className="col-span-1 sm:col-span-2 lg:col-span-1 lg:w-64"
                         size="sm"
                     />
                 </div>
