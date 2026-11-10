@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Database, Search, Pencil, Trash2, ExternalLink } from 'lucide-react';
+import { Database,  Pencil, Trash2, ExternalLink } from 'lucide-react';
 import Pagination from '../ui/Pagination';
 import EmptyState from '../ui/EmptyState';
 import SearchBar from '../ui/SearchBar';
@@ -74,41 +74,42 @@ export default function AdditivesRegistryTab({
                     </p>
                 </div>
 
-                <div className="grid grid-cols-2 md:flex md:items-center gap-2 w-full md:w-auto">
-                    {/* Status Filter */}
-                    <select
-                        value={additiveStatusFilter}
-                        onChange={(e) => setAdditiveStatusFilter(e.target.value)}
-                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full md:w-auto"
-                        aria-label="Filter by chemical compliance status"
-                    >
-                        <option value="all">All Statuses</option>
-                        <option value="Halal">Halal</option>
-                        <option value="Doubtful">Doubtful</option>
-                        <option value="Haram">Haram</option>
-                    </select>
-
-                    {/* Origin Filter */}
-                    <select
-                        value={additiveOriginFilter}
-                        onChange={(e) => setAdditiveOriginFilter(e.target.value)}
-                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full md:w-auto"
-                        aria-label="Filter by chemical origin"
-                    >
-                        <option value="all">All Origins</option>
-                        <option value="Plant">Plant</option>
-                        <option value="Animal">Animal</option>
-                        <option value="Insect">Insect</option>
-                        <option value="Synthetic">Synthetic</option>
-                    </select>
-
+                <div className="flex flex-col gap-2 w-full md:flex-row md:items-center md:gap-2 md:w-auto">
                     <SearchBar
                         value={dictSearch}
                         onChange={setDictSearch}
                         placeholder="Search code or additive..."
-                        className="col-span-2 md:col-span-1 md:w-64"
+                        className="w-full md:w-64"
                         size="sm"
                     />
+                    <div className="grid grid-cols-2 items-center gap-2 md:flex">
+                        {/* Status Filter */}
+                        <select
+                            value={additiveStatusFilter}
+                            onChange={(e) => setAdditiveStatusFilter(e.target.value)}
+                            className="h-8.5 sm:h-9 min-w-0 bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full md:w-auto"
+                            aria-label="Filter by chemical compliance status"
+                        >
+                            <option value="all">All Statuses</option>
+                            <option value="Halal">Halal</option>
+                            <option value="Doubtful">Doubtful</option>
+                            <option value="Haram">Haram</option>
+                        </select>
+
+                        {/* Origin Filter */}
+                        <select
+                            value={additiveOriginFilter}
+                            onChange={(e) => setAdditiveOriginFilter(e.target.value)}
+                            className="h-8.5 sm:h-9 min-w-0 bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full md:w-auto"
+                            aria-label="Filter by chemical origin"
+                        >
+                            <option value="all">All Origins</option>
+                            <option value="Plant">Plant</option>
+                            <option value="Animal">Animal</option>
+                            <option value="Insect">Insect</option>
+                            <option value="Synthetic">Synthetic</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 

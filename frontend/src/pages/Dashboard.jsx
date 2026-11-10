@@ -24,6 +24,10 @@ export const Dashboard = ({ userRole, onViewChange }) => {
     const [summary, setSummary] = useState(null);
     const [loadError, setLoadError] = useState(false);
     const [showTechDetails, setShowTechDetails] = useState(userRole === 'admin');
+    const [recentProducts, setRecentProducts] = useState([]);
+    const [recentEstablishments, setRecentEstablishments] = useState([]);
+    const [recentLoading, setRecentLoading] = useState(false);
+    const [recentError, setRecentError] = useState(false);
 
     const isAdmin = userRole === 'admin';
 
@@ -86,6 +90,54 @@ export const Dashboard = ({ userRole, onViewChange }) => {
         loadSummary();
     }, [isAdmin]);
 
+    useEffect(() => {
+        if (isAdmin) return;
+
+        let isMounted = true;
+        const loadRecentlyVerified = async () => {
+            setRecentLoading(true);
+            setRecentError(false);
+            const today = new Date().toISOString().slice(0, 10);
+
+            try {
+                const [productsResult, establishmentsResult] = await Promise.all([
+                    supabase
+                        .from('products')
+                        .select('id, name, brand, category, status, created_at')
+                        .in('status', ['Halal', 'halal', 'HALAL', 'Verified', 'verified', 'VERIFIED'])
+                        .or(`expiry_date.is.null,expiry_date.gte.${today}`)
+                        .order('created_at', { ascending: false })
+                        .limit(3),
+                    supabase
+                        .from('establishments')
+                        .select('id, name, type, address, halal_status, created_at')
+                        .in('halal_status', ['verified', 'VERIFIED', 'halal_certified', 'Halal Certified'])
+                        .or(`expiry_date.is.null,expiry_date.gte.${today}`)
+                        .order('created_at', { ascending: false })
+                        .limit(3),
+                ]);
+
+                if (productsResult.error) throw productsResult.error;
+                if (establishmentsResult.error) throw establishmentsResult.error;
+
+                if (isMounted) {
+                    setRecentProducts(productsResult.data || []);
+                    setRecentEstablishments(establishmentsResult.data || []);
+                }
+            } catch (error) {
+                console.error('Failed to load recently verified dashboard entries:', error);
+                if (isMounted) setRecentError(true);
+            } finally {
+                if (isMounted) setRecentLoading(false);
+            }
+        };
+
+        loadRecentlyVerified();
+        return () => {
+            isMounted = false;
+        };
+    }, [isAdmin]);
+
     const totals = summary?.totals;
 
     return (
@@ -139,16 +191,16 @@ export const Dashboard = ({ userRole, onViewChange }) => {
                     <button
                         type="button"
                         onClick={() => onViewChange?.('map')}
-                        className="group bg-white border border-slate-200 hover:border-emerald-300 p-5 rounded-2xl text-left shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-[0.98]"
+                        className="group bg-gradient-to-br from-blue-600 to-indigo-700 border border-blue-700/20 hover:from-blue-700 hover:to-indigo-800 p-5 rounded-2xl text-left shadow-md shadow-blue-900/10 hover:shadow-lg hover:shadow-blue-900/20 transition-all cursor-pointer active:scale-[0.98]"
                     >
-                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                        <div className="w-10 h-10 rounded-xl bg-white/15 text-white flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                             <MapPin size={22} />
                         </div>
-                        <h3 className="font-bold text-base text-slate-800">Dining & Venues Map</h3>
-                        <p className="text-xs text-slate-500 mt-1 leading-snug">
+                        <h3 className="font-bold text-base text-white">Dining & Venues Map</h3>
+                        <p className="text-xs text-blue-100/90 mt-1 leading-snug">
                             Locate Halal-certified and Muslim-owned restaurants in Zamboanga City.
                         </p>
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 mt-4 group-hover:translate-x-1 transition-transform">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-white mt-4 group-hover:translate-x-1 transition-transform">
                             Explore Map <ArrowRight size={13} />
                         </span>
                     </button>
@@ -156,16 +208,16 @@ export const Dashboard = ({ userRole, onViewChange }) => {
                     <button
                         type="button"
                         onClick={() => onViewChange?.('products')}
-                        className="group bg-white border border-slate-200 hover:border-emerald-300 p-5 rounded-2xl text-left shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-[0.98]"
+                        className="group bg-gradient-to-br from-emerald-600 to-teal-700 border border-emerald-700/20 hover:from-emerald-700 hover:to-teal-800 p-5 rounded-2xl text-left shadow-md shadow-emerald-900/10 hover:shadow-lg hover:shadow-emerald-900/20 transition-all cursor-pointer active:scale-[0.98]"
                     >
-                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                        <div className="w-10 h-10 rounded-xl bg-white/15 text-white flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                             <Package size={22} />
                         </div>
-                        <h3 className="font-bold text-base text-slate-800">Verified Products</h3>
-                        <p className="text-xs text-slate-500 mt-1 leading-snug">
+                        <h3 className="font-bold text-base text-white">Verified Products</h3>
+                        <p className="text-xs text-emerald-100/90 mt-1 leading-snug">
                             Browse screened consumer goods, packaged snacks, and grocery items.
                         </p>
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 mt-4 group-hover:translate-x-1 transition-transform">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-white mt-4 group-hover:translate-x-1 transition-transform">
                             Browse Catalog <ArrowRight size={13} />
                         </span>
                     </button>
@@ -173,16 +225,16 @@ export const Dashboard = ({ userRole, onViewChange }) => {
                     <button
                         type="button"
                         onClick={() => onViewChange?.('registry')}
-                        className="group bg-white border border-slate-200 hover:border-emerald-300 p-5 rounded-2xl text-left shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-[0.98]"
+                        className="group bg-gradient-to-br from-violet-600 to-purple-700 border border-violet-700/20 hover:from-violet-700 hover:to-purple-800 p-5 rounded-2xl text-left shadow-md shadow-purple-900/10 hover:shadow-lg hover:shadow-purple-900/20 transition-all cursor-pointer active:scale-[0.98]"
                     >
-                        <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                        <div className="w-10 h-10 rounded-xl bg-white/15 text-white flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                             <BookOpen size={22} />
                         </div>
-                        <h3 className="font-bold text-base text-slate-800">Additives & E-Codes</h3>
-                        <p className="text-xs text-slate-500 mt-1 leading-snug">
+                        <h3 className="font-bold text-base text-white">Additives & E-Codes</h3>
+                        <p className="text-xs text-violet-100/90 mt-1 leading-snug">
                             Look up food additives, emulsifiers, and Halal certifying bodies.
                         </p>
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 mt-4 group-hover:translate-x-1 transition-transform">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-white mt-4 group-hover:translate-x-1 transition-transform">
                             Search Standards <ArrowRight size={13} />
                         </span>
                     </button>
@@ -204,6 +256,89 @@ export const Dashboard = ({ userRole, onViewChange }) => {
                     )}
                 </div>
             </div>
+
+            {!isAdmin && (
+                <section aria-labelledby="recently-verified-heading" className="space-y-3">
+                    <div>
+                        <div>
+                            <h3 id="recently-verified-heading" className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                                Recently Verified
+                            </h3>
+                            <p className="mt-1 text-xs text-slate-500">
+                                A quick look at verified products and dining venues in the directory.
+                            </p>
+                        </div>
+                    </div>
+
+                    {recentLoading ? (
+                        <div className="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-500">
+                            Loading recently verified entries...
+                        </div>
+                    ) : recentError ? (
+                        <div role="status" className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800">
+                            Recently verified entries are temporarily unavailable.
+                        </div>
+                    ) : recentProducts.length === 0 && recentEstablishments.length === 0 ? (
+                        <div className="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-500">
+                            No verified entries are available to show right now.
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                            {[
+                                { title: 'Products', items: recentProducts, kind: 'product' },
+                                { title: 'Dining venues', items: recentEstablishments, kind: 'establishment' },
+                            ].map(({ title, items, kind }) => (
+                                <div key={kind} className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:p-5">
+                                    <div className="mb-3 flex items-center justify-between gap-2">
+                                        <h4 className="text-sm font-bold text-slate-800">{title}</h4>
+                                        {kind === 'product' ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => onViewChange?.('products')}
+                                                className="inline-flex shrink-0 items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-800"
+                                            >
+                                                Browse products <ArrowRight size={13} />
+                                            </button>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                onClick={() => onViewChange?.('map')}
+                                                className="inline-flex shrink-0 items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-800"
+                                            >
+                                                Explore venues <ArrowRight size={13} />
+                                            </button>
+                                        )}
+                                    </div>
+                                    {items.length > 0 ? (
+                                        <ul className="divide-y divide-slate-100">
+                                            {items.map((item) => (
+                                                <li key={item.id} className="flex min-w-0 items-start gap-3 py-3 first:pt-0 last:pb-0">
+                                                    <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${kind === 'product' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'}`}>
+                                                        {kind === 'product' ? <Package size={16} /> : <Store size={16} />}
+                                                    </span>
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="truncate text-sm font-semibold text-slate-800">{item.name}</p>
+                                                        <p className="mt-0.5 truncate text-xs text-slate-500">
+                                                            {kind === 'product'
+                                                                ? [item.brand, item.category].filter(Boolean).join(' · ') || 'Verified product'
+                                                                : [item.type, item.address].filter(Boolean).join(' · ') || 'Verified dining venue'}
+                                                        </p>
+                                                    </div>
+                                                    <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">
+                                                        Verified
+                                                    </span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <p className="text-xs text-slate-500">No recent verified {kind === 'product' ? 'products' : 'venues'} found.</p>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </section>
+            )}
 
             {/* Admin Management Shortcuts */}
             {isAdmin && (

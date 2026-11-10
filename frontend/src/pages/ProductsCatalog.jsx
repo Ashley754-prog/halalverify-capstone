@@ -19,6 +19,7 @@ import ContributionModal from '../components/submissions/ContributionModal';
 import AuthPromptModal from '../components/submissions/AuthPromptModal';
 import ReportIssueModal from '../components/reports/ReportIssueModal';
 import ProductCard from '../components/catalog/ProductCard';
+import ProductCardDetail from '../components/landing/ProductCardDetail';
 import ProductFormModal from '../components/catalog/ProductFormModal';
 import ProductDeleteModal from '../components/catalog/ProductDeleteModal';
 import { supabase } from '../lib/supabaseClient';
@@ -908,6 +909,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                             key={product.id}
                             product={product}
                             isAdmin={isAdmin}
+                            onViewDetails={(p) => openModal('view-product', p)}
                             onReport={handleReportProduct}
                             onEdit={(p) => openModal('edit-product', p)}
                             onDelete={(p) => openModal('delete-product', p)}
@@ -931,6 +933,11 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             )}
 
             {/* Add / Edit Modal */}
+            <ProductCardDetail
+                product={activeModal === 'view-product' ? selectedProduct : null}
+                onClose={closeModal}
+            />
+
             <ProductFormModal
                 isOpen={activeModal === 'add-product' || activeModal === 'edit-product'}
                 isEdit={activeModal === 'edit-product'}

@@ -772,10 +772,10 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
     return (
         <div className="p-3 sm:p-6 md:p-8 space-y-3 sm:space-y-5 w-full min-h-full pb-8">
             {/* Module Title and Actions Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3 pb-1 border-b border-slate-200/80 shrink-0">
-                <div>
+            <div className="flex items-center justify-between gap-2 sm:gap-3 pb-1 border-b border-slate-200/80 shrink-0">
+                <div className="min-w-0">
                     <h2 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                        <Store className="text-emerald-600" size={22} />
+                        <Store className="text-emerald-600 shrink-0" size={22} />
                         Local Halal Registry
                     </h2>
                     <p className="hidden sm:block text-xs sm:text-sm text-slate-500 mt-0.5">
@@ -788,7 +788,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                         <button
                             type="button"
                             onClick={handleOpenContribution}
-                            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm font-bold text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-700 transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+                            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-2.5 py-1.5 sm:px-3.5 sm:py-2 text-[11px] sm:text-sm font-bold text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-700 transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
                         >
                             <Plus size={14} />
                             <span>Submit <span className="hidden sm:inline">Establishment</span></span>

@@ -124,6 +124,7 @@ export default function EstablishmentDetailModal({
             onClose={onClose}
             title=""
             size="lg"
+            compactOnMobile
             footer={
                 <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-2">
                     <button

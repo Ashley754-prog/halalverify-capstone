@@ -45,7 +45,7 @@ const AMENITY_PILLS = [
     { key: 'alcohol_free', label: 'Alcohol-Free', icon: ShieldCheck },
 ];
 
-const FILTER_PILL_BASE = 'px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40';
+const FILTER_PILL_BASE = 'shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40';
 const FILTER_PILL_ACTIVE = 'bg-emerald-600 text-white shadow-xs';
 const FILTER_PILL_ACTIVE_MODERATION = 'bg-amber-100 text-amber-800 border border-amber-300 shadow-xs';
 const FILTER_PILL_IDLE = 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200';
@@ -721,7 +721,12 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
 
             {/* Quick One-Tap Filter Pills Row */}
             <div className="relative shrink-0">
-                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 pr-7 select-none">
+                <div
+                    role="region"
+                    aria-label="Venue and amenity filters"
+                    tabIndex={0}
+                    className="flex flex-nowrap items-center gap-1.5 overflow-x-auto overscroll-x-contain touch-pan-x scroll-smooth no-scrollbar py-0.5 pr-7 select-none"
+                >
                     {VENUE_STATUS_PILLS.map((pill) => {
                         const isActive = pill.key === 'all'
                             ? selectedStatus === 'all' && selectedAmenity === 'all'

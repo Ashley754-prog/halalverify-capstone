@@ -5,6 +5,7 @@ const SIZE_CLASSES = {
     sm: 'max-w-sm',
     md: 'max-w-md',
     lg: 'max-w-2xl',
+    contribution: 'max-w-xl',
     xl: 'max-w-4xl',
     '2xl': 'max-w-5xl',
     '3xl': 'max-w-6xl',
@@ -12,7 +13,17 @@ const SIZE_CLASSES = {
     full: 'max-w-[95vw]',
 };
 
-export default function Modal({ isOpen, title, description, onClose, children, footer, size = 'md', maxHeightClass = 'max-h-[92vh]' }) {
+export default function Modal({
+    isOpen,
+    title,
+    description,
+    onClose,
+    children,
+    footer,
+    size = 'md',
+    maxHeightClass = 'max-h-[92vh]',
+    compactOnMobile = false,
+}) {
     useEffect(() => {
         if (!isOpen) return;
 
@@ -29,8 +40,8 @@ export default function Modal({ isOpen, title, description, onClose, children, f
     const sizeClass = SIZE_CLASSES[size] || 'max-w-md';
 
     return (
-        <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-slate-950/70 p-3 sm:p-4 md:p-6 overflow-y-auto backdrop-blur-xs">
-            <div className={`w-full ${sizeClass} ${maxHeightClass} flex flex-col rounded-2xl border border-slate-200 bg-white text-slate-900 [color-scheme:light] p-4 sm:p-6 shadow-2xl transition-all`}>
+        <div className={`fixed inset-0 z-[10001] flex items-center justify-center bg-slate-950/70 ${compactOnMobile ? 'p-4 sm:p-4 md:p-6' : 'p-3 sm:p-4 md:p-6'} overflow-y-auto backdrop-blur-xs`}>
+            <div className={`w-full ${sizeClass} ${maxHeightClass} flex flex-col rounded-2xl border border-slate-200 bg-white text-slate-900 [color-scheme:light] ${compactOnMobile ? 'p-3 sm:p-6' : 'p-4 sm:p-6'} shadow-2xl transition-all`}>
                 {(title || description) ? (
                     <div className="flex items-start justify-between gap-4 shrink-0 pb-3 border-b border-slate-100">
                         <div className="min-w-0 flex-1">

@@ -25,13 +25,35 @@ const CURATED_PRODUCT_IMAGES = {
     },
     'purefoods corned beef 150g': {
         brand: 'purefoods',
-        imageUrl: 'https://images.openfoodfacts.org/images/products/480/888/701/0077/front_en.3.400.jpg',
-        sourceUrl: 'https://world.openfoodfacts.org/product/4808887010077',
+        imageUrl: '/product_images/purefoods-corned-beef-150g.png',
     },
     'piattos cheese flavored potato crisps': {
         brand: 'jack n jill',
-        imageUrl: 'https://images.openfoodfacts.org/images/products/480/001/664/4801/front_en.56.400.jpg',
-        sourceUrl: 'https://world.openfoodfacts.org/product/4800016644801',
+        imageUrl: '/product_images/piattos-cheese-flavored-potato-chips.jpeg',
+    },
+    '2k salted brown peanuts 300g': {
+        brand: '2k peanuts',
+        imageUrl: '/product_images/2k-salted-brown-peanuts-300g.webp',
+    },
+    '2k spicy garlic brown peanuts 300g': {
+        brand: '2k peanuts',
+        imageUrl: '/product_images/2k-spicy-garlic-brown-peanuts-300g.webp',
+    },
+    '2k spicy garlic skinless peanuts 300g': {
+        brand: '2k peanuts',
+        imageUrl: '/product_images/2k-spicy-garlic-skinless-peanuts-300g.webp',
+    },
+    'akao farms certified halal fresh table eggs 12s': {
+        brand: 'akao farms',
+        imageUrl: '/product_images/akao-farms-eggs.jpeg',
+    },
+    'lucky me instant pancit canton original': {
+        brand: 'lucky me',
+        imageUrl: '/product_images/lucky-me-pancit-canton-original.webp',
+    },
+    'the ultimate chocolate chip cookies': {
+        brand: 'fibisco',
+        imageUrl: '/product_images/ultimate-chocolate-chip-cookies-fibisco-600g.jpg',
     },
 };
 
@@ -44,6 +66,12 @@ export const CURATED_PRODUCT_NAMES = [
     "JACK N' JILL DEWBERRY YOGURT CAKE STRAWBERRY",
     'Purefoods Corned Beef 150g',
     'Piattos Cheese Flavored Potato Crisps',
+    '2K Salted Brown Peanuts 300g',
+    '2K Spicy Garlic Brown Peanuts 300g',
+    '2K Spicy Garlic Skinless Peanuts 300g',
+    'AKAO Farms Certified Halal Fresh Table Eggs 12s',
+    'Lucky Me! Instant Pancit Canton Original',
+    'The Ultimate Chocolate Chip Cookies',
 ];
 
 function normalizeText(value = '') {

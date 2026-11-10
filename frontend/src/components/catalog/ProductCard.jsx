@@ -60,6 +60,7 @@ function getProductCertifierBadge(product) {
 export default function ProductCard({
     product,
     isAdmin,
+    onViewDetails,
     onReport,
     onEdit,
     onDelete,
@@ -83,13 +84,19 @@ export default function ProductCard({
     return (
         <div
             style={{ contentVisibility: 'auto', containIntrinsicSize: '0 260px' }}
-            className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 p-3 sm:p-5 mb-4 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-3 sm:space-y-4 min-w-0"
+            className="relative bg-white rounded-xl sm:rounded-2xl border border-slate-200 p-3 sm:p-5 mb-4 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-3 sm:space-y-4 min-w-0"
         >
+            <button
+                type="button"
+                onClick={() => onViewDetails(product)}
+                className="absolute inset-0 z-0 cursor-pointer rounded-xl sm:rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600"
+                aria-label={`View details for ${product.name}`}
+            />
             <ProductImage
                 product={product}
-                className="-mx-3 -mt-3 rounded-t-xl sm:-mx-5 sm:-mt-5 sm:rounded-t-2xl"
+                className="z-10 pointer-events-none -mx-3 -mt-3 rounded-t-xl sm:-mx-5 sm:-mt-5 sm:rounded-t-2xl"
             />
-            <div className="space-y-2 sm:space-y-3">
+            <div className="relative z-10 space-y-2 sm:space-y-3 pointer-events-none">
                 {/* Header: Brand & Status Badge */}
                 <div className="flex items-start justify-between gap-2">
                     <div className="space-y-1 min-w-0">
@@ -157,7 +164,7 @@ export default function ProductCard({
                             href={evidenceUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 px-1.5 sm:px-2 py-0.5 rounded-md font-bold transition"
+                            className="pointer-events-auto flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 px-1.5 sm:px-2 py-0.5 rounded-md font-bold transition"
                         >
                             <ShieldCheck size={10} className="text-emerald-600 shrink-0" />
                             <span>View Certificate / Evidence</span>
@@ -240,7 +247,7 @@ export default function ProductCard({
             </div>
 
             {/* Footer: Provenance & Actions */}
-            <div className="pt-2 sm:pt-3 border-t border-slate-100 flex items-center justify-between text-[10px] sm:text-xs gap-1">
+            <div className="relative z-10 pointer-events-none pt-2 sm:pt-3 border-t border-slate-100 flex items-center justify-between text-[10px] sm:text-xs gap-1">
                 <span className="text-slate-400 flex items-center gap-1 min-w-0" title={product.source_url || product.source}>
                     <FileText size={11} className="shrink-0 text-slate-400" />
                     <span className="truncate">{product.source || 'HalalVerify Registry'}</span>
@@ -250,7 +257,7 @@ export default function ProductCard({
                     <button
                         type="button"
                         onClick={() => onReport(product)}
-                        className="min-h-[32px] text-[11px] font-semibold text-slate-500 hover:text-amber-700 flex items-center gap-1 transition px-2 py-1 rounded-lg hover:bg-amber-50 active:scale-95"
+                        className="pointer-events-auto min-h-[32px] text-[11px] font-semibold text-slate-500 hover:text-amber-700 flex items-center gap-1 transition px-2 py-1 rounded-lg hover:bg-amber-50 active:scale-95"
                         title="Flag issue or report non-compliance"
                         aria-label={`Flag issue with ${product.name}`}
                     >
@@ -263,7 +270,7 @@ export default function ProductCard({
                             <button
                                 type="button"
                                 onClick={() => onEdit(product)}
-                                className="min-h-[32px] min-w-[32px] p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-slate-100 rounded-lg transition flex items-center justify-center"
+                                className="pointer-events-auto min-h-[32px] min-w-[32px] p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-slate-100 rounded-lg transition flex items-center justify-center"
                                 title="Edit Product"
                                 aria-label={`Edit ${product.name}`}
                             >
@@ -272,7 +279,7 @@ export default function ProductCard({
                             <button
                                 type="button"
                                 onClick={() => onDelete(product)}
-                                className="min-h-[32px] min-w-[32px] p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition flex items-center justify-center"
+                                className="pointer-events-auto min-h-[32px] min-w-[32px] p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition flex items-center justify-center"
                                 title="Delete Product"
                                 aria-label={`Delete ${product.name}`}
                             >
@@ -285,7 +292,7 @@ export default function ProductCard({
                                 href={getSafeUrl(product.source_url)}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="min-h-[32px] text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 transition px-2 py-1 rounded-lg hover:bg-emerald-50 active:scale-95"
+                                className="pointer-events-auto min-h-[32px] text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 transition px-2 py-1 rounded-lg hover:bg-emerald-50 active:scale-95"
                                 title="Open external registry verification source"
                                 aria-label={`View source registry for ${product.name}`}
                             >

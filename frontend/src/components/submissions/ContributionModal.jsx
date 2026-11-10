@@ -390,7 +390,8 @@ export default function ContributionModal({
           ? ''
           : 'Submit a local Zamboanga dining spot or packaged product for administrative halal verification.'
       }
-      size={isSuccess ? 'md' : 'lg'}
+      size={isSuccess ? 'md' : 'contribution'}
+      compactOnMobile
     >
       {isSuccess ? (
         <div className="py-2 text-center space-y-4">

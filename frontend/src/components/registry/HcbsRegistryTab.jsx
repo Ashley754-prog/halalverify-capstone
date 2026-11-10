@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Award, Search, Building2, Globe, ShieldCheck, Calendar, FileText, ExternalLink, Pencil, Trash2 } from 'lucide-react';
+import { Award,  Building2, Globe, ShieldCheck, Calendar, FileText, ExternalLink, Pencil, Trash2 } from 'lucide-react';
 import Pagination from '../ui/Pagination';
 import EmptyState from '../ui/EmptyState';
 import SearchBar from '../ui/SearchBar';
@@ -110,11 +110,18 @@ export default function HcbsRegistryTab({
                     </p>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
+                <div className="flex flex-col gap-2 w-full md:flex-row md:items-center md:w-auto">
+                    <SearchBar
+                        value={hcbSearch}
+                        onChange={setHcbSearch}
+                        placeholder="Search code, name..."
+                        className="w-full md:w-64"
+                        size="sm"
+                    />
                     <select
                         value={hcbCategoryFilter}
                         onChange={(e) => setHcbCategoryFilter(e.target.value)}
-                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer shrink-0 w-full sm:w-auto"
+                        className="h-8.5 sm:h-9 min-w-0 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full md:w-auto"
                         aria-label="Filter by certifying authority category"
                     >
                         <option value="all">All Bodies</option>
@@ -124,13 +131,6 @@ export default function HcbsRegistryTab({
                         <option value="International Authority">International</option>
                     </select>
 
-                    <SearchBar
-                        value={hcbSearch}
-                        onChange={setHcbSearch}
-                        placeholder="Search code, name..."
-                        className="flex-1 md:w-64"
-                        size="sm"
-                    />
                 </div>
             </div>
 

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
     Database,
-    Search,
     Pencil,
     Trash2,
     Flag,
@@ -161,11 +160,30 @@ export default function EstablishmentsRegistryTab({
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:items-center gap-2 w-full md:w-auto">
+                <div className="grid grid-cols-2 gap-1 sm:gap-2 w-full lg:flex lg:items-center lg:gap-2 lg:w-auto">
+                    <SearchBar
+                        value={localSearch}
+                        onChange={setLocalSearch}
+                        placeholder="Search name, street, cuisine..."
+                        className="col-span-2 min-w-0 lg:w-64"
+                        size="sm"
+                    />
+                    <select
+                        value={standardFilter}
+                        onChange={(e) => setStandardFilter(e.target.value)}
+                        className="h-8.5 sm:h-9 min-w-0 bg-slate-50 border border-slate-200 rounded-xl px-1 sm:px-2.5 text-[10px] sm:text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full lg:w-auto"
+                        aria-label="Filter by verification standard"
+                    >
+                        <option value="all">All Standards ({activeEstablishmentsCount})</option>
+                        <option value="halal_certified">Halal Certified</option>
+                        <option value="muslim_owned">Muslim-Owned</option>
+                        <option value="muslim_friendly">Muslim-Friendly</option>
+                    </select>
+
                     <select
                         value={districtFilter}
                         onChange={(e) => setDistrictFilter(e.target.value)}
-                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full lg:w-auto"
+                        className="h-8.5 sm:h-9 min-w-0 bg-slate-50 border border-slate-200 rounded-xl px-1 sm:px-2.5 text-[10px] sm:text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full lg:w-auto"
                         aria-label="Filter by Zamboanga District"
                     >
                         {ZAMBOANGA_DISTRICTS.map((d) => (
@@ -176,21 +194,9 @@ export default function EstablishmentsRegistryTab({
                     </select>
 
                     <select
-                        value={standardFilter}
-                        onChange={(e) => setStandardFilter(e.target.value)}
-                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full lg:w-auto"
-                        aria-label="Filter by verification standard"
-                    >
-                        <option value="all">All Standards ({activeEstablishmentsCount})</option>
-                        <option value="halal_certified">Halal Certified</option>
-                        <option value="muslim_owned">Muslim-Owned</option>
-                        <option value="muslim_friendly">Muslim-Friendly</option>
-                    </select>
-
-                    <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full lg:w-auto"
+                        className="col-span-2 h-8.5 min-w-0 w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-1 text-[10px] font-semibold text-slate-700 focus:border-emerald-500 focus:outline-none sm:h-9 sm:px-2.5 sm:text-xs lg:col-span-1 lg:w-auto"
                         aria-label="Filter by registry status"
                     >
                         <option value="all_active">Operational / Published</option>
@@ -203,14 +209,6 @@ export default function EstablishmentsRegistryTab({
                             </>
                         )}
                     </select>
-
-                    <SearchBar
-                        value={localSearch}
-                        onChange={setLocalSearch}
-                        placeholder="Search name, street, cuisine..."
-                        className="col-span-1 sm:col-span-2 lg:col-span-1 lg:w-64"
-                        size="sm"
-                    />
                 </div>
             </div>
 

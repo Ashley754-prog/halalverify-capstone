@@ -14,8 +14,8 @@ function getCategoryIcon(category = '') {
 }
 
 export default function ProductImage({ product, className = '' }) {
-    const curatedImage = product?.image_url ? null : getCuratedProductImage(product);
-    const imageUrl = getSafeUrl(product?.image_url) || curatedImage?.imageUrl;
+    const curatedImage = getCuratedProductImage(product);
+    const imageUrl = curatedImage?.imageUrl || getSafeUrl(product?.image_url);
     const categoryIcon = getCategoryIcon(product?.category);
 
     return (
@@ -36,16 +36,6 @@ export default function ProductImage({ product, className = '' }) {
                     onError={(event) => event.currentTarget.classList.add('hidden')}
                     className="absolute inset-0 h-full w-full bg-white object-contain p-4"
                 />
-            )}
-            {curatedImage?.sourceUrl && (
-                <a
-                    href={curatedImage.sourceUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="absolute bottom-1 right-1 rounded bg-white/90 px-1.5 py-0.5 text-[9px] font-medium text-slate-600 underline underline-offset-2"
-                >
-                    Photo: Open Food Facts
-                </a>
             )}
         </div>
     );

@@ -412,7 +412,7 @@ const ProfilePage = ({ onViewChange, initialFilter = 'all' }) => {
                         </div>
 
                         {/* Actions Footer Bar (Side-by-Side buttons for all viewport sizes) */}
-                        <div className="flex items-center justify-end gap-3 bg-white rounded-2xl border border-slate-200 p-3.5 sm:p-4 shadow-sm">
+                        <div className="flex items-center justify-between gap-3 bg-white rounded-2xl border border-slate-200 p-3.5 sm:p-4 shadow-sm">
                             {savedSuccess && (
                                 <span className="text-xs font-semibold text-emerald-600 items-center gap-1 hidden sm:inline-flex">
                                     <CheckCircle2 size={15} />
@@ -428,17 +428,9 @@ const ProfilePage = ({ onViewChange, initialFilter = 'all' }) => {
                             )}
 
                             <button
-                                type="button"
-                                onClick={() => onViewChange?.('back')}
-                                className="px-4 sm:px-6 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer"
-                            >
-                                Cancel
-                            </button>
-
-                            <button
                                 type="submit"
                                 disabled={saving}
-                                className="flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-[0.98] cursor-pointer"
+                                className="flex flex-[1.2] items-center justify-center gap-2 px-5 sm:flex-none sm:px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-[0.98] cursor-pointer"
                             >
                                 {saving ? (
                                     <Loader2 size={16} className="animate-spin" />
@@ -446,6 +438,14 @@ const ProfilePage = ({ onViewChange, initialFilter = 'all' }) => {
                                     <Save size={16} />
                                 )}
                                 {saving ? 'Saving...' : 'Save Profile'}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => onViewChange?.('back')}
+                                className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+                            >
+                                Cancel
                             </button>
                         </div>
                     </form>
@@ -464,7 +464,7 @@ const ProfilePage = ({ onViewChange, initialFilter = 'all' }) => {
                             </div>
 
                             {/* Filter Pills */}
-                            <div className="flex flex-wrap items-center gap-1.5">
+                            <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto no-scrollbar">
                                 {[
                                     { id: 'all', label: `All (${combinedSubmissions.length})` },
                                     { id: 'establishment', label: `Places (${myEstablishments.length})` },
