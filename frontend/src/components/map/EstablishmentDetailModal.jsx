@@ -19,6 +19,7 @@ import {
 import Modal from '../ui/Modal';
 import { getSafeUrl } from '../../utils/security';
 import { getStatusConfig, resolveZamboangaDistrict, getEstablishmentPhoto } from '../../data/constants';
+import { extractMenuHighlights } from '../../utils/verificationNotes';
 
 export default function EstablishmentDetailModal({
     establishment,
@@ -368,7 +369,47 @@ export default function EstablishmentDetailModal({
                     </div>
                 )}
 
-                {/* Dining Amenities & Facilities */}
+                {/* Cuisine & Specialties (Muslim in Manila Style) */}
+                {(() => {
+                    const dishes = extractMenuHighlights(establishment);
+                    const cuisineTags = [];
+                    if (establishment.type && establishment.type !== 'Restaurant') {
+                        cuisineTags.push(establishment.type);
+                    }
+                    if (typeof establishment.cuisine === 'string' && establishment.cuisine.trim()) {
+                        cuisineTags.push(...establishment.cuisine.split(',').map(s => s.trim()));
+                    } else if (Array.isArray(establishment.cuisine)) {
+                        cuisineTags.push(...establishment.cuisine);
+                    }
+                    const allSpecialties = Array.from(new Set([...cuisineTags, ...dishes])).filter(Boolean);
+                    if (allSpecialties.length === 0) return null;
+
+                    return (
+                        <div className="rounded-xl border border-rose-100 bg-rose-50/40 p-3 text-xs space-y-2">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-rose-900/70 flex items-center gap-1.5">
+                                    <UtensilsCrossed size={12} className="text-rose-700" />
+                                    <span>Cuisine & Specialties</span>
+                                </span>
+                                <span className="text-[10px] text-rose-800/60 font-medium">
+                                    {allSpecialties.length} item{allSpecialties.length === 1 ? '' : 's'}
+                                </span>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5 text-[11px]">
+                                {allSpecialties.map((item) => (
+                                    <span
+                                        key={item}
+                                        className="inline-flex items-center px-2.5 py-1 rounded-full bg-white text-rose-950 border border-rose-200/80 font-medium shadow-2xs"
+                                    >
+                                        {item}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                })()}
+
+                {/* Guest Amenities & Facilities */}
                 {(() => {
                     const REMOVED_AMENITY_KEYS = ['alcohol', 'wudu', 'ablution', 'halal meat', 'pork-free', 'pork free'];
                     const rawList = (Array.isArray(establishment.amenities)
@@ -386,7 +427,7 @@ export default function EstablishmentDetailModal({
                     return (
                         <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-xs space-y-2">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                                Dining Amenities & Facilities
+                                Guest Amenities & Facilities
                             </span>
                             <div className="flex flex-wrap gap-2 text-[11px]">
                                 {rawList.map((item) => (

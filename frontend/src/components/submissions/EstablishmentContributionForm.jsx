@@ -783,7 +783,7 @@ export default function EstablishmentContributionForm({
             <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-900 text-xs flex items-start gap-2.5">
               <Store size={16} className="text-emerald-600 shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold text-emerald-950">Step 3: Menu Highlights & Dining Amenities</p>
+                <p className="font-bold text-emerald-950">Step 3: Cuisine, Specialties & Guest Amenities</p>
                 <p className="text-[11px] text-emerald-800/90 mt-0.5 leading-relaxed">
                   List popular dishes and prayer facilities to help local diners and Muslim travelers plan their visit.
                 </p>
@@ -852,7 +852,7 @@ export default function EstablishmentContributionForm({
             {/* Venue Features & Amenities Checkboxes */}
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2.5">
               <span className="text-xs font-bold text-slate-700 block">
-                Diner Amenities & Kitchen Protocols
+                Guest Amenities & Facilities
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 <button
