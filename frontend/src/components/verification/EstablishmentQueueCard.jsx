@@ -1,4 +1,4 @@
-import { ShieldCheck, FileText, MapPin, Loader2, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, FileText, Camera, MapPin, Loader2, CheckCircle2 } from 'lucide-react';
 import { ESTABLISHMENT_HALAL_TIERS } from '../../data/constants';
 import { deriveEstablishmentTier, formatShortDate, extractMenuHighlights } from '../../utils/verificationNotes';
 import QueueStatusBadge from './QueueStatusBadge';
@@ -18,6 +18,8 @@ export default function EstablishmentQueueCard({
     const tierId = deriveEstablishmentTier(est);
     const tierConfig = TIER_MAP[tierId] || TIER_MAP.halal_certified;
     const isCertified = tierId === 'halal_certified';
+    const hasCertDoc = isCertified && Boolean(est.certificate_url);
+    const hasStorePhoto = !isCertified && Boolean(est.photo_url || est.logo_url || est.certificate_url);
 
     const tierBadgeStyles = {
         halal_certified: 'bg-emerald-50 text-emerald-800 border-emerald-200',
@@ -100,18 +102,28 @@ export default function EstablishmentQueueCard({
                 {/* Dynamic AI Triage Badge */}
                 <AiTriageBadge adminNotes={est.admin_notes} />
 
-                {/* Certificate Attached Indicator */}
-                {est.certificate_url && (
+                {/* Evidence Attached Indicator */}
+                {hasCertDoc ? (
                     <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-2 text-xs flex items-center justify-between text-emerald-800">
                         <span className="flex items-center gap-1.5 font-semibold text-[11px]">
                             <FileText size={13} className="text-emerald-600" />
                             Certificate Attached
                         </span>
-                        <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100/70 px-1.5 py-0.2 rounded">
+                        <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100/70 px-1.5 py-0.5 rounded">
                             Verified File
                         </span>
                     </div>
-                )}
+                ) : hasStorePhoto ? (
+                    <div className="rounded-lg border border-slate-200 bg-slate-50/80 p-2 text-xs flex items-center justify-between text-slate-700">
+                        <span className="flex items-center gap-1.5 font-semibold text-[11px]">
+                            <Camera size={13} className="text-slate-500" />
+                            Storefront Photo Attached
+                        </span>
+                        <span className="text-[10px] text-slate-600 font-bold bg-slate-200/70 px-1.5 py-0.5 rounded">
+                            Venue Photo
+                        </span>
+                    </div>
+                ) : null}
             </div>
 
             {/* Actions */}
@@ -124,7 +136,7 @@ export default function EstablishmentQueueCard({
                     <ShieldCheck size={14} />
                     <span>Inspect & Verify</span>
                 </button>
-                {est.certificate_url && (
+                {hasCertDoc && (
                     <button
                         type="button"
                         disabled={isAutoVerifying}

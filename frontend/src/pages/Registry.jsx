@@ -297,7 +297,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 is_alcohol_free: hasAlcohol,
                 amenities: initialAmenities,
                 description: item.description || '',
-                certificate_url: item.certificate_url || '',
+                certificate_url: (tierKey === 'halal_certified') ? (item.certificate_url || '') : '',
                 facebook_url: item.facebook_url || '',
                 photo_url: item.logo_url || item.photo_url || item.image_url || '',
                 isCustomType: Boolean(item.type && !ESTABLISHMENT_TYPES.includes(item.type)),
@@ -555,7 +555,9 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     description: description,
                     phone: safeTrim(modalForm.phone),
                     admin_notes: adminNotes,
-                    certificate_url: modalForm.photo_url === 'none' ? null : safeTrim(modalForm.certificate_url),
+                    certificate_url: (tier === 'halal_certified' || tier === 'verified')
+                        ? (modalForm.photo_url === 'none' ? null : safeTrim(modalForm.certificate_url))
+                        : null,
                     logo_url: modalForm.photo_url === 'none' ? 'none' : safeTrim(modalForm.photo_url || modalForm.certificate_url),
                     facebook_url: safeTrim(modalForm.facebook_url) || null,
                     photo_url: modalForm.photo_url === 'none' ? 'none' : (safeTrim(modalForm.photo_url) || null),
@@ -620,7 +622,9 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                         admin_notes: adminNotes,
                         source: modalForm.source || (role === 'owner' ? 'Business Owner Submission' : 'Community User Submission'),
                         description: description,
-                        certificate_url: modalForm.photo_url === 'none' ? null : safeTrim(modalForm.certificate_url),
+                        certificate_url: (tier === 'halal_certified' || tier === 'verified')
+                            ? (modalForm.photo_url === 'none' ? null : safeTrim(modalForm.certificate_url))
+                            : null,
                         logo_url: modalForm.photo_url === 'none' ? 'none' : safeTrim(modalForm.photo_url || modalForm.certificate_url),
                         facebook_url: safeTrim(modalForm.facebook_url) || null,
                         photo_url: modalForm.photo_url === 'none' ? 'none' : (safeTrim(modalForm.photo_url) || null),

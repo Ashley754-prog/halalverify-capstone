@@ -98,7 +98,13 @@ export default function RegistryModals({
             if (!upErr) {
                 const { data: pub } = supabase.storage.from('submissions').getPublicUrl(filePath);
                 if (pub?.publicUrl) {
-                    setModalForm((prev) => ({ ...prev, certificate_url: pub.publicUrl, photo_url: pub.publicUrl }));
+                    const isCertTier = (modalForm.halal_tier || 'halal_certified') === 'halal_certified';
+                    setModalForm((prev) => ({
+                        ...prev,
+                        photo_url: pub.publicUrl,
+                        logo_url: pub.publicUrl,
+                        certificate_url: isCertTier ? pub.publicUrl : '',
+                    }));
                     return;
                 }
             }
@@ -106,7 +112,13 @@ export default function RegistryModals({
             const reader = new FileReader();
             reader.onload = () => {
                 if (typeof reader.result === 'string') {
-                    setModalForm((prev) => ({ ...prev, certificate_url: reader.result, photo_url: reader.result }));
+                    const isCertTier = (modalForm.halal_tier || 'halal_certified') === 'halal_certified';
+                    setModalForm((prev) => ({
+                        ...prev,
+                        photo_url: reader.result,
+                        logo_url: reader.result,
+                        certificate_url: isCertTier ? reader.result : '',
+                    }));
                 }
             };
             reader.readAsDataURL(file);

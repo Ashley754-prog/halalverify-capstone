@@ -6,6 +6,7 @@ import {
     CheckCircle2,
     XCircle,
     FileText,
+    Camera,
     ExternalLink,
     ZoomIn,
     ZoomOut,
@@ -22,7 +23,7 @@ import {
 } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { getSafeUrl } from '../../utils/security';
-import { formatSystemNotice, formatShortDate, extractMenuHighlights } from '../../utils/verificationNotes';
+import { formatSystemNotice, formatShortDate, extractMenuHighlights, deriveEstablishmentTier } from '../../utils/verificationNotes';
 import { ESTABLISHMENT_TYPES } from '../../data/constants';
 
 const STANDARD_AMENITIES = [
@@ -73,8 +74,13 @@ export default function VerificationInspectionModal({
 
     if (!inspectingItem) return null;
 
+    const isFormallyCertified =
+        inspectingType === 'product' ||
+        deriveEstablishmentTier(inspectingItem) === 'halal_certified' ||
+        Boolean(inspectingItem.certificate_number);
+
     const imagesList = [];
-    if (inspectingItem.certificate_url) {
+    if (inspectingItem.certificate_url && isFormallyCertified) {
         imagesList.push({
             id: 'cert',
             type: 'primary',
@@ -82,8 +88,13 @@ export default function VerificationInspectionModal({
             url: inspectingItem.certificate_url,
         });
     }
-    const secondaryPhoto = inspectingItem.image_url || inspectingItem.front_label_url || inspectingItem.logo_url;
-    if (secondaryPhoto) {
+    const secondaryPhoto =
+        inspectingItem.image_url ||
+        inspectingItem.front_label_url ||
+        inspectingItem.logo_url ||
+        (!isFormallyCertified ? inspectingItem.certificate_url : null);
+
+    if (secondaryPhoto && !imagesList.some((img) => img.url === secondaryPhoto)) {
         imagesList.push({
             id: 'signage',
             type: 'storefront',
@@ -223,8 +234,18 @@ export default function VerificationInspectionModal({
                 <div className="lg:col-span-6 flex flex-col rounded-2xl bg-slate-900 border border-slate-800 p-4 text-slate-200 min-h-[420px] lg:min-h-[520px]">
                     <div className="flex items-center justify-between text-xs pb-3 border-b border-slate-800 shrink-0 gap-2">
                         <span className="font-bold text-slate-200 flex items-center gap-2">
-                            <FileText size={15} className="text-emerald-400" />
-                            <span>Submitted Photo / Document</span>
+                            {isFormallyCertified && inspectingItem.certificate_url ? (
+                                <FileText size={15} className="text-emerald-400" />
+                            ) : (
+                                <Camera size={15} className="text-emerald-400" />
+                            )}
+                            <span>
+                                {inspectingType === 'product'
+                                    ? 'Submitted Product Packaging / Label'
+                                    : isFormallyCertified && inspectingItem.certificate_url
+                                    ? 'Submitted Certificate Document'
+                                    : 'Submitted Storefront / Venue Photo'}
+                            </span>
                         </span>
 
                         {currentActiveImg && (
@@ -313,7 +334,11 @@ export default function VerificationInspectionModal({
                                             : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
                                     }`}
                                 >
-                                    <FileText size={12} />
+                                    {img.type === 'primary' ? (
+                                        <FileText size={12} />
+                                    ) : (
+                                        <Camera size={12} />
+                                    )}
                                     <span>{img.label}</span>
                                 </button>
                             ))}
@@ -335,7 +360,7 @@ export default function VerificationInspectionModal({
                     )}
 
                     {/* Optional Document Auto-Fill Helper */}
-                    {(inspectingItem.certificate_url || inspectingType === 'product') && (
+                    {((isFormallyCertified && inspectingItem.certificate_url) || inspectingType === 'product') && (
                         <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 flex items-center justify-between gap-3">
                             <div className="text-xs">
                                 <span className="font-bold text-slate-800 block">
