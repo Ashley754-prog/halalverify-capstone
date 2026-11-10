@@ -468,6 +468,33 @@ export default function RegistryModals({
                                     <option value="permanently_closed">Permanently Closed</option>
                                     <option value="demolished">Demolished / Ceased Operations</option>
                                 </select>
+                                <p className="mt-1.5 text-[11px] leading-tight min-h-[16px]">
+                                    {modalForm.status === 'needs_review' && (
+                                        <span className="text-amber-700 font-semibold">
+                                            Routes this listing to Verification Queue for audit.
+                                        </span>
+                                    )}
+                                    {modalForm.status === 'suspended' && (
+                                        <span className="text-red-600 font-semibold">
+                                            Withheld from public map recommendations.
+                                        </span>
+                                    )}
+                                    {(modalForm.status === 'permanently_closed' || modalForm.status === 'demolished') && (
+                                        <span className="text-slate-500">
+                                            Archived in registry and hidden from live patron search.
+                                        </span>
+                                    )}
+                                    {modalForm.status === 'relocated' && (
+                                        <span className="text-orange-700 font-semibold">
+                                            Marked as relocated awaiting new address coordinates.
+                                        </span>
+                                    )}
+                                    {(!modalForm.status || modalForm.status === 'verified') && (
+                                        <span className="text-emerald-700 font-medium">
+                                            Active and visible on the interactive map.
+                                        </span>
+                                    )}
+                                </p>
                             </div>
                         </div>
 
@@ -762,8 +789,8 @@ export default function RegistryModals({
                         <div>
                             <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Review Status</label>
                             <select value={modalForm.status || ''} onChange={(e) => setModalForm(prev => ({ ...prev, status: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none">
-                                <option value="needs_review">needs_review</option>
-                                <option value="verified">verified</option>
+                                <option value="needs_review">Needs Review</option>
+                                <option value="verified">Operational / Published</option>
                             </select>
                         </div>
                         <div>
