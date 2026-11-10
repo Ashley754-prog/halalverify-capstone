@@ -168,7 +168,7 @@ export const ESTABLISHMENT_HALAL_TIERS = [
   {
     id: 'halal_certified',
     category: 'institutional',
-    label: 'Formally Halal Certified',
+    label: 'Halal Certified',
     description: 'Holds an unexpired certificate from an accredited body (e.g. IDCP, HDIP, NCMF, JAKIM).',
     badge: 'Certified',
     color: 'emerald',
@@ -176,7 +176,7 @@ export const ESTABLISHMENT_HALAL_TIERS = [
   {
     id: 'muslim_owned',
     category: 'community',
-    label: 'Muslim-Owned (Pork-Free Kitchen)',
+    label: 'Muslim-Owned',
     description: '100% Halal Muslim-owned kitchen, carinderia, or bakery without formal 3rd-party certificate.',
     badge: 'Muslim-Owned',
     color: 'sky',
@@ -184,7 +184,7 @@ export const ESTABLISHMENT_HALAL_TIERS = [
   {
     id: 'muslim_friendly',
     category: 'community',
-    label: 'Muslim-Friendly Venue',
+    label: 'Muslim-Friendly',
     description: 'Offers dedicated pork-free / alcohol-free options, or provides prayer space (musalah).',
     badge: 'Friendly',
     color: 'indigo',
