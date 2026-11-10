@@ -157,7 +157,7 @@ export default function EstablishmentsRegistryTab({
                     paginatedEstablishments.map((shop) => {
                         const statusConfig = getStatusConfig(shop);
                         const districtInfo = resolveZamboangaDistrict(shop);
-                        const establishmentImageUrl = getEstablishmentPhoto(shop) || getSafeUrl(shop.photo_url || shop.image_url || shop.logo_url);
+                        const establishmentImageUrl = getSafeUrl(shop.logo_url || shop.photo_url || shop.image_url) || getEstablishmentPhoto(shop);
                         const rawCertUrl = shop.certificate_url ? getSafeUrl(shop.certificate_url) : null;
                         const hasActualCertificateDoc = Boolean(rawCertUrl && rawCertUrl !== establishmentImageUrl);
                         const isFormallyCertified = Boolean(shop.certificate_number || statusConfig.key === 'verified');

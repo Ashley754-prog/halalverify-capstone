@@ -512,6 +512,11 @@ def create_establishment(establishment: EstablishmentCreate, user: dict = Depend
         else:
             payload["halal_status"] = "needs_review"
 
+    if "photo_url" in payload:
+        if not payload.get("logo_url"):
+            payload["logo_url"] = payload["photo_url"]
+        del payload["photo_url"]
+
     response = (
         supabase
         .table("establishments")
@@ -563,6 +568,11 @@ def update_establishment(establishment_id: str, establishment: EstablishmentUpda
             payload["halal_status"] = "expired"
         else:
             payload["halal_status"] = "needs_review"
+
+    if "photo_url" in payload:
+        if not payload.get("logo_url"):
+            payload["logo_url"] = payload["photo_url"]
+        del payload["photo_url"]
 
     response = (
         supabase

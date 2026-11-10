@@ -269,9 +269,9 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 has_prayer_space: hasPrayer,
                 is_alcohol_free: hasAlcohol,
                 description: item.description || '',
-                certificate_url: item.certificate_url || item.logo_url || '',
+                certificate_url: item.certificate_url || '',
                 facebook_url: item.facebook_url || '',
-                photo_url: item.photo_url || item.image_url || '',
+                photo_url: item.logo_url || item.photo_url || item.image_url || '',
             });
         }
     };

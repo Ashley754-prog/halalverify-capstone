@@ -338,15 +338,29 @@ export default function RegistryModals({
                             </div>
                             <div>
                                 <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Venue Category</label>
-                                <select
-                                    value={modalForm.type || 'Restaurant'}
+                                <input
+                                    list="venue-categories"
+                                    value={modalForm.type || ''}
                                     onChange={(e) => setModalForm(prev => ({ ...prev, type: e.target.value }))}
+                                    placeholder="e.g. Barbecue House, Restaurant, Fast Food"
                                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
-                                >
-                                    {ESTABLISHMENT_TYPES.map(t => (
-                                        <option key={t} value={t}>{t}</option>
-                                    ))}
-                                </select>
+                                />
+                                <datalist id="venue-categories">
+                                    <option value="Restaurant" />
+                                    <option value="Barbecue House" />
+                                    <option value="Burger House" />
+                                    <option value="Satti House" />
+                                    <option value="Halal Carinderia" />
+                                    <option value="Casual Dining Bistro" />
+                                    <option value="Moro & Tausug Restaurant" />
+                                    <option value="Sizzling & Grill House" />
+                                    <option value="Cafeteria / Eatery" />
+                                    <option value="Bakery & Pastry" />
+                                    <option value="Fast Food" />
+                                    <option value="Cafe / Coffee Shop" />
+                                    <option value="Halal Meat & Poultry Shop" />
+                                    <option value="Grocery / Supermarket" />
+                                </datalist>
                             </div>
                         </div>
 
@@ -438,11 +452,11 @@ export default function RegistryModals({
                             </div>
                         )}
 
-                        {/* Unified Venue Photo / Certificate Evidence Upload */}
-                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+                        {/* Simplified Venue Photo Upload */}
+                        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2.5">
                             <div className="flex items-center justify-between gap-2">
-                                <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
-                                    Venue Photo / Certificate Evidence
+                                <span className="text-xs font-bold uppercase tracking-wide text-slate-700">
+                                    Venue Storefront Photo
                                 </span>
                                 {(modalForm.photo_url || modalForm.certificate_url) && (
                                     <a
@@ -451,22 +465,22 @@ export default function RegistryModals({
                                         rel="noopener noreferrer"
                                         className="text-[11px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-1"
                                     >
-                                        <span>Preview Image</span>
+                                        <span>View Full Photo</span>
                                         <ExternalLink size={11} />
                                     </a>
                                 )}
                             </div>
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                                <label className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold cursor-pointer transition shrink-0">
+                            <div className="flex items-center gap-3">
+                                <label className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer transition shadow-xs active:scale-[0.98] shrink-0">
                                     {isUploadingCert ? (
                                         <>
-                                            <Loader2 size={13} className="animate-spin text-emerald-600" />
-                                            <span>Uploading...</span>
+                                            <Loader2 size={14} className="animate-spin text-white" />
+                                            <span>Uploading Image...</span>
                                         </>
                                     ) : (
                                         <>
-                                            <Upload size={13} className="text-emerald-600" />
-                                            <span>Upload Photo</span>
+                                            <Upload size={14} />
+                                            <span>{modalForm.photo_url || modalForm.certificate_url ? 'Change Photo' : 'Upload Photo'}</span>
                                         </>
                                     )}
                                     <input
@@ -476,17 +490,24 @@ export default function RegistryModals({
                                         className="hidden"
                                     />
                                 </label>
-                                <input
-                                    type="text"
-                                    value={modalForm.photo_url || modalForm.certificate_url || ''}
-                                    onChange={(e) => setModalForm((prev) => ({
-                                        ...prev,
-                                        photo_url: e.target.value,
-                                        certificate_url: e.target.value,
-                                    }))}
-                                    placeholder="Or paste photo / certificate image URL..."
-                                    className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
-                                />
+                                {(modalForm.photo_url || modalForm.certificate_url) ? (
+                                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                                        <img
+                                            src={modalForm.photo_url || modalForm.certificate_url}
+                                            alt="Venue photo preview"
+                                            className="w-10 h-10 object-cover rounded-lg border border-slate-200 shrink-0"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setModalForm(prev => ({ ...prev, photo_url: '', certificate_url: '' }))}
+                                            className="text-xs font-bold text-red-600 hover:text-red-700 hover:underline cursor-pointer"
+                                        >
+                                            Remove Photo
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <span className="text-xs text-slate-400 italic">No custom photo uploaded</span>
+                                )}
                             </div>
                         </div>
 
