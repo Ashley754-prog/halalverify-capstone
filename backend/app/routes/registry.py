@@ -463,15 +463,17 @@ def search_establishments(q: Optional[str] = Query(None, description="Search que
 
 
 @router.get("/registry/establishments")
-def get_establishments():
-    response = (
-        supabase
-        .table("establishments")
-        .select("*, certifying_bodies(*)")
-        .not_("halal_status", "in", "(rejected,REJECTED,flagged,suspended,needs_review,NEEDS_REVIEW,pending,PENDING,pending_review,expired,EXPIRED)")
-        .order("name")
-        .execute()
-    )
+def get_establishments(user: Optional[dict] = Depends(get_optional_current_user)):
+    is_admin = _is_admin_user(user)
+
+    query = supabase.table("establishments").select("*, certifying_bodies(*)")
+    if not is_admin:
+        query = query.not_(
+            "halal_status",
+            "in",
+            "(rejected,REJECTED,flagged,suspended,needs_review,NEEDS_REVIEW,pending,PENDING,pending_review,expired,EXPIRED,permanently_closed,closed,demolished,relocated)",
+        )
+    response = query.order("name").execute()
     rows = enrich_establishment_tier(response.data or [])
 
     return {
@@ -495,6 +497,12 @@ def create_establishment(establishment: EstablishmentCreate, user: dict = Depend
         if payload.get("longitude") is None:
             payload["longitude"] = g_lng
 
+    if payload.get("halal_tier"):
+        tier = payload["halal_tier"].strip().lower()
+        if tier in ("halal_certified", "muslim_owned", "muslim_friendly", "vegetarian_vegan"):
+            payload["halal_tier"] = tier
+            payload["verification_tier"] = tier
+
     if payload.get("halal_status"):
         st = payload["halal_status"].strip().lower()
         if st in ["verified", "halal", "approved"]:
@@ -509,6 +517,12 @@ def create_establishment(establishment: EstablishmentCreate, user: dict = Depend
             payload["halal_status"] = "rejected"
         elif st in ["expired"]:
             payload["halal_status"] = "expired"
+        elif st in ["relocated", "moved"]:
+            payload["halal_status"] = "relocated"
+        elif st in ["closed", "permanently_closed"]:
+            payload["halal_status"] = "permanently_closed"
+        elif st in ["demolished"]:
+            payload["halal_status"] = "demolished"
         else:
             payload["halal_status"] = "needs_review"
 
@@ -552,6 +566,12 @@ def update_establishment(establishment_id: str, establishment: EstablishmentUpda
         if payload.get("longitude") is None:
             payload["longitude"] = g_lng
 
+    if payload.get("halal_tier"):
+        tier = payload["halal_tier"].strip().lower()
+        if tier in ("halal_certified", "muslim_owned", "muslim_friendly", "vegetarian_vegan"):
+            payload["halal_tier"] = tier
+            payload["verification_tier"] = tier
+
     if payload.get("halal_status"):
         st = payload["halal_status"].strip().lower()
         if st in ["verified", "halal", "approved"]:
@@ -566,6 +586,12 @@ def update_establishment(establishment_id: str, establishment: EstablishmentUpda
             payload["halal_status"] = "rejected"
         elif st in ["expired"]:
             payload["halal_status"] = "expired"
+        elif st in ["relocated", "moved"]:
+            payload["halal_status"] = "relocated"
+        elif st in ["closed", "permanently_closed"]:
+            payload["halal_status"] = "permanently_closed"
+        elif st in ["demolished"]:
+            payload["halal_status"] = "demolished"
         else:
             payload["halal_status"] = "needs_review"
 
@@ -582,7 +608,12 @@ def update_establishment(establishment_id: str, establishment: EstablishmentUpda
         .execute()
     )
 
-    return ensure_updated(response, "Establishment")
+    res_obj = ensure_updated(response, "Establishment")
+    if isinstance(res_obj, dict):
+        tier = derive_establishment_tier(res_obj)
+        res_obj["halal_tier"] = tier
+        res_obj["verification_tier"] = tier
+    return res_obj
 
 
 @router.delete("/registry/establishments/{establishment_id}")

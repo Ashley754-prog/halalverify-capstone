@@ -367,27 +367,38 @@ export default function EstablishmentDetailModal({
                 )}
 
                 {/* Dining Amenities & Facilities */}
-                {(hasPrayerSpace || isAlcoholFree) && (
-                    <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-xs space-y-2">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                            Dining Amenities & Facilities
-                        </span>
-                        <div className="flex flex-wrap gap-2 text-[11px]">
-                            {hasPrayerSpace && (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
-                                    <Compass size={13} className="text-emerald-600" />
-                                    Dedicated Prayer Space (Musalah)
-                                </span>
-                            )}
-                            {isAlcoholFree && (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
-                                    <ShieldCheck size={13} className="text-emerald-600" />
-                                    100% Alcohol-Free Premises
-                                </span>
-                            )}
+                {(() => {
+                    const rawList = Array.isArray(establishment.amenities)
+                        ? [...establishment.amenities]
+                        : (establishment.description && establishment.description.includes('Amenities:'))
+                            ? establishment.description.split('Amenities:')[1].split('|').map(s => s.trim()).filter(Boolean)
+                            : [];
+                    if (hasPrayerSpace && !rawList.some(a => String(a).toLowerCase().includes('prayer'))) {
+                        rawList.push('Dedicated Prayer Space (Musalah)');
+                    }
+                    if (isAlcoholFree && !rawList.some(a => String(a).toLowerCase().includes('alcohol'))) {
+                        rawList.push('100% Alcohol-Free Premises');
+                    }
+                    if (rawList.length === 0) return null;
+
+                    return (
+                        <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-xs space-y-2">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                                Dining Amenities & Facilities
+                            </span>
+                            <div className="flex flex-wrap gap-2 text-[11px]">
+                                {rawList.map((item) => (
+                                    <span
+                                        key={item}
+                                        className="inline-flex items-center px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold"
+                                    >
+                                        {item}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    );
+                })()}
 
                 {/* About this restaurant & Contact Information */}
                 {(bioText || establishment.phone || establishment.email || establishment.source_url) && (

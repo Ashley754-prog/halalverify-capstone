@@ -6,7 +6,6 @@ import {
     Trash2,
     Flag,
     MapPin,
-    Compass,
     ShieldCheck,
     Store,
     ExternalLink,
@@ -62,8 +61,25 @@ export default function EstablishmentsRegistryTab({
         }
 
         const cfg = getStatusConfig(shop);
-        if (cfg.key === 'needs_review' || cfg.key === 'pending_review' || cfg.key === 'rejected' || cfg.key === 'flagged') {
-            return false;
+        const shopStatus = (shop.halal_status || shop.status || '').toLowerCase().trim();
+
+        // For non-admin public visitors, only show active/verified places
+        if (!isAdmin) {
+            if (
+                cfg.key === 'needs_review' ||
+                cfg.key === 'pending_review' ||
+                cfg.key === 'rejected' ||
+                cfg.key === 'flagged' ||
+                cfg.key === 'suspended' ||
+                cfg.key === 'permanently_closed' ||
+                cfg.key === 'demolished' ||
+                shopStatus === 'suspended' ||
+                shopStatus === 'permanently_closed' ||
+                shopStatus === 'demolished' ||
+                shopStatus === 'rejected'
+            ) {
+                return false;
+            }
         }
 
         if (statusFilter !== 'all') {
@@ -71,6 +87,9 @@ export default function EstablishmentsRegistryTab({
             if (statusFilter === 'muslim_owned') return cfg.key === 'muslim_owned' || cfg.key === 'community';
             if (statusFilter === 'muslim_friendly') return cfg.key === 'muslim_friendly';
             if (statusFilter === 'vegetarian_vegan') return cfg.key === 'vegetarian_vegan';
+            if (statusFilter === 'needs_review') return cfg.key === 'needs_review' || cfg.key === 'pending_review' || shopStatus === 'needs_review';
+            if (statusFilter === 'suspended') return cfg.key === 'suspended' || cfg.key === 'flagged' || shopStatus === 'suspended';
+            if (statusFilter === 'closed_demolished') return cfg.key === 'permanently_closed' || cfg.key === 'demolished' || cfg.key === 'relocated' || shopStatus.includes('close') || shopStatus.includes('demolish') || shopStatus.includes('relocat');
         }
         return true;
     });
@@ -130,7 +149,13 @@ export default function EstablishmentsRegistryTab({
                         <option value="muslim_owned">Muslim-Owned</option>
                         <option value="muslim_friendly">Muslim-Friendly</option>
                         <option value="vegetarian_vegan">Plant-Based</option>
-                        {isAdmin && <option value="needs_review">Pending Review</option>}
+                        {isAdmin && (
+                            <>
+                                <option value="needs_review">Pending Review</option>
+                                <option value="suspended">Suspended</option>
+                                <option value="closed_demolished">Closed / Demolished</option>
+                            </>
+                        )}
                     </select>
 
                     <SearchBar
@@ -272,34 +297,70 @@ export default function EstablishmentsRegistryTab({
                                     )
                                 )}
 
-                                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                                    {shop.facebook_url && (
-                                        <a
-                                            href={getSafeUrl(shop.facebook_url)}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-md transition"
-                                        >
-                                            <svg className="w-2.5 h-2.5 text-[#1877F2] fill-current" viewBox="0 0 24 24" aria-hidden="true">
-                                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                                            </svg>
-                                            <span>Facebook</span>
-                                            <ExternalLink size={9} />
-                                        </a>
-                                    )}
-                                    {hasPrayer && (
-                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md">
-                                            <Compass size={11} className="text-emerald-600" />
-                                            Prayer
-                                        </span>
-                                    )}
-                                    {hasAlcoholFree && (
-                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md">
-                                            <ShieldCheck size={11} className="text-emerald-600" />
-                                            Alcohol-Free
-                                        </span>
-                                    )}
-                                </div>
+                                {(() => {
+                                    const formatAmenityLabel = (raw) => {
+                                        const s = String(raw).trim();
+                                        const l = s.toLowerCase();
+                                        if (l.includes('prayer') || l.includes('musalah')) return 'Prayer Space';
+                                        if (l.includes('alcohol')) return 'Alcohol-Free';
+                                        if (l.includes('pork')) return 'Pork-Free';
+                                        if (l.includes('meat')) return 'Halal Meat';
+                                        if (l.includes('wudu') || l.includes('ablution')) return 'Wudu Area';
+                                        if (l.includes('family')) return 'Family Section';
+                                        return s.length > 18 ? `${s.slice(0, 16)}…` : s;
+                                    };
+
+                                    const rawAmenitiesList = Array.isArray(shop.amenities)
+                                        ? [...shop.amenities]
+                                        : (shop.description && shop.description.includes('Amenities:'))
+                                            ? shop.description.split('Amenities:')[1].split('|').map(s => s.trim()).filter(Boolean)
+                                            : [];
+                                    if (hasPrayer && !rawAmenitiesList.some(a => String(a).toLowerCase().includes('prayer'))) {
+                                        rawAmenitiesList.push('Dedicated Prayer Space (Musalah)');
+                                    }
+                                    if (hasAlcoholFree && !rawAmenitiesList.some(a => String(a).toLowerCase().includes('alcohol'))) {
+                                        rawAmenitiesList.push('100% Alcohol-Free Premises');
+                                    }
+
+                                    const displayAmenities = Array.from(new Set(rawAmenitiesList.map(formatAmenityLabel)));
+                                    const visibleAmenities = displayAmenities.slice(0, 2);
+                                    const overflowCount = displayAmenities.length - 2;
+
+                                    return (
+                                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                            {shop.facebook_url && (
+                                                <a
+                                                    href={getSafeUrl(shop.facebook_url)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-md transition"
+                                                >
+                                                    <svg className="w-2.5 h-2.5 text-[#1877F2] fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                                                    </svg>
+                                                    <span>Facebook</span>
+                                                    <ExternalLink size={9} />
+                                                </a>
+                                            )}
+                                            {visibleAmenities.map((label) => (
+                                                <span
+                                                    key={label}
+                                                    className="inline-flex items-center text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md"
+                                                >
+                                                    {label}
+                                                </span>
+                                            ))}
+                                            {overflowCount > 0 && (
+                                                <span
+                                                    title={displayAmenities.slice(2).join(', ')}
+                                                    className="inline-flex items-center text-[10px] font-bold text-slate-600 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-md cursor-help"
+                                                >
+                                                    +{overflowCount} more
+                                                </span>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
 
                                 {/* Card Actions */}
                                 {isAdmin ? (

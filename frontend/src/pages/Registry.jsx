@@ -254,6 +254,25 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 (item.description && item.description.toLowerCase().includes('alcohol'))
             );
 
+            let initialAmenities = [];
+            if (Array.isArray(item.amenities)) {
+                initialAmenities = [...item.amenities];
+            } else if (typeof item.amenities === 'string' && item.amenities.trim()) {
+                try {
+                    initialAmenities = JSON.parse(item.amenities);
+                } catch {
+                    initialAmenities = item.amenities.split(',').map(s => s.trim()).filter(Boolean);
+                }
+            } else if (item.description && item.description.includes('Amenities:')) {
+                initialAmenities = item.description.split('Amenities:')[1].split('|').map(s => s.trim()).filter(Boolean);
+            }
+            if (hasPrayer && !initialAmenities.some(a => a.toLowerCase().includes('prayer'))) {
+                initialAmenities.push('Dedicated Prayer Space (Musalah)');
+            }
+            if (hasAlcohol && !initialAmenities.some(a => a.toLowerCase().includes('alcohol'))) {
+                initialAmenities.push('100% Alcohol-Free Premises');
+            }
+
             setModalForm({
                 name: item.name || '',
                 type: item.type || 'Restaurant',
@@ -268,6 +287,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 source: item.source || (item.submitter_role === 'owner' ? 'Business Owner Submission' : 'Community User Submission'),
                 has_prayer_space: hasPrayer,
                 is_alcohol_free: hasAlcohol,
+                amenities: initialAmenities,
                 description: item.description || '',
                 certificate_url: item.certificate_url || '',
                 facebook_url: item.facebook_url || '',
@@ -487,14 +507,25 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 let adminNotes = '';
 
                 if (tier === 'muslim_owned') {
-                    adminNotes = 'Community Listed - Muslim-Owned (Pork-Free Kitchen)';
+                    adminNotes = '[Tier: muslim_owned] Community Listed - Muslim-Owned (Pork-Free Kitchen)';
                 } else if (tier === 'muslim_friendly') {
-                    adminNotes = 'Community Listed - Muslim-Friendly Venue';
+                    adminNotes = '[Tier: muslim_friendly] Community Listed - Muslim-Friendly Venue';
                 } else if (tier === 'vegetarian_vegan') {
-                    adminNotes = 'Community Listed - Vegetarian / Vegan';
+                    adminNotes = '[Tier: vegetarian_vegan] Community Listed - Vegetarian / Vegan';
                 } else if (tier === 'halal_certified') {
-                    adminNotes = 'Formally Certified Halal Establishment';
+                    adminNotes = '[Tier: halal_certified] Formally Certified Halal Establishment';
                 }
+
+                const amList = Array.isArray(modalForm.amenities) && modalForm.amenities.length > 0
+                    ? modalForm.amenities
+                    : [];
+                if (modalForm.has_prayer_space && !amList.some(a => a.toLowerCase().includes('prayer'))) {
+                    amList.push('Dedicated Prayer Space (Musalah)');
+                }
+                if (modalForm.is_alcohol_free && !amList.some(a => a.toLowerCase().includes('alcohol'))) {
+                    amList.push('100% Alcohol-Free Premises');
+                }
+                const description = amList.length > 0 ? `Amenities: ${amList.join(' | ')}` : (modalForm.description || null);
 
                 const created = await saveRegistryRecord('/registry/establishments', 'POST', {
                     name: requireText(modalForm.name, 'Establishment name'),
@@ -504,6 +535,9 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     certificate_number: tier === 'halal_certified' ? safeTrim(modalForm.certNo) : null,
                     expiry_date: tier === 'halal_certified' ? safeTrim(modalForm.expiry) : null,
                     halal_status: modalForm.status || 'verified',
+                    halal_tier: tier,
+                    amenities: amList,
+                    description: description,
                     phone: safeTrim(modalForm.phone),
                     admin_notes: adminNotes,
                     certificate_url: safeTrim(modalForm.certificate_url),
@@ -512,26 +546,41 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     photo_url: safeTrim(modalForm.photo_url) || null,
                 });
 
-                setEstablishments(prev => [created, ...prev]);
+                const safeCreated = {
+                    ...created,
+                    halal_tier: tier,
+                    halal_status: modalForm.status || 'verified',
+                    amenities: amList,
+                    admin_notes: adminNotes,
+                };
+
+                setEstablishments(prev => [safeCreated, ...prev]);
                 updateToast('New establishment saved to database.', 'success');
             } else if (activeModal === 'edit-establishment') {
                 const tier = (modalForm.halal_tier === 'verified' ? 'halal_certified' : modalForm.halal_tier) || 'halal_certified';
-                let adminNotes = selectedItem.admin_notes || '';
+                let adminNotes = '';
 
                 if (tier === 'muslim_owned') {
-                    adminNotes = 'Community Listed - Muslim-Owned (Pork-Free Kitchen)';
+                    adminNotes = '[Tier: muslim_owned] Community Listed - Muslim-Owned (Pork-Free Kitchen)';
                 } else if (tier === 'muslim_friendly') {
-                    adminNotes = 'Community Listed - Muslim-Friendly Venue';
+                    adminNotes = '[Tier: muslim_friendly] Community Listed - Muslim-Friendly Venue';
                 } else if (tier === 'vegetarian_vegan') {
-                    adminNotes = 'Community Listed - Vegetarian / Vegan';
+                    adminNotes = '[Tier: vegetarian_vegan] Community Listed - Vegetarian / Vegan';
                 } else if (tier === 'halal_certified') {
-                    adminNotes = 'Formally Certified Halal Establishment';
+                    adminNotes = '[Tier: halal_certified] Formally Certified Halal Establishment';
+                }
+
+                const amList = Array.isArray(modalForm.amenities) && modalForm.amenities.length > 0
+                    ? modalForm.amenities
+                    : [];
+                if (modalForm.has_prayer_space && !amList.some(a => a.toLowerCase().includes('prayer'))) {
+                    amList.push('Dedicated Prayer Space (Musalah)');
+                }
+                if (modalForm.is_alcohol_free && !amList.some(a => a.toLowerCase().includes('alcohol'))) {
+                    amList.push('100% Alcohol-Free Premises');
                 }
 
                 let description = modalForm.description || selectedItem.description || null;
-                const amList = [];
-                if (modalForm.has_prayer_space) amList.push('Dedicated Prayer Space (Musalah)');
-                if (modalForm.is_alcohol_free) amList.push('100% Alcohol-Free Premises');
                 if (amList.length > 0) {
                     description = `Amenities: ${amList.join(' | ')}`;
                 }
@@ -547,19 +596,31 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                         certificate_number: (tier === 'halal_certified' || tier === 'verified') ? safeTrim(modalForm.certNo) : null,
                         expiry_date: (tier === 'halal_certified' || tier === 'verified') ? safeTrim(modalForm.expiry) : null,
                         halal_status: modalForm.status || 'verified',
+                        halal_tier: tier,
+                        amenities: amList,
                         phone: safeTrim(modalForm.phone),
                         admin_notes: adminNotes,
                         source: modalForm.source || selectedItem.source || 'Official Halal Registry',
                         description: description,
                         certificate_url: safeTrim(modalForm.certificate_url),
                         logo_url: safeTrim(modalForm.photo_url || modalForm.certificate_url),
-                    facebook_url: safeTrim(modalForm.facebook_url) || null,
-                    photo_url: safeTrim(modalForm.photo_url) || null,
+                        facebook_url: safeTrim(modalForm.facebook_url) || null,
+                        photo_url: safeTrim(modalForm.photo_url) || null,
                     }
                 );
 
+                const safeUpdated = {
+                    ...selectedItem,
+                    ...updated,
+                    halal_tier: tier,
+                    halal_status: modalForm.status || 'verified',
+                    amenities: amList,
+                    admin_notes: adminNotes,
+                    description: description,
+                };
+
                 setEstablishments(prev =>
-                    prev.map(item => item.id === selectedItem.id ? updated : item)
+                    prev.map(item => item.id === selectedItem.id ? safeUpdated : item)
                 );
                 updateToast('Establishment record saved to database.', 'success');
             } else if (activeModal === 'flag-establishment') {

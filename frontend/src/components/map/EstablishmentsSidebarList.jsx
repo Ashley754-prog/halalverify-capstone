@@ -114,14 +114,12 @@ export default function EstablishmentsSidebarList({
                                                 </span>
                                             )}
                                             {(est.has_prayer_space || est.description?.toLowerCase().includes('prayer') || est.description?.toLowerCase().includes('musalah')) && (
-                                                <span title="Dedicated Prayer Space (Musalah)" className="text-emerald-700 bg-emerald-50 border border-emerald-200/70 px-1.5 py-0.5 rounded text-[9px] font-semibold flex items-center gap-0.5">
-                                                    <Compass size={10} className="text-emerald-600" />
+                                                <span title="Dedicated Prayer Space (Musalah)" className="text-emerald-700 bg-emerald-50 border border-emerald-200/70 px-1.5 py-0.5 rounded text-[9px] font-semibold">
                                                     Prayer
                                                 </span>
                                             )}
                                             {(est.is_alcohol_free || est.description?.toLowerCase().includes('alcohol-free') || est.description?.toLowerCase().includes('alcohol free')) && (
-                                                <span title="100% Alcohol-Free Premises" className="text-emerald-700 bg-emerald-50 border border-emerald-200/70 px-1.5 py-0.5 rounded text-[9px] font-semibold flex items-center gap-0.5">
-                                                    <ShieldCheck size={10} className="text-emerald-600" />
+                                                <span title="100% Alcohol-Free Premises" className="text-emerald-700 bg-emerald-50 border border-emerald-200/70 px-1.5 py-0.5 rounded text-[9px] font-semibold">
                                                     Alcohol-Free
                                                 </span>
                                             )}

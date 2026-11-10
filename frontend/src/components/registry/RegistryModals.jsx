@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Compass, ShieldCheck, Upload, Loader2, ExternalLink } from 'lucide-react';
+import { Upload, Loader2, ExternalLink } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { ESTABLISHMENT_TYPES, ESTABLISHMENT_HALAL_TIERS } from '../../data/constants';
 import { supabase } from '../../lib/supabaseClient';
@@ -7,6 +7,14 @@ import { supabase } from '../../lib/supabaseClient';
 const ADDITIVE_STATUSES = ['Halal', 'Doubtful', 'Haram'];
 const ADDITIVE_ORIGINS = ['Plant', 'Animal', 'Insect', 'Synthetic / Mineral', 'Multiple / Unknown'];
 const HCB_CATEGORIES = ['Local & Regional HCB', 'National HCB', 'Government Oversight', 'International Authority'];
+const STANDARD_AMENITIES = [
+    'Dedicated Prayer Space (Musalah)',
+    '100% Alcohol-Free Premises',
+    'Pork-Free Kitchen',
+    'Halal Meat Sourced',
+    'Wudu (Ablution) Facility',
+    'Family Dining Section',
+];
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const normalizeAdditiveCode = (code) => {
@@ -27,6 +35,40 @@ export default function RegistryModals({
     onSubmit,
 }) {
     const [isUploadingCert, setIsUploadingCert] = useState(false);
+    const [customAmenityInput, setCustomAmenityInput] = useState('');
+
+    const handleToggleAmenity = (amenityName) => {
+        setModalForm(prev => {
+            const current = Array.isArray(prev.amenities) ? [...prev.amenities] : [];
+            const exists = current.includes(amenityName);
+            const updated = exists ? current.filter(a => a !== amenityName) : [...current, amenityName];
+            return {
+                ...prev,
+                amenities: updated,
+                has_prayer_space: updated.some(a => a.toLowerCase().includes('prayer')),
+                is_alcohol_free: updated.some(a => a.toLowerCase().includes('alcohol')),
+            };
+        });
+    };
+
+    const handleAddCustomAmenity = (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        const val = customAmenityInput.trim();
+        if (!val) return;
+        setModalForm(prev => {
+            const current = Array.isArray(prev.amenities) ? [...prev.amenities] : [];
+            if (!current.includes(val)) {
+                current.push(val);
+            }
+            return {
+                ...prev,
+                amenities: current,
+                has_prayer_space: current.some(a => a.toLowerCase().includes('prayer')),
+                is_alcohol_free: current.some(a => a.toLowerCase().includes('alcohol')),
+            };
+        });
+        setCustomAmenityInput('');
+    };
 
     if (!activeModal) return null;
 
@@ -384,9 +426,12 @@ export default function RegistryModals({
                                     onChange={(e) => setModalForm(prev => ({ ...prev, status: e.target.value }))}
                                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
                                 >
-                                    <option value="verified">Verified / Published</option>
+                                    <option value="verified">Operational / Published</option>
                                     <option value="needs_review">Needs Review</option>
                                     <option value="suspended">Suspended</option>
+                                    <option value="relocated">Relocated / Moved</option>
+                                    <option value="permanently_closed">Permanently Closed</option>
+                                    <option value="demolished">Demolished / Ceased Operations</option>
                                 </select>
                             </div>
                         </div>
@@ -491,20 +536,13 @@ export default function RegistryModals({
                                     />
                                 </label>
                                 {(modalForm.photo_url || modalForm.certificate_url) ? (
-                                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                                        <img
-                                            src={modalForm.photo_url || modalForm.certificate_url}
-                                            alt="Venue photo preview"
-                                            className="w-10 h-10 object-cover rounded-lg border border-slate-200 shrink-0"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setModalForm(prev => ({ ...prev, photo_url: '', certificate_url: '' }))}
-                                            className="text-xs font-bold text-red-600 hover:text-red-700 hover:underline cursor-pointer"
-                                        >
-                                            Remove Photo
-                                        </button>
-                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setModalForm(prev => ({ ...prev, photo_url: '', certificate_url: '' }))}
+                                        className="text-xs font-bold text-red-600 hover:text-red-700 hover:underline cursor-pointer"
+                                    >
+                                        Remove Photo
+                                    </button>
                                 ) : (
                                     <span className="text-xs text-slate-400 italic">No custom photo uploaded</span>
                                 )}
@@ -512,34 +550,63 @@ export default function RegistryModals({
                         </div>
 
                         {/* Guest Amenities & Facilities */}
-                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
-                            <span className="text-xs font-bold uppercase tracking-wide text-slate-600 block">
-                                Guest Amenities & Facilities
-                            </span>
+                        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2.5">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
+                                    Guest Amenities & Facilities
+                                </span>
+                                <span className="text-[11px] text-slate-400">Select all that apply</span>
+                            </div>
                             <div className="flex flex-wrap gap-2 text-xs">
+                                {STANDARD_AMENITIES.map((name) => {
+                                    const isSelected = Array.isArray(modalForm.amenities) && modalForm.amenities.includes(name);
+                                    return (
+                                        <button
+                                            key={name}
+                                            type="button"
+                                            onClick={() => handleToggleAmenity(name)}
+                                            className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition cursor-pointer ${
+                                                isSelected
+                                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                                                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                                            }`}
+                                        >
+                                            {name}
+                                        </button>
+                                    );
+                                })}
+                                {Array.isArray(modalForm.amenities) && modalForm.amenities.filter(a => !STANDARD_AMENITIES.includes(a)).map((customName) => (
+                                    <span
+                                        key={customName}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                                    >
+                                        <span>{customName}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleToggleAmenity(customName)}
+                                            className="text-white hover:text-emerald-100 font-bold ml-0.5 cursor-pointer"
+                                            title="Remove custom facility"
+                                        >
+                                            ×
+                                        </button>
+                                    </span>
+                                ))}
+                            </div>
+                            <div className="flex items-center gap-2 pt-1">
+                                <input
+                                    type="text"
+                                    value={customAmenityInput}
+                                    onChange={(e) => setCustomAmenityInput(e.target.value)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomAmenity(e); } }}
+                                    placeholder="Add custom facility (e.g. Separate Halal Utensils)..."
+                                    className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                />
                                 <button
                                     type="button"
-                                    onClick={() => setModalForm(prev => ({ ...prev, has_prayer_space: !prev.has_prayer_space }))}
-                                    className={`px-3 py-1.5 rounded-lg border font-medium flex items-center gap-1.5 transition cursor-pointer ${
-                                        modalForm.has_prayer_space
-                                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300 shadow-xs'
-                                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
-                                    }`}
+                                    onClick={handleAddCustomAmenity}
+                                    className="px-3 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition cursor-pointer shrink-0"
                                 >
-                                    <Compass size={14} className={modalForm.has_prayer_space ? 'text-emerald-600' : 'text-slate-400'} />
-                                    <span>Dedicated Prayer Space (Musalah)</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setModalForm(prev => ({ ...prev, is_alcohol_free: !prev.is_alcohol_free }))}
-                                    className={`px-3 py-1.5 rounded-lg border font-medium flex items-center gap-1.5 transition cursor-pointer ${
-                                        modalForm.is_alcohol_free
-                                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300 shadow-xs'
-                                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
-                                    }`}
-                                >
-                                    <ShieldCheck size={14} className={modalForm.is_alcohol_free ? 'text-emerald-600' : 'text-slate-400'} />
-                                    <span>100% Alcohol-Free Premises</span>
+                                    + Add
                                 </button>
                             </div>
                         </div>

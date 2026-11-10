@@ -222,7 +222,37 @@ export const getStatusConfig = (statusOrEst, rawNotes = '') => {
         notes = (rawNotes || '').toLowerCase();
     }
 
-    // 1. Terminal unverified states ALWAYS take precedence
+    // 1. Terminal unverified or operational lifecycle states ALWAYS take precedence
+    if (status.includes('demolish')) {
+        return {
+            key: 'demolished',
+            label: 'Demolished',
+            color: '#64748b',
+            badgeBg: 'bg-slate-100 text-slate-700 border-slate-300',
+            weight: 0.0,
+        };
+    }
+
+    if (status.includes('closed') || status.includes('permanently_closed')) {
+        return {
+            key: 'permanently_closed',
+            label: 'Permanently Closed',
+            color: '#64748b',
+            badgeBg: 'bg-slate-100 text-slate-700 border-slate-300',
+            weight: 0.0,
+        };
+    }
+
+    if (status.includes('relocat') || status.includes('moved')) {
+        return {
+            key: 'relocated',
+            label: 'Relocated / Moved',
+            color: '#f97316',
+            badgeBg: 'bg-orange-50 text-orange-700 border-orange-200',
+            weight: 0.2,
+        };
+    }
+
     if (status === 'rejected' || status.includes('reject')) {
         return {
             key: 'rejected',
@@ -235,8 +265,8 @@ export const getStatusConfig = (statusOrEst, rawNotes = '') => {
 
     if (status.includes('flag') || status.includes('suspend') || status.includes('expir')) {
         return {
-            key: 'flagged',
-            label: 'Flagged / Suspended',
+            key: 'suspended',
+            label: 'Suspended',
             color: '#ef4444',
             badgeBg: 'bg-red-50 text-red-700 border-red-200',
             weight: 0.1,
@@ -262,9 +292,9 @@ export const getStatusConfig = (statusOrEst, rawNotes = '') => {
     }
 
     // 3. For verified records (halal_status='verified', 'halal', or explicit verified tier), resolve tier:
-    const tier = (estObj && (estObj.halal_tier || estObj.verification_tier || '')).toLowerCase();
+    const tier = (estObj && (estObj.halal_tier || estObj.verification_tier || '')).toLowerCase().trim();
 
-    if (tier === 'muslim_owned' || status === 'muslim_owned' || notes.includes('[tier: muslim_owned]')) {
+    if (tier === 'muslim_owned' || (!tier && (status === 'muslim_owned' || notes.includes('[tier: muslim_owned]')))) {
         return {
             key: 'muslim_owned',
             label: 'Muslim-Owned',
@@ -274,13 +304,33 @@ export const getStatusConfig = (statusOrEst, rawNotes = '') => {
         };
     }
 
-    if (tier === 'muslim_friendly' || status === 'muslim_friendly' || notes.includes('[tier: muslim_friendly]')) {
+    if (tier === 'muslim_friendly' || (!tier && (status === 'muslim_friendly' || notes.includes('[tier: muslim_friendly]')))) {
         return {
             key: 'muslim_friendly',
             label: 'Muslim-Friendly',
             color: '#6366f1',
             badgeBg: 'bg-indigo-50 text-indigo-800 border-indigo-200',
             weight: 0.8,
+        };
+    }
+
+    if (tier === 'vegetarian_vegan' || (!tier && (status === 'vegetarian_vegan' || notes.includes('[tier: vegetarian_vegan]') || notes.includes('plant-based')))) {
+        return {
+            key: 'vegetarian_vegan',
+            label: 'Vegetarian / Vegan',
+            color: '#0d9488',
+            badgeBg: 'bg-teal-50 text-teal-800 border-teal-200',
+            weight: 0.8,
+        };
+    }
+
+    if (tier === 'halal_certified') {
+        return {
+            key: 'verified',
+            label: 'Formally Certified',
+            color: '#10b981',
+            badgeBg: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+            weight: 1.0,
         };
     }
 

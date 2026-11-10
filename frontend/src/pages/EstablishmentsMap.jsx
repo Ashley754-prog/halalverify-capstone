@@ -905,14 +905,12 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                                 return (
                                     <div className="flex flex-wrap gap-1">
                                         {hasPrayer && (
-                                            <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded">
-                                                <Compass size={10} className="text-emerald-600" />
+                                            <span className="inline-flex items-center text-[9px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded">
                                                 Prayer Space
                                             </span>
                                         )}
                                         {hasAlcohol && (
-                                            <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded">
-                                                <ShieldCheck size={10} className="text-emerald-600" />
+                                            <span className="inline-flex items-center text-[9px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded">
                                                 Alcohol-Free
                                             </span>
                                         )}
