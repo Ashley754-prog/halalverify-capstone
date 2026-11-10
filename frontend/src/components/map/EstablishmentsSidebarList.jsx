@@ -152,7 +152,7 @@ export default function EstablishmentsSidebarList({
                                             )}
                                             {productsCount > 0 && (
                                                 <span className="text-slate-500 font-medium hidden sm:inline">
-                                                    {productsCount} menu items
+                                                    {productsCount} {productsCount === 1 ? 'dish' : 'dishes'}
                                                 </span>
                                             )}
                                         </div>

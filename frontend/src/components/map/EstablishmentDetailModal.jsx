@@ -7,7 +7,6 @@ import {
     Phone,
     Mail,
     ExternalLink,
-    UtensilsCrossed,
     Flag,
     Navigation,
     Store,
@@ -369,7 +368,7 @@ export default function EstablishmentDetailModal({
                     </div>
                 )}
 
-                {/* Cuisine & Specialties (Muslim in Manila Style) */}
+                {/* Menu */}
                 {(() => {
                     const dishes = extractMenuHighlights(establishment);
                     const cuisineTags = [];
@@ -382,13 +381,12 @@ export default function EstablishmentDetailModal({
                     if (allSpecialties.length === 0) return null;
 
                     return (
-                        <div className="rounded-xl border border-rose-100 bg-rose-50/40 p-3 text-xs space-y-2">
+                        <div className="rounded-xl border border-amber-200/80 bg-amber-50/50 p-3 text-xs space-y-2">
                             <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-rose-900/70 flex items-center gap-1.5">
-                                    <UtensilsCrossed size={12} className="text-rose-700" />
-                                    <span>Cuisine & Specialties</span>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-950">
+                                    Menu
                                 </span>
-                                <span className="text-[10px] text-rose-800/60 font-medium">
+                                <span className="text-[10px] text-amber-800/80 font-medium">
                                     {allSpecialties.length} item{allSpecialties.length === 1 ? '' : 's'}
                                 </span>
                             </div>
@@ -396,7 +394,7 @@ export default function EstablishmentDetailModal({
                                 {allSpecialties.map((item) => (
                                     <span
                                         key={item}
-                                        className="inline-flex items-center px-2.5 py-1 rounded-full bg-white text-rose-950 border border-rose-200/80 font-medium shadow-2xs"
+                                        className="inline-flex items-center px-2.5 py-1 rounded-full bg-white text-amber-950 border border-amber-200 font-medium shadow-2xs"
                                     >
                                         {item}
                                     </span>
@@ -406,7 +404,7 @@ export default function EstablishmentDetailModal({
                     );
                 })()}
 
-                {/* Guest Amenities & Facilities */}
+                {/* Amenities */}
                 {(() => {
                     const REMOVED_AMENITY_KEYS = ['alcohol', 'wudu', 'ablution', 'halal meat', 'pork-free', 'pork free'];
                     const rawList = (Array.isArray(establishment.amenities)
@@ -423,8 +421,8 @@ export default function EstablishmentDetailModal({
 
                     return (
                         <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-xs space-y-2">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                                Guest Amenities & Facilities
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                                Amenities
                             </span>
                             <div className="flex flex-wrap gap-2 text-[11px]">
                                 {rawList.map((item) => (

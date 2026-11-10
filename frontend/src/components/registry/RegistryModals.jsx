@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Upload, Loader2, ExternalLink, UtensilsCrossed } from 'lucide-react';
+import { Upload, Loader2, ExternalLink } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { ESTABLISHMENT_TYPES, ESTABLISHMENT_HALAL_TIERS, getEstablishmentPhoto } from '../../data/constants';
 import { supabase } from '../../lib/supabaseClient';
@@ -608,11 +608,72 @@ export default function RegistryModals({
                             );
                         })()}
 
-                        {/* Guest Amenities & Facilities */}
+                        {/* Menu */}
+                        <div className="p-3.5 rounded-xl bg-amber-50/60 border border-amber-200/80 space-y-2.5">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold uppercase tracking-wide text-amber-950">
+                                    Menu
+                                </span>
+                                <span className="text-[11px] text-amber-800/80 font-medium">
+                                    {(modalForm.menu_highlights || []).length} dish{(modalForm.menu_highlights || []).length === 1 ? '' : 'es'}
+                                </span>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5 text-xs">
+                                {(modalForm.menu_highlights || []).map((dish) => (
+                                    <span
+                                        key={dish}
+                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium bg-white text-amber-950 border-amber-200 shadow-2xs"
+                                    >
+                                        <span>{dish}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const nextDishes = (modalForm.menu_highlights || []).filter(d => d !== dish);
+                                                setModalForm(prev => ({ ...prev, menu_highlights: nextDishes }));
+                                            }}
+                                            className="text-amber-500 hover:text-amber-800 font-bold ml-0.5 cursor-pointer"
+                                            title={`Remove ${dish}`}
+                                        >
+                                            ×
+                                        </button>
+                                    </span>
+                                ))}
+                                {(!modalForm.menu_highlights || modalForm.menu_highlights.length === 0) && (
+                                    <span className="text-[11px] text-amber-800/70 italic py-0.5">
+                                        No specialties or dishes added yet. Type below to add.
+                                    </span>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2 pt-1">
+                                <input
+                                    type="text"
+                                    value={newSpecialtyInput}
+                                    onChange={(e) => setNewSpecialtyInput(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleAddSpecialty(e);
+                                        }
+                                    }}
+                                    placeholder="Add specialty or dish (e.g. Beef Satti, Chicken Inasal)..."
+                                    className="flex-1 rounded-xl border border-amber-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:border-amber-400 focus:outline-none"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleAddSpecialty}
+                                    disabled={!newSpecialtyInput.trim()}
+                                    className="px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 text-xs font-bold transition cursor-pointer shrink-0 disabled:opacity-40"
+                                >
+                                    + Add
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Amenities */}
                         <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2.5">
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
-                                    Guest Amenities & Facilities
+                                    Amenities
                                 </span>
                                 <span className="text-[11px] text-slate-400">Select all that apply</span>
                             </div>
@@ -664,68 +725,6 @@ export default function RegistryModals({
                                     type="button"
                                     onClick={handleAddCustomAmenity}
                                     className="px-3 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition cursor-pointer shrink-0"
-                                >
-                                    + Add
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Cuisine & Specialties (Menu Highlights) */}
-                        <div className="p-3.5 rounded-xl bg-rose-50/50 border border-rose-200/70 space-y-2.5">
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold uppercase tracking-wide text-rose-900/80 flex items-center gap-1.5">
-                                    <UtensilsCrossed size={13} className="text-rose-700" />
-                                    <span>Cuisine & Specialties (Menu Highlights)</span>
-                                </span>
-                                <span className="text-[11px] text-rose-800/60 font-medium">
-                                    {(modalForm.menu_highlights || []).length} dish{(modalForm.menu_highlights || []).length === 1 ? '' : 'es'}
-                                </span>
-                            </div>
-                            <div className="flex flex-wrap gap-1.5 text-xs">
-                                {(modalForm.menu_highlights || []).map((dish) => (
-                                    <span
-                                        key={dish}
-                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium bg-white text-rose-900 border-rose-200 shadow-2xs"
-                                    >
-                                        <span>{dish}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const nextDishes = (modalForm.menu_highlights || []).filter(d => d !== dish);
-                                                setModalForm(prev => ({ ...prev, menu_highlights: nextDishes }));
-                                            }}
-                                            className="text-rose-400 hover:text-rose-700 font-bold ml-0.5 cursor-pointer"
-                                            title={`Remove ${dish}`}
-                                        >
-                                            ×
-                                        </button>
-                                    </span>
-                                ))}
-                                {(!modalForm.menu_highlights || modalForm.menu_highlights.length === 0) && (
-                                    <span className="text-[11px] text-rose-800/60 italic py-0.5">
-                                        No specialties or dishes added yet. Type below to add.
-                                    </span>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-2 pt-1">
-                                <input
-                                    type="text"
-                                    value={newSpecialtyInput}
-                                    onChange={(e) => setNewSpecialtyInput(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            e.preventDefault();
-                                            handleAddSpecialty(e);
-                                        }
-                                    }}
-                                    placeholder="Add specialty or dish (e.g. Beef Satti, Chicken Inasal, Barbecue Skewers)..."
-                                    className="flex-1 rounded-xl border border-rose-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:border-rose-400 focus:outline-none"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={handleAddSpecialty}
-                                    disabled={!newSpecialtyInput.trim()}
-                                    className="px-3 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-900 text-xs font-bold transition cursor-pointer shrink-0 disabled:opacity-40"
                                 >
                                     + Add
                                 </button>

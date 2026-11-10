@@ -662,7 +662,7 @@ export default function VerificationInspectionModal({
                                 return (
                                     <div className="pt-2 border-t border-slate-100">
                                         <div className="flex items-center justify-between mb-1.5">
-                                            <span className="text-slate-600 font-semibold block text-[11px]">Guest Amenities & Facilities</span>
+                                            <span className="text-slate-600 font-semibold block text-[11px]">Amenities</span>
                                             <span className="text-[10px] text-slate-400">Click to toggle</span>
                                         </div>
                                         <div className="flex flex-wrap gap-1.5">
@@ -847,10 +847,10 @@ export default function VerificationInspectionModal({
                                 <div className="pt-2 border-t border-slate-100 space-y-2">
                                     <div className="flex items-center justify-between">
                                         <span className="font-semibold text-slate-700 text-xs">
-                                            Menu Highlights & Dishes
+                                            Menu
                                         </span>
                                         <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                                            {dishesList.length} Dishes
+                                            {dishesList.length} dish{dishesList.length === 1 ? '' : 'es'}
                                         </span>
                                     </div>
 
