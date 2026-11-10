@@ -588,35 +588,67 @@ export default function VerificationInspectionModal({
                                 </div>
                             </div>
 
-                            <div className="pt-1">
-                                <label htmlFor="inspect-est-website" className="text-slate-600 font-semibold block text-[11px] mb-1">
-                                    Website / Social Link (Editable)
-                                </label>
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        id="inspect-est-website"
-                                        type="text"
-                                        value={inspectingItem.source_url || inspectingItem.social_media_url || ''}
-                                        placeholder="e.g. https://facebook.com/venue"
-                                        onChange={(e) =>
-                                            setInspectingItem?.((prev) =>
-                                                prev ? { ...prev, source_url: e.target.value, social_media_url: e.target.value } : prev
-                                            )
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                                <div>
+                                    <label htmlFor="inspect-submitter-role" className="text-slate-600 font-semibold block text-[11px] mb-1">
+                                        Submitter Role (Editable)
+                                    </label>
+                                    <select
+                                        id="inspect-submitter-role"
+                                        value={
+                                            inspectingItem.submitter_role === 'owner' || inspectingItem.source?.includes('Owner')
+                                                ? 'owner'
+                                                : 'community'
                                         }
-                                        className="flex-1 rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-800 bg-slate-50/60 focus:bg-white focus:border-emerald-500 focus:outline-none"
-                                    />
-                                    {webLink && getSafeUrl(webLink) && (
-                                        <a
-                                            href={getSafeUrl(webLink)}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition shrink-0"
-                                            title="Open link in new tab"
-                                            aria-label="Open link in new tab"
-                                        >
-                                            <ExternalLink size={13} />
-                                        </a>
-                                    )}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            const isOwner = val === 'owner';
+                                            setInspectingItem?.((prev) =>
+                                                prev
+                                                    ? {
+                                                          ...prev,
+                                                          submitter_role: val,
+                                                          source: isOwner ? 'Business Owner Submission' : 'Community User Submission',
+                                                      }
+                                                    : prev
+                                            );
+                                        }}
+                                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-800 bg-slate-50/60 focus:bg-white focus:border-emerald-500 focus:outline-none cursor-pointer"
+                                    >
+                                        <option value="owner">Owner / Staff (Business Verified)</option>
+                                        <option value="community">Customer / Scout (Community Reported)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label htmlFor="inspect-est-website" className="text-slate-600 font-semibold block text-[11px] mb-1">
+                                        Website / Social Link (Editable)
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            id="inspect-est-website"
+                                            type="text"
+                                            value={inspectingItem.source_url || inspectingItem.social_media_url || ''}
+                                            placeholder="e.g. https://facebook.com/venue"
+                                            onChange={(e) =>
+                                                setInspectingItem?.((prev) =>
+                                                    prev ? { ...prev, source_url: e.target.value, social_media_url: e.target.value } : prev
+                                                )
+                                            }
+                                            className="flex-1 rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-800 bg-slate-50/60 focus:bg-white focus:border-emerald-500 focus:outline-none"
+                                        />
+                                        {webLink && getSafeUrl(webLink) && (
+                                            <a
+                                                href={getSafeUrl(webLink)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition shrink-0"
+                                                title="Open link in new tab"
+                                                aria-label="Open link in new tab"
+                                            >
+                                                <ExternalLink size={13} />
+                                            </a>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
@@ -792,7 +824,6 @@ export default function VerificationInspectionModal({
                         ) : (
                             <div className="rounded-xl border border-teal-200/80 bg-teal-50/70 p-3.5 text-xs text-teal-900 space-y-1.5">
                                 <div className="flex items-center gap-2 font-bold text-teal-950">
-                                    <span className="w-2 h-2 rounded-full bg-teal-600"></span>
                                     <span>Community Sourced Listing</span>
                                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 font-semibold text-teal-800 ml-auto border border-teal-200">
                                         {selectedStatus === 'muslim_owned'

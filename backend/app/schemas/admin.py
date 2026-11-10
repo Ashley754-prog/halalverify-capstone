@@ -13,6 +13,8 @@ class EstablishmentVerifyRequest(BaseModel):
     type: Optional[str] = Field(None, description="Corrected establishment venue category")
     phone: Optional[str] = Field(None, description="Corrected contact phone")
     source_url: Optional[str] = Field(None, description="Corrected website or social media URL")
+    submitter_role: Optional[str] = Field(None, description="Corrected submitter role: 'owner' or 'community'")
+    source: Optional[str] = Field(None, description="Corrected submission source label")
     halal_tier: Optional[str] = Field(None, description="Explicit verification tier")
     amenities: Optional[list[str]] = Field(None, description="Updated amenities list")
     menu_highlights: Optional[list[str]] = Field(None, description="Updated menu specialties/dishes")

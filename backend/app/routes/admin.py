@@ -208,6 +208,10 @@ def verify_establishment(
         update_fields["phone"] = payload.phone.strip()
     if payload.source_url and payload.source_url.strip():
         update_fields["source_url"] = payload.source_url.strip()
+    if payload.submitter_role and payload.submitter_role.strip():
+        update_fields["submitter_role"] = payload.submitter_role.strip().lower()
+    if payload.source and payload.source.strip():
+        update_fields["source"] = payload.source.strip()
     if payload.halal_tier:
         update_fields["halal_tier"] = payload.halal_tier.strip().lower()
     elif status_clean in tier_note_map:

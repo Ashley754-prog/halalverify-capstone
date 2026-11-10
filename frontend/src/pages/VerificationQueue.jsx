@@ -508,6 +508,8 @@ export default function VerificationQueue({ onViewChange, initialTab = 'establis
                     type: inspectingItem.type || undefined,
                     phone: inspectingItem.phone || inspectingItem.contact_number || undefined,
                     source_url: inspectingItem.source_url || inspectingItem.social_media_url || undefined,
+                    submitter_role: inspectingItem.submitter_role || undefined,
+                    source: inspectingItem.source || undefined,
                     amenities: inspectingItem.amenities || undefined,
                     menu_highlights: newMenuItemName && newMenuItemName.trim()
                         ? Array.from(new Set([...extractMenuHighlights(inspectingItem), newMenuItemName.trim()]))
