@@ -380,29 +380,54 @@ export default function RegistryModals({
                             </div>
                             <div>
                                 <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Venue Category</label>
-                                <input
-                                    list="venue-categories"
-                                    value={modalForm.type || ''}
-                                    onChange={(e) => setModalForm(prev => ({ ...prev, type: e.target.value }))}
-                                    placeholder="e.g. Barbecue House, Restaurant, Fast Food"
-                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
-                                />
-                                <datalist id="venue-categories">
-                                    <option value="Restaurant" />
-                                    <option value="Barbecue House" />
-                                    <option value="Burger House" />
-                                    <option value="Satti House" />
-                                    <option value="Halal Carinderia" />
-                                    <option value="Casual Dining Bistro" />
-                                    <option value="Moro & Tausug Restaurant" />
-                                    <option value="Sizzling & Grill House" />
-                                    <option value="Cafeteria / Eatery" />
-                                    <option value="Bakery & Pastry" />
-                                    <option value="Fast Food" />
-                                    <option value="Cafe / Coffee Shop" />
-                                    <option value="Halal Meat & Poultry Shop" />
-                                    <option value="Grocery / Supermarket" />
-                                </datalist>
+                                {(() => {
+                                    const currentType = modalForm.type || 'Restaurant';
+                                    const isStandard = ESTABLISHMENT_TYPES.includes(currentType);
+                                    const selectValue = isStandard ? currentType : 'custom';
+
+                                    return (
+                                        <div className="space-y-2">
+                                            <select
+                                                value={selectValue}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    if (val === 'custom') {
+                                                        setModalForm(prev => ({
+                                                            ...prev,
+                                                            type: isStandard ? '' : prev.type,
+                                                            isCustomType: true,
+                                                        }));
+                                                    } else {
+                                                        setModalForm(prev => ({
+                                                            ...prev,
+                                                            type: val,
+                                                            isCustomType: false,
+                                                        }));
+                                                    }
+                                                }}
+                                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none cursor-pointer"
+                                            >
+                                                {ESTABLISHMENT_TYPES.map((cat) => (
+                                                    <option key={cat} value={cat}>{cat}</option>
+                                                ))}
+                                                {!isStandard && currentType && (
+                                                    <option value="custom">{currentType}</option>
+                                                )}
+                                                <option value="custom">+ Other / Custom Category...</option>
+                                            </select>
+                                            {(selectValue === 'custom' || modalForm.isCustomType) && (
+                                                <input
+                                                    type="text"
+                                                    value={modalForm.type || ''}
+                                                    onChange={(e) => setModalForm(prev => ({ ...prev, type: e.target.value }))}
+                                                    placeholder="Type custom category name..."
+                                                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                                    autoFocus
+                                                />
+                                            )}
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         </div>
 
