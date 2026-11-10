@@ -81,8 +81,16 @@ export default function EstablishmentsRegistryTab({
             cfg.key === 'permanently_closed' ||
             cfg.key === 'demolished';
 
-        // Public non-admins should never see non-active establishments
-        if (!isAdmin && isNonActiveStatus) {
+        // Unverified drafts and pending review submissions are strictly private to administrators
+        const isUnverifiedDraft =
+            shopStatus === 'needs_review' ||
+            shopStatus === 'pending' ||
+            shopStatus.includes('pending') ||
+            shopStatus.includes('needs_review') ||
+            cfg.key === 'needs_review' ||
+            cfg.key === 'pending_review';
+
+        if (!isAdmin && isUnverifiedDraft) {
             return false;
         }
 
@@ -184,22 +192,24 @@ export default function EstablishmentsRegistryTab({
                         <option value="muslim_friendly">Muslim-Friendly</option>
                     </select>
 
-                    {isAdmin && (
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full lg:w-auto"
-                            aria-label="Filter by registry status"
-                        >
-                            <option value="all_active">Operational / Published</option>
-                            <option value="all">All Statuses (Admin)</option>
-                            <option value="needs_review">Needs Review</option>
-                            <option value="suspended">Suspended</option>
-                            <option value="relocated">Relocated / Moved</option>
-                            <option value="permanently_closed">Permanently Closed</option>
-                            <option value="demolished">Demolished / Ceased Operations</option>
-                        </select>
-                    )}
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full lg:w-auto"
+                        aria-label="Filter by registry status"
+                    >
+                        <option value="all_active">Operational / Published</option>
+                        <option value="suspended">Suspended</option>
+                        <option value="relocated">Relocated / Moved</option>
+                        <option value="permanently_closed">Permanently Closed</option>
+                        <option value="demolished">Demolished / Ceased Operations</option>
+                        {isAdmin && (
+                            <>
+                                <option value="all">All Records (Admin)</option>
+                                <option value="needs_review">Needs Review (Admin)</option>
+                            </>
+                        )}
+                    </select>
 
                     <SearchBar
                         value={localSearch}
