@@ -31,6 +31,23 @@ export default function EstablishmentsRegistryTab({
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(8);
 
+    const activeEstablishmentsCount = establishments.filter((shop) => {
+        const s = (shop.halal_status || shop.status || '').toLowerCase().trim();
+        return !(
+            s === 'rejected' ||
+            s.includes('reject') ||
+            s === 'flagged' ||
+            s === 'suspended' ||
+            s === 'expired' ||
+            s === 'needs_review' ||
+            s === 'pending' ||
+            s.includes('pending') ||
+            s === 'permanently_closed' ||
+            s === 'demolished' ||
+            s === 'relocated'
+        );
+    }).length;
+
     const filteredEstablishments = establishments.filter((shop) => {
         const matchesSearch =
             (shop.name || '').toLowerCase().includes(localSearch.toLowerCase()) ||
@@ -44,42 +61,28 @@ export default function EstablishmentsRegistryTab({
             if (dist.id !== districtFilter) return false;
         }
 
-        const sLower = (shop.halal_status || '').toLowerCase().trim();
-        // Never show rejected, pending review, flagged, or suspended establishments in public registry
-        if (
-            sLower === 'rejected' ||
-            sLower.includes('reject') ||
-            sLower === 'flagged' ||
-            sLower === 'suspended' ||
-            sLower === 'expired' ||
-            sLower === 'needs_review' ||
-            sLower === 'pending' ||
-            sLower.includes('pending') ||
-            sLower.includes('needs_review')
-        ) {
-            return false;
-        }
-
         const cfg = getStatusConfig(shop);
         const shopStatus = (shop.halal_status || shop.status || '').toLowerCase().trim();
+        const isNonActiveStatus =
+            shopStatus === 'suspended' ||
+            shopStatus === 'flagged' ||
+            shopStatus === 'rejected' ||
+            shopStatus.includes('reject') ||
+            shopStatus === 'needs_review' ||
+            shopStatus === 'pending' ||
+            shopStatus.includes('pending') ||
+            shopStatus === 'permanently_closed' ||
+            shopStatus === 'demolished' ||
+            shopStatus === 'relocated' ||
+            cfg.key === 'suspended' ||
+            cfg.key === 'rejected' ||
+            cfg.key === 'needs_review' ||
+            cfg.key === 'permanently_closed' ||
+            cfg.key === 'demolished';
 
-        // For non-admin public visitors, only show active/verified places
-        if (!isAdmin) {
-            if (
-                cfg.key === 'needs_review' ||
-                cfg.key === 'pending_review' ||
-                cfg.key === 'rejected' ||
-                cfg.key === 'flagged' ||
-                cfg.key === 'suspended' ||
-                cfg.key === 'permanently_closed' ||
-                cfg.key === 'demolished' ||
-                shopStatus === 'suspended' ||
-                shopStatus === 'permanently_closed' ||
-                shopStatus === 'demolished' ||
-                shopStatus === 'rejected'
-            ) {
-                return false;
-            }
+        // Public non-admins should never see non-active establishments
+        if (!isAdmin && isNonActiveStatus) {
+            return false;
         }
 
         if (statusFilter !== 'all') {
@@ -87,11 +90,13 @@ export default function EstablishmentsRegistryTab({
             if (statusFilter === 'muslim_owned') return cfg.key === 'muslim_owned' || cfg.key === 'community';
             if (statusFilter === 'muslim_friendly') return cfg.key === 'muslim_friendly';
             if (statusFilter === 'vegetarian_vegan') return cfg.key === 'vegetarian_vegan';
-            if (statusFilter === 'needs_review') return cfg.key === 'needs_review' || cfg.key === 'pending_review' || shopStatus === 'needs_review';
-            if (statusFilter === 'suspended') return cfg.key === 'suspended' || cfg.key === 'flagged' || shopStatus === 'suspended';
+            if (statusFilter === 'needs_review') return cfg.key === 'needs_review' || cfg.key === 'pending_review' || shopStatus === 'needs_review' || shopStatus.includes('pending');
+            if (statusFilter === 'suspended') return cfg.key === 'suspended' || cfg.key === 'flagged' || shopStatus === 'suspended' || shopStatus === 'flagged';
             if (statusFilter === 'closed_demolished') return cfg.key === 'permanently_closed' || cfg.key === 'demolished' || cfg.key === 'relocated' || shopStatus.includes('close') || shopStatus.includes('demolish') || shopStatus.includes('relocat');
+            return false;
         }
-        return true;
+
+        return !isNonActiveStatus;
     });
 
     // Reset pagination to page 1 whenever filters change
@@ -144,7 +149,7 @@ export default function EstablishmentsRegistryTab({
                         className="h-8.5 sm:h-9 bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full md:w-auto"
                         aria-label="Filter by verification standard"
                     >
-                        <option value="all">All Standards ({filteredEstablishments.length})</option>
+                        <option value="all">All Standards ({activeEstablishmentsCount})</option>
                         <option value="verified">Certified</option>
                         <option value="muslim_owned">Muslim-Owned</option>
                         <option value="muslim_friendly">Muslim-Friendly</option>
