@@ -20,6 +20,7 @@ import RegistryDeleteModal from '../components/registry/RegistryDeleteModal';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
 import { getStatusConfig, ESTABLISHMENT_TYPES } from '../data/constants';
+import { extractMenuHighlights } from '../utils/verificationNotes';
 
 const emptyAdditiveForm = {
     code: '',
@@ -43,6 +44,8 @@ const emptyEstablishmentForm = {
     certificate_url: '',
     facebook_url: '',
     photo_url: '',
+    amenities: [],
+    menu_highlights: [],
 };
 
 const emptyHcbForm = {
@@ -293,6 +296,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 facebook_url: item.facebook_url || '',
                 photo_url: item.logo_url || item.photo_url || item.image_url || '',
                 isCustomType: Boolean(item.type && !ESTABLISHMENT_TYPES.includes(item.type)),
+                menu_highlights: extractMenuHighlights(item),
             });
         }
     };
@@ -523,7 +527,11 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 if (modalForm.has_prayer_space && !amList.some(a => a.toLowerCase().includes('prayer'))) {
                     amList.push('Dedicated Prayer Space (Musalah)');
                 }
-                const description = amList.length > 0 ? `Amenities: ${amList.join(' | ')}` : (modalForm.description || null);
+                const dishList = Array.isArray(modalForm.menu_highlights) ? modalForm.menu_highlights.filter(Boolean) : [];
+                const descParts = [];
+                if (amList.length > 0) descParts.push(`Amenities: ${amList.join(' | ')}`);
+                if (dishList.length > 0) descParts.push(`Dishes: ${dishList.join(', ')}`);
+                const description = descParts.join(' | ') || (modalForm.description || null);
 
                 const created = await saveRegistryRecord('/registry/establishments', 'POST', {
                     name: requireText(modalForm.name, 'Establishment name'),
@@ -535,6 +543,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     halal_status: modalForm.status || 'verified',
                     halal_tier: tier,
                     amenities: amList,
+                    menu_highlights: dishList,
                     description: description,
                     phone: safeTrim(modalForm.phone),
                     admin_notes: adminNotes,
@@ -549,6 +558,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     halal_tier: tier,
                     halal_status: modalForm.status || 'verified',
                     amenities: amList,
+                    menu_highlights: dishList,
                     admin_notes: adminNotes,
                 };
 
@@ -574,11 +584,11 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 if (modalForm.has_prayer_space && !amList.some(a => a.toLowerCase().includes('prayer'))) {
                     amList.push('Dedicated Prayer Space (Musalah)');
                 }
-
-                let description = modalForm.description || selectedItem.description || null;
-                if (amList.length > 0) {
-                    description = `Amenities: ${amList.join(' | ')}`;
-                }
+                const dishList = Array.isArray(modalForm.menu_highlights) ? modalForm.menu_highlights.filter(Boolean) : [];
+                const descParts = [];
+                if (amList.length > 0) descParts.push(`Amenities: ${amList.join(' | ')}`);
+                if (dishList.length > 0) descParts.push(`Dishes: ${dishList.join(', ')}`);
+                const description = descParts.join(' | ') || (modalForm.description || null);
 
                 const updated = await saveRegistryRecord(
                     `/registry/establishments/${selectedItem.id}`,
@@ -593,6 +603,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                         halal_status: modalForm.status || 'verified',
                         halal_tier: tier,
                         amenities: amList,
+                        menu_highlights: dishList,
                         phone: safeTrim(modalForm.phone),
                         admin_notes: adminNotes,
                         source: modalForm.source || selectedItem.source || 'Official Halal Registry',
@@ -618,6 +629,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     halal_tier: tier,
                     halal_status: modalForm.status || 'verified',
                     amenities: amList,
+                    menu_highlights: dishList,
                     admin_notes: adminNotes,
                     description: description,
                     logo_url: resolvedLogoUrl,

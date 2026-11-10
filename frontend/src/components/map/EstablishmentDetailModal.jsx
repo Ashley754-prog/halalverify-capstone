@@ -373,9 +373,6 @@ export default function EstablishmentDetailModal({
                 {(() => {
                     const dishes = extractMenuHighlights(establishment);
                     const cuisineTags = [];
-                    if (establishment.type && establishment.type !== 'Restaurant') {
-                        cuisineTags.push(establishment.type);
-                    }
                     if (typeof establishment.cuisine === 'string' && establishment.cuisine.trim()) {
                         cuisineTags.push(...establishment.cuisine.split(',').map(s => s.trim()));
                     } else if (Array.isArray(establishment.cuisine)) {

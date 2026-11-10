@@ -908,29 +908,39 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
 
                             {/* Amenity Badges */}
                             {(() => {
-                                const hasPrayer = Boolean(
-                                    activePreviewEst.has_prayer_space ||
-                                    (activePreviewEst.description && (activePreviewEst.description.toLowerCase().includes('prayer') || activePreviewEst.description.toLowerCase().includes('musalah'))) ||
-                                    (Array.isArray(activePreviewEst.amenities) && activePreviewEst.amenities.some((a) => String(a).toLowerCase().includes('prayer')))
-                                );
-                                const hasAlcohol = Boolean(
-                                    activePreviewEst.is_alcohol_free ||
-                                    (activePreviewEst.description && activePreviewEst.description.toLowerCase().includes('alcohol')) ||
-                                    (Array.isArray(activePreviewEst.amenities) && activePreviewEst.amenities.some((a) => String(a).toLowerCase().includes('alcohol')))
-                                );
-                                if (!hasPrayer && !hasAlcohol) return null;
+                                const REMOVED_KEYS = ['alcohol', 'wudu', 'ablution', 'halal meat', 'pork-free', 'pork free'];
+                                const rawAmenities = (Array.isArray(activePreviewEst.amenities)
+                                    ? [...activePreviewEst.amenities]
+                                    : (activePreviewEst.description && activePreviewEst.description.includes('Amenities:'))
+                                        ? activePreviewEst.description.split('Amenities:')[1].split('|').map(s => s.trim()).filter(Boolean)
+                                        : []
+                                ).filter(a => !REMOVED_KEYS.some(k => String(a).toLowerCase().includes(k)));
+
+                                if ((activePreviewEst.has_prayer_space || activePreviewEst.description?.toLowerCase().includes('prayer')) && !rawAmenities.some(a => String(a).toLowerCase().includes('prayer'))) {
+                                    rawAmenities.push('Dedicated Prayer Space (Musalah)');
+                                }
+
+                                if (rawAmenities.length === 0) return null;
+
                                 return (
                                     <div className="flex flex-wrap gap-1">
-                                        {hasPrayer && (
-                                            <span className="inline-flex items-center text-[9px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded">
-                                                Prayer Space
-                                            </span>
-                                        )}
-                                        {hasAlcohol && (
-                                            <span className="inline-flex items-center text-[9px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded">
-                                                Alcohol-Free
-                                            </span>
-                                        )}
+                                        {rawAmenities.map((amenity) => {
+                                            let label = amenity;
+                                            if (amenity.toLowerCase().includes('prayer') || amenity.toLowerCase().includes('musalah')) {
+                                                label = 'Prayer Space';
+                                            } else if (amenity.toLowerCase().includes('family')) {
+                                                label = 'Family Area';
+                                            }
+                                            return (
+                                                <span
+                                                    key={amenity}
+                                                    title={amenity}
+                                                    className="inline-flex items-center text-[9px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded"
+                                                >
+                                                    {label}
+                                                </span>
+                                            );
+                                        })}
                                     </div>
                                 );
                             })()}

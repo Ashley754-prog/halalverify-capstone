@@ -113,16 +113,38 @@ export default function EstablishmentsSidebarList({
                                                     {est.certifying_bodies.code}
                                                 </span>
                                             )}
-                                            {(est.has_prayer_space || est.description?.toLowerCase().includes('prayer') || est.description?.toLowerCase().includes('musalah')) && (
-                                                <span title="Dedicated Prayer Space (Musalah)" className="text-emerald-700 bg-emerald-50 border border-emerald-200/70 px-1.5 py-0.5 rounded text-[9px] font-semibold">
-                                                    Prayer
-                                                </span>
-                                            )}
-                                            {(est.is_alcohol_free || est.description?.toLowerCase().includes('alcohol-free') || est.description?.toLowerCase().includes('alcohol free')) && (
-                                                <span title="100% Alcohol-Free Premises" className="text-emerald-700 bg-emerald-50 border border-emerald-200/70 px-1.5 py-0.5 rounded text-[9px] font-semibold">
-                                                    Alcohol-Free
-                                                </span>
-                                            )}
+                                            {(() => {
+                                                const REMOVED_KEYS = ['alcohol', 'wudu', 'ablution', 'halal meat', 'pork-free', 'pork free'];
+                                                const rawAmenities = (Array.isArray(est.amenities)
+                                                    ? [...est.amenities]
+                                                    : (est.description && est.description.includes('Amenities:'))
+                                                        ? est.description.split('Amenities:')[1].split('|').map(s => s.trim()).filter(Boolean)
+                                                        : []
+                                                ).filter(a => !REMOVED_KEYS.some(k => String(a).toLowerCase().includes(k)));
+
+                                                if ((est.has_prayer_space || est.description?.toLowerCase().includes('prayer') || est.description?.toLowerCase().includes('musalah')) && !rawAmenities.some(a => String(a).toLowerCase().includes('prayer'))) {
+                                                    rawAmenities.push('Dedicated Prayer Space (Musalah)');
+                                                }
+
+                                                return rawAmenities.map((amenity) => {
+                                                    let label = amenity;
+                                                    if (amenity.toLowerCase().includes('prayer') || amenity.toLowerCase().includes('musalah')) {
+                                                        label = 'Prayer';
+                                                    } else if (amenity.toLowerCase().includes('family')) {
+                                                        label = 'Family Area';
+                                                    }
+
+                                                    return (
+                                                        <span
+                                                            key={amenity}
+                                                            title={amenity}
+                                                            className="text-emerald-700 bg-emerald-50 border border-emerald-200/70 px-1.5 py-0.5 rounded text-[9px] font-semibold"
+                                                        >
+                                                            {label}
+                                                        </span>
+                                                    );
+                                                });
+                                            })()}
                                             {est.distance_km && (
                                                 <span className="text-blue-700 font-bold">
                                                     {est.distance_km} km
