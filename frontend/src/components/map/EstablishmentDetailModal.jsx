@@ -49,13 +49,15 @@ export default function EstablishmentDetailModal({
 
     const relationshipLabel = isFormallyCertified
         ? 'Official Registry'
+        : establishment.submitter_role === 'community'
+        ? 'Community Submission'
+        : establishment.submitter_role === 'owner'
+        ? 'Owner / Staff'
         : isDirectoryVenue
         ? 'Owner Declared'
         : (
-            establishment.submitter_role === 'owner' ||
             (establishment.source && establishment.source.toLowerCase().includes('owner'))
         ) ? 'Business Owner' : (
-            establishment.submitter_role === 'community' ||
             (establishment.source && establishment.source.toLowerCase().includes('community'))
         ) ? 'Community Submission' : 'Directory Record';
 

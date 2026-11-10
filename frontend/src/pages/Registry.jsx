@@ -276,6 +276,10 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 initialAmenities.push('Dedicated Prayer Space (Musalah)');
             }
 
+            const detectedRole = item.submitter_role || (
+                (item.source && item.source.toLowerCase().includes('owner')) ? 'owner' : 'community'
+            );
+
             setModalForm({
                 name: item.name || '',
                 type: item.type || 'Restaurant',
@@ -287,7 +291,8 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 status: item.halal_status || item.status || 'verified',
                 halal_tier: tierKey,
                 admin_notes: item.admin_notes || '',
-                source: item.source || (item.submitter_role === 'owner' ? 'Business Owner Submission' : 'Community User Submission'),
+                submitter_role: detectedRole,
+                source: item.source || (detectedRole === 'owner' ? 'Business Owner Submission' : 'Community User Submission'),
                 has_prayer_space: hasPrayer,
                 is_alcohol_free: hasAlcohol,
                 amenities: initialAmenities,
@@ -533,6 +538,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 if (dishList.length > 0) descParts.push(`Dishes: ${dishList.join(', ')}`);
                 const description = descParts.join(' | ') || (modalForm.description || null);
 
+                const role = modalForm.submitter_role || 'community';
                 const created = await saveRegistryRecord('/registry/establishments', 'POST', {
                     name: requireText(modalForm.name, 'Establishment name'),
                     type: safeTrim(modalForm.type) || 'Restaurant',
@@ -542,6 +548,8 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     expiry_date: tier === 'halal_certified' ? safeTrim(modalForm.expiry) : null,
                     halal_status: modalForm.status || 'verified',
                     halal_tier: tier,
+                    submitter_role: role,
+                    source: modalForm.source || (role === 'owner' ? 'Business Owner Submission' : 'Community User Submission'),
                     amenities: amList,
                     menu_highlights: dishList,
                     description: description,
@@ -557,6 +565,8 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     ...created,
                     halal_tier: tier,
                     halal_status: modalForm.status || 'verified',
+                    submitter_role: role,
+                    source: modalForm.source || (role === 'owner' ? 'Business Owner Submission' : 'Community User Submission'),
                     amenities: amList,
                     menu_highlights: dishList,
                     admin_notes: adminNotes,
@@ -590,6 +600,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 if (dishList.length > 0) descParts.push(`Dishes: ${dishList.join(', ')}`);
                 const description = descParts.join(' | ') || (modalForm.description || null);
 
+                const role = modalForm.submitter_role || 'community';
                 const updated = await saveRegistryRecord(
                     `/registry/establishments/${selectedItem.id}`,
                     'PATCH',
@@ -602,11 +613,12 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                         expiry_date: (tier === 'halal_certified' || tier === 'verified') ? safeTrim(modalForm.expiry) : null,
                         halal_status: modalForm.status || 'verified',
                         halal_tier: tier,
+                        submitter_role: role,
                         amenities: amList,
                         menu_highlights: dishList,
                         phone: safeTrim(modalForm.phone),
                         admin_notes: adminNotes,
-                        source: modalForm.source || selectedItem.source || 'Official Halal Registry',
+                        source: modalForm.source || (role === 'owner' ? 'Business Owner Submission' : 'Community User Submission'),
                         description: description,
                         certificate_url: modalForm.photo_url === 'none' ? null : safeTrim(modalForm.certificate_url),
                         logo_url: modalForm.photo_url === 'none' ? 'none' : safeTrim(modalForm.photo_url || modalForm.certificate_url),
@@ -628,6 +640,8 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     ...updated,
                     halal_tier: tier,
                     halal_status: modalForm.status || 'verified',
+                    submitter_role: role,
+                    source: modalForm.source || (role === 'owner' ? 'Business Owner Submission' : 'Community User Submission'),
                     amenities: amList,
                     menu_highlights: dishList,
                     admin_notes: adminNotes,

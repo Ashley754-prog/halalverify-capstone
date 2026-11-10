@@ -471,6 +471,41 @@ export default function RegistryModals({
                             </div>
                         </div>
 
+                        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
+                            <div>
+                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Submitter Role</label>
+                                <select
+                                    value={
+                                        modalForm.submitter_role === 'owner' || (modalForm.source && modalForm.source.toLowerCase().includes('owner'))
+                                            ? 'owner'
+                                            : 'community'
+                                    }
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        const isOwner = val === 'owner';
+                                        setModalForm(prev => ({
+                                            ...prev,
+                                            submitter_role: val,
+                                            source: isOwner ? 'Business Owner Submission' : 'Community User Submission',
+                                        }));
+                                    }}
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:border-emerald-500 focus:outline-none cursor-pointer"
+                                >
+                                    <option value="owner">Owner / Staff (Business Verified)</option>
+                                    <option value="community">Customer / Scout (Community Reported)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Contact Number</label>
+                                <input
+                                    value={modalForm.phone || ''}
+                                    onChange={(e) => setModalForm(prev => ({ ...prev, phone: e.target.value }))}
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                    placeholder="e.g. 09178823419"
+                                />
+                            </div>
+                        </div>
+
                         <div>
                             <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Address in Zamboanga City</label>
                             <input
@@ -481,26 +516,15 @@ export default function RegistryModals({
                             />
                         </div>
 
-                        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
-                            <div>
-                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Contact Number</label>
-                                <input
-                                    value={modalForm.phone || ''}
-                                    onChange={(e) => setModalForm(prev => ({ ...prev, phone: e.target.value }))}
-                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
-                                    placeholder="e.g. 09178823419"
-                                />
-                            </div>
-                            <div>
-                                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Facebook Page URL</label>
-                                <input
-                                    type="text"
-                                    value={modalForm.facebook_url || ''}
-                                    onChange={(e) => setModalForm(prev => ({ ...prev, facebook_url: e.target.value }))}
-                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
-                                    placeholder="https://www.facebook.com/yourpage"
-                                />
-                            </div>
+                        <div>
+                            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Facebook Page URL</label>
+                            <input
+                                type="text"
+                                value={modalForm.facebook_url || ''}
+                                onChange={(e) => setModalForm(prev => ({ ...prev, facebook_url: e.target.value }))}
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                placeholder="https://www.facebook.com/yourpage"
+                            />
                         </div>
 
                         {/* Formal Halal Certification Credentials */}
