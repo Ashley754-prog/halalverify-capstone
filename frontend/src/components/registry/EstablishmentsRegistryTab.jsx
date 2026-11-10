@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { getStatusConfig, ZAMBOANGA_DISTRICTS, resolveZamboangaDistrict, getEstablishmentPhoto } from '../../data/constants';
 import { getSafeUrl } from '../../utils/security';
+import { extractMenuHighlights } from '../../utils/verificationNotes';
 import Pagination from '../ui/Pagination';
 import EmptyState from '../ui/EmptyState';
 import SearchBar from '../ui/SearchBar';
@@ -303,16 +304,32 @@ export default function EstablishmentsRegistryTab({
                                         )}
                                     </p>
 
-                                    <button
-                                        type="button"
-                                        onClick={() => onViewChange?.('map', { searchQuery: shop.name })}
-                                        className="w-full max-w-full overflow-hidden text-xs text-slate-500 hover:text-emerald-700 flex items-center gap-1.5 min-w-0 text-left transition group cursor-pointer pt-0.5"
-                                        title="Click to view establishment on interactive GPS Map"
-                                    >
-                                        <MapPin size={12} className="text-slate-400 group-hover:text-emerald-600 shrink-0 transition" />
-                                        <span className="truncate flex-1 min-w-0 group-hover:underline text-[11px] sm:text-xs text-slate-600">{shop.address || 'Zamboanga City'}</span>
-                                        <span className="text-[9px] font-bold text-emerald-600 opacity-0 group-hover:opacity-100 transition shrink-0 hidden sm:inline">Map ↗</span>
-                                    </button>
+                                    <div className="flex items-center justify-between gap-1 pt-0.5 min-w-0">
+                                        <button
+                                            type="button"
+                                            onClick={() => onViewChange?.('map', { searchQuery: shop.name })}
+                                            className="overflow-hidden text-xs text-slate-500 hover:text-emerald-700 flex items-center gap-1.5 min-w-0 flex-1 text-left transition group cursor-pointer"
+                                            title="Click to view establishment on interactive GPS Map"
+                                        >
+                                            <MapPin size={12} className="text-slate-400 group-hover:text-emerald-600 shrink-0 transition" />
+                                            <span className="truncate min-w-0 group-hover:underline text-[11px] sm:text-xs text-slate-600">{shop.address || 'Zamboanga City'}</span>
+                                            <span className="text-[9px] font-bold text-emerald-600 opacity-0 group-hover:opacity-100 transition shrink-0 hidden sm:inline">Map ↗</span>
+                                        </button>
+                                        {shop.facebook_url && (
+                                            <a
+                                                href={getSafeUrl(shop.facebook_url)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="p-1 rounded-md text-slate-400 hover:text-[#1877F2] hover:bg-blue-50 transition shrink-0"
+                                                title="Open Facebook Page"
+                                                aria-label="Open Facebook Page"
+                                            >
+                                                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                                                </svg>
+                                            </a>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {isFormallyCertified && shop.certificate_number && (
@@ -353,6 +370,7 @@ export default function EstablishmentsRegistryTab({
                                 )}
 
                                 {(() => {
+                                    const dishesCount = extractMenuHighlights(shop).length;
                                     const formatAmenityLabel = (raw) => {
                                         const s = String(raw).trim();
                                         const l = s.toLowerCase();
@@ -362,16 +380,23 @@ export default function EstablishmentsRegistryTab({
                                         if (l.includes('meat')) return 'Halal Meat';
                                         if (l.includes('wudu') || l.includes('ablution')) return 'Wudu Area';
                                         if (l.includes('family')) return 'Family Section';
-                                        return s.length > 18 ? `${s.slice(0, 16)}…` : s;
+                                        return s.length > 16 ? `${s.slice(0, 14)}…` : s;
                                     };
 
                                     const REMOVED_AMENITY_KEYS = ['alcohol', 'wudu', 'ablution', 'halal meat', 'pork-free', 'pork free'];
-                                    const rawAmenitiesList = (Array.isArray(shop.amenities)
-                                        ? [...shop.amenities]
-                                        : (shop.description && shop.description.includes('Amenities:'))
-                                            ? shop.description.split('Amenities:')[1].split('|').map(s => s.trim()).filter(Boolean)
-                                            : []
-                                    ).filter(a => !REMOVED_AMENITY_KEYS.some(k => String(a).toLowerCase().includes(k)));
+                                    let parsedAmenities = [];
+                                    if (Array.isArray(shop.amenities)) {
+                                        parsedAmenities = [...shop.amenities];
+                                    } else if (typeof shop.amenities === 'string' && shop.amenities.trim()) {
+                                        try {
+                                            parsedAmenities = JSON.parse(shop.amenities);
+                                        } catch {
+                                            parsedAmenities = shop.amenities.split(',').map(s => s.trim()).filter(Boolean);
+                                        }
+                                    } else if (shop.description && shop.description.includes('Amenities:')) {
+                                        parsedAmenities = shop.description.split('Amenities:')[1].split('|').map(s => s.trim()).filter(Boolean);
+                                    }
+                                    const rawAmenitiesList = parsedAmenities.filter(a => !REMOVED_AMENITY_KEYS.some(k => String(a).toLowerCase().includes(k)));
 
                                     if (hasPrayer && !rawAmenitiesList.some(a => String(a).toLowerCase().includes('prayer'))) {
                                         rawAmenitiesList.push('Dedicated Prayer Space (Musalah)');
@@ -382,37 +407,43 @@ export default function EstablishmentsRegistryTab({
                                     const overflowCount = displayAmenities.length - 2;
 
                                     return (
-                                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                                            {shop.facebook_url && (
-                                                <a
-                                                    href={getSafeUrl(shop.facebook_url)}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-md transition"
-                                                >
-                                                    <svg className="w-2.5 h-2.5 text-[#1877F2] fill-current" viewBox="0 0 24 24" aria-hidden="true">
-                                                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                                                    </svg>
-                                                    <span>Facebook</span>
-                                                    <ExternalLink size={9} />
-                                                </a>
-                                            )}
-                                            {visibleAmenities.map((label) => (
-                                                <span
-                                                    key={label}
-                                                    className="inline-flex items-center text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md"
-                                                >
-                                                    {label}
-                                                </span>
-                                            ))}
-                                            {overflowCount > 0 && (
-                                                <span
-                                                    title={displayAmenities.slice(2).join(', ')}
-                                                    className="inline-flex items-center text-[10px] font-bold text-slate-600 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-md cursor-help"
-                                                >
-                                                    +{overflowCount} more
-                                                </span>
-                                            )}
+                                        <div className="flex items-center justify-between gap-1.5 pt-1 text-[11px] min-h-[28px]">
+                                            <div className="flex flex-wrap items-center gap-1 min-w-0 flex-1">
+                                                {visibleAmenities.length > 0 ? (
+                                                    <>
+                                                        {visibleAmenities.map((label) => (
+                                                            <span
+                                                                key={label}
+                                                                className="inline-flex items-center text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md truncate"
+                                                            >
+                                                                {label}
+                                                            </span>
+                                                        ))}
+                                                        {overflowCount > 0 && (
+                                                            <span
+                                                                title={displayAmenities.slice(2).join(', ')}
+                                                                className="inline-flex items-center text-[10px] font-bold text-slate-600 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-md cursor-help shrink-0"
+                                                            >
+                                                                +{overflowCount}
+                                                            </span>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <span className="text-[10px] text-slate-400 italic">No amenities</span>
+                                                )}
+                                            </div>
+
+                                            <div className="shrink-0">
+                                                {dishesCount > 0 ? (
+                                                    <span className="inline-flex items-center text-[10px] font-bold text-amber-950 bg-amber-50 border border-amber-200/90 px-2 py-0.5 rounded-md shadow-2xs">
+                                                        {dishesCount} {dishesCount === 1 ? 'dish' : 'dishes'}
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center text-[10px] font-medium text-slate-400 bg-slate-50 border border-slate-200/60 px-1.5 py-0.5 rounded-md">
+                                                        No menu
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     );
                                 })()}
