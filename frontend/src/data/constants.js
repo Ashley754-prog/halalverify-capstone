@@ -124,27 +124,13 @@ export const resolveZamboangaDistrict = (itemOrAddress, fallbackLng = null) => {
 
 export const ESTABLISHMENT_TYPES = [
   'Restaurant',
-  'Barbecue House',
-  'Burger House',
-  'Satti House',
-  'Halal Carinderia',
-  'Casual Dining Bistro',
-  'Moro & Tausug Restaurant',
-  'Maranao Cuisine Restaurant',
-  'Sizzling & Grill House',
-  'Hotpot & Tabletop Grill',
-  'Turkish & Kebab Grill',
-  'Coffee Shop & Cafe',
-  'Halal Bakery & Pastries',
-  'Fast Casual & Fried Chicken',
-  'Pizzeria',
-  'Milk Tea & Beverage Shop',
-  'Food Court & Rice Meals',
-  'Cafeteria / Eatery',
-  'Catering & Event Kitchen',
+  'Fast Food & Quick Service',
+  'Cafe & Coffee Shop',
+  'Bakery & Pastries',
+  'Carinderia & Local Eatery',
+  'Food Stall & Kiosk',
   'Halal Meat & Poultry Shop',
-  'Grocery / Supermarket',
-  'Food Processing Facility',
+  'Grocery & Supermarket',
 ];
 
 export const PRODUCT_CATEGORIES = [

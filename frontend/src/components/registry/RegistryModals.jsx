@@ -382,47 +382,21 @@ export default function RegistryModals({
                                 <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Venue Category</label>
                                 {(() => {
                                     const currentType = modalForm.type || 'Restaurant';
-                                    const categoryList = Array.from(new Set([...ESTABLISHMENT_TYPES, currentType])).filter(Boolean);
-                                    const selectValue = modalForm.isCustomType ? '__custom__' : currentType;
+                                    const isLegacyType = Boolean(currentType && !ESTABLISHMENT_TYPES.includes(currentType));
 
                                     return (
-                                        <div className="space-y-2">
-                                            <select
-                                                value={selectValue}
-                                                onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    if (val === '__custom__') {
-                                                        setModalForm(prev => ({
-                                                            ...prev,
-                                                            type: '',
-                                                            isCustomType: true,
-                                                        }));
-                                                    } else {
-                                                        setModalForm(prev => ({
-                                                            ...prev,
-                                                            type: val,
-                                                            isCustomType: false,
-                                                        }));
-                                                    }
-                                                }}
-                                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none cursor-pointer"
-                                            >
-                                                {categoryList.map((cat) => (
-                                                    <option key={cat} value={cat}>{cat}</option>
-                                                ))}
-                                                <option value="__custom__">+ Other / Custom Category...</option>
-                                            </select>
-                                            {modalForm.isCustomType && (
-                                                <input
-                                                    type="text"
-                                                    value={modalForm.type || ''}
-                                                    onChange={(e) => setModalForm(prev => ({ ...prev, type: e.target.value }))}
-                                                    placeholder="Type custom category name..."
-                                                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
-                                                    autoFocus
-                                                />
+                                        <select
+                                            value={currentType}
+                                            onChange={(e) => setModalForm(prev => ({ ...prev, type: e.target.value, isCustomType: false }))}
+                                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none cursor-pointer"
+                                        >
+                                            {isLegacyType && (
+                                                <option value={currentType}>{currentType}</option>
                                             )}
-                                        </div>
+                                            {ESTABLISHMENT_TYPES.map((cat) => (
+                                                <option key={cat} value={cat}>{cat}</option>
+                                            ))}
+                                        </select>
                                     );
                                 })()}
                             </div>
