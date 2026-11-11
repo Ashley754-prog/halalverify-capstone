@@ -410,9 +410,11 @@ export default function EstablishmentContributionForm({
 
             <div className={styles.grid}>
               <div>
-                <label htmlFor="submit-est-phone" className={styles.label}>
-                  Contact Phone / Mobile
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label htmlFor="submit-est-phone" className="font-semibold text-slate-700">
+                    Contact Phone
+                  </label>
+                </div>
                 <input
                   id="submit-est-phone"
                   type="tel"
@@ -427,9 +429,12 @@ export default function EstablishmentContributionForm({
                 />
               </div>
               <div>
-                <label htmlFor="submit-est-link" className={styles.label}>
-                  Facebook Page or Web Link <span className="text-slate-400 font-normal">Optional</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label htmlFor="submit-est-link" className="font-semibold text-slate-700">
+                    Facebook Page URL
+                  </label>
+                  <span className="text-[11px] text-slate-400 font-normal">Optional</span>
+                </div>
                 <input
                   id="submit-est-link"
                   type="text"

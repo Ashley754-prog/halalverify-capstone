@@ -190,22 +190,24 @@ export default function ProductContributionForm({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Halal Certificate Number <span className="text-slate-400 font-normal">(Optional)</span>
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="font-semibold text-slate-700">Certificate Number</label>
+                <span className="text-xs text-slate-400 font-normal">Optional</span>
+              </div>
               <input
                 type="text"
                 placeholder="e.g., IDCP-2024-0774"
                 value={prodForm.certificate_no}
                 onChange={(e) => setProdForm((prev) => ({ ...prev, certificate_no: e.target.value }))}
-                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 placeholder:text-slate-400 outline-none focus:border-emerald-500 font-mono"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-slate-800 placeholder:text-slate-400 outline-none focus:border-emerald-500 font-mono"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Certificate Expiry Date <span className="text-slate-400 font-normal">(Optional)</span>
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="font-semibold text-slate-700">Certificate Expiry Date</label>
+                <span className="text-xs text-slate-400 font-normal">Optional</span>
+              </div>
               <input
                 type="date"
                 value={prodForm.expiry_date}
