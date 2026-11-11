@@ -7,7 +7,7 @@ import {
     Compass,
     ShieldCheck,
 } from 'lucide-react';
-import { getStatusConfig, resolveZamboangaDistrict } from '../../data/constants';
+import { getStatusConfig, resolveZamboangaDistrict, cleanAmenities } from '../../data/constants';
 import { extractMenuHighlights } from '../../utils/verificationNotes';
 import EmptyState from '../ui/EmptyState';
 
@@ -114,13 +114,13 @@ export default function EstablishmentsSidebarList({
                                                 </span>
                                             )}
                                             {(() => {
-                                                const REMOVED_KEYS = ['alcohol', 'wudu', 'ablution', 'halal meat', 'pork-free', 'pork free'];
-                                                const rawAmenities = (Array.isArray(est.amenities)
-                                                    ? [...est.amenities]
-                                                    : (est.description && est.description.includes('Amenities:'))
-                                                        ? est.description.split('Amenities:')[1].split('|').map(s => s.trim()).filter(Boolean)
-                                                        : []
-                                                ).filter(a => !REMOVED_KEYS.some(k => String(a).toLowerCase().includes(k)));
+                                                const rawAmenities = cleanAmenities(
+                                                    Array.isArray(est.amenities)
+                                                        ? [...est.amenities]
+                                                        : (est.description && est.description.includes('Amenities:'))
+                                                            ? est.description.split('Amenities:')[1].split('|').map(s => s.trim()).filter(Boolean)
+                                                            : []
+                                                );
 
                                                 if ((est.has_prayer_space || est.description?.toLowerCase().includes('prayer') || est.description?.toLowerCase().includes('musalah')) && !rawAmenities.some(a => String(a).toLowerCase().includes('prayer'))) {
                                                     rawAmenities.push('Dedicated Prayer Space (Musalah)');

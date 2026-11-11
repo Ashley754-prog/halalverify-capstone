@@ -26,6 +26,7 @@ import {
     parseZamboangaAddress,
     formatZamboangaAddress,
     resolveEstablishmentCoordinates,
+    cleanAmenities,
 } from '../data/constants';
 import { extractMenuHighlights } from '../utils/verificationNotes';
 
@@ -261,11 +262,6 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 item.has_prayer_space ||
                 (item.description && (item.description.toLowerCase().includes('prayer') || item.description.toLowerCase().includes('musalah')))
             );
-            const hasAlcohol = Boolean(
-                item.is_alcohol_free ||
-                (item.description && item.description.toLowerCase().includes('alcohol'))
-            );
-
             let initialAmenities = [];
             if (Array.isArray(item.amenities)) {
                 initialAmenities = [...item.amenities];
@@ -278,8 +274,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
             } else if (item.description && item.description.includes('Amenities:')) {
                 initialAmenities = item.description.split('Amenities:')[1].split('|').map(s => s.trim()).filter(Boolean);
             }
-            const REMOVED_AMENITY_KEYS = ['alcohol', 'wudu', 'ablution', 'halal meat', 'pork-free', 'pork free'];
-            initialAmenities = initialAmenities.filter(a => !REMOVED_AMENITY_KEYS.some(k => a.toLowerCase().includes(k)));
+            initialAmenities = cleanAmenities(initialAmenities);
 
             if (hasPrayer && !initialAmenities.some(a => a.toLowerCase().includes('prayer'))) {
                 initialAmenities.push('Dedicated Prayer Space (Musalah)');
@@ -317,7 +312,6 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 submitter_role: detectedRole,
                 source: item.source || (detectedRole === 'owner' ? 'Business Owner Submission' : 'Community User Submission'),
                 has_prayer_space: hasPrayer,
-                is_alcohol_free: hasAlcohol,
                 amenities: initialAmenities,
                 description: item.description || '',
                 certificate_url: (tierKey === 'halal_certified') ? (item.certificate_url || '') : '',
@@ -557,9 +551,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     adminNotes = '[Tier: halal_certified] Formally Certified Halal Establishment';
                 }
 
-                const REMOVED_AMENITY_KEYS = ['alcohol', 'wudu', 'ablution', 'halal meat', 'pork-free', 'pork free'];
-                const amList = (Array.isArray(modalForm.amenities) ? modalForm.amenities : [])
-                    .filter(a => !REMOVED_AMENITY_KEYS.some(k => a.toLowerCase().includes(k)));
+                const amList = cleanAmenities(modalForm.amenities);
                 if (modalForm.has_prayer_space && !amList.some(a => a.toLowerCase().includes('prayer'))) {
                     amList.push('Dedicated Prayer Space (Musalah)');
                 }
@@ -662,9 +654,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     adminNotes = '[Tier: halal_certified] Formally Certified Halal Establishment';
                 }
 
-                const REMOVED_AMENITY_KEYS = ['alcohol', 'wudu', 'ablution', 'halal meat', 'pork-free', 'pork free'];
-                const amList = (Array.isArray(modalForm.amenities) ? modalForm.amenities : [])
-                    .filter(a => !REMOVED_AMENITY_KEYS.some(k => a.toLowerCase().includes(k)));
+                const amList = cleanAmenities(modalForm.amenities);
                 if (modalForm.has_prayer_space && !amList.some(a => a.toLowerCase().includes('prayer'))) {
                     amList.push('Dedicated Prayer Space (Musalah)');
                 }

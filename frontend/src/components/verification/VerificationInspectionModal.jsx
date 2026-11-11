@@ -23,20 +23,14 @@ import {
 } from 'lucide-react';
 import Modal from '../ui/Modal';
 import AddressFields from '../shared/AddressFields';
+import CategorySelect from '../shared/CategorySelect';
 import { getSafeUrl } from '../../utils/security';
 import { formatSystemNotice, formatShortDate, extractMenuHighlights, deriveEstablishmentTier } from '../../utils/verificationNotes';
-import { ESTABLISHMENT_TYPES } from '../../data/constants';
+import { cleanAmenities } from '../../data/constants';
 
 const STANDARD_AMENITIES = [
     'Dedicated Prayer Space (Musalah)',
     'Family Dining Section',
-];
-
-const DEPRECATED_AMENITIES = [
-    '100% alcohol-free premises',
-    'pork-free kitchen',
-    'halal meat sourced',
-    'wudu (ablution) facility',
 ];
 
 export default function VerificationInspectionModal({
@@ -518,53 +512,15 @@ export default function VerificationInspectionModal({
                                     <label htmlFor="inspect-venue-category" className="text-slate-600 font-semibold block text-[11px] mb-1">
                                         Venue Category (Editable)
                                     </label>
-                                    {(() => {
-                                        const currentType = inspectingItem.type ?? 'Restaurant';
-                                        const isStandard = ESTABLISHMENT_TYPES.includes(currentType);
-                                        const isCustom = inspectingItem.isCustomType || (!isStandard && Boolean(currentType));
-                                        const selectValue = isCustom ? '__custom__' : currentType;
-
-                                        return (
-                                            <div className="space-y-1.5">
-                                                <select
-                                                    id="inspect-venue-category"
-                                                    value={selectValue}
-                                                    onChange={(e) => {
-                                                        const val = e.target.value;
-                                                        if (val === '__custom__') {
-                                                            setInspectingItem?.((prev) =>
-                                                                prev ? { ...prev, isCustomType: true, type: isStandard ? '' : (prev.type || '') } : prev
-                                                            );
-                                                        } else {
-                                                            setInspectingItem?.((prev) =>
-                                                                prev ? { ...prev, isCustomType: false, type: val } : prev
-                                                            );
-                                                        }
-                                                    }}
-                                                    className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-800 bg-slate-50/60 focus:bg-white focus:border-emerald-500 focus:outline-none cursor-pointer"
-                                                >
-                                                    {ESTABLISHMENT_TYPES.map((cat) => (
-                                                        <option key={cat} value={cat}>{cat}</option>
-                                                    ))}
-                                                    <option value="__custom__">Other</option>
-                                                </select>
-                                                {isCustom && (
-                                                    <input
-                                                        type="text"
-                                                        value={inspectingItem.type || ''}
-                                                        onChange={(e) =>
-                                                            setInspectingItem?.((prev) =>
-                                                                prev ? { ...prev, type: e.target.value, isCustomType: true } : prev
-                                                            )
-                                                        }
-                                                        placeholder="Specify category, e.g. Barbecue House"
-                                                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-800 bg-white focus:border-emerald-500 focus:outline-none text-xs"
-                                                        autoFocus
-                                                    />
-                                                )}
-                                            </div>
-                                        );
-                                    })()}
+                                    <CategorySelect
+                                        value={inspectingItem.type}
+                                        isCustom={inspectingItem.isCustomType}
+                                        onChange={(patch) =>
+                                            setInspectingItem?.((prev) => (prev ? { ...prev, ...patch } : prev))
+                                        }
+                                        variant="queue"
+                                        id="inspect-venue-category"
+                                    />
                                 </div>
                                 <div className="sm:col-span-2">
                                     <AddressFields
@@ -677,7 +633,7 @@ export default function VerificationInspectionModal({
                                 if (inspectingItem.has_prayer_space && !list.some(a => String(a).toLowerCase().includes('prayer') || String(a).toLowerCase().includes('musalah'))) {
                                     list.push('Dedicated Prayer Space (Musalah)');
                                 }
-                                const activeAmenities = list.filter(a => !DEPRECATED_AMENITIES.includes(String(a).toLowerCase().trim()));
+                                const activeAmenities = cleanAmenities(list);
 
                                 return (
                                     <div className="pt-2 border-t border-slate-100">

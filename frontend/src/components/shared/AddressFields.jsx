@@ -1,31 +1,11 @@
 import { MapPin } from 'lucide-react';
+import { getFieldStyles } from './fieldStyles';
 import {
     ZAMBOANGA_BARANGAYS,
     parseZamboangaAddress,
     formatZamboangaAddress,
     resolveZamboangaDistrict,
 } from '../../data/constants';
-
-const VARIANTS = {
-    registry: {
-        label: 'mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600',
-        input: 'w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none',
-        select: 'w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:border-emerald-500 focus:outline-none cursor-pointer',
-        grid: 'grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2',
-    },
-    queue: {
-        label: 'text-slate-600 font-semibold block text-[11px] mb-1',
-        input: 'w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-800 bg-slate-50/60 focus:bg-white focus:border-emerald-500 focus:outline-none',
-        select: 'w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-800 bg-slate-50/60 focus:bg-white focus:border-emerald-500 focus:outline-none cursor-pointer',
-        grid: 'grid gap-3 grid-cols-1 sm:grid-cols-2',
-    },
-    form: {
-        label: 'font-semibold text-slate-700',
-        input: 'w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-slate-800 placeholder:text-slate-400 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition',
-        select: 'w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-slate-800 font-semibold outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition cursor-pointer',
-        grid: 'grid grid-cols-1 sm:grid-cols-2 gap-4',
-    },
-};
 
 const DISTRICT_1 = ZAMBOANGA_BARANGAYS.filter((b) => b.district === 'district_1');
 const DISTRICT_2 = ZAMBOANGA_BARANGAYS.filter((b) => b.district === 'district_2');
@@ -44,11 +24,12 @@ export default function AddressFields({
     streetAction = null,
     originalAddress = '',
 }) {
-    const styles = VARIANTS[variant] || VARIANTS.registry;
+    const styles = getFieldStyles(variant);
     const parsed = parseZamboangaAddress(value?.address || '');
     const street = value?.street !== undefined ? value.street : parsed.street;
     const barangay = value?.barangay !== undefined ? value.barangay : parsed.barangay;
     const city = value?.city || 'Zamboanga City';
+    const labelClass = styles.label.replace(/\bmb-1(\.5)?\b/g, '').replace(/\s+/g, ' ').trim();
     const preview = formatZamboangaAddress(street, barangay, city);
     const district = resolveZamboangaDistrict({ address: preview, barangay });
     const changed =
@@ -67,7 +48,7 @@ export default function AddressFields({
             <div className={styles.grid}>
                 <div>
                     <div className="flex items-center justify-between gap-2 mb-1">
-                        <label htmlFor={`${idPrefix}-street`} className={variant === 'form' ? styles.label : styles.label.replace(/\bmb-1(\.5)?\b/, '')}>
+                        <label htmlFor={`${idPrefix}-street`} className={labelClass}>
                             Street / Landmark
                         </label>
                         {streetAction}
@@ -84,7 +65,7 @@ export default function AddressFields({
 
                 <div>
                     <div className="flex items-center justify-between gap-2 mb-1">
-                        <label htmlFor={`${idPrefix}-barangay`} className={variant === 'form' ? styles.label : styles.label.replace(/\bmb-1(\.5)?\b/, '')}>
+                        <label htmlFor={`${idPrefix}-barangay`} className={labelClass}>
                             Barangay <span className="text-red-500">*</span>
                         </label>
                         {district && (

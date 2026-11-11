@@ -1,17 +1,16 @@
 import { useState } from 'react';
 import { Upload, Loader2, ExternalLink } from 'lucide-react';
 import Modal from '../ui/Modal';
-import { ESTABLISHMENT_TYPES, ESTABLISHMENT_HALAL_TIERS, getEstablishmentPhoto } from '../../data/constants';
+import { ESTABLISHMENT_HALAL_TIERS, getEstablishmentPhoto } from '../../data/constants';
 import AddressFields from '../shared/AddressFields';
+import CategorySelect from '../shared/CategorySelect';
+import AmenitiesPicker from '../shared/AmenitiesPicker';
+import DishesInput from '../shared/DishesInput';
 import { supabase } from '../../lib/supabaseClient';
 
 const ADDITIVE_STATUSES = ['Halal', 'Doubtful', 'Haram'];
 const ADDITIVE_ORIGINS = ['Plant', 'Animal', 'Insect', 'Synthetic / Mineral', 'Multiple / Unknown'];
 const HCB_CATEGORIES = ['Local & Regional HCB', 'National HCB', 'Government Oversight', 'International Authority'];
-const STANDARD_AMENITIES = [
-    'Dedicated Prayer Space (Musalah)',
-    'Family Dining Section',
-];
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const normalizeAdditiveCode = (code) => {
@@ -32,56 +31,6 @@ export default function RegistryModals({
     onSubmit,
 }) {
     const [isUploadingCert, setIsUploadingCert] = useState(false);
-    const [customAmenityInput, setCustomAmenityInput] = useState('');
-    const [newSpecialtyInput, setNewSpecialtyInput] = useState('');
-
-    const handleAddSpecialty = (e) => {
-        if (e && e.preventDefault) e.preventDefault();
-        const val = (newSpecialtyInput || '').trim();
-        if (!val) return;
-        setModalForm(prev => {
-            const current = Array.isArray(prev.menu_highlights) ? [...prev.menu_highlights] : [];
-            if (current.includes(val)) return prev;
-            return {
-                ...prev,
-                menu_highlights: [...current, val],
-            };
-        });
-        setNewSpecialtyInput('');
-    };
-
-    const handleToggleAmenity = (amenityName) => {
-        setModalForm(prev => {
-            const current = Array.isArray(prev.amenities) ? [...prev.amenities] : [];
-            const exists = current.includes(amenityName);
-            const updated = exists ? current.filter(a => a !== amenityName) : [...current, amenityName];
-            return {
-                ...prev,
-                amenities: updated,
-                has_prayer_space: updated.some(a => a.toLowerCase().includes('prayer')),
-                is_alcohol_free: updated.some(a => a.toLowerCase().includes('alcohol')),
-            };
-        });
-    };
-
-    const handleAddCustomAmenity = (e) => {
-        if (e && e.preventDefault) e.preventDefault();
-        const val = customAmenityInput.trim();
-        if (!val) return;
-        setModalForm(prev => {
-            const current = Array.isArray(prev.amenities) ? [...prev.amenities] : [];
-            if (!current.includes(val)) {
-                current.push(val);
-            }
-            return {
-                ...prev,
-                amenities: current,
-                has_prayer_space: current.some(a => a.toLowerCase().includes('prayer')),
-                is_alcohol_free: current.some(a => a.toLowerCase().includes('alcohol')),
-            };
-        });
-        setCustomAmenityInput('');
-    };
 
     if (!activeModal) return null;
 
@@ -405,52 +354,13 @@ export default function RegistryModals({
                             </div>
                             <div>
                                 <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Venue Category</label>
-                                {(() => {
-                                    const currentType = modalForm.type ?? 'Restaurant';
-                                    const isStandard = ESTABLISHMENT_TYPES.includes(currentType);
-                                    const isCustom = modalForm.isCustomType || (!isStandard && Boolean(currentType));
-                                    const selectValue = isCustom ? '__custom__' : currentType;
-
-                                    return (
-                                        <div className="space-y-2">
-                                            <select
-                                                value={selectValue}
-                                                onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    if (val === '__custom__') {
-                                                        setModalForm(prev => ({
-                                                            ...prev,
-                                                            isCustomType: true,
-                                                            type: isStandard ? '' : (prev.type || ''),
-                                                        }));
-                                                    } else {
-                                                        setModalForm(prev => ({
-                                                            ...prev,
-                                                            type: val,
-                                                            isCustomType: false,
-                                                        }));
-                                                    }
-                                                }}
-                                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none cursor-pointer"
-                                            >
-                                                {ESTABLISHMENT_TYPES.map((cat) => (
-                                                    <option key={cat} value={cat}>{cat}</option>
-                                                ))}
-                                                <option value="__custom__">Other</option>
-                                            </select>
-                                            {isCustom && (
-                                                <input
-                                                    type="text"
-                                                    value={modalForm.type || ''}
-                                                    onChange={(e) => setModalForm(prev => ({ ...prev, type: e.target.value, isCustomType: true }))}
-                                                    placeholder="Specify category, e.g. Barbecue House"
-                                                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
-                                                    autoFocus
-                                                />
-                                            )}
-                                        </div>
-                                    );
-                                })()}
+                                <CategorySelect
+                                    value={modalForm.type}
+                                    isCustom={modalForm.isCustomType}
+                                    onChange={(patch) => setModalForm(prev => ({ ...prev, ...patch }))}
+                                    variant="registry"
+                                    id="registry-est-category"
+                                />
                             </div>
                         </div>
 
@@ -641,127 +551,33 @@ export default function RegistryModals({
                         })()}
 
                         {/* Menu */}
-                        <div className="p-3.5 rounded-xl bg-amber-50/60 border border-amber-200/80 space-y-2.5">
+                        <div className="space-y-1.5">
                             <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold uppercase tracking-wide text-amber-950">
-                                    Menu
-                                </span>
-                                <span className="text-[11px] text-amber-800/80 font-medium">
+                                <label className="block text-xs font-bold uppercase tracking-wide text-slate-600">
+                                    Popular Dishes / Specialties
+                                </label>
+                                <span className="text-[11px] text-slate-400 font-medium">
                                     {(modalForm.menu_highlights || []).length} dish{(modalForm.menu_highlights || []).length === 1 ? '' : 'es'}
                                 </span>
                             </div>
-                            <div className="flex flex-wrap gap-1.5 text-xs">
-                                {(modalForm.menu_highlights || []).map((dish) => (
-                                    <span
-                                        key={dish}
-                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium bg-white text-amber-950 border-amber-200 shadow-2xs"
-                                    >
-                                        <span>{dish}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const nextDishes = (modalForm.menu_highlights || []).filter(d => d !== dish);
-                                                setModalForm(prev => ({ ...prev, menu_highlights: nextDishes }));
-                                            }}
-                                            className="text-amber-500 hover:text-amber-800 font-bold ml-0.5 cursor-pointer"
-                                            title={`Remove ${dish}`}
-                                        >
-                                            ×
-                                        </button>
-                                    </span>
-                                ))}
-                                {(!modalForm.menu_highlights || modalForm.menu_highlights.length === 0) && (
-                                    <span className="text-[11px] text-amber-800/70 italic py-0.5">
-                                        No specialties or dishes added yet. Type below to add.
-                                    </span>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-2 pt-1">
-                                <input
-                                    type="text"
-                                    value={newSpecialtyInput}
-                                    onChange={(e) => setNewSpecialtyInput(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            e.preventDefault();
-                                            handleAddSpecialty(e);
-                                        }
-                                    }}
-                                    placeholder="Add specialty or dish (e.g. Beef Satti, Chicken Inasal)..."
-                                    className="flex-1 rounded-xl border border-amber-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:border-amber-400 focus:outline-none"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={handleAddSpecialty}
-                                    disabled={!newSpecialtyInput.trim()}
-                                    className="px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 text-xs font-bold transition cursor-pointer shrink-0 disabled:opacity-40"
-                                >
-                                    + Add
-                                </button>
-                            </div>
+                            <DishesInput
+                                dishes={modalForm.menu_highlights || []}
+                                onChange={(list) => setModalForm(prev => ({ ...prev, menu_highlights: list }))}
+                                placeholder="Add specialty or dish, e.g. Beef Satti, Chicken Inasal..."
+                            />
                         </div>
 
                         {/* Amenities */}
-                        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2.5">
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
-                                    Amenities
-                                </span>
-                                <span className="text-[11px] text-slate-400">Select all that apply</span>
-                            </div>
-                            <div className="flex flex-wrap gap-2 text-xs">
-                                {STANDARD_AMENITIES.map((name) => {
-                                    const isSelected = Array.isArray(modalForm.amenities) && modalForm.amenities.includes(name);
-                                    return (
-                                        <button
-                                            key={name}
-                                            type="button"
-                                            onClick={() => handleToggleAmenity(name)}
-                                            className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition cursor-pointer ${
-                                                isSelected
-                                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                                                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                                            }`}
-                                        >
-                                            {name}
-                                        </button>
-                                    );
-                                })}
-                                {Array.isArray(modalForm.amenities) && modalForm.amenities.filter(a => !STANDARD_AMENITIES.includes(a)).map((customName) => (
-                                    <span
-                                        key={customName}
-                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium bg-emerald-600 text-white border-emerald-600 shadow-xs"
-                                    >
-                                        <span>{customName}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleToggleAmenity(customName)}
-                                            className="text-white hover:text-emerald-100 font-bold ml-0.5 cursor-pointer"
-                                            title="Remove custom facility"
-                                        >
-                                            ×
-                                        </button>
-                                    </span>
-                                ))}
-                            </div>
-                            <div className="flex items-center gap-2 pt-1">
-                                <input
-                                    type="text"
-                                    value={customAmenityInput}
-                                    onChange={(e) => setCustomAmenityInput(e.target.value)}
-                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomAmenity(e); } }}
-                                    placeholder="Add custom facility (e.g. Free Wi-Fi, Outdoor Dining)..."
-                                    className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={handleAddCustomAmenity}
-                                    className="px-3 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition cursor-pointer shrink-0"
-                                >
-                                    + Add
-                                </button>
-                            </div>
-                        </div>
+                        <AmenitiesPicker
+                            variant="registry"
+                            amenities={modalForm.amenities || []}
+                            allowCustom={true}
+                            onChange={(list) => setModalForm(prev => ({
+                                ...prev,
+                                amenities: list,
+                                has_prayer_space: list.some(a => a.toLowerCase().includes('prayer')),
+                            }))}
+                        />
                     </>
                 )}
 

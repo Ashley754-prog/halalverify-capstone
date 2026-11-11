@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { getSafeUrl } from '../../utils/security';
-import { getStatusConfig, resolveZamboangaDistrict, getEstablishmentPhoto } from '../../data/constants';
+import { getStatusConfig, resolveZamboangaDistrict, getEstablishmentPhoto, cleanAmenities } from '../../data/constants';
 import { extractMenuHighlights } from '../../utils/verificationNotes';
 
 export default function EstablishmentDetailModal({
@@ -65,11 +65,6 @@ export default function EstablishmentDetailModal({
         establishment.has_prayer_space ||
         (establishment.description && (establishment.description.toLowerCase().includes('prayer space') || establishment.description.toLowerCase().includes('musalah') || establishment.description.toLowerCase().includes('prayer'))) ||
         (Array.isArray(establishment.amenities) && establishment.amenities.some((a) => a.toLowerCase().includes('prayer')))
-    );
-    const isAlcoholFree = Boolean(
-        establishment.is_alcohol_free ||
-        (establishment.description && establishment.description.toLowerCase().includes('alcohol')) ||
-        (Array.isArray(establishment.amenities) && establishment.amenities.some((a) => a.toLowerCase().includes('alcohol')))
     );
 
     const rawDesc = establishment.description || '';
@@ -409,13 +404,13 @@ export default function EstablishmentDetailModal({
 
                 {/* Amenities */}
                 {(() => {
-                    const REMOVED_AMENITY_KEYS = ['alcohol', 'wudu', 'ablution', 'halal meat', 'pork-free', 'pork free'];
-                    const rawList = (Array.isArray(establishment.amenities)
-                        ? [...establishment.amenities]
-                        : (establishment.description && establishment.description.includes('Amenities:'))
-                            ? establishment.description.split('Amenities:')[1].split('|').map(s => s.trim()).filter(Boolean)
-                            : []
-                    ).filter(a => !REMOVED_AMENITY_KEYS.some(k => String(a).toLowerCase().includes(k)));
+                    const rawList = cleanAmenities(
+                        Array.isArray(establishment.amenities)
+                            ? [...establishment.amenities]
+                            : (establishment.description && establishment.description.includes('Amenities:'))
+                                ? establishment.description.split('Amenities:')[1].split('|').map(s => s.trim()).filter(Boolean)
+                                : []
+                    );
 
                     if (hasPrayerSpace && !rawList.some(a => String(a).toLowerCase().includes('prayer'))) {
                         rawList.push('Dedicated Prayer Space (Musalah)');

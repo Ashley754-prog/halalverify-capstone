@@ -9,7 +9,7 @@ import {
     Store,
     ExternalLink,
 } from 'lucide-react';
-import { getStatusConfig, ZAMBOANGA_DISTRICTS, resolveZamboangaDistrict, getEstablishmentPhoto } from '../../data/constants';
+import { getStatusConfig, ZAMBOANGA_DISTRICTS, resolveZamboangaDistrict, getEstablishmentPhoto, cleanAmenities, getAmenityShortLabel } from '../../data/constants';
 import { getSafeUrl } from '../../utils/security';
 import { extractMenuHighlights } from '../../utils/verificationNotes';
 import Pagination from '../ui/Pagination';
@@ -237,11 +237,6 @@ export default function EstablishmentsRegistryTab({
                             (shop.description && (shop.description.toLowerCase().includes('prayer') || shop.description.toLowerCase().includes('musalah'))) ||
                             (Array.isArray(shop.amenities) && shop.amenities.some((a) => String(a).toLowerCase().includes('prayer')))
                         );
-                        const hasAlcoholFree = Boolean(
-                            shop.is_alcohol_free ||
-                            (shop.description && shop.description.toLowerCase().includes('alcohol')) ||
-                            (Array.isArray(shop.amenities) && shop.amenities.some((a) => String(a).toLowerCase().includes('alcohol')))
-                        );
 
                         return (
                             <div
@@ -361,19 +356,8 @@ export default function EstablishmentsRegistryTab({
 
                                 {(() => {
                                     const dishesCount = extractMenuHighlights(shop).length;
-                                    const formatAmenityLabel = (raw) => {
-                                        const s = String(raw).trim();
-                                        const l = s.toLowerCase();
-                                        if (l.includes('prayer') || l.includes('musalah')) return 'Prayer Space';
-                                        if (l.includes('alcohol')) return 'Alcohol-Free';
-                                        if (l.includes('pork')) return 'Pork-Free';
-                                        if (l.includes('meat')) return 'Halal Meat';
-                                        if (l.includes('wudu') || l.includes('ablution')) return 'Wudu Area';
-                                        if (l.includes('family')) return 'Family Section';
-                                        return s.length > 16 ? `${s.slice(0, 14)}…` : s;
-                                    };
+                                    const formatAmenityLabel = (raw) => getAmenityShortLabel(raw);
 
-                                    const REMOVED_AMENITY_KEYS = ['alcohol', 'wudu', 'ablution', 'halal meat', 'pork-free', 'pork free'];
                                     let parsedAmenities = [];
                                     if (Array.isArray(shop.amenities)) {
                                         parsedAmenities = [...shop.amenities];
@@ -386,7 +370,7 @@ export default function EstablishmentsRegistryTab({
                                     } else if (shop.description && shop.description.includes('Amenities:')) {
                                         parsedAmenities = shop.description.split('Amenities:')[1].split('|').map(s => s.trim()).filter(Boolean);
                                     }
-                                    const rawAmenitiesList = parsedAmenities.filter(a => !REMOVED_AMENITY_KEYS.some(k => String(a).toLowerCase().includes(k)));
+                                    const rawAmenitiesList = cleanAmenities(parsedAmenities);
 
                                     if (hasPrayer && !rawAmenitiesList.some(a => String(a).toLowerCase().includes('prayer'))) {
                                         rawAmenitiesList.push('Dedicated Prayer Space (Musalah)');

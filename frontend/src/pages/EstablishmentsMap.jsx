@@ -17,7 +17,7 @@ import AuthPromptModal from '../components/submissions/AuthPromptModal';
 import ReportIssueModal from '../components/reports/ReportIssueModal';
 import EstablishmentDetailModal from '../components/map/EstablishmentDetailModal';
 import SearchBar from '../components/ui/SearchBar';
-import { getStatusConfig, ZAMBOANGA_DISTRICTS, resolveZamboangaDistrict, resolveEstablishmentCoordinates } from '../data/constants';
+import { getStatusConfig, ZAMBOANGA_DISTRICTS, resolveZamboangaDistrict, resolveEstablishmentCoordinates, cleanAmenities } from '../data/constants';
 import EstablishmentsSidebarList from '../components/map/EstablishmentsSidebarList';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
@@ -42,7 +42,6 @@ const MODERATION_PILLS = [
 
 const AMENITY_PILLS = [
     { key: 'prayer_space', label: 'Prayer Area', icon: Compass },
-    { key: 'alcohol_free', label: 'Alcohol-Free', icon: ShieldCheck },
 ];
 
 const FILTER_PILL_BASE = 'shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40';
@@ -477,12 +476,6 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                         est.description?.toLowerCase().includes('prayer') ||
                         est.description?.toLowerCase().includes('musalah') ||
                         (Array.isArray(est.amenities) && est.amenities.some(a => String(a).toLowerCase().includes('prayer')))
-                    );
-                } else if (selectedAmenity === 'alcohol_free') {
-                    matchesAmenity = Boolean(
-                        est.is_alcohol_free ||
-                        est.description?.toLowerCase().includes('alcohol') ||
-                        (Array.isArray(est.amenities) && est.amenities.some(a => String(a).toLowerCase().includes('alcohol')))
                     );
                 }
 
@@ -930,13 +923,13 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
 
                             {/* Amenity Badges */}
                             {(() => {
-                                const REMOVED_KEYS = ['alcohol', 'wudu', 'ablution', 'halal meat', 'pork-free', 'pork free'];
-                                const rawAmenities = (Array.isArray(activePreviewEst.amenities)
-                                    ? [...activePreviewEst.amenities]
-                                    : (activePreviewEst.description && activePreviewEst.description.includes('Amenities:'))
-                                        ? activePreviewEst.description.split('Amenities:')[1].split('|').map(s => s.trim()).filter(Boolean)
-                                        : []
-                                ).filter(a => !REMOVED_KEYS.some(k => String(a).toLowerCase().includes(k)));
+                                const rawAmenities = cleanAmenities(
+                                    Array.isArray(activePreviewEst.amenities)
+                                        ? [...activePreviewEst.amenities]
+                                        : (activePreviewEst.description && activePreviewEst.description.includes('Amenities:'))
+                                            ? activePreviewEst.description.split('Amenities:')[1].split('|').map(s => s.trim()).filter(Boolean)
+                                            : []
+                                );
 
                                 if ((activePreviewEst.has_prayer_space || activePreviewEst.description?.toLowerCase().includes('prayer')) && !rawAmenities.some(a => String(a).toLowerCase().includes('prayer'))) {
                                     rawAmenities.push('Dedicated Prayer Space (Musalah)');

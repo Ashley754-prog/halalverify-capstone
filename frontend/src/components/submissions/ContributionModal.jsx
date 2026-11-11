@@ -12,7 +12,13 @@ import Modal from '../ui/Modal';
 import { supabase } from '../../lib/supabaseClient';
 import { API_BASE_URL, authFetch } from '../../utils/api';
 import { validateUploadFile } from '../../utils/security';
-import { geocodeZamboangaAddress, formatZamboangaAddress, parseZamboangaAddress } from '../../data/constants';
+import {
+  geocodeZamboangaAddress,
+  formatZamboangaAddress,
+  parseZamboangaAddress,
+  cleanAmenities,
+  normalizeWebLink,
+} from '../../data/constants';
 import EstablishmentContributionForm from './EstablishmentContributionForm';
 import ProductContributionForm from './ProductContributionForm';
 
@@ -73,8 +79,7 @@ export default function ContributionModal({
     certificate_url: '',
     logo_url: '',
     product_names: '',
-    has_prayer_space: false,
-    is_alcohol_free: false,
+    amenities: [],
   });
 
   // Form state for product
@@ -170,9 +175,8 @@ export default function ContributionModal({
       setSubmitting(true);
       setErrorMessage('');
 
-      const amenities = [];
-      if (estForm.has_prayer_space) amenities.push('Dedicated Prayer Space (Musalah)');
-      if (estForm.is_alcohol_free) amenities.push('100% Alcohol-Free');
+      const rawAmenities = Array.isArray(estForm.amenities) ? estForm.amenities : [];
+      const amenities = cleanAmenities(rawAmenities);
 
       const rawProductNames = overrideProductNames !== undefined ? overrideProductNames : estForm.product_names;
       const parsedProductNames = rawProductNames
@@ -212,7 +216,7 @@ export default function ContributionModal({
         longitude: resolvedCoords.longitude,
         halal_tier: estForm.halal_tier || 'halal_certified',
         contact_number: estForm.contact_number?.trim() || null,
-        social_media_url: estForm.social_media_url?.trim() || null,
+        social_media_url: normalizeWebLink(estForm.social_media_url),
         submitter_role: estForm.submitter_role || 'community',
         certificate_number: estForm.certificate_number?.trim() || null,
         expiry_date: estForm.expiry_date || null,
@@ -356,8 +360,7 @@ export default function ContributionModal({
       certificate_url: '',
       logo_url: '',
       product_names: '',
-      has_prayer_space: false,
-      is_alcohol_free: false,
+      amenities: [],
       latitude: null,
       longitude: null,
     });

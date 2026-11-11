@@ -199,11 +199,70 @@ export const ESTABLISHMENT_HALAL_TIERS = [
     id: 'muslim_friendly',
     category: 'community',
     label: 'Muslim-Friendly',
-    description: 'Offers dedicated pork-free / alcohol-free options, or provides prayer space (musalah).',
+    description: 'Offers dedicated pork-free options, or provides prayer space (musalah).',
     badge: 'Friendly',
     color: 'indigo',
   },
 ];
+
+/**
+ * Single source of truth for establishment amenities.
+ * The submission form, the registry modal, cards and filters all read this list.
+ */
+export const ESTABLISHMENT_AMENITIES = [
+  {
+    id: 'prayer_space',
+    label: 'Dedicated Prayer Space (Musalah)',
+    shortLabel: 'Prayer Space',
+    hint: 'Musalah / prayer area on-site',
+    match: ['prayer', 'musalah'],
+  },
+  {
+    id: 'family_section',
+    label: 'Family Dining Section',
+    shortLabel: 'Family Area',
+    hint: 'Separate family or group seating',
+    match: ['family'],
+  },
+];
+
+// Legacy amenity wording that is no longer offered. Hidden everywhere so old records stay clean.
+export const REMOVED_AMENITY_KEYS = ['alcohol', 'wudu', 'ablution', 'halal meat', 'pork-free', 'pork free'];
+
+export const cleanAmenities = (list) =>
+  (Array.isArray(list) ? list : [])
+    .map((a) => String(a || '').trim())
+    .filter((a) => a && !REMOVED_AMENITY_KEYS.some((k) => a.toLowerCase().includes(k)));
+
+export const hasAmenity = (amenities, id) => {
+  const def = ESTABLISHMENT_AMENITIES.find((a) => a.id === id);
+  if (!def) return false;
+  return cleanAmenities(amenities).some((a) => def.match.some((m) => a.toLowerCase().includes(m)));
+};
+
+export const getAmenityShortLabel = (amenity) => {
+  const lower = String(amenity || '').toLowerCase();
+  const def = ESTABLISHMENT_AMENITIES.find((a) => a.match.some((m) => lower.includes(m)));
+  return def ? def.shortLabel : String(amenity);
+};
+
+export const SUBMITTER_ROLES = [
+  { id: 'owner', label: 'Owner / Staff' },
+  { id: 'community', label: 'Customer / Community' },
+];
+
+/** Philippine phone check. Accepts mobile and landline formats, ignores spaces and dashes. */
+export const isValidPhPhone = (value) => {
+  const digits = String(value || '').replace(/[^\d+]/g, '');
+  return /^(\+639\d{9}|09\d{9}|0\d{8,10})$/.test(digits);
+};
+
+/** Adds https:// to links typed without a scheme. Returns null for blank input. */
+export const normalizeWebLink = (value) => {
+  const v = String(value || '').trim();
+  if (!v) return null;
+  return /^https?:\/\//i.test(v) ? v : `https://${v}`;
+};
 
 export const PRODUCT_HALAL_TIERS = [
   {
@@ -216,7 +275,7 @@ export const PRODUCT_HALAL_TIERS = [
   {
     id: 'pork_free_declared',
     label: 'Manufacturer Declared Pork-Free',
-    description: 'Explicitly labeled pork-free and alcohol-free by the manufacturer.',
+    description: 'Explicitly labeled pork-free by the manufacturer.',
     badge: 'Pork-Free',
     color: 'sky',
   },
