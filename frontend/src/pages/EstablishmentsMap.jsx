@@ -392,7 +392,6 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
 
     const handleResetCenter = () => {
         setUserLocation(null);
-        setSelectedRadius('all');
         if (mapInstanceRef.current) {
             mapInstanceRef.current.flyTo([ZAMBOANGA_CENTER.lat, ZAMBOANGA_CENTER.lng], 13, { duration: 1.0 });
         }
@@ -1043,7 +1042,6 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                     onResetFilters={() => {
                         setSelectedStatus('all');
                         setSelectedDistrict('all');
-                        setSelectedRadius('all');
                         setSelectedAmenity('all');
                         setSearchQuery('');
                     }}

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  MapPin,
   FileText,
   Upload,
   X,
@@ -20,15 +19,8 @@ import {
   Plus,
   AlertCircle,
 } from 'lucide-react';
-import {
-  ESTABLISHMENT_TYPES,
-  ESTABLISHMENT_HALAL_TIERS,
-  ZAMBOANGA_BARANGAYS,
-  parseZamboangaAddress,
-  formatZamboangaAddress,
-  findZamboangaBarangay,
-  resolveZamboangaDistrict,
-} from '../../data/constants';
+import { ESTABLISHMENT_TYPES, ESTABLISHMENT_HALAL_TIERS, findZamboangaBarangay } from '../../data/constants';
+import AddressFields from '../shared/AddressFields';
 
 export default function EstablishmentContributionForm({
   estForm,
@@ -354,138 +346,66 @@ export default function EstablishmentContributionForm({
               </div>
             </div>
 
-            {/* Address & GPS Pin Card */}
-            {(() => {
-              const parsedAddr = parseZamboangaAddress(estForm.address || '');
-              const currentStreet = estForm.street !== undefined ? estForm.street : parsedAddr.street;
-              const currentBarangay = estForm.barangay !== undefined ? estForm.barangay : parsedAddr.barangay;
-              const district1Brgys = ZAMBOANGA_BARANGAYS.filter((b) => b.district === 'district_1');
-              const district2Brgys = ZAMBOANGA_BARANGAYS.filter((b) => b.district === 'district_2');
-              const matchedBrgyObj = findZamboangaBarangay(currentBarangay || estForm.address || '', true);
-              const previewAddress = formatZamboangaAddress(currentStreet, currentBarangay, estForm.city || 'Zamboanga City');
-              const districtInfo = resolveZamboangaDistrict({ address: previewAddress, barangay: currentBarangay });
-
-              return (
-                <div className="space-y-2">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <label className="font-semibold text-slate-700">
-                          Street / Landmark
-                        </label>
-                        <button
-                          type="button"
-                          onClick={handleUseCurrentGps}
-                          disabled={locatingGps}
-                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 transition cursor-pointer disabled:opacity-50"
-                        >
-                          {locatingGps ? (
-                            <Loader2 size={11} className="animate-spin text-emerald-600" />
-                          ) : (
-                            <Navigation size={11} className="text-emerald-600" />
-                          )}
-                          <span>{locatingGps ? 'Locating...' : 'Pin GPS'}</span>
-                        </button>
-                      </div>
-                      <input
-                        type="text"
-                        placeholder="e.g., 193 Don Toribio St or KCC Mall"
-                        value={currentStreet}
-                        onChange={(e) => {
-                          const nextStreet = e.target.value;
-                          setStepError('');
-                          setFieldErrors((prev) => ({ ...prev, address: '' }));
-                          setEstForm((prev) => {
-                            const brgyVal =
-                              prev.barangay !== undefined
-                                ? prev.barangay
-                                : parseZamboangaAddress(prev.address || '').barangay;
-                            return {
-                              ...prev,
-                              street: nextStreet,
-                              barangay: brgyVal,
-                              address: formatZamboangaAddress(nextStreet, brgyVal, prev.city || 'Zamboanga City'),
-                            };
-                          });
-                        }}
-                        className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-slate-800 placeholder:text-slate-400 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
-                      />
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <label className="font-semibold text-slate-700">
-                          Barangay <span className="text-red-500">*</span>
-                        </label>
-                        {districtInfo && (
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border leading-none ${districtInfo.badgeClass}`}>
-                            {districtInfo.shortLabel}
-                          </span>
-                        )}
-                      </div>
-                      <select
-                        value={currentBarangay}
-                        onChange={(e) => {
-                          const nextBrgy = e.target.value;
-                          const brgyObj = findZamboangaBarangay(nextBrgy, false);
-                          setStepError('');
-                          setFieldErrors((prev) => ({ ...prev, address: '' }));
-                          setEstForm((prev) => {
-                            const streetVal =
-                              prev.street !== undefined
-                                ? prev.street
-                                : parseZamboangaAddress(prev.address || '').street;
-                            return {
-                              ...prev,
-                              street: streetVal,
-                              barangay: nextBrgy,
-                              latitude: brgyObj ? brgyObj.lat : prev.latitude,
-                              longitude: brgyObj ? brgyObj.lng : prev.longitude,
-                              address: formatZamboangaAddress(streetVal, nextBrgy, prev.city || 'Zamboanga City'),
-                            };
-                          });
-                        }}
-                        className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-slate-800 font-semibold outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition cursor-pointer"
-                      >
-                        <option value="">Select Barangay</option>
-                        <optgroup label="District 1 (West Coast & Downtown)">
-                          {district1Brgys.map((b) => (
-                            <option key={b.name} value={b.name}>
-                              {b.name}
-                            </option>
-                          ))}
-                        </optgroup>
-                        <optgroup label="District 2 (East Coast)">
-                          {district2Brgys.map((b) => (
-                            <option key={b.name} value={b.name}>
-                              {b.name}
-                            </option>
-                          ))}
-                        </optgroup>
-                      </select>
-                    </div>
-                  </div>
-
-                  {fieldErrors.address && (
-                    <p className="text-xs text-rose-600 mt-1 font-medium">{fieldErrors.address}</p>
-                  )}
-
-                  {(currentStreet || currentBarangay) && (
-                    <div className="flex items-center justify-between gap-2 px-1 text-[11px] text-slate-500">
-                      <span className="flex items-center gap-1.5 truncate">
-                        <MapPin size={12} className="text-emerald-600 shrink-0" />
-                        <span className="truncate">{previewAddress}</span>
-                      </span>
-                      {matchedBrgyObj && (
-                        <span className="text-[11px] font-semibold text-emerald-700 shrink-0">
-                          Map pin synced
-                        </span>
-                      )}
-                    </div>
-                  )}
+            {/* Address & GPS Pin */}
+            <div className="space-y-2">
+              <AddressFields
+                variant="form"
+                idPrefix="submit-est"
+                value={estForm}
+                streetAction={
+                  <button
+                    type="button"
+                    onClick={handleUseCurrentGps}
+                    disabled={locatingGps}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 transition cursor-pointer disabled:opacity-50"
+                  >
+                    {locatingGps ? (
+                      <Loader2 size={11} className="animate-spin text-emerald-600" />
+                    ) : (
+                      <Navigation size={11} className="text-emerald-600" />
+                    )}
+                    <span>{locatingGps ? 'Locating...' : 'Pin GPS'}</span>
+                  </button>
+                }
+                onChange={(patch) => {
+                  setStepError('');
+                  setFieldErrors((prev) => ({ ...prev, address: '' }));
+                  setEstForm((prev) => {
+                    const brgyChanged = patch.barangay !== undefined && patch.barangay !== prev.barangay;
+                    const brgyObj = brgyChanged ? findZamboangaBarangay(patch.barangay, false) : null;
+                    return {
+                      ...prev,
+                      ...patch,
+                      latitude: brgyObj ? brgyObj.lat : prev.latitude,
+                      longitude: brgyObj ? brgyObj.lng : prev.longitude,
+                    };
+                  });
+                }}
+              />
+              {fieldErrors.address && (
+                <p className="text-xs text-rose-600 font-medium">{fieldErrors.address}</p>
+              )}
+              {estForm.latitude && estForm.longitude ? (
+                <div className="flex items-center justify-between bg-emerald-50/80 border border-emerald-200 rounded-lg px-2.5 py-1 text-xs text-emerald-900 font-medium">
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
+                    <span>Map pin set</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEstForm((prev) => ({ ...prev, latitude: null, longitude: null }));
+                      setGpsStatus('');
+                    }}
+                    className="text-slate-400 hover:text-rose-600 font-semibold text-[11px] cursor-pointer"
+                  >
+                    Clear Pin
+                  </button>
                 </div>
-              );
-            })()}
+              ) : gpsStatus ? (
+                <p className="text-[11px] text-amber-600 font-medium">{gpsStatus}</p>
+              ) : null}
+            </div>
 
             {/* Public Contact & Social Links */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

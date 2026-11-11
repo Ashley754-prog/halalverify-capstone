@@ -1,15 +1,8 @@
 import { useState } from 'react';
-import { Upload, Loader2, ExternalLink, MapPin } from 'lucide-react';
+import { Upload, Loader2, ExternalLink } from 'lucide-react';
 import Modal from '../ui/Modal';
-import {
-    ESTABLISHMENT_TYPES,
-    ESTABLISHMENT_HALAL_TIERS,
-    getEstablishmentPhoto,
-    ZAMBOANGA_BARANGAYS,
-    parseZamboangaAddress,
-    formatZamboangaAddress,
-    resolveZamboangaDistrict,
-} from '../../data/constants';
+import { ESTABLISHMENT_TYPES, ESTABLISHMENT_HALAL_TIERS, getEstablishmentPhoto } from '../../data/constants';
+import AddressFields from '../shared/AddressFields';
 import { supabase } from '../../lib/supabaseClient';
 
 const ADDITIVE_STATUSES = ['Halal', 'Doubtful', 'Haram'];
@@ -524,94 +517,12 @@ export default function RegistryModals({
                             </div>
                         </div>
 
-                        {(() => {
-                            const parsedAddr = parseZamboangaAddress(modalForm.address || '');
-                            const currentStreet = modalForm.street !== undefined ? modalForm.street : parsedAddr.street;
-                            const currentBarangay = modalForm.barangay !== undefined ? modalForm.barangay : parsedAddr.barangay;
-                            const district1Brgys = ZAMBOANGA_BARANGAYS.filter(b => b.district === 'district_1');
-                            const district2Brgys = ZAMBOANGA_BARANGAYS.filter(b => b.district === 'district_2');
-                            const previewAddress = formatZamboangaAddress(currentStreet, currentBarangay, modalForm.city || 'Zamboanga City');
-                            const districtInfo = resolveZamboangaDistrict({ address: previewAddress, barangay: currentBarangay });
-
-                            return (
-                                <div className="space-y-2">
-                                    <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
-                                        <div>
-                                            <label className="mb-1.5 flex items-center justify-between text-xs font-bold uppercase tracking-wide text-slate-600">
-                                                <span>Street / Landmark</span>
-                                            </label>
-                                            <input
-                                                value={currentStreet}
-                                                onChange={(e) => {
-                                                    const nextStreet = e.target.value;
-                                                    setModalForm(prev => {
-                                                        const brgyVal = prev.barangay !== undefined
-                                                            ? prev.barangay
-                                                            : parseZamboangaAddress(prev.address || '').barangay;
-                                                        return {
-                                                            ...prev,
-                                                            street: nextStreet,
-                                                            barangay: brgyVal,
-                                                            address: formatZamboangaAddress(nextStreet, brgyVal, prev.city || 'Zamboanga City'),
-                                                        };
-                                                    });
-                                                }}
-                                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
-                                                placeholder="e.g. 193 Don Toribio St or KCC Mall"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="mb-1.5 flex items-center justify-between gap-2 text-xs font-bold uppercase tracking-wide text-slate-600">
-                                                <span>Barangay *</span>
-                                                {districtInfo && (
-                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border normal-case tracking-normal leading-none ${districtInfo.badgeClass}`}>
-                                                        {districtInfo.shortLabel}
-                                                    </span>
-                                                )}
-                                            </label>
-                                            <select
-                                                value={currentBarangay}
-                                                onChange={(e) => {
-                                                    const nextBrgy = e.target.value;
-                                                    setModalForm(prev => {
-                                                        const streetVal = prev.street !== undefined
-                                                            ? prev.street
-                                                            : parseZamboangaAddress(prev.address || '').street;
-                                                        return {
-                                                            ...prev,
-                                                            street: streetVal,
-                                                            barangay: nextBrgy,
-                                                            address: formatZamboangaAddress(streetVal, nextBrgy, prev.city || 'Zamboanga City'),
-                                                        };
-                                                    });
-                                                }}
-                                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:border-emerald-500 focus:outline-none cursor-pointer"
-                                            >
-                                                <option value="">Select Barangay</option>
-                                                <optgroup label="District 1 (West Coast & Downtown)">
-                                                    {district1Brgys.map(b => (
-                                                        <option key={b.name} value={b.name}>{b.name}</option>
-                                                    ))}
-                                                </optgroup>
-                                                <optgroup label="District 2 (East Coast)">
-                                                    {district2Brgys.map(b => (
-                                                        <option key={b.name} value={b.name}>{b.name}</option>
-                                                    ))}
-                                                </optgroup>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    {(currentStreet || currentBarangay) && (
-                                        <div className="flex items-center gap-1.5 px-1 text-[11px] text-slate-500">
-                                            <MapPin size={12} className="text-emerald-600 shrink-0" />
-                                            <span className="truncate">{previewAddress}</span>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })()}
+                        <AddressFields
+                            variant="registry"
+                            idPrefix="registry-est"
+                            value={modalForm}
+                            onChange={(patch) => setModalForm(prev => ({ ...prev, ...patch }))}
+                        />
 
                         <div>
                             <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Facebook Page URL</label>

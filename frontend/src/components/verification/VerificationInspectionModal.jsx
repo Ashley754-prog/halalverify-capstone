@@ -22,6 +22,7 @@ import {
     X,
 } from 'lucide-react';
 import Modal from '../ui/Modal';
+import AddressFields from '../shared/AddressFields';
 import { getSafeUrl } from '../../utils/security';
 import { formatSystemNotice, formatShortDate, extractMenuHighlights, deriveEstablishmentTier } from '../../utils/verificationNotes';
 import { ESTABLISHMENT_TYPES } from '../../data/constants';
@@ -565,21 +566,15 @@ export default function VerificationInspectionModal({
                                         );
                                     })()}
                                 </div>
-                                <div>
-                                    <label htmlFor="inspect-est-address" className="text-slate-600 font-semibold block text-[11px] mb-1">
-                                        Address (Editable)
-                                    </label>
-                                    <input
-                                        id="inspect-est-address"
-                                        type="text"
-                                        value={inspectingItem.address || ''}
-                                        placeholder="Zamboanga City"
-                                        onChange={(e) =>
-                                            setInspectingItem?.((prev) =>
-                                                prev ? { ...prev, address: e.target.value } : prev
-                                            )
+                                <div className="sm:col-span-2">
+                                    <AddressFields
+                                        variant="queue"
+                                        idPrefix="inspect-est"
+                                        value={inspectingItem}
+                                        originalAddress={inspectingItem.original_address || ''}
+                                        onChange={(patch) =>
+                                            setInspectingItem?.((prev) => (prev ? { ...prev, ...patch } : prev))
                                         }
-                                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-800 bg-slate-50/60 focus:bg-white focus:border-emerald-500 focus:outline-none"
                                     />
                                 </div>
                                 <div>

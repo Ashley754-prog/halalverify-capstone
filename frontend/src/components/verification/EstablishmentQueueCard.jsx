@@ -1,4 +1,4 @@
-import { ShieldCheck, FileText, Camera, MapPin, Loader2, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, FileText, AlertTriangle, MapPin, Loader2, CheckCircle2 } from 'lucide-react';
 import { ESTABLISHMENT_HALAL_TIERS } from '../../data/constants';
 import { deriveEstablishmentTier, formatShortDate, extractMenuHighlights } from '../../utils/verificationNotes';
 import QueueStatusBadge from './QueueStatusBadge';
@@ -19,7 +19,6 @@ export default function EstablishmentQueueCard({
     const tierConfig = TIER_MAP[tierId] || TIER_MAP.halal_certified;
     const isCertified = tierId === 'halal_certified';
     const hasCertDoc = isCertified && Boolean(est.certificate_url);
-    const hasStorePhoto = !isCertified && Boolean(est.photo_url || est.logo_url || est.certificate_url);
 
     const tierBadgeStyles = {
         halal_certified: 'bg-emerald-50 text-emerald-800 border-emerald-200',
@@ -113,14 +112,14 @@ export default function EstablishmentQueueCard({
                             Verified File
                         </span>
                     </div>
-                ) : hasStorePhoto ? (
-                    <div className="rounded-lg border border-slate-200 bg-slate-50/80 p-2 text-xs flex items-center justify-between text-slate-700">
+                ) : isCertified ? (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-2 text-xs flex items-center justify-between text-amber-800">
                         <span className="flex items-center gap-1.5 font-semibold text-[11px]">
-                            <Camera size={13} className="text-slate-500" />
-                            Storefront Photo Attached
+                            <AlertTriangle size={13} className="text-amber-600" />
+                            No certificate file
                         </span>
-                        <span className="text-[10px] text-slate-600 font-bold bg-slate-200/70 px-1.5 py-0.5 rounded">
-                            Venue Photo
+                        <span className="text-[10px] text-amber-700 font-bold bg-amber-100/70 px-1.5 py-0.5 rounded">
+                            Check manually
                         </span>
                     </div>
                 ) : null}

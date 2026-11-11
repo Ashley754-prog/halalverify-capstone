@@ -15,6 +15,7 @@ import VerificationInspectionModal from '../components/verification/Verification
 import ReportAdjudicationModal from '../components/verification/ReportAdjudicationModal';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
+import { geocodeZamboangaAddress } from '../data/constants';
 import { isMachineNote, extractMenuHighlights, deriveEstablishmentTier } from '../utils/verificationNotes';
 
 export default function VerificationQueue({ onViewChange, initialTab = 'establishments' }) {
@@ -157,7 +158,7 @@ export default function VerificationQueue({ onViewChange, initialTab = 'establis
 
     const openInspection = (item, type = 'establishment') => {
         setInspectingType(type);
-        setInspectingItem(item);
+        setInspectingItem(type === 'establishment' ? { ...item, original_address: item.address || '' } : item);
         const rawNotes = (item.admin_notes || '').trim();
         setAdminNotes(isMachineNote(rawNotes) ? '' : rawNotes);
 
@@ -494,12 +495,21 @@ export default function VerificationQueue({ onViewChange, initialTab = 'establis
 
         try {
             setProcessingId(estId);
+            const addressEdited = Boolean(
+                inspectingItem.address &&
+                inspectingItem.original_address !== undefined &&
+                inspectingItem.address.trim().toLowerCase() !== inspectingItem.original_address.trim().toLowerCase()
+            );
+            const auditedNotes = addressEdited
+                ? `${adminNotes?.trim() ? `${adminNotes.trim()}\n` : ''}Address corrected by admin. Submitted as: ${inspectingItem.original_address || 'none'}`
+                : (adminNotes?.trim() ? adminNotes : undefined);
+
             const res = await authFetch(`${API_BASE_URL}/api/v1/admin/establishments/${estId}/verify`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     status: status,
-                    admin_notes: adminNotes?.trim() ? adminNotes : undefined,
+                    admin_notes: auditedNotes,
                     certificate_number: certNumber || undefined,
                     expiry_date: expiryDate || undefined,
                     certifying_body_id: selectedHcbId || undefined,
@@ -522,6 +532,26 @@ export default function VerificationQueue({ onViewChange, initialTab = 'establis
                 throw new Error(errData.detail || 'Failed to update establishment verification status.');
             }
 
+            // Re-pin the map location when the admin corrected the address during review
+            if (addressEdited) {
+                try {
+                    const coords = await geocodeZamboangaAddress(
+                        inspectingItem.address,
+                        inspectingItem.city || 'Zamboanga City',
+                        inspectingItem.barangay || ''
+                    );
+                    await supabase
+                        .from('establishments')
+                        .update({
+                            address: inspectingItem.address,
+                            latitude: coords.latitude,
+                            longitude: coords.longitude,
+                        })
+                        .eq('id', estId);
+                } catch (pinErr) {
+                    console.warn('Could not re-pin corrected address:', pinErr);
+                }
+            }
             const estName = inspectingItem?.name ? `"${inspectingItem.name}"` : 'Establishment';
             let estStatusText = status.toLowerCase();
             if (estStatusText === 'verified') {
