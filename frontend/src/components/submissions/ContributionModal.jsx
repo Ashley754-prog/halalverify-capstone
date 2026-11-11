@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   AlertCircle,
   Sparkles,
-  ShieldCheck,
   Clock,
 } from 'lucide-react';
 import Modal from '../ui/Modal';
@@ -24,11 +23,27 @@ import ProductContributionForm from './ProductContributionForm';
 
 function cleanReasonText(text) {
   if (!text) return '';
-  return text
+  return String(text)
     .replace(/^Needs manual review:\s*/i, '')
     .replace(/^Potential duplicate listing detected\s*/i, 'Potential duplicate: ')
+    .replace(/\s*\([+-]?\d+\s*pts?\)\.?$/i, '')
     .replace(/^\w/, (c) => c.toUpperCase())
     .trim();
+}
+
+function cleanHighlightNote(note) {
+  if (!note) return '';
+  return String(note)
+    .replace(/\s*\([+-]?\d+\s*pts?\)\.?$/i, '')
+    .trim();
+}
+
+function isOptionalFieldNotice(reason, tierKey) {
+  if (!reason) return false;
+  const lower = String(reason).toLowerCase();
+  if (lower.includes('no public contact phone number')) return true;
+  if (tierKey !== 'halal_certified' && lower.includes('no physical storefront or menu photo')) return true;
+  return false;
 }
 
 function getTierBadgeInfo(tier) {
@@ -390,9 +405,43 @@ export default function ContributionModal({
   const submittedItemName = submissionResult?.data?.name || (activeTab === 'establishment' ? estForm.name : prodForm.name);
   const currentTierKey = submissionResult?.audit_trail?.halal_tier || (activeTab === 'establishment' ? estForm.halal_tier : prodForm.halal_tier);
   const tierBadge = getTierBadgeInfo(currentTierKey);
-  const score = submissionResult?.audit_trail?.score;
   const auditNotes = submissionResult?.audit_trail?.notes || [];
   const reviewReasons = submissionResult?.audit_trail?.reasons || [];
+
+  const submittedItemSubtitle =
+    activeTab === 'establishment'
+      ? [
+          estForm.type || 'Restaurant',
+          estForm.barangay || submissionResult?.data?.address || 'Zamboanga City',
+        ]
+          .filter(Boolean)
+          .join(' · ')
+      : [prodForm.brand, prodForm.category || 'Food & Beverage']
+          .filter(Boolean)
+          .join(' · ');
+
+  const displayHighlights = auditNotes
+    .filter(
+      (note) =>
+        !note.startsWith('Consumer Contribution:') &&
+        !note.startsWith('Brand Declaration:') &&
+        !note.startsWith('Ownership Declaration:') &&
+        !note.startsWith('Classification Tier:') &&
+        !note.startsWith('Duplicate alert:')
+    )
+    .map(cleanHighlightNote)
+    .filter(Boolean);
+
+  const notableReasons = reviewReasons
+    .filter((reason) => !isOptionalFieldNotice(reason, currentTierKey))
+    .map(cleanReasonText)
+    .filter(Boolean);
+
+  const nextStepMessage = isAutoApproved
+    ? 'Published live to the public registry.'
+    : currentTierKey === 'halal_certified'
+      ? 'Pending Halal Certifying Body credential verification by Admin.'
+      : 'Pending administrative moderation before public listing.';
 
   return (
     <Modal
@@ -408,37 +457,37 @@ export default function ContributionModal({
       compactOnMobile
     >
       {isSuccess ? (
-        <div className="py-2 text-center space-y-4">
+        <div className="pt-0.5 text-center space-y-3">
           {/* Status Icon */}
-          <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-200/60 text-emerald-600 flex items-center justify-center mx-auto shadow-xs">
+          <div className="w-11 h-11 rounded-xl bg-emerald-50 border border-emerald-200/60 text-emerald-600 flex items-center justify-center mx-auto shadow-2xs">
             {isAutoApproved ? (
-              <Sparkles size={28} className="text-emerald-600" />
+              <Sparkles size={22} className="text-emerald-600" />
             ) : (
-              <CheckCircle2 size={28} className="text-emerald-600" />
+              <CheckCircle2 size={22} className="text-emerald-600" />
             )}
           </div>
 
           {/* Status Pill & Headings */}
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <div>
               {isAutoApproved ? (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/70 shadow-2xs">
+                <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/70 shadow-2xs">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Instant Verified &amp; Published
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200/70 shadow-2xs">
+                <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200/70 shadow-2xs">
                   <Clock size={12} className="text-amber-600" />
-                  Queued for Auditor Review
+                  Queued for Admin Review
                 </span>
               )}
             </div>
 
-            <h3 className="text-xl font-bold text-slate-900 tracking-tight">
+            <h3 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
               {isAutoApproved ? 'Verified & Published Live!' : 'Submission Received!'}
             </h3>
 
-            <p className="text-xs sm:text-sm text-slate-500 max-w-sm mx-auto leading-relaxed">
+            <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
               {isAutoApproved
                 ? 'Your submission passed automated verification checks and has been published immediately to the public directory.'
                 : 'Thank you for contributing! Your submission has been saved and scheduled for administrative verification.'}
@@ -446,14 +495,17 @@ export default function ContributionModal({
           </div>
 
           {/* Submission Receipt Card */}
-          <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 text-left space-y-3 shadow-2xs">
+          <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 text-left space-y-2.5 shadow-2xs">
             {/* Header info */}
-            <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-200/80">
+            <div className="flex items-start justify-between gap-2 pb-2 border-b border-slate-200/80">
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Submitted Entry</p>
                 <h4 className="font-bold text-slate-800 text-sm truncate">
                   {submittedItemName || 'New Contribution'}
                 </h4>
+                {submittedItemSubtitle && (
+                  <p className="text-[11px] text-slate-500 truncate mt-0.5">{submittedItemSubtitle}</p>
+                )}
               </div>
               {tierBadge && (
                 <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md border shrink-0 ${tierBadge.color}`}>
@@ -462,89 +514,51 @@ export default function ContributionModal({
               )}
             </div>
 
-            {/* Score line */}
-            {score !== undefined && (
-              <div className="flex items-center justify-between text-xs py-0.5">
-                <span className="text-slate-600 flex items-center gap-1.5 font-medium">
-                  <ShieldCheck size={14} className={isAutoApproved ? 'text-emerald-600' : 'text-slate-400'} />
-                  Verification Score
-                </span>
-                <span className="font-mono font-semibold text-slate-700 bg-white px-2 py-0.5 rounded-md border border-slate-200 text-xs">
-                  {score} / 100
-                </span>
+            {/* Automated Pre-Check Summary */}
+            {displayHighlights.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                  {isAutoApproved ? 'Verification Highlights' : 'Automated Pre-Check Summary'}
+                </p>
+                <ul className="space-y-1">
+                  {displayHighlights.slice(0, 4).map((note, idx) => (
+                    <li key={idx} className="text-xs text-slate-600 flex items-start gap-2">
+                      <span className="text-emerald-500 font-bold leading-none mt-0.5">✓</span>
+                      <span className="leading-snug">{note}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
 
-            {/* Verification checklist or notes */}
-            {isAutoApproved ? (
-              (() => {
-                const displayHighlights = auditNotes.filter(
-                  (note) =>
-                    !note.startsWith('Consumer Contribution:') &&
-                    !note.startsWith('Brand Declaration:') &&
-                    !note.startsWith('Ownership Declaration:') &&
-                    !note.startsWith('Classification Tier:') &&
-                    !note.startsWith('Duplicate alert:')
-                );
-                return displayHighlights.length > 0 ? (
-                  <div className="space-y-1.5 pt-1 border-t border-slate-200/60">
-                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Verification Highlights</p>
-                    <ul className="space-y-1">
-                      {displayHighlights.slice(0, 4).map((note, idx) => (
-                        <li key={idx} className="text-xs text-slate-600 flex items-start gap-2">
-                          <span className="text-emerald-500 font-bold leading-none mt-0.5">✓</span>
-                          <span>{note}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null;
-              })()
-            ) : reviewReasons.length > 0 ? (
-              <div className="space-y-1.5 pt-1 border-t border-slate-200/60">
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Auditor Review Checklist</p>
-                <ul className="space-y-1.5">
-                  {reviewReasons.map((reason, idx) => (
+            {/* Notable Auditor Review Notices (if any blocking reason triggered) */}
+            {!isAutoApproved && notableReasons.length > 0 && (
+              <div className={`space-y-1 ${displayHighlights.length > 0 ? 'pt-2 border-t border-slate-200/60' : ''}`}>
+                <p className="text-[10px] font-semibold text-amber-700 uppercase tracking-wider">Auditor Review Notes</p>
+                <ul className="space-y-1">
+                  {notableReasons.slice(0, 3).map((reason, idx) => (
                     <li key={idx} className="text-xs text-slate-600 flex items-start gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0" />
-                      <span className="leading-snug">{cleanReasonText(reason)}</span>
+                      <span className="leading-snug">{reason}</span>
                     </li>
                   ))}
                 </ul>
-              </div>
-            ) : auditNotes.length > 0 ? (
-              <div className="space-y-1.5 pt-1 border-t border-slate-200/60">
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">AI Pre-Screening Highlights</p>
-                <ul className="space-y-1">
-                  {auditNotes.filter(
-                    (note) =>
-                      !note.startsWith('Consumer Contribution:') &&
-                      !note.startsWith('Brand Declaration:') &&
-                      !note.startsWith('Ownership Declaration:') &&
-                      !note.startsWith('Classification Tier:') &&
-                      !note.startsWith('Duplicate alert:')
-                  ).slice(0, 4).map((note, idx) => (
-                    <li key={idx} className="text-xs text-slate-600 flex items-start gap-2">
-                      <span className="text-emerald-500 font-bold leading-none mt-0.5">✓</span>
-                      <span>{note}</span>
-                    </li>
-                  ))}
-                </ul>
-                <div className="pt-1.5 text-[11px] text-slate-500 flex items-center gap-1.5">
-                  <Clock size={12} className="text-amber-500 shrink-0" />
-                  <span>Pending official Halal Certifying Body (HCB) cross-check by Admin.</span>
-                </div>
-              </div>
-            ) : (
-              <div className="pt-1 border-t border-slate-200/60 text-xs text-slate-500 flex items-center gap-2">
-                <Clock size={13} className="text-slate-400 shrink-0" />
-                <span>Auditors regularly review submissions within 24–48 hours.</span>
               </div>
             )}
+
+            {/* Tier-appropriate next step footer */}
+            <div className="pt-2 border-t border-slate-200/70 text-[11px] text-slate-500 flex items-center gap-1.5">
+              {isAutoApproved ? (
+                <CheckCircle2 size={12} className="text-emerald-600 shrink-0" />
+              ) : (
+                <Clock size={12} className="text-amber-500 shrink-0" />
+              )}
+              <span>{nextStepMessage}</span>
+            </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-2 flex items-center justify-center gap-3">
+          <div className="sticky bottom-0 bg-white pt-1.5 pb-0.5 flex items-center justify-center gap-3">
             <button
               type="button"
               onClick={handleReset}
