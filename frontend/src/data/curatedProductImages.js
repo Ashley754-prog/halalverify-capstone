@@ -55,6 +55,10 @@ const CURATED_PRODUCT_IMAGES = {
         brand: 'fibisco',
         imageUrl: '/product_images/ultimate-chocolate-chip-cookies-fibisco-600g.jpg',
     },
+    'amigo segurado big elbow macaroni 5kg': {
+        brand: 'philippine foremost milling corp pasta plant f 1473',
+        imageUrl: '/product_images/amigo-gurado-big-elbow-macaroni-5kg.png.png',
+    },
 };
 
 export const CURATED_PRODUCT_NAMES = [
@@ -72,6 +76,7 @@ export const CURATED_PRODUCT_NAMES = [
     'AKAO Farms Certified Halal Fresh Table Eggs 12s',
     'Lucky Me! Instant Pancit Canton Original',
     'The Ultimate Chocolate Chip Cookies',
+    'AMIGO SEGURADO BIG ELBOW MACARONI - 5kg',
 ];
 
 function normalizeText(value = '') {
