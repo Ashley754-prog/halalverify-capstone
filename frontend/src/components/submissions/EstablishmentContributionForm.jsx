@@ -26,6 +26,7 @@ import CategorySelect from '../shared/CategorySelect';
 import AmenitiesPicker from '../shared/AmenitiesPicker';
 import DishesInput from '../shared/DishesInput';
 import UploadBox from '../shared/UploadBox';
+import SubmitterRoleSelect from '../shared/SubmitterRoleSelect';
 import { getFieldStyles } from '../shared/fieldStyles';
 
 const STEPS = [
@@ -306,31 +307,11 @@ export default function EstablishmentContributionForm({
         {/* STEP 1: BUSINESS */}
         {currentStep === 1 && (
           <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
-              <div>
-                <span className="text-xs font-bold text-slate-800 block">Submitter Affiliation</span>
-                <span className="text-[11px] text-slate-500">Helps our moderation team review your entry</span>
-              </div>
-              <div className="inline-flex rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium shrink-0" role="radiogroup" aria-label="Submitter affiliation">
-                {SUBMITTER_ROLES.map((role) => {
-                  const active = (estForm.submitter_role || 'community') === role.id;
-                  return (
-                    <button
-                      key={role.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={active}
-                      onClick={() => setEstForm((prev) => ({ ...prev, submitter_role: role.id }))}
-                      className={`px-3 py-1.5 rounded-md transition-all cursor-pointer ${
-                        active ? 'bg-emerald-600 text-white font-semibold shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      {role.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <SubmitterRoleSelect
+              variant="form"
+              value={estForm.submitter_role}
+              onChange={(roleId) => setEstForm((prev) => ({ ...prev, submitter_role: roleId }))}
+            />
 
             <div className={styles.grid}>
               <div>

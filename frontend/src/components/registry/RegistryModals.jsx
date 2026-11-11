@@ -6,6 +6,7 @@ import AddressFields from '../shared/AddressFields';
 import CategorySelect from '../shared/CategorySelect';
 import AmenitiesPicker from '../shared/AmenitiesPicker';
 import DishesInput from '../shared/DishesInput';
+import SubmitterRoleSelect from '../shared/SubmitterRoleSelect';
 import { supabase } from '../../lib/supabaseClient';
 
 const ADDITIVE_STATUSES = ['Halal', 'Doubtful', 'Haram'];
@@ -395,26 +396,16 @@ export default function RegistryModals({
                         <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
                             <div>
                                 <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Submitter Role</label>
-                                <select
-                                    value={
-                                        modalForm.submitter_role === 'owner' || (modalForm.source && modalForm.source.toLowerCase().includes('owner'))
-                                            ? 'owner'
-                                            : 'community'
-                                    }
-                                    onChange={(e) => {
-                                        const val = e.target.value;
-                                        const isOwner = val === 'owner';
-                                        setModalForm(prev => ({
-                                            ...prev,
-                                            submitter_role: val,
-                                            source: isOwner ? 'Business Owner Submission' : 'Community User Submission',
-                                        }));
-                                    }}
-                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:border-emerald-500 focus:outline-none cursor-pointer"
-                                >
-                                    <option value="owner">Owner / Staff</option>
-                                    <option value="community">Customer / Scout</option>
-                                </select>
+                                <SubmitterRoleSelect
+                                    variant="registry"
+                                    id="registry-est-role"
+                                    value={modalForm.submitter_role || (modalForm.source && modalForm.source.toLowerCase().includes('owner') ? 'owner' : 'community')}
+                                    onChange={(roleId) => setModalForm(prev => ({
+                                        ...prev,
+                                        submitter_role: roleId,
+                                        source: roleId === 'owner' ? 'Business Owner Submission' : 'Community User Submission',
+                                    }))}
+                                />
                             </div>
                             <div>
                                 <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Contact Number</label>

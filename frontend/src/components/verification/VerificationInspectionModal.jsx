@@ -24,6 +24,7 @@ import {
 import Modal from '../ui/Modal';
 import AddressFields from '../shared/AddressFields';
 import CategorySelect from '../shared/CategorySelect';
+import SubmitterRoleSelect from '../shared/SubmitterRoleSelect';
 import { getSafeUrl } from '../../utils/security';
 import { formatSystemNotice, formatShortDate, extractMenuHighlights, deriveEstablishmentTier } from '../../utils/verificationNotes';
 import { cleanAmenities } from '../../data/constants';
@@ -569,31 +570,27 @@ export default function VerificationInspectionModal({
                                     <label htmlFor="inspect-submitter-role" className="text-slate-600 font-semibold block text-[11px] mb-1">
                                         Submitter Role (Editable)
                                     </label>
-                                    <select
+                                    <SubmitterRoleSelect
+                                        variant="queue"
                                         id="inspect-submitter-role"
                                         value={
                                             inspectingItem.submitter_role === 'owner' || inspectingItem.source?.includes('Owner')
                                                 ? 'owner'
                                                 : 'community'
                                         }
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            const isOwner = val === 'owner';
+                                        onChange={(roleId) => {
+                                            const isOwner = roleId === 'owner';
                                             setInspectingItem?.((prev) =>
                                                 prev
                                                     ? {
                                                           ...prev,
-                                                          submitter_role: val,
+                                                          submitter_role: roleId,
                                                           source: isOwner ? 'Business Owner Submission' : 'Community User Submission',
                                                       }
                                                     : prev
                                             );
                                         }}
-                                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold text-slate-800 bg-slate-50/60 focus:bg-white focus:border-emerald-500 focus:outline-none cursor-pointer"
-                                    >
-                                        <option value="owner">Owner / Staff</option>
-                                        <option value="community">Customer / Scout</option>
-                                    </select>
+                                    />
                                 </div>
                                 <div>
                                     <label htmlFor="inspect-est-website" className="text-slate-600 font-semibold block text-[11px] mb-1">

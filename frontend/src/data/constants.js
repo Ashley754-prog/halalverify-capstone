@@ -251,6 +251,15 @@ export const SUBMITTER_ROLES = [
   { id: 'community', label: 'Customer / Community' },
 ];
 
+export const getSubmitterRoleLabel = (roleOrEst) => {
+  if (!roleOrEst) return 'Customer / Community';
+  const role = typeof roleOrEst === 'object'
+    ? (roleOrEst.submitter_role || (roleOrEst.source && roleOrEst.source.toLowerCase().includes('owner') ? 'owner' : 'community'))
+    : String(roleOrEst).toLowerCase();
+  const match = SUBMITTER_ROLES.find((r) => r.id === role);
+  return match ? match.label : 'Customer / Community';
+};
+
 /** Philippine phone check. Accepts mobile and landline formats, ignores spaces and dashes. */
 export const isValidPhPhone = (value) => {
   const digits = String(value || '').replace(/[^\d+]/g, '');

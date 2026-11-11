@@ -1,5 +1,5 @@
 import { ShieldCheck, FileText, AlertTriangle, MapPin, Loader2, CheckCircle2 } from 'lucide-react';
-import { ESTABLISHMENT_HALAL_TIERS } from '../../data/constants';
+import { ESTABLISHMENT_HALAL_TIERS, getSubmitterRoleLabel } from '../../data/constants';
 import { deriveEstablishmentTier, formatShortDate, extractMenuHighlights } from '../../utils/verificationNotes';
 import QueueStatusBadge from './QueueStatusBadge';
 import AiTriageBadge from './AiTriageBadge';
@@ -41,7 +41,7 @@ export default function EstablishmentQueueCard({
                             {tierConfig.badge || tierConfig.label}
                         </span>
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
-                            {est.source?.includes('Owner') || est.submitter_role === 'owner' ? 'Owner / Staff' : 'Customer / Scout'}
+                            {getSubmitterRoleLabel(est)}
                         </span>
                     </div>
                     <span className="text-[10px] text-slate-500 font-medium shrink-0 pt-0.5">
