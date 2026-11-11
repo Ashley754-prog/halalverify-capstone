@@ -333,62 +333,79 @@ export default function EstablishmentContributionForm({
             </div>
 
             {isCertifiedTier ? (
-              <div className="space-y-4 p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/40">
-                <div className="flex items-center gap-2 text-emerald-800 font-bold text-xs">
-                  <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
-                  <span>Halal Certificate Details</span>
-                </div>
-                <div className={styles.grid}>
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <label htmlFor="submit-est-certno" className="block text-xs font-bold text-slate-700">
-                        Certificate Number
-                      </label>
-                      <span className={styles.hint}>Auto-read on upload</span>
-                    </div>
-                    <input
-                      id="submit-est-certno"
-                      type="text"
-                      placeholder="e.g., IDCP-ZC-2024-019"
-                      value={estForm.certificate_number}
-                      onChange={(e) => setEstForm((prev) => ({ ...prev, certificate_number: e.target.value }))}
-                      className={`${styles.input} font-mono`}
-                    />
+              <div className="space-y-3.5 p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/40">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-emerald-800 font-bold text-xs">
+                    <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
+                    <span>Halal Certificate Document</span>
                   </div>
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <label htmlFor="submit-est-expiry" className="block text-xs font-bold text-slate-700">
-                        Certificate Expiry Date
-                      </label>
-                      <span className={styles.hint}>Optional</span>
-                    </div>
-                    <input
-                      id="submit-est-expiry"
-                      type="date"
-                      value={estForm.expiry_date}
-                      onChange={(e) => setEstForm((prev) => ({ ...prev, expiry_date: e.target.value }))}
-                      className={styles.input}
-                    />
-                  </div>
+                  <span className="text-[10px] sm:text-[11px] font-semibold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
+                    Instant AI Verification
+                  </span>
                 </div>
+
                 <UploadBox
                   id="submit-est-cert-file"
                   label="Certificate Document or Photo"
                   prompt="Click to select certificate image or PDF"
                   hint="PNG, JPG, PDF up to 10MB"
-                  attachedLabel="Certificate uploaded"
+                  attachedLabel="Certificate document attached"
                   accept="image/*,application/pdf"
                   url={estForm.certificate_url}
                   uploading={uploadingImage}
                   onPick={(e) => onFileUpload(e, 'certificates')}
                   onClear={() => setEstForm((prev) => ({ ...prev, certificate_url: '' }))}
                 />
-                {!estForm.certificate_url && (
-                  <p className="flex items-start gap-1.5 text-[11px] text-amber-700">
-                    <AlertTriangle size={13} className="shrink-0 mt-0.5" />
-                    <span>Without a certificate file, an admin has to review this listing manually.</span>
+
+                {!estForm.certificate_url ? (
+                  <p className="flex items-start gap-1.5 text-[11px] text-amber-800 bg-amber-50/80 p-2 rounded-lg border border-amber-200/80">
+                    <AlertTriangle size={13} className="shrink-0 mt-0.5 text-amber-600" />
+                    <span>Attach a certificate photo for instant verification. Without it, an admin reviews manually.</span>
+                  </p>
+                ) : (
+                  <p className="flex items-center gap-1.5 text-[11px] text-emerald-800 bg-emerald-100/70 p-2 rounded-lg border border-emerald-200">
+                    <CheckCircle2 size={13} className="shrink-0 text-emerald-600" />
+                    <span>Certificate attached. AI will extract and corroborate credentials on submission.</span>
                   </p>
                 )}
+
+                <div className="pt-2 border-t border-emerald-200/70">
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      Certificate Credentials
+                    </span>
+                    <span className="text-[11px] text-slate-400 font-medium">
+                      Auto-read or enter manually
+                    </span>
+                  </div>
+                  <div className={styles.grid}>
+                    <div>
+                      <label htmlFor="submit-est-certno" className="block text-xs font-bold text-slate-700 mb-1 whitespace-nowrap">
+                        Certificate Number
+                      </label>
+                      <input
+                        id="submit-est-certno"
+                        type="text"
+                        placeholder="e.g., IDCP-ZC-2024-019"
+                        value={estForm.certificate_number}
+                        onChange={(e) => setEstForm((prev) => ({ ...prev, certificate_number: e.target.value }))}
+                        className={`${styles.input} font-mono`}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="submit-est-expiry" className="block text-xs font-bold text-slate-700 mb-1 whitespace-nowrap">
+                        Certificate Expiry Date
+                      </label>
+                      <input
+                        id="submit-est-expiry"
+                        type="date"
+                        value={estForm.expiry_date}
+                        onChange={(e) => setEstForm((prev) => ({ ...prev, expiry_date: e.target.value }))}
+                        className={styles.input}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="p-3 rounded-xl bg-sky-50 border border-sky-200 text-sky-800">
