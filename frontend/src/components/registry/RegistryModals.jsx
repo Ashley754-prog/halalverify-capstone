@@ -8,7 +8,6 @@ import {
     ZAMBOANGA_BARANGAYS,
     parseZamboangaAddress,
     formatZamboangaAddress,
-    findZamboangaBarangay,
     resolveZamboangaDistrict,
 } from '../../data/constants';
 import { supabase } from '../../lib/supabaseClient';
@@ -531,28 +530,15 @@ export default function RegistryModals({
                             const currentBarangay = modalForm.barangay !== undefined ? modalForm.barangay : parsedAddr.barangay;
                             const district1Brgys = ZAMBOANGA_BARANGAYS.filter(b => b.district === 'district_1');
                             const district2Brgys = ZAMBOANGA_BARANGAYS.filter(b => b.district === 'district_2');
-                            const matchedBrgyObj = findZamboangaBarangay(currentBarangay || modalForm.address || '', true);
                             const previewAddress = formatZamboangaAddress(currentStreet, currentBarangay, modalForm.city || 'Zamboanga City');
                             const districtInfo = resolveZamboangaDistrict({ address: previewAddress, barangay: currentBarangay });
 
                             return (
-                                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <span className="text-xs font-bold uppercase tracking-wide text-slate-700 flex items-center gap-1.5">
-                                            <MapPin size={13} className="text-emerald-600" />
-                                            <span>Location in Zamboanga City</span>
-                                        </span>
-                                        {districtInfo && (
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${districtInfo.badgeClass}`}>
-                                                {districtInfo.shortLabel}
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                    <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
                                         <div>
-                                            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-600">
-                                                Street / Building / Landmark
+                                            <label className="mb-1.5 flex items-center justify-between text-xs font-bold uppercase tracking-wide text-slate-600">
+                                                <span>Street / Landmark</span>
                                             </label>
                                             <input
                                                 value={currentStreet}
@@ -570,14 +556,19 @@ export default function RegistryModals({
                                                         };
                                                     });
                                                 }}
-                                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
                                                 placeholder="e.g. 193 Don Toribio St or KCC Mall"
                                             />
                                         </div>
 
                                         <div>
-                                            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-600">
-                                                Barangay *
+                                            <label className="mb-1.5 flex items-center justify-between gap-2 text-xs font-bold uppercase tracking-wide text-slate-600">
+                                                <span>Barangay *</span>
+                                                {districtInfo && (
+                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border normal-case tracking-normal leading-none ${districtInfo.badgeClass}`}>
+                                                        {districtInfo.shortLabel}
+                                                    </span>
+                                                )}
                                             </label>
                                             <select
                                                 value={currentBarangay}
@@ -595,9 +586,9 @@ export default function RegistryModals({
                                                         };
                                                     });
                                                 }}
-                                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm font-semibold text-slate-800 focus:border-emerald-500 focus:outline-none cursor-pointer"
+                                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm font-semibold text-slate-800 focus:border-emerald-500 focus:outline-none cursor-pointer"
                                             >
-                                                <option value="">Select Barangay in Zamboanga City</option>
+                                                <option value="">Select Barangay</option>
                                                 <optgroup label="District 1 (West Coast & Downtown)">
                                                     {district1Brgys.map(b => (
                                                         <option key={b.name} value={b.name}>{b.name}</option>
@@ -612,16 +603,12 @@ export default function RegistryModals({
                                         </div>
                                     </div>
 
-                                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-200/70 text-[11px] text-slate-500">
-                                        <span className="truncate">
-                                            <strong className="text-slate-700">Formatted Address</strong> {previewAddress}
-                                        </span>
-                                        {matchedBrgyObj && (
-                                            <span className="font-mono text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 shrink-0">
-                                                Map Pin {matchedBrgyObj.name} {matchedBrgyObj.lat.toFixed(4)}, {matchedBrgyObj.lng.toFixed(4)}
-                                            </span>
-                                        )}
-                                    </div>
+                                    {(currentStreet || currentBarangay) && (
+                                        <div className="flex items-center gap-1.5 px-1 text-[11px] text-slate-500">
+                                            <MapPin size={12} className="text-emerald-600 shrink-0" />
+                                            <span className="truncate">{previewAddress}</span>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })()}

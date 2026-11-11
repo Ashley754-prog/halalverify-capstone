@@ -366,39 +366,27 @@ export default function EstablishmentContributionForm({
               const districtInfo = resolveZamboangaDistrict({ address: previewAddress, barangay: currentBarangay });
 
               return (
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <label className="font-semibold text-slate-700 flex items-center gap-1.5">
-                        <MapPin size={14} className="text-emerald-600" />
-                        <span>Location in Zamboanga City <span className="text-red-500">*</span></span>
-                      </label>
-                      {districtInfo && (
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${districtInfo.badgeClass}`}>
-                          {districtInfo.shortLabel}
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleUseCurrentGps}
-                      disabled={locatingGps}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-semibold transition cursor-pointer disabled:opacity-50"
-                    >
-                      {locatingGps ? (
-                        <Loader2 size={12} className="animate-spin text-emerald-600" />
-                      ) : (
-                        <Navigation size={12} className="text-emerald-600" />
-                      )}
-                      <span>{locatingGps ? 'Locating...' : 'Pin Current GPS'}</span>
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-600 mb-1">
-                        Street / Building / Landmark
-                      </label>
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <label className="font-semibold text-slate-700">
+                          Street / Landmark
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleUseCurrentGps}
+                          disabled={locatingGps}
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 transition cursor-pointer disabled:opacity-50"
+                        >
+                          {locatingGps ? (
+                            <Loader2 size={11} className="animate-spin text-emerald-600" />
+                          ) : (
+                            <Navigation size={11} className="text-emerald-600" />
+                          )}
+                          <span>{locatingGps ? 'Locating...' : 'Pin GPS'}</span>
+                        </button>
+                      </div>
                       <input
                         type="text"
                         placeholder="e.g., 193 Don Toribio St or KCC Mall"
@@ -425,9 +413,16 @@ export default function EstablishmentContributionForm({
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-600 mb-1">
-                        Barangay <span className="text-red-500">*</span>
-                      </label>
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <label className="font-semibold text-slate-700">
+                          Barangay <span className="text-red-500">*</span>
+                        </label>
+                        {districtInfo && (
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border leading-none ${districtInfo.badgeClass}`}>
+                            {districtInfo.shortLabel}
+                          </span>
+                        )}
+                      </div>
                       <select
                         value={currentBarangay}
                         onChange={(e) => {
@@ -452,7 +447,7 @@ export default function EstablishmentContributionForm({
                         }}
                         className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-slate-800 font-semibold outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition cursor-pointer"
                       >
-                        <option value="">Select Barangay in Zamboanga City</option>
+                        <option value="">Select Barangay</option>
                         <optgroup label="District 1 (West Coast & Downtown)">
                           {district1Brgys.map((b) => (
                             <option key={b.name} value={b.name}>
@@ -475,30 +470,19 @@ export default function EstablishmentContributionForm({
                     <p className="text-xs text-rose-600 mt-1 font-medium">{fieldErrors.address}</p>
                   )}
 
-                  {/* Pin Coordinates Card */}
-                  {estForm.latitude && estForm.longitude ? (
-                    <div className="flex items-center justify-between bg-emerald-50/80 border border-emerald-200 rounded-lg px-2.5 py-1 text-xs text-emerald-900 font-medium">
-                      <span className="flex items-center gap-1.5">
-                        <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
-                        <span>
-                          Coordinates pinned {matchedBrgyObj ? `${matchedBrgyObj.name} • ` : ''}
-                          {estForm.latitude}, {estForm.longitude}
-                        </span>
+                  {(currentStreet || currentBarangay) && (
+                    <div className="flex items-center justify-between gap-2 px-1 text-[11px] text-slate-500">
+                      <span className="flex items-center gap-1.5 truncate">
+                        <MapPin size={12} className="text-emerald-600 shrink-0" />
+                        <span className="truncate">{previewAddress}</span>
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEstForm((prev) => ({ ...prev, latitude: null, longitude: null }));
-                          setGpsStatus('');
-                        }}
-                        className="text-slate-400 hover:text-rose-600 font-semibold text-[11px] cursor-pointer"
-                      >
-                        Clear Pin
-                      </button>
+                      {matchedBrgyObj && (
+                        <span className="text-[11px] font-semibold text-emerald-700 shrink-0">
+                          Map pin synced
+                        </span>
+                      )}
                     </div>
-                  ) : gpsStatus ? (
-                    <p className="mt-1 text-[11px] text-amber-600 font-medium">{gpsStatus}</p>
-                  ) : null}
+                  )}
                 </div>
               );
             })()}
