@@ -1,7 +1,16 @@
 import { useState } from 'react';
-import { Upload, Loader2, ExternalLink } from 'lucide-react';
+import { Upload, Loader2, ExternalLink, MapPin } from 'lucide-react';
 import Modal from '../ui/Modal';
-import { ESTABLISHMENT_TYPES, ESTABLISHMENT_HALAL_TIERS, getEstablishmentPhoto } from '../../data/constants';
+import {
+    ESTABLISHMENT_TYPES,
+    ESTABLISHMENT_HALAL_TIERS,
+    getEstablishmentPhoto,
+    ZAMBOANGA_BARANGAYS,
+    parseZamboangaAddress,
+    formatZamboangaAddress,
+    findZamboangaBarangay,
+    resolveZamboangaDistrict,
+} from '../../data/constants';
 import { supabase } from '../../lib/supabaseClient';
 
 const ADDITIVE_STATUSES = ['Halal', 'Doubtful', 'Haram'];
@@ -516,15 +525,106 @@ export default function RegistryModals({
                             </div>
                         </div>
 
-                        <div>
-                            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Address in Zamboanga City</label>
-                            <input
-                                value={modalForm.address || ''}
-                                onChange={(e) => setModalForm(prev => ({ ...prev, address: e.target.value }))}
-                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
-                                placeholder="Street, Barangay, Zamboanga City"
-                            />
-                        </div>
+                        {(() => {
+                            const parsedAddr = parseZamboangaAddress(modalForm.address || '');
+                            const currentStreet = modalForm.street !== undefined ? modalForm.street : parsedAddr.street;
+                            const currentBarangay = modalForm.barangay !== undefined ? modalForm.barangay : parsedAddr.barangay;
+                            const district1Brgys = ZAMBOANGA_BARANGAYS.filter(b => b.district === 'district_1');
+                            const district2Brgys = ZAMBOANGA_BARANGAYS.filter(b => b.district === 'district_2');
+                            const matchedBrgyObj = findZamboangaBarangay(currentBarangay || modalForm.address || '', true);
+                            const previewAddress = formatZamboangaAddress(currentStreet, currentBarangay, modalForm.city || 'Zamboanga City');
+                            const districtInfo = resolveZamboangaDistrict({ address: previewAddress, barangay: currentBarangay });
+
+                            return (
+                                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="text-xs font-bold uppercase tracking-wide text-slate-700 flex items-center gap-1.5">
+                                            <MapPin size={13} className="text-emerald-600" />
+                                            <span>Location in Zamboanga City</span>
+                                        </span>
+                                        {districtInfo && (
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${districtInfo.badgeClass}`}>
+                                                {districtInfo.shortLabel}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+                                        <div>
+                                            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-600">
+                                                Street / Building / Landmark
+                                            </label>
+                                            <input
+                                                value={currentStreet}
+                                                onChange={(e) => {
+                                                    const nextStreet = e.target.value;
+                                                    setModalForm(prev => {
+                                                        const brgyVal = prev.barangay !== undefined
+                                                            ? prev.barangay
+                                                            : parseZamboangaAddress(prev.address || '').barangay;
+                                                        return {
+                                                            ...prev,
+                                                            street: nextStreet,
+                                                            barangay: brgyVal,
+                                                            address: formatZamboangaAddress(nextStreet, brgyVal, prev.city || 'Zamboanga City'),
+                                                        };
+                                                    });
+                                                }}
+                                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                                placeholder="e.g. 193 Don Toribio St or KCC Mall"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-600">
+                                                Barangay *
+                                            </label>
+                                            <select
+                                                value={currentBarangay}
+                                                onChange={(e) => {
+                                                    const nextBrgy = e.target.value;
+                                                    setModalForm(prev => {
+                                                        const streetVal = prev.street !== undefined
+                                                            ? prev.street
+                                                            : parseZamboangaAddress(prev.address || '').street;
+                                                        return {
+                                                            ...prev,
+                                                            street: streetVal,
+                                                            barangay: nextBrgy,
+                                                            address: formatZamboangaAddress(streetVal, nextBrgy, prev.city || 'Zamboanga City'),
+                                                        };
+                                                    });
+                                                }}
+                                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm font-semibold text-slate-800 focus:border-emerald-500 focus:outline-none cursor-pointer"
+                                            >
+                                                <option value="">Select Barangay in Zamboanga City</option>
+                                                <optgroup label="District 1 (West Coast & Downtown)">
+                                                    {district1Brgys.map(b => (
+                                                        <option key={b.name} value={b.name}>{b.name}</option>
+                                                    ))}
+                                                </optgroup>
+                                                <optgroup label="District 2 (East Coast)">
+                                                    {district2Brgys.map(b => (
+                                                        <option key={b.name} value={b.name}>{b.name}</option>
+                                                    ))}
+                                                </optgroup>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-200/70 text-[11px] text-slate-500">
+                                        <span className="truncate">
+                                            <strong className="text-slate-700">Formatted Address</strong> {previewAddress}
+                                        </span>
+                                        {matchedBrgyObj && (
+                                            <span className="font-mono text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 shrink-0">
+                                                Map Pin {matchedBrgyObj.name} {matchedBrgyObj.lat.toFixed(4)}, {matchedBrgyObj.lng.toFixed(4)}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })()}
 
                         <div>
                             <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Facebook Page URL</label>

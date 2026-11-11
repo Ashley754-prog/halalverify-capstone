@@ -12,6 +12,7 @@ import Modal from '../ui/Modal';
 import { supabase } from '../../lib/supabaseClient';
 import { API_BASE_URL, authFetch } from '../../utils/api';
 import { validateUploadFile } from '../../utils/security';
+import { geocodeZamboangaAddress, formatZamboangaAddress, parseZamboangaAddress } from '../../data/constants';
 import EstablishmentContributionForm from './EstablishmentContributionForm';
 import ProductContributionForm from './ProductContributionForm';
 
@@ -192,13 +193,23 @@ export default function ContributionModal({
       }
       const fullDescription = descParts.length > 0 ? descParts.join(' | ') : null;
 
+      const parsedAddr = parseZamboangaAddress(estForm.address || '');
+      const cleanStreet = estForm.street !== undefined ? estForm.street : parsedAddr.street;
+      const cleanBarangay = estForm.barangay !== undefined ? estForm.barangay : parsedAddr.barangay;
+      const cleanCity = estForm.city || 'Zamboanga City';
+      const cleanAddress = formatZamboangaAddress(cleanStreet, cleanBarangay, cleanCity);
+      const resolvedCoords =
+        estForm.latitude && estForm.longitude
+          ? { latitude: estForm.latitude, longitude: estForm.longitude }
+          : await geocodeZamboangaAddress(cleanAddress, cleanCity, cleanBarangay);
+
       const payload = {
         name: estForm.name.trim(),
         type: estForm.type,
-        address: estForm.address.trim(),
-        city: estForm.city || 'Zamboanga City',
-        latitude: estForm.latitude || null,
-        longitude: estForm.longitude || null,
+        address: cleanAddress,
+        city: cleanCity,
+        latitude: resolvedCoords.latitude,
+        longitude: resolvedCoords.longitude,
         halal_tier: estForm.halal_tier || 'halal_certified',
         contact_number: estForm.contact_number?.trim() || null,
         social_media_url: estForm.social_media_url?.trim() || null,

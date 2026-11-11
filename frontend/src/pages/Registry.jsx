@@ -19,7 +19,14 @@ import RegistryModals, { normalizeAdditiveCode } from '../components/registry/Re
 import RegistryDeleteModal from '../components/registry/RegistryDeleteModal';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
-import { getStatusConfig, ESTABLISHMENT_TYPES, geocodeZamboangaAddress } from '../data/constants';
+import {
+    getStatusConfig,
+    ESTABLISHMENT_TYPES,
+    geocodeZamboangaAddress,
+    parseZamboangaAddress,
+    formatZamboangaAddress,
+    resolveEstablishmentCoordinates,
+} from '../data/constants';
 import { extractMenuHighlights } from '../utils/verificationNotes';
 
 const emptyAdditiveForm = {
@@ -34,6 +41,8 @@ const emptyAdditiveForm = {
 const emptyEstablishmentForm = {
     name: '',
     type: 'Restaurant',
+    street: '',
+    barangay: '',
     address: '',
     city: 'Zamboanga City',
     status: 'verified',
@@ -290,9 +299,13 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     ? 'permanently_closed'
                     : 'verified';
 
+            const parsedAddress = parseZamboangaAddress(item.address || '');
+
             setModalForm({
                 name: item.name || '',
                 type: item.type || 'Restaurant',
+                street: parsedAddress.street,
+                barangay: parsedAddress.barangay,
                 address: item.address || '',
                 city: item.city || 'Zamboanga City',
                 phone: item.phone || '',
@@ -557,9 +570,15 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 const description = descParts.join(' | ') || (modalForm.description || null);
 
                 const role = modalForm.submitter_role || 'community';
-                const cleanAddress = safeTrim(modalForm.address) || 'Zamboanga City';
+                const createStreet = modalForm.street !== undefined
+                    ? modalForm.street
+                    : parseZamboangaAddress(modalForm.address || '').street;
+                const createBarangay = modalForm.barangay !== undefined
+                    ? modalForm.barangay
+                    : parseZamboangaAddress(modalForm.address || '').barangay;
                 const cleanCity = safeTrim(modalForm.city) || 'Zamboanga City';
-                const createCoords = await geocodeZamboangaAddress(cleanAddress, cleanCity);
+                const cleanAddress = formatZamboangaAddress(createStreet, createBarangay, cleanCity);
+                const createCoords = await geocodeZamboangaAddress(cleanAddress, cleanCity, createBarangay);
 
                 const estCreatePayload = {
                     name: requireText(modalForm.name, 'Establishment name'),
@@ -656,13 +675,34 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 const description = descParts.join(' | ') || (modalForm.description || null);
 
                 const role = modalForm.submitter_role || 'community';
-                const cleanAddress = safeTrim(modalForm.address);
+                const editStreet = modalForm.street !== undefined
+                    ? modalForm.street
+                    : parseZamboangaAddress(modalForm.address || '').street;
+                const editBarangay = modalForm.barangay !== undefined
+                    ? modalForm.barangay
+                    : parseZamboangaAddress(modalForm.address || '').barangay;
                 const cleanCity = safeTrim(modalForm.city) || 'Zamboanga City';
-                const addressChanged = cleanAddress && cleanAddress.toLowerCase() !== safeTrim(selectedItem.address).toLowerCase();
-                const missingCoords = !selectedItem.latitude || !selectedItem.longitude;
+                const cleanAddress = formatZamboangaAddress(editStreet, editBarangay, cleanCity);
+
+                const prevParsed = parseZamboangaAddress(selectedItem.address || '');
+                const addressChanged =
+                    cleanAddress.toLowerCase() !== (safeTrim(selectedItem.address) || '').toLowerCase() ||
+                    (editBarangay || '').toLowerCase() !== (prevParsed.barangay || '').toLowerCase();
+
+                const validatedExisting = resolveEstablishmentCoordinates({
+                    ...selectedItem,
+                    address: cleanAddress,
+                    barangay: editBarangay,
+                });
+                const coordsMismatched =
+                    !selectedItem.latitude ||
+                    !selectedItem.longitude ||
+                    Math.abs(Number(selectedItem.latitude) - validatedExisting.latitude) > 0.001 ||
+                    Math.abs(Number(selectedItem.longitude) - validatedExisting.longitude) > 0.001;
+
                 let coordsPatch = {};
-                if (addressChanged || missingCoords) {
-                    const resolvedCoords = await geocodeZamboangaAddress(cleanAddress || cleanCity, cleanCity);
+                if (addressChanged || coordsMismatched) {
+                    const resolvedCoords = await geocodeZamboangaAddress(cleanAddress, cleanCity, editBarangay);
                     coordsPatch = {
                         latitude: resolvedCoords.latitude,
                         longitude: resolvedCoords.longitude,

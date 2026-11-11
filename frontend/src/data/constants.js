@@ -41,8 +41,17 @@ const DISTRICT_1_KEYWORDS = [
 export const resolveZamboangaDistrict = (itemOrAddress, fallbackLng = null) => {
   let text;
   let lng = fallbackLng;
+  let primaryAddressText = '';
 
   if (itemOrAddress && typeof itemOrAddress === 'object') {
+    primaryAddressText = [
+      itemOrAddress.barangay,
+      itemOrAddress.address,
+      itemOrAddress.establishments?.address,
+      itemOrAddress.manufacturers?.address,
+    ]
+      .filter(Boolean)
+      .join(', ');
     text = [
       itemOrAddress.address,
       itemOrAddress.name,
@@ -63,7 +72,26 @@ export const resolveZamboangaDistrict = (itemOrAddress, fallbackLng = null) => {
       lng = itemOrAddress.longitude ?? itemOrAddress.establishments?.longitude ?? null;
     }
   } else {
-    text = String(itemOrAddress || '').toLowerCase();
+    primaryAddressText = String(itemOrAddress || '');
+    text = primaryAddressText.toLowerCase();
+  }
+
+  const explicitBrgy = findZamboangaBarangay(primaryAddressText, false);
+  if (explicitBrgy) {
+    if (explicitBrgy.district === 'district_2') {
+      return {
+        id: 'district_2',
+        label: 'District 2 (East Coast)',
+        shortLabel: 'District 2',
+        badgeClass: 'bg-violet-50 text-violet-800 border-violet-200',
+      };
+    }
+    return {
+      id: 'district_1',
+      label: 'District 1 (West / Downtown)',
+      shortLabel: 'District 1',
+      badgeClass: 'bg-cyan-50 text-cyan-800 border-cyan-200',
+    };
   }
 
   for (const kw of DISTRICT_2_KEYWORDS) {
@@ -516,87 +544,342 @@ export const getEstablishmentPhoto = (establishment) => {
 const DEFAULT_ZAMBOANGA_LAT = 6.9075;
 const DEFAULT_ZAMBOANGA_LNG = 122.0770;
 
-const ZAMBOANGA_COORDINATE_LOOKUP = {
-    'don toribio': [6.907671, 122.076997],
-    'pasonanca': [6.9520, 122.0720],
-    'zone i': [6.9075, 122.0760],
-    'zone ii': [6.9100, 122.0730],
-    'zone iii': [6.9142, 122.0745],
-    'governor alvarez': [6.9142, 122.0745],
-    'gov. alvarez': [6.9142, 122.0745],
-    'gov alvarez': [6.9142, 122.0745],
-    'zone iv': [6.9040, 122.0780],
-    'pilar': [6.9040, 122.0780],
-    'pettit': [6.9040, 122.0780],
-    'canelar': [6.9165, 122.0685],
-    'santa maria': [6.9320, 122.0710],
-    'sta. maria': [6.9320, 122.0710],
-    'sta maria': [6.9320, 122.0710],
-    'gov. ramos': [6.9320, 122.0710],
-    'gov ramos': [6.9320, 122.0710],
-    'galvez': [6.9320, 122.0710],
-    'tetuan': [6.9230, 122.0880],
-    'baliwasan': [6.9180, 122.0580],
-    'san roque': [6.9380, 122.0850],
-    'guiwan': [6.9280, 122.0980],
-    'tumaga': [6.9390, 122.0670],
-    'santa catalina': [6.9120, 122.0870],
-    'sta. catalina': [6.9120, 122.0870],
-    'sta catalina': [6.9120, 122.0870],
-    'lustre': [6.9120, 122.0870],
-    'ayala': [6.9600, 121.9600],
-    'putik': [6.9400, 122.1100],
-    'talon-talon': [6.9020, 122.1050],
-    'talon talon': [6.9020, 122.1050],
-    'suterville': [6.9150, 122.0490],
-    'calarian': [6.9250, 122.0280],
-    'divisoria': [6.9530, 122.1380],
-    'cabatangan': [6.9380, 122.0550],
-    'san jose': [6.9210, 122.0490],
-    'sinunuc': [6.9290, 122.0080],
-    'recodo': [6.9450, 121.9850],
-    'culianan': [6.9610, 122.1580],
-    'boalan': [6.9550, 122.1180],
-    'mercedes': [6.9680, 122.1390],
-    'mampang': [6.9150, 122.1250],
-    'veterans': [6.9120, 122.0760],
-    'mayor jaldon': [6.9110, 122.0735],
-    'jaldon': [6.9110, 122.0735],
-    'nuñez': [6.9130, 122.0700],
-    'nunez': [6.9130, 122.0700],
-    'la purisima': [6.9080, 122.0770],
-    'pueblo': [6.9075, 122.0770],
-    'kcc': [6.9180, 122.0820],
-    'sm mindpro': [6.9090, 122.0740],
-    'tugbungan': [6.9235, 122.0940],
-    'camino nuevo': [6.9125, 122.0810],
-    'santa barbara': [6.9095, 122.0835],
-    'sta. barbara': [6.9095, 122.0835],
-    'sta barbara': [6.9095, 122.0835],
-    'rio hondo': [6.9035, 122.0850],
-    'campo islam': [6.9155, 122.0540],
-    'cawa-cawa': [6.9115, 122.0630],
-    'paseo del mar': [6.9025, 122.0805],
+export const ZAMBOANGA_BARANGAYS = [
+    // District 1 (West Coast & Downtown)
+    { name: 'Ayala', district: 'district_1', lat: 6.9686, lng: 121.9467, aliases: ['ayala'] },
+    { name: 'Baliwasan', district: 'district_1', lat: 6.9159, lng: 122.0598, aliases: ['baliwasan'] },
+    { name: 'Baluno', district: 'district_1', lat: 6.9680, lng: 122.0250, aliases: ['baluno'] },
+    { name: 'Cabatangan', district: 'district_1', lat: 6.9398, lng: 122.0582, aliases: ['cabatangan', 'lower cabatangan', 'upper cabatangan'] },
+    { name: 'Calarian', district: 'district_1', lat: 6.9250, lng: 122.0280, aliases: ['calarian', 'upper calarian', 'southcom'] },
+    { name: 'Camino Nuevo', district: 'district_1', lat: 6.9180, lng: 122.0735, aliases: ['camino nuevo'] },
+    { name: 'Campo Islam', district: 'district_1', lat: 6.9155, lng: 122.0540, aliases: ['campo islam'] },
+    { name: 'Canelar', district: 'district_1', lat: 6.9165, lng: 122.0685, aliases: ['canelar'] },
+    { name: 'Cawit', district: 'district_1', lat: 6.9530, lng: 121.9690, aliases: ['cawit'] },
+    { name: 'La Paz', district: 'district_1', lat: 7.0150, lng: 121.9750, aliases: ['la paz'] },
+    { name: 'Labuan', district: 'district_1', lat: 7.0980, lng: 121.9040, aliases: ['labuan'] },
+    { name: 'Limpapa', district: 'district_1', lat: 7.1450, lng: 121.9050, aliases: ['limpapa'] },
+    { name: 'Maasin', district: 'district_1', lat: 6.9590, lng: 121.9810, aliases: ['maasin'] },
+    { name: 'Malagutay', district: 'district_1', lat: 6.9350, lng: 122.0430, aliases: ['malagutay'] },
+    { name: 'Mariki', district: 'district_1', lat: 6.9030, lng: 122.0885, aliases: ['mariki'] },
+    { name: 'Pamucutan', district: 'district_1', lat: 6.9920, lng: 121.9620, aliases: ['pamucutan'] },
+    { name: 'Pasonanca', district: 'district_1', lat: 6.9482, lng: 122.0725, aliases: ['pasonanca'] },
+    { name: 'Patalon', district: 'district_1', lat: 7.0480, lng: 121.9210, aliases: ['patalon'] },
+    { name: 'Recodo', district: 'district_1', lat: 6.9450, lng: 121.9850, aliases: ['recodo'] },
+    { name: 'Rio Hondo', district: 'district_1', lat: 6.9035, lng: 122.0850, aliases: ['rio hondo'] },
+    { name: 'San Jose Cawa-Cawa', district: 'district_1', lat: 6.9140, lng: 122.0645, aliases: ['san jose cawa-cawa', 'san jose cawa cawa', 'san jose cawa', 'cawa-cawa', 'cawa cawa'] },
+    { name: 'San Jose Gusu', district: 'district_1', lat: 6.9175, lng: 122.0495, aliases: ['san jose gusu'] },
+    { name: 'San Roque', district: 'district_1', lat: 6.9380, lng: 122.0520, aliases: ['san roque'] },
+    { name: 'Sinunuc', district: 'district_1', lat: 6.9290, lng: 122.0080, aliases: ['sinunuc'] },
+    { name: 'Sta. Barbara', district: 'district_1', lat: 6.9095, lng: 122.0835, aliases: ['sta. barbara', 'sta barbara', 'santa barbara'] },
+    { name: 'Sta. Maria', district: 'district_1', lat: 6.9320, lng: 122.0710, aliases: ['sta. maria', 'sta maria', 'santa maria'] },
+    { name: 'Sto. Niño', district: 'district_1', lat: 6.9115, lng: 122.0665, aliases: ['sto. niño', 'sto nino', 'santo niño', 'santo nino'] },
+    { name: 'Suterville', district: 'district_1', lat: 6.9150, lng: 122.0520, aliases: ['suterville'] },
+    { name: 'Talisayan', district: 'district_1', lat: 6.9820, lng: 121.9320, aliases: ['talisayan'] },
+    { name: 'Tulungatung', district: 'district_1', lat: 6.9680, lng: 121.9690, aliases: ['tulungatung'] },
+    { name: 'Tumaga', district: 'district_1', lat: 6.9390, lng: 122.0785, aliases: ['tumaga'] },
+    { name: 'Zone I', district: 'district_1', lat: 6.9075, lng: 122.0745, aliases: ['zone i', 'zone 1', 'barangay zone i', 'brgy. zone i'] },
+    { name: 'Zone II', district: 'district_1', lat: 6.9100, lng: 122.0730, aliases: ['zone ii', 'zone 2', 'barangay zone ii', 'brgy. zone ii'] },
+    { name: 'Zone III', district: 'district_1', lat: 6.9090, lng: 122.0755, aliases: ['zone iii', 'zone 3', 'barangay zone iii', 'brgy. zone iii'] },
+    { name: 'Zone IV', district: 'district_1', lat: 6.9049, lng: 122.0788, aliases: ['zone iv', 'zone 4', 'barangay zone iv', 'brgy. zone iv'] },
+
+    // District 2 (East Coast)
+    { name: 'Arena Blanco', district: 'district_2', lat: 6.9135, lng: 122.1320, aliases: ['arena blanco'] },
+    { name: 'Boalan', district: 'district_2', lat: 6.9550, lng: 122.1180, aliases: ['boalan'] },
+    { name: 'Bolong', district: 'district_2', lat: 7.0880, lng: 122.2350, aliases: ['bolong'] },
+    { name: 'Buenavista', district: 'district_2', lat: 7.1680, lng: 122.2650, aliases: ['buenavista'] },
+    { name: 'Bunguiao', district: 'district_2', lat: 7.0550, lng: 122.1950, aliases: ['bunguiao'] },
+    { name: 'Cabaluay', district: 'district_2', lat: 6.9920, lng: 122.1650, aliases: ['cabaluay'] },
+    { name: 'Cacao', district: 'district_2', lat: 6.9750, lng: 122.1250, aliases: ['cacao'] },
+    { name: 'Culianan', district: 'district_2', lat: 6.9680, lng: 122.1480, aliases: ['culianan'] },
+    { name: 'Curuan', district: 'district_2', lat: 7.2050, lng: 122.2450, aliases: ['curuan'] },
+    { name: 'Divisoria', district: 'district_2', lat: 6.9530, lng: 122.1320, aliases: ['divisoria'] },
+    { name: 'Guisao', district: 'district_2', lat: 6.9850, lng: 122.1550, aliases: ['guisao'] },
+    { name: 'Guiwan', district: 'district_2', lat: 6.9280, lng: 122.0980, aliases: ['guiwan'] },
+    { name: 'Kasanyangan', district: 'district_2', lat: 6.9094, lng: 122.0978, aliases: ['kasanyangan'] },
+    { name: 'Lanzones', district: 'district_2', lat: 7.0050, lng: 122.1680, aliases: ['lanzones'] },
+    { name: 'Licomo', district: 'district_2', lat: 7.3250, lng: 122.2950, aliases: ['licomo'] },
+    { name: 'Lumbangan', district: 'district_2', lat: 6.9480, lng: 122.1050, aliases: ['lumbangan'] },
+    { name: 'Lunzuran', district: 'district_2', lat: 6.9580, lng: 122.0920, aliases: ['lunzuran'] },
+    { name: 'Mampang', district: 'district_2', lat: 6.9150, lng: 122.1250, aliases: ['mampang'] },
+    { name: 'Manicahan', district: 'district_2', lat: 7.0250, lng: 122.1920, aliases: ['manicahan'] },
+    { name: 'Mercedes', district: 'district_2', lat: 6.9680, lng: 122.1390, aliases: ['mercedes'] },
+    { name: 'Pasobolong', district: 'district_2', lat: 6.9620, lng: 122.1280, aliases: ['pasobolong'] },
+    { name: 'Putik', district: 'district_2', lat: 6.9409, lng: 122.1025, aliases: ['putik'] },
+    { name: 'Quiniput', district: 'district_2', lat: 7.1850, lng: 122.2680, aliases: ['quiniput'] },
+    { name: 'Salaan', district: 'district_2', lat: 6.9720, lng: 122.1120, aliases: ['salaan'] },
+    { name: 'Sangali', district: 'district_2', lat: 7.0720, lng: 122.2120, aliases: ['sangali'] },
+    { name: 'Sta. Catalina', district: 'district_2', lat: 6.9120, lng: 122.0870, aliases: ['sta. catalina', 'sta catalina', 'santa catalina'] },
+    { name: 'Talon-Talon', district: 'district_2', lat: 6.9095, lng: 122.1050, aliases: ['talon-talon', 'talon talon'] },
+    { name: 'Taluksangay', district: 'district_2', lat: 6.9520, lng: 122.1720, aliases: ['taluksangay'] },
+    { name: 'Tetuan', district: 'district_2', lat: 6.9186, lng: 122.0880, aliases: ['tetuan'] },
+    { name: 'Tigtabon', district: 'district_2', lat: 6.9420, lng: 122.1850, aliases: ['tigtabon'] },
+    { name: 'Tugbungan', district: 'district_2', lat: 6.9235, lng: 122.0940, aliases: ['tugbungan'] },
+    { name: 'Tupilac', district: 'district_2', lat: 7.2650, lng: 122.2750, aliases: ['tupilac'] },
+    { name: 'Victoria', district: 'district_2', lat: 7.0150, lng: 122.1750, aliases: ['victoria'] },
+    { name: 'Vitali', district: 'district_2', lat: 7.3650, lng: 122.3150, aliases: ['vitali'] },
+    { name: 'Zambowood', district: 'district_2', lat: 6.9490, lng: 122.1190, aliases: ['zambowood'] },
+];
+
+const ZAMBOANGA_STREET_LANDMARK_COORDS = {
+    'don toribio': { lat: 6.907671, lng: 122.076997, barangay: 'Tetuan' },
+    'lustre': { lat: 6.9120, lng: 122.0870, barangay: 'Sta. Catalina' },
+    'pilar': { lat: 6.9052, lng: 122.0792, barangay: 'Zone IV' },
+    'paseo del mar': { lat: 6.9008, lng: 122.0806, barangay: 'Zone IV' },
+    'valderosa': { lat: 6.9025, lng: 122.0791, barangay: 'Zone IV' },
+    'valderrosa': { lat: 6.9025, lng: 122.0791, barangay: 'Zone IV' },
+    'zaragoza': { lat: 6.9042, lng: 122.0778, barangay: 'Zone IV' },
+    'sm mindpro': { lat: 6.9077, lng: 122.0761, barangay: 'Zone III' },
+    'la purisima': { lat: 6.9077, lng: 122.0761, barangay: 'Zone III' },
+    'kcc': { lat: 6.9198, lng: 122.0735, barangay: 'Camino Nuevo' },
+    'camins': { lat: 6.9198, lng: 122.0735, barangay: 'Camino Nuevo' },
+    'zppsu': { lat: 6.9145, lng: 122.0625, barangay: 'Baliwasan' },
+    'r.t. lim': { lat: 6.9145, lng: 122.0625, barangay: 'Baliwasan' },
+    'veterans': { lat: 6.9117, lng: 122.0762, barangay: 'Zone II' },
+    'mayor jaldon': { lat: 6.9110, lng: 122.0735, barangay: 'Canelar' },
+    'gov. alvarez': { lat: 6.9142, lng: 122.0745, barangay: 'Zone III' },
+    'governor alvarez': { lat: 6.9142, lng: 122.0745, barangay: 'Zone III' },
+    'gov. ramos': { lat: 6.9320, lng: 122.0710, barangay: 'Sta. Maria' },
+    'atilano': { lat: 6.9181, lng: 122.0884, barangay: 'Tetuan' },
+    'yubenco starmall': { lat: 6.9357, lng: 122.0921, barangay: 'Putik' },
+};
+
+/**
+ * Finds the matching Zamboanga Barangay object from an explicit barangay name or full address string.
+ */
+export const findZamboangaBarangay = (text, allowLandmarkInference = false) => {
+    const raw = String(text || '').trim().toLowerCase();
+    if (!raw) return null;
+
+    // 1. Check exact match against barangay names or aliases
+    for (const brgy of ZAMBOANGA_BARANGAYS) {
+        if (brgy.name.toLowerCase() === raw || brgy.aliases.includes(raw)) {
+            return brgy;
+        }
+    }
+
+    // 2. Check substring match against barangay aliases (longest alias first so 'Zone IV' beats 'Zone I' and 'San Jose Gusu' beats 'San Jose')
+    const allAliasPairs = [];
+    for (const brgy of ZAMBOANGA_BARANGAYS) {
+        for (const alias of brgy.aliases) {
+            allAliasPairs.push({ alias, brgy });
+        }
+    }
+    allAliasPairs.sort((a, b) => b.alias.length - a.alias.length);
+
+    for (const { alias, brgy } of allAliasPairs) {
+        const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`(?:^|[^a-z0-9])${escaped}(?:$|[^a-z0-9])`, 'i');
+        if (regex.test(raw)) {
+            return brgy;
+        }
+    }
+
+    // 3. Optional landmark/street inference when no explicit barangay name was written
+    if (allowLandmarkInference) {
+        for (const [kw, info] of Object.entries(ZAMBOANGA_STREET_LANDMARK_COORDS)) {
+            if (raw.includes(kw)) {
+                return ZAMBOANGA_BARANGAYS.find((b) => b.name === info.barangay) || null;
+            }
+        }
+    }
+
+    return null;
+};
+
+/**
+ * Splits a full Zamboanga City address string into structured { street, barangay, city } fields.
+ */
+export const parseZamboangaAddress = (rawAddress = '') => {
+    const text = String(rawAddress || '').trim();
+    if (!text) {
+        return { street: '', barangay: '', city: 'Zamboanga City' };
+    }
+
+    const explicitBrgy = findZamboangaBarangay(text, false);
+    const inferredBrgy = explicitBrgy || findZamboangaBarangay(text, true);
+    const barangayName = inferredBrgy ? inferredBrgy.name : '';
+
+    const segments = text
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+    const IGNORE_SEGMENTS = [
+        'zamboanga city',
+        '7000 zamboanga city',
+        'zamboanga del sur',
+        '7000 zamboanga del sur',
+        '7000',
+        'philippines',
+    ];
+
+    const streetParts = [];
+    for (const seg of segments) {
+        const segLower = seg.toLowerCase().trim();
+        if (IGNORE_SEGMENTS.includes(segLower)) continue;
+
+        if (explicitBrgy) {
+            const strippedBrgyPrefix = segLower
+                .replace(/^(?:brgy\.?|barangay)\s+/i, '')
+                .trim();
+            if (
+                strippedBrgyPrefix === explicitBrgy.name.toLowerCase() ||
+                explicitBrgy.aliases.includes(strippedBrgyPrefix)
+            ) {
+                continue;
+            }
+        }
+        streetParts.push(seg);
+    }
+
+    return {
+        street: streetParts.join(', '),
+        barangay: barangayName,
+        city: 'Zamboanga City',
+    };
+};
+
+/**
+ * Combines structured Street / Landmark and Barangay inputs into a standardized Zamboanga City address string.
+ */
+export const formatZamboangaAddress = (street = '', barangay = '', city = 'Zamboanga City') => {
+    const cleanCity = String(city || 'Zamboanga City').trim() || 'Zamboanga City';
+    const cleanBrgy = String(barangay || '').trim();
+    let cleanStreet = String(street || '').trim();
+
+    if (cleanStreet) {
+        const parts = cleanStreet
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .filter((s) => {
+                const lower = s.toLowerCase().replace(/^(?:brgy\.?|barangay)\s+/i, '').trim();
+                if (lower === 'zamboanga city' || lower === 'zamboanga del sur' || lower === 'philippines' || lower === '7000' || lower === '7000 zamboanga del sur') {
+                    return false;
+                }
+                if (cleanBrgy && lower === cleanBrgy.toLowerCase()) {
+                    return false;
+                }
+                return true;
+            });
+        cleanStreet = parts.join(', ');
+    }
+
+    if (cleanStreet && cleanBrgy) {
+        return `${cleanStreet}, ${cleanBrgy}, ${cleanCity}`;
+    }
+    if (cleanBrgy) {
+        return `${cleanBrgy}, ${cleanCity}`;
+    }
+    if (cleanStreet) {
+        return `${cleanStreet}, ${cleanCity}`;
+    }
+    return cleanCity;
+};
+
+/**
+ * Synchronously validates or resolves an establishment's map coordinates so that if its address
+ * explicitly specifies a Zamboanga Barangay, the pin is guaranteed to sit inside that Barangay.
+ */
+export const resolveEstablishmentCoordinates = (est) => {
+    if (!est) {
+        return { latitude: DEFAULT_ZAMBOANGA_LAT, longitude: DEFAULT_ZAMBOANGA_LNG };
+    }
+
+    const rawLat = Number(est.latitude);
+    const rawLng = Number(est.longitude);
+    const hasValidStoredCoords =
+        !Number.isNaN(rawLat) &&
+        !Number.isNaN(rawLng) &&
+        rawLat >= 6.80 &&
+        rawLat <= 7.45 &&
+        rawLng >= 121.80 &&
+        rawLng <= 122.45;
+
+    const explicitBrgy = findZamboangaBarangay(est.barangay || est.address || '', false);
+
+    if (explicitBrgy) {
+        if (hasValidStoredCoords) {
+            const latDiff = Math.abs(rawLat - explicitBrgy.lat);
+            const lngDiff = Math.abs(rawLng - explicitBrgy.lng);
+            // If stored coordinates are within ~1.8 km of the selected barangay center, keep exact street pin
+            if (latDiff <= 0.016 && lngDiff <= 0.016) {
+                return { latitude: rawLat, longitude: rawLng };
+            }
+        }
+        // Otherwise snap to the selected barangay center
+        return {
+            latitude: Number(explicitBrgy.lat.toFixed(6)),
+            longitude: Number(explicitBrgy.lng.toFixed(6)),
+        };
+    }
+
+    if (hasValidStoredCoords) {
+        return { latitude: rawLat, longitude: rawLng };
+    }
+
+    const inferredBrgy = findZamboangaBarangay(est.address || '', true);
+    if (inferredBrgy) {
+        return {
+            latitude: Number(inferredBrgy.lat.toFixed(6)),
+            longitude: Number(inferredBrgy.lng.toFixed(6)),
+        };
+    }
+
+    return { latitude: DEFAULT_ZAMBOANGA_LAT, longitude: DEFAULT_ZAMBOANGA_LNG };
 };
 
 /**
  * Resolves GPS latitude and longitude coordinates for an address in Zamboanga City.
- * Queries OpenStreetMap Nominatim first and falls back to the local Zamboanga barangay dictionary.
+ * Always prioritizes the selected Barangay so changing Barangay (e.g. Baliwasan -> Pasonanca)
+ * is guaranteed to move the map pin to the new Barangay.
  */
-export const geocodeZamboangaAddress = async (address, city = 'Zamboanga City') => {
+export const geocodeZamboangaAddress = async (address, city = 'Zamboanga City', explicitBarangay = '') => {
     const addrClean = (address || '').trim();
     const cityClean = (city || 'Zamboanga City').trim();
     const addrLower = addrClean.toLowerCase();
 
-    if (addrLower.includes('don toribio')) {
-        return { latitude: 6.907671, longitude: 122.076997 };
+    const targetBrgy =
+        findZamboangaBarangay(explicitBarangay, false) ||
+        findZamboangaBarangay(addrClean, false);
+
+    const parsed = parseZamboangaAddress(addrClean);
+    const streetClean = parsed.street;
+
+    // 1. If there is no explicit barangay, check known Zamboanga street/landmark coordinates first
+    if (!targetBrgy) {
+        for (const [kw, info] of Object.entries(ZAMBOANGA_STREET_LANDMARK_COORDS)) {
+            if (addrLower.includes(kw)) {
+                return {
+                    latitude: Number(info.lat.toFixed(6)),
+                    longitude: Number(info.lng.toFixed(6)),
+                };
+            }
+        }
+    } else if (streetClean) {
+        // Check if the street matches a known landmark located INSIDE the selected barangay
+        const streetLower = streetClean.toLowerCase();
+        for (const [kw, info] of Object.entries(ZAMBOANGA_STREET_LANDMARK_COORDS)) {
+            if (streetLower.includes(kw) && info.barangay === targetBrgy.name) {
+                return {
+                    latitude: Number(info.lat.toFixed(6)),
+                    longitude: Number(info.lng.toFixed(6)),
+                };
+            }
+        }
     }
 
+    // 2. Query OpenStreetMap Nominatim for street-level accuracy, strictly bounded to the selected Barangay
     if (addrClean) {
         try {
-            const query = addrLower.includes('zamboanga')
+            const query = targetBrgy
+                ? streetClean
+                    ? `${streetClean}, ${targetBrgy.name}, ${cityClean}, Philippines`
+                    : `${targetBrgy.name}, ${cityClean}, Philippines`
+                : addrLower.includes('zamboanga')
                 ? `${addrClean}, Philippines`
                 : `${addrClean}, ${cityClean}, Philippines`;
+
             const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 1800);
@@ -611,10 +894,22 @@ export const geocodeZamboangaAddress = async (address, city = 'Zamboanga City') 
                     const lat = parseFloat(data[0].lat);
                     const lon = parseFloat(data[0].lon);
                     if (lat >= 6.80 && lat <= 7.45 && lon >= 121.80 && lon <= 122.45) {
-                        return {
-                            latitude: Number(lat.toFixed(6)),
-                            longitude: Number(lon.toFixed(6)),
-                        };
+                        if (targetBrgy) {
+                            const withinBrgy =
+                                Math.abs(lat - targetBrgy.lat) <= 0.015 &&
+                                Math.abs(lon - targetBrgy.lng) <= 0.015;
+                            if (withinBrgy) {
+                                return {
+                                    latitude: Number(lat.toFixed(6)),
+                                    longitude: Number(lon.toFixed(6)),
+                                };
+                            }
+                        } else {
+                            return {
+                                latitude: Number(lat.toFixed(6)),
+                                longitude: Number(lon.toFixed(6)),
+                            };
+                        }
                     }
                 }
             }
@@ -623,19 +918,25 @@ export const geocodeZamboangaAddress = async (address, city = 'Zamboanga City') 
         }
     }
 
-    let baseLat = DEFAULT_ZAMBOANGA_LAT;
-    let baseLng = DEFAULT_ZAMBOANGA_LNG;
+    // 3. Always fall back to the selected Barangay's exact coordinates when a Barangay is chosen
+    if (targetBrgy) {
+        return {
+            latitude: Number(targetBrgy.lat.toFixed(6)),
+            longitude: Number(targetBrgy.lng.toFixed(6)),
+        };
+    }
 
-    for (const [key, [kLat, kLng]] of Object.entries(ZAMBOANGA_COORDINATE_LOOKUP)) {
-        if (addrLower.includes(key)) {
-            baseLat = kLat;
-            baseLng = kLng;
-            break;
-        }
+    // 4. Final fallback to inferred landmark or city center
+    const inferredBrgy = findZamboangaBarangay(addrClean, true);
+    if (inferredBrgy) {
+        return {
+            latitude: Number(inferredBrgy.lat.toFixed(6)),
+            longitude: Number(inferredBrgy.lng.toFixed(6)),
+        };
     }
 
     return {
-        latitude: Number(baseLat.toFixed(6)),
-        longitude: Number(baseLng.toFixed(6)),
+        latitude: Number(DEFAULT_ZAMBOANGA_LAT.toFixed(6)),
+        longitude: Number(DEFAULT_ZAMBOANGA_LNG.toFixed(6)),
     };
 };

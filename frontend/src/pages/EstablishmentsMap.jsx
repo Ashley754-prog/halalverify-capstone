@@ -17,7 +17,7 @@ import AuthPromptModal from '../components/submissions/AuthPromptModal';
 import ReportIssueModal from '../components/reports/ReportIssueModal';
 import EstablishmentDetailModal from '../components/map/EstablishmentDetailModal';
 import SearchBar from '../components/ui/SearchBar';
-import { getStatusConfig, ZAMBOANGA_DISTRICTS, resolveZamboangaDistrict } from '../data/constants';
+import { getStatusConfig, ZAMBOANGA_DISTRICTS, resolveZamboangaDistrict, resolveEstablishmentCoordinates } from '../data/constants';
 import EstablishmentsSidebarList from '../components/map/EstablishmentsSidebarList';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
@@ -191,7 +191,16 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                 let query = supabase.from('establishments').select('*, certifying_bodies(*)').order('name');
                 const { data: sbData, error: sbErr } = await query;
                 if (!sbErr && sbData && sbData.length > 0) {
-                    let withCoords = sbData.filter((e) => e.latitude && e.longitude);
+                    let withCoords = sbData
+                        .map((e) => {
+                            const coords = resolveEstablishmentCoordinates(e);
+                            return {
+                                ...e,
+                                latitude: coords.latitude,
+                                longitude: coords.longitude,
+                            };
+                        })
+                        .filter((e) => e.latitude && e.longitude);
                     withCoords = withCoords.filter((e) => {
                         const st = (e.halal_status || '').toLowerCase().trim();
                         if (
@@ -275,7 +284,16 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                 if (response.ok) {
                     const json = await response.json();
                     const data = json.data || [];
-                    let withCoords = data.filter((e) => e.latitude && e.longitude);
+                    let withCoords = data
+                        .map((e) => {
+                            const coords = resolveEstablishmentCoordinates(e);
+                            return {
+                                ...e,
+                                latitude: coords.latitude,
+                                longitude: coords.longitude,
+                            };
+                        })
+                        .filter((e) => e.latitude && e.longitude);
                     if (selectedStatus === 'all') {
                         withCoords = withCoords.filter((e) => {
                             const cfg = getStatusConfig(e);
