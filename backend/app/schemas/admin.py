@@ -10,6 +10,8 @@ class EstablishmentVerifyRequest(BaseModel):
     certifying_body_id: Optional[str] = Field(None, description="Assigned certifying body ID")
     name: Optional[str] = Field(None, description="Corrected establishment name")
     address: Optional[str] = Field(None, description="Corrected establishment address")
+    latitude: Optional[float] = Field(None, description="Corrected GPS latitude")
+    longitude: Optional[float] = Field(None, description="Corrected GPS longitude")
     type: Optional[str] = Field(None, description="Corrected establishment venue category")
     phone: Optional[str] = Field(None, description="Corrected contact phone")
     source_url: Optional[str] = Field(None, description="Corrected website or social media URL")

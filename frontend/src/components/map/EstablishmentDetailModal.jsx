@@ -11,7 +11,6 @@ import {
     Navigation,
     Store,
     HeartHandshake,
-    Leaf,
     Compass,
     Camera,
 } from 'lucide-react';
@@ -257,22 +256,6 @@ export default function EstablishmentDetailModal({
 
                         <p className="text-slate-600 text-[11px] leading-relaxed">
                             Establishment provides dedicated pork-free options and food accommodations for Muslim diners. Not under formal third-party certification.
-                        </p>
-                    </div>
-                ) : statusConfig.key === 'vegetarian_vegan' ? (
-                    <div className="rounded-xl bg-teal-50/70 border border-teal-200 p-3 text-xs space-y-1.5">
-                        <div className="flex items-center justify-between">
-                            <span className="font-bold text-teal-900 flex items-center gap-1.5">
-                                <Leaf size={15} className="text-teal-600" />
-                                Plant-Based / Vegan Kitchen
-                            </span>
-                            <span className="font-bold text-[10px] text-teal-800 bg-white px-2 py-0.5 rounded border border-teal-300">
-                                100% Plant-Based
-                            </span>
-                        </div>
-
-                        <p className="text-slate-600 text-[11px] leading-relaxed">
-                            Vegetarian and plant-based menu with zero meat or animal-derived ingredients, eliminating halal slaughter and non-halal gelatin concerns.
                         </p>
                     </div>
                 ) : (

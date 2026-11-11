@@ -448,8 +448,8 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
                 pass
 
         if hcb_matched and ocr_corroborated_hcb:
-            score += 35
-            audit_notes.append(f"Accredited Halal Certifying Body corroborated on certificate: {hcb_name} (+35 pts)")
+            score += 40
+            audit_notes.append(f"Accredited Halal Certifying Body corroborated on certificate: {hcb_name} (+40 pts)")
         elif hcb_matched:
             score += 15
             audit_notes.append(f"Certifying body selected ({hcb_name}), awaiting document OCR corroboration (+15 pts)")
@@ -491,15 +491,14 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
         else:
             reasons.append("Certificate document text not available to confirm establishment holder name")
 
-        # Jurisdiction Check (10 pts)
-        if is_zamboanga:
-            score += 10
-            audit_notes.append("Jurisdiction verified: Located within Zamboanga City (+10 pts)")
-
-        # Contact Phone (5 pts)
+        # Contact Phone or Storefront Photo (10 pts)
+        has_storefront_photo = bool(payload.get("logo_url") and payload.get("logo_url") != "none")
         if is_valid_phone:
-            score += 5
-            audit_notes.append(f"Public contact validated: active PH format ({contact_phone}) (+5 pts)")
+            score += 10
+            audit_notes.append(f"Public contact validated: active PH format ({contact_phone}) (+10 pts)")
+        elif has_storefront_photo:
+            score += 10
+            audit_notes.append("Visual evidence verified: Storefront photo attached (+10 pts)")
 
         # Strict Invariant Guardrails for Certified Tier
         has_fatal_flaw = is_expired or (not hcb_matched) or is_duplicate or (not is_zamboanga)
@@ -549,32 +548,32 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
             else "Vegetarian / Vegan"
         )
 
-        if is_zamboanga:
-            score += 25
-            audit_notes.append("Jurisdiction verified: Located within Zamboanga City (+25 pts)")
-        if is_valid_phone:
-            score += 20
-            audit_notes.append(f"Active contact number validated: {contact_phone} (+20 pts)")
-
         has_photo = bool((payload.get("logo_url") and payload.get("logo_url") != "none") or (payload.get("certificate_url") and payload.get("certificate_url") != "none"))
         if has_photo:
-            score += 20
-            audit_notes.append("Visual evidence verified: Storefront or menu photo attached (+20 pts)")
+            score += 30
+            audit_notes.append("Visual evidence verified: Storefront or menu photo attached (+30 pts)")
         else:
             reasons.append("No physical storefront or menu photo attached")
 
-        if payload.get("product_names"):
-            score += 15
-            audit_notes.append("Verified dishes / menu offerings specified (+15 pts)")
+        if is_valid_phone:
+            score += 25
+            audit_notes.append(f"Active contact number validated: {contact_phone} (+25 pts)")
+
+        if payload.get("product_names") or payload.get("menu_highlights"):
+            score += 20
+            audit_notes.append("Verified dishes / menu offerings specified (+20 pts)")
 
         if has_social_link:
-            score += 10
-            audit_notes.append(f"Public digital footprint verified: {live_note} (+10 pts)")
+            score += 15
+            audit_notes.append(f"Public digital footprint verified: {live_note} (+15 pts)")
 
         amenities = payload.get("amenities") or []
         if amenities:
             score += 10
             audit_notes.append(f"Guest amenities declared: {', '.join(amenities)} (+10 pts)")
+
+        if not is_zamboanga or is_duplicate:
+            score = 0
 
         # Policy: self-declared community tiers are never auto-published.
         # They may be scored and screened automatically, but a human must confirm

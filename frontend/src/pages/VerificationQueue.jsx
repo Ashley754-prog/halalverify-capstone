@@ -504,6 +504,29 @@ export default function VerificationQueue({ onViewChange, initialTab = 'establis
                 ? `${adminNotes?.trim() ? `${adminNotes.trim()}\n` : ''}Address corrected by admin. Submitted as: ${inspectingItem.original_address || 'none'}`
                 : (adminNotes?.trim() ? adminNotes : undefined);
 
+            const hasManualPin =
+                (inspectingItem.pin_source === 'map' || inspectingItem.pin_source === 'gps') &&
+                Number.isFinite(Number(inspectingItem.latitude)) &&
+                Number.isFinite(Number(inspectingItem.longitude));
+
+            let verifiedCoords = null;
+            if (hasManualPin) {
+                verifiedCoords = {
+                    latitude: Number(inspectingItem.latitude),
+                    longitude: Number(inspectingItem.longitude),
+                };
+            } else if (addressEdited) {
+                try {
+                    verifiedCoords = await geocodeZamboangaAddress(
+                        inspectingItem.address,
+                        inspectingItem.city || 'Zamboanga City',
+                        inspectingItem.barangay || ''
+                    );
+                } catch (pinErr) {
+                    console.warn('Could not re-pin corrected address:', pinErr);
+                }
+            }
+
             const res = await authFetch(`${API_BASE_URL}/api/v1/admin/establishments/${estId}/verify`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
@@ -515,6 +538,8 @@ export default function VerificationQueue({ onViewChange, initialTab = 'establis
                     certifying_body_id: selectedHcbId || undefined,
                     name: inspectingItem.name || undefined,
                     address: inspectingItem.address || undefined,
+                    latitude: verifiedCoords ? verifiedCoords.latitude : undefined,
+                    longitude: verifiedCoords ? verifiedCoords.longitude : undefined,
                     type: inspectingItem.type || undefined,
                     phone: inspectingItem.phone || inspectingItem.contact_number || undefined,
                     source_url: inspectingItem.source_url || inspectingItem.social_media_url || undefined,
@@ -532,20 +557,14 @@ export default function VerificationQueue({ onViewChange, initialTab = 'establis
                 throw new Error(errData.detail || 'Failed to update establishment verification status.');
             }
 
-            // Re-pin the map location when the admin corrected the address during review
-            if (addressEdited) {
+            if (verifiedCoords) {
                 try {
-                    const coords = await geocodeZamboangaAddress(
-                        inspectingItem.address,
-                        inspectingItem.city || 'Zamboanga City',
-                        inspectingItem.barangay || ''
-                    );
                     await supabase
                         .from('establishments')
                         .update({
                             address: inspectingItem.address,
-                            latitude: coords.latitude,
-                            longitude: coords.longitude,
+                            latitude: verifiedCoords.latitude,
+                            longitude: verifiedCoords.longitude,
                         })
                         .eq('id', estId);
                 } catch (pinErr) {

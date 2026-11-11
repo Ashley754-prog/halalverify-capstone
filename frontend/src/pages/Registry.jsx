@@ -242,7 +242,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
         } else {
             const statusConfig = getStatusConfig(item);
             const isCert = (statusConfig.key === 'verified' || item.halal_tier === 'halal_certified') && Boolean(item.certifying_body_id || item.certifying_bodies);
-            const validTiers = ['halal_certified', 'muslim_owned', 'muslim_friendly', 'vegetarian_vegan'];
+            const validTiers = ['halal_certified', 'muslim_owned', 'muslim_friendly'];
             let tierKey;
             if (item.halal_tier && validTiers.includes(item.halal_tier)) {
                 tierKey = item.halal_tier;
@@ -250,10 +250,6 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 tierKey = 'halal_certified';
             } else if (statusConfig.key === 'muslim_owned' || statusConfig.key === 'community') {
                 tierKey = 'muslim_owned';
-            } else if (statusConfig.key === 'muslim_friendly') {
-                tierKey = 'muslim_friendly';
-            } else if (statusConfig.key === 'vegetarian_vegan') {
-                tierKey = 'vegetarian_vegan';
             } else {
                 tierKey = 'muslim_friendly';
             }
@@ -295,6 +291,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     : 'verified';
 
             const parsedAddress = parseZamboangaAddress(item.address || '');
+            const initialCoords = resolveEstablishmentCoordinates(item);
 
             setModalForm({
                 name: item.name || '',
@@ -303,6 +300,9 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 barangay: parsedAddress.barangay,
                 address: item.address || '',
                 city: item.city || 'Zamboanga City',
+                latitude: initialCoords.latitude,
+                longitude: initialCoords.longitude,
+                pin_source: null,
                 phone: item.phone || '',
                 certNo: item.certificate_number || item.certNo || '',
                 expiry: item.expiry_date || item.expiry || '',
@@ -545,8 +545,6 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     adminNotes = '[Tier: muslim_owned] Community Listed - Muslim-Owned (Pork-Free Kitchen)';
                 } else if (tier === 'muslim_friendly') {
                     adminNotes = '[Tier: muslim_friendly] Community Listed - Muslim-Friendly Venue';
-                } else if (tier === 'vegetarian_vegan') {
-                    adminNotes = '[Tier: vegetarian_vegan] Community Listed - Vegetarian / Vegan';
                 } else if (tier === 'halal_certified') {
                     adminNotes = '[Tier: halal_certified] Formally Certified Halal Establishment';
                 }
@@ -570,7 +568,13 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     : parseZamboangaAddress(modalForm.address || '').barangay;
                 const cleanCity = safeTrim(modalForm.city) || 'Zamboanga City';
                 const cleanAddress = formatZamboangaAddress(createStreet, createBarangay, cleanCity);
-                const createCoords = await geocodeZamboangaAddress(cleanAddress, cleanCity, createBarangay);
+                const hasManualPin =
+                    (modalForm.pin_source === 'map' || modalForm.pin_source === 'gps') &&
+                    Number.isFinite(Number(modalForm.latitude)) &&
+                    Number.isFinite(Number(modalForm.longitude));
+                const createCoords = hasManualPin
+                    ? { latitude: Number(modalForm.latitude), longitude: Number(modalForm.longitude) }
+                    : await geocodeZamboangaAddress(cleanAddress, cleanCity, createBarangay);
 
                 const estCreatePayload = {
                     name: requireText(modalForm.name, 'Establishment name'),
@@ -648,8 +652,6 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     adminNotes = '[Tier: muslim_owned] Community Listed - Muslim-Owned (Pork-Free Kitchen)';
                 } else if (tier === 'muslim_friendly') {
                     adminNotes = '[Tier: muslim_friendly] Community Listed - Muslim-Friendly Venue';
-                } else if (tier === 'vegetarian_vegan') {
-                    adminNotes = '[Tier: vegetarian_vegan] Community Listed - Vegetarian / Vegan';
                 } else if (tier === 'halal_certified') {
                     adminNotes = '[Tier: halal_certified] Formally Certified Halal Establishment';
                 }
@@ -690,8 +692,18 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     Math.abs(Number(selectedItem.latitude) - validatedExisting.latitude) > 0.001 ||
                     Math.abs(Number(selectedItem.longitude) - validatedExisting.longitude) > 0.001;
 
+                const hasManualEditPin =
+                    (modalForm.pin_source === 'map' || modalForm.pin_source === 'gps') &&
+                    Number.isFinite(Number(modalForm.latitude)) &&
+                    Number.isFinite(Number(modalForm.longitude));
+
                 let coordsPatch = {};
-                if (addressChanged || coordsMismatched) {
+                if (hasManualEditPin) {
+                    coordsPatch = {
+                        latitude: Number(modalForm.latitude),
+                        longitude: Number(modalForm.longitude),
+                    };
+                } else if (addressChanged || coordsMismatched) {
                     const resolvedCoords = await geocodeZamboangaAddress(cleanAddress, cleanCity, editBarangay);
                     coordsPatch = {
                         latitude: resolvedCoords.latitude,

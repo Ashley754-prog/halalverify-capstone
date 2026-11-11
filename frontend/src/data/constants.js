@@ -868,10 +868,17 @@ export const resolveEstablishmentCoordinates = (est) => {
 
     if (explicitBrgy) {
         if (hasValidStoredCoords) {
+            if (est.pin_source === 'map' || est.pin_source === 'gps') {
+                return { latitude: rawLat, longitude: rawLng };
+            }
+            const isGenericDefault =
+                Math.abs(rawLat - DEFAULT_ZAMBOANGA_LAT) < 0.0005 &&
+                Math.abs(rawLng - DEFAULT_ZAMBOANGA_LNG) < 0.0005 &&
+                (Math.abs(explicitBrgy.lat - DEFAULT_ZAMBOANGA_LAT) > 0.008 ||
+                    Math.abs(explicitBrgy.lng - DEFAULT_ZAMBOANGA_LNG) > 0.008);
             const latDiff = Math.abs(rawLat - explicitBrgy.lat);
             const lngDiff = Math.abs(rawLng - explicitBrgy.lng);
-            // If stored coordinates are within ~1.8 km of the selected barangay center, keep exact street pin
-            if (latDiff <= 0.016 && lngDiff <= 0.016) {
+            if (!isGenericDefault && latDiff <= 0.045 && lngDiff <= 0.045) {
                 return { latitude: rawLat, longitude: rawLng };
             }
         }

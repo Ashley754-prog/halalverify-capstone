@@ -5,8 +5,6 @@ import {
   HeartHandshake,
   BadgeCheck,
   Store,
-  Leaf,
-  Navigation,
   CheckCircle2,
   ArrowRight,
   ArrowLeft,
@@ -18,7 +16,6 @@ import {
   SUBMITTER_ROLES,
   findZamboangaBarangay,
   parseZamboangaAddress,
-  formatZamboangaAddress,
   isValidPhPhone,
 } from '../../data/constants';
 import AddressFields from '../shared/AddressFields';
@@ -57,16 +54,7 @@ const TIER_STYLES = {
     activeBorder: 'border-indigo-600 bg-indigo-50/70 ring-1 ring-indigo-500/20',
     dot: 'border-indigo-600 bg-indigo-600',
   },
-  vegetarian_vegan: {
-    icon: Leaf,
-    iconActive: 'bg-teal-600 text-white',
-    badge: 'bg-teal-50 text-teal-700 border-teal-200',
-    activeBorder: 'border-teal-600 bg-teal-50/70 ring-1 ring-teal-500/20',
-    dot: 'border-teal-600 bg-teal-600',
-  },
 };
-
-const ZAMBOANGA_BOUNDS = { latMin: 6.8, latMax: 7.45, lngMin: 121.8, lngMax: 122.45 };
 
 export default function EstablishmentContributionForm({
   estForm,
@@ -80,8 +68,6 @@ export default function EstablishmentContributionForm({
   const styles = getFieldStyles('form');
   const [currentStep, setCurrentStep] = useState(1);
   const [stepError, setStepError] = useState('');
-  const [locatingGps, setLocatingGps] = useState(false);
-  const [gpsStatus, setGpsStatus] = useState('');
   const [pendingDish, setPendingDish] = useState('');
 
   const currentTier = estForm.halal_tier || 'halal_certified';
@@ -89,7 +75,6 @@ export default function EstablishmentContributionForm({
   const dishes = estForm.product_names
     ? estForm.product_names.split(',').map((s) => s.trim()).filter(Boolean)
     : [];
-  const hasGpsPin = estForm.pin_source === 'gps' && estForm.latitude && estForm.longitude;
 
   const getAddressParts = () => {
     const parsed = parseZamboangaAddress(estForm.address || '');
@@ -99,85 +84,9 @@ export default function EstablishmentContributionForm({
     };
   };
 
-  // Typing or picking an address drops any pin that no longer matches it.
-  // A precise GPS pin is kept only while it still sits near the chosen barangay.
   const handleAddressChange = (patch) => {
     setStepError('');
-    setEstForm((prev) => {
-      const next = { ...prev, ...patch };
-      if (patch.address !== undefined && patch.address !== prev.address) {
-        let keepGps = false;
-        if (prev.pin_source === 'gps' && prev.latitude && prev.longitude) {
-          const brgy = findZamboangaBarangay(next.barangay, false);
-          keepGps = !brgy
-            || (Math.abs(prev.latitude - brgy.lat) <= 0.02 && Math.abs(prev.longitude - brgy.lng) <= 0.02);
-        }
-        if (!keepGps) {
-          next.latitude = null;
-          next.longitude = null;
-          next.pin_source = null;
-        }
-      }
-      return next;
-    });
-  };
-
-  const handleUseCurrentGps = () => {
-    if (!navigator.geolocation) {
-      setGpsStatus('GPS is not supported by your browser.');
-      return;
-    }
-    setLocatingGps(true);
-    setGpsStatus('');
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const lat = Number(pos.coords.latitude.toFixed(6));
-        const lng = Number(pos.coords.longitude.toFixed(6));
-        const inBounds =
-          lat >= ZAMBOANGA_BOUNDS.latMin && lat <= ZAMBOANGA_BOUNDS.latMax &&
-          lng >= ZAMBOANGA_BOUNDS.lngMin && lng <= ZAMBOANGA_BOUNDS.lngMax;
-
-        if (!inBounds) {
-          setLocatingGps(false);
-          setGpsStatus('Your device reports a location outside Zamboanga City. Choose the barangay instead.');
-          return;
-        }
-
-        setEstForm((prev) => ({ ...prev, latitude: lat, longitude: lng, pin_source: 'gps' }));
-
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
-            { headers: { 'Accept-Language': 'en' } }
-          );
-          if (res.ok) {
-            const data = await res.json();
-            if (data?.display_name) {
-              const parsed = parseZamboangaAddress(data.display_name);
-              setEstForm((prev) => {
-                const hasAddress = (prev.street || '').trim() || (prev.barangay || '').trim() || (prev.address || '').trim();
-                if (hasAddress) return prev;
-                return {
-                  ...prev,
-                  street: parsed.street,
-                  barangay: parsed.barangay,
-                  address: formatZamboangaAddress(parsed.street, parsed.barangay, prev.city || 'Zamboanga City'),
-                };
-              });
-            }
-          }
-        } catch {
-          // Reverse geocoding is optional. The GPS pin is already saved.
-        }
-        setLocatingGps(false);
-        setGpsStatus('');
-      },
-      () => {
-        setLocatingGps(false);
-        setGpsStatus('Could not access GPS. Please allow location access or choose the barangay.');
-      },
-      { enableHighAccuracy: true, timeout: 8000 }
-    );
+    setEstForm((prev) => ({ ...prev, ...patch }));
   };
 
   const validateStep1 = () => {
@@ -343,51 +252,12 @@ export default function EstablishmentContributionForm({
               </div>
             </div>
 
-            <div className="space-y-2">
-              <AddressFields
-                variant="form"
-                idPrefix="submit-est"
-                value={estForm}
-                onChange={handleAddressChange}
-                streetAction={
-                  <button
-                    type="button"
-                    onClick={handleUseCurrentGps}
-                    disabled={locatingGps}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 transition cursor-pointer disabled:opacity-50"
-                  >
-                    {locatingGps ? (
-                      <Loader2 size={11} className="animate-spin text-emerald-600" />
-                    ) : (
-                      <Navigation size={11} className="text-emerald-600" />
-                    )}
-                    <span>{locatingGps ? 'Locating...' : 'Pin GPS'}</span>
-                  </button>
-                }
-              />
-              {hasGpsPin ? (
-                <div className="flex items-center justify-between bg-emerald-50/80 border border-emerald-200 rounded-lg px-2.5 py-1 text-xs text-emerald-900 font-medium">
-                  <span className="flex items-center gap-1.5">
-                    <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
-                    <span>Precise GPS pin saved</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEstForm((prev) => ({ ...prev, latitude: null, longitude: null, pin_source: null }));
-                      setGpsStatus('');
-                    }}
-                    className="text-slate-400 hover:text-rose-600 font-semibold text-[11px] cursor-pointer"
-                  >
-                    Clear Pin
-                  </button>
-                </div>
-              ) : gpsStatus ? (
-                <p className="text-[11px] text-amber-600 font-medium">{gpsStatus}</p>
-              ) : (
-                <p className="text-[11px] text-slate-400">The map pin is placed from the street and barangay. Use Pin GPS for an exact spot.</p>
-              )}
-            </div>
+            <AddressFields
+              variant="form"
+              idPrefix="submit-est"
+              value={estForm}
+              onChange={handleAddressChange}
+            />
 
             <div className={styles.grid}>
               <div>
@@ -468,31 +338,7 @@ export default function EstablishmentContributionForm({
                   <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
                   <span>Halal Certificate Details</span>
                 </div>
-                <div className={styles.grid}>
-                  <div>
-                    <label htmlFor="submit-est-certno" className={styles.label}>
-                      Certificate Number <span className="text-slate-400 font-normal">Read from the upload when possible</span>
-                    </label>
-                    <input
-                      id="submit-est-certno"
-                      type="text"
-                      placeholder="e.g., IDCP-ZC-2024-019"
-                      value={estForm.certificate_number}
-                      onChange={(e) => setEstForm((prev) => ({ ...prev, certificate_number: e.target.value }))}
-                      className={`${styles.input} font-mono`}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="submit-est-expiry" className={styles.label}>Certificate Expiry Date</label>
-                    <input
-                      id="submit-est-expiry"
-                      type="date"
-                      value={estForm.expiry_date}
-                      onChange={(e) => setEstForm((prev) => ({ ...prev, expiry_date: e.target.value }))}
-                      className={styles.input}
-                    />
-                  </div>
-                </div>
+
                 <UploadBox
                   id="submit-est-cert-file"
                   label="Certificate Document or Photo"
@@ -505,12 +351,41 @@ export default function EstablishmentContributionForm({
                   onPick={(e) => onFileUpload(e, 'certificates')}
                   onClear={() => setEstForm((prev) => ({ ...prev, certificate_url: '' }))}
                 />
+
                 {!estForm.certificate_url && (
                   <p className="flex items-start gap-1.5 text-[11px] text-amber-700">
                     <AlertTriangle size={13} className="shrink-0 mt-0.5" />
                     <span>Without a certificate file, an admin has to review this listing manually.</span>
                   </p>
                 )}
+
+                <div className={styles.grid}>
+                  <div>
+                    <label htmlFor="submit-est-certno" className="block text-xs font-bold text-slate-700 mb-1 whitespace-nowrap">
+                      Certificate Number
+                    </label>
+                    <input
+                      id="submit-est-certno"
+                      type="text"
+                      placeholder="e.g., IDCP-ZC-2024-019"
+                      value={estForm.certificate_number}
+                      onChange={(e) => setEstForm((prev) => ({ ...prev, certificate_number: e.target.value }))}
+                      className={`${styles.input} font-mono`}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="submit-est-expiry" className="block text-xs font-bold text-slate-700 mb-1 whitespace-nowrap">
+                      Certificate Expiry Date
+                    </label>
+                    <input
+                      id="submit-est-expiry"
+                      type="date"
+                      value={estForm.expiry_date}
+                      onChange={(e) => setEstForm((prev) => ({ ...prev, expiry_date: e.target.value }))}
+                      className={styles.input}
+                    />
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="p-3 rounded-xl bg-sky-50 border border-sky-200 text-sky-800">

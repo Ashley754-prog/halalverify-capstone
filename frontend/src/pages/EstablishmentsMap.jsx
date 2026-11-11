@@ -153,9 +153,6 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                 if (selectedStatus === 'muslim_friendly') {
                     return key === 'muslim_friendly';
                 }
-                if (selectedStatus === 'vegetarian_vegan') {
-                    return key === 'vegetarian_vegan';
-                }
                 if (selectedStatus === 'flagged') {
                     return key === 'flagged' || key === 'rejected';
                 }
@@ -245,9 +242,6 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                             }
                             if (selectedStatus === 'muslim_friendly') {
                                 return cfg.key === 'muslim_friendly';
-                            }
-                            if (selectedStatus === 'vegetarian_vegan') {
-                                return cfg.key === 'vegetarian_vegan';
                             }
                             if (selectedStatus === 'needs_review' || selectedStatus === 'pending_review') {
                                 return cfg.key === 'needs_review' || cfg.key === 'pending_review';

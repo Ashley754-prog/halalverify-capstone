@@ -202,6 +202,9 @@ def verify_establishment(
         update_fields["name"] = payload.name.strip()
     if payload.address and payload.address.strip():
         update_fields["address"] = payload.address.strip()
+    if payload.latitude is not None and payload.longitude is not None:
+        update_fields["latitude"] = float(payload.latitude)
+        update_fields["longitude"] = float(payload.longitude)
     if payload.type and payload.type.strip():
         update_fields["type"] = payload.type.strip()
     if payload.phone and payload.phone.strip():
