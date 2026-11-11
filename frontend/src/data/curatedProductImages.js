@@ -59,6 +59,18 @@ const CURATED_PRODUCT_IMAGES = {
         brand: 'philippine foremost milling corp pasta plant f 1473',
         imageUrl: '/product_images/amigo-gurado-big-elbow-macaroni-5kg.png.png',
     },
+    'authentic sulu kahawa sug coffee': {
+        brand: 'local regional producer',
+        imageUrl: '/product_images/kahawa.png',
+    },
+    'authentic tausug tiyula itum black soup': {
+        brand: 'local regional producer',
+        imageUrl: '/product_images/blackSoup.jpg',
+    },
+    'beef satti': {
+        brand: 'local regional producer',
+        imageUrl: '/product_images/satti.jpg',
+    },
 };
 
 export const CURATED_PRODUCT_NAMES = [
