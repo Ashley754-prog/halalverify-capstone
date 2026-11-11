@@ -242,7 +242,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
         } else {
             const statusConfig = getStatusConfig(item);
             const isCert = (statusConfig.key === 'verified' || item.halal_tier === 'halal_certified') && Boolean(item.certifying_body_id || item.certifying_bodies);
-            const validTiers = ['halal_certified', 'muslim_owned', 'muslim_friendly', 'vegetarian_vegan'];
+            const validTiers = ['halal_certified', 'muslim_owned', 'muslim_friendly'];
             let tierKey;
             if (item.halal_tier && validTiers.includes(item.halal_tier)) {
                 tierKey = item.halal_tier;
@@ -250,10 +250,6 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 tierKey = 'halal_certified';
             } else if (statusConfig.key === 'muslim_owned' || statusConfig.key === 'community') {
                 tierKey = 'muslim_owned';
-            } else if (statusConfig.key === 'muslim_friendly') {
-                tierKey = 'muslim_friendly';
-            } else if (statusConfig.key === 'vegetarian_vegan') {
-                tierKey = 'vegetarian_vegan';
             } else {
                 tierKey = 'muslim_friendly';
             }
@@ -545,8 +541,6 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     adminNotes = '[Tier: muslim_owned] Community Listed - Muslim-Owned (Pork-Free Kitchen)';
                 } else if (tier === 'muslim_friendly') {
                     adminNotes = '[Tier: muslim_friendly] Community Listed - Muslim-Friendly Venue';
-                } else if (tier === 'vegetarian_vegan') {
-                    adminNotes = '[Tier: vegetarian_vegan] Community Listed - Vegetarian / Vegan';
                 } else if (tier === 'halal_certified') {
                     adminNotes = '[Tier: halal_certified] Formally Certified Halal Establishment';
                 }
@@ -648,8 +642,6 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     adminNotes = '[Tier: muslim_owned] Community Listed - Muslim-Owned (Pork-Free Kitchen)';
                 } else if (tier === 'muslim_friendly') {
                     adminNotes = '[Tier: muslim_friendly] Community Listed - Muslim-Friendly Venue';
-                } else if (tier === 'vegetarian_vegan') {
-                    adminNotes = '[Tier: vegetarian_vegan] Community Listed - Vegetarian / Vegan';
                 } else if (tier === 'halal_certified') {
                     adminNotes = '[Tier: halal_certified] Formally Certified Halal Establishment';
                 }

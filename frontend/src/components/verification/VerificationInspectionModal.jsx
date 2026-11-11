@@ -14,8 +14,6 @@ import {
     MapPin,
     AlertTriangle,
     Phone,
-    Globe,
-    Compass,
     Copy,
     Check,
     Clock,
@@ -25,14 +23,10 @@ import Modal from '../ui/Modal';
 import AddressFields from '../shared/AddressFields';
 import CategorySelect from '../shared/CategorySelect';
 import SubmitterRoleSelect from '../shared/SubmitterRoleSelect';
+import AmenitiesPicker from '../shared/AmenitiesPicker';
 import { getSafeUrl } from '../../utils/security';
 import { formatSystemNotice, formatShortDate, extractMenuHighlights, deriveEstablishmentTier } from '../../utils/verificationNotes';
 import { cleanAmenities } from '../../data/constants';
-
-const STANDARD_AMENITIES = [
-    'Dedicated Prayer Space (Musalah)',
-    'Family Dining Section',
-];
 
 export default function VerificationInspectionModal({
     inspectingItem,
@@ -406,14 +400,19 @@ export default function VerificationInspectionModal({
                     {/* Submitted Details Summary - Conditional for Product vs Establishment */}
                     {inspectingType === 'product' ? (
                         <div className="rounded-xl bg-white border border-slate-200 p-4 space-y-3 text-xs">
-                            <span className="font-bold text-slate-800 text-xs block border-b border-slate-100 pb-2">
-                                Product Submission Details
-                            </span>
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                                <span className="font-bold text-slate-800 text-xs">
+                                    Product Submission Details
+                                </span>
+                                <span className="text-[10px] font-semibold text-slate-400">
+                                    Editable by Admin
+                                </span>
+                            </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label htmlFor="inspect-product-name" className="text-slate-600 font-semibold block text-[11px] mb-1">
-                                        Product Name (Editable)
+                                        Product Name
                                     </label>
                                     <input
                                         id="inspect-product-name"
@@ -429,7 +428,7 @@ export default function VerificationInspectionModal({
                                 </div>
                                 <div>
                                     <label htmlFor="inspect-product-brand" className="text-slate-600 font-semibold block text-[11px] mb-1">
-                                        Brand Name (Editable)
+                                        Brand Name
                                     </label>
                                     <input
                                         id="inspect-product-brand"
@@ -488,14 +487,19 @@ export default function VerificationInspectionModal({
                         </div>
                     ) : (
                         <div className="rounded-xl bg-white border border-slate-200 p-4 space-y-3 text-xs">
-                            <span className="font-bold text-slate-800 text-xs block border-b border-slate-100 pb-2">
-                                Establishment Information
-                            </span>
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                                <span className="font-bold text-slate-800 text-xs">
+                                    Establishment Information
+                                </span>
+                                <span className="text-[10px] font-semibold text-slate-400">
+                                    Editable by Admin
+                                </span>
+                            </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label htmlFor="inspect-est-name" className="text-slate-600 font-semibold block text-[11px] mb-1">
-                                        Venue Name (Editable)
+                                        Establishment Name
                                     </label>
                                     <input
                                         id="inspect-est-name"
@@ -511,7 +515,7 @@ export default function VerificationInspectionModal({
                                 </div>
                                 <div>
                                     <label htmlFor="inspect-venue-category" className="text-slate-600 font-semibold block text-[11px] mb-1">
-                                        Venue Category (Editable)
+                                        Venue Category
                                     </label>
                                     <CategorySelect
                                         value={inspectingItem.type}
@@ -523,20 +527,35 @@ export default function VerificationInspectionModal({
                                         id="inspect-venue-category"
                                     />
                                 </div>
-                                <div className="sm:col-span-2">
-                                    <AddressFields
+                                <div>
+                                    <label htmlFor="inspect-submitter-role" className="text-slate-600 font-semibold block text-[11px] mb-1">
+                                        Submitter Role
+                                    </label>
+                                    <SubmitterRoleSelect
                                         variant="queue"
-                                        idPrefix="inspect-est"
-                                        value={inspectingItem}
-                                        originalAddress={inspectingItem.original_address || ''}
-                                        onChange={(patch) =>
-                                            setInspectingItem?.((prev) => (prev ? { ...prev, ...patch } : prev))
+                                        id="inspect-submitter-role"
+                                        value={
+                                            inspectingItem.submitter_role === 'owner' || inspectingItem.source?.includes('Owner')
+                                                ? 'owner'
+                                                : 'community'
                                         }
+                                        onChange={(roleId) => {
+                                            const isOwner = roleId === 'owner';
+                                            setInspectingItem?.((prev) =>
+                                                prev
+                                                    ? {
+                                                          ...prev,
+                                                          submitter_role: roleId,
+                                                          source: isOwner ? 'Business Owner Submission' : 'Community User Submission',
+                                                      }
+                                                    : prev
+                                            );
+                                        }}
                                     />
                                 </div>
                                 <div>
                                     <label htmlFor="inspect-est-phone" className="text-slate-600 font-semibold block text-[11px] mb-1">
-                                        Contact Phone (Editable)
+                                        Contact Number
                                     </label>
                                     <div className="flex items-center gap-1.5">
                                         <input
@@ -563,38 +582,20 @@ export default function VerificationInspectionModal({
                                         )}
                                     </div>
                                 </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                                <div>
-                                    <label htmlFor="inspect-submitter-role" className="text-slate-600 font-semibold block text-[11px] mb-1">
-                                        Submitter Role (Editable)
-                                    </label>
-                                    <SubmitterRoleSelect
+                                <div className="sm:col-span-2">
+                                    <AddressFields
                                         variant="queue"
-                                        id="inspect-submitter-role"
-                                        value={
-                                            inspectingItem.submitter_role === 'owner' || inspectingItem.source?.includes('Owner')
-                                                ? 'owner'
-                                                : 'community'
+                                        idPrefix="inspect-est"
+                                        value={inspectingItem}
+                                        originalAddress={inspectingItem.original_address || ''}
+                                        onChange={(patch) =>
+                                            setInspectingItem?.((prev) => (prev ? { ...prev, ...patch } : prev))
                                         }
-                                        onChange={(roleId) => {
-                                            const isOwner = roleId === 'owner';
-                                            setInspectingItem?.((prev) =>
-                                                prev
-                                                    ? {
-                                                          ...prev,
-                                                          submitter_role: roleId,
-                                                          source: isOwner ? 'Business Owner Submission' : 'Community User Submission',
-                                                      }
-                                                    : prev
-                                            );
-                                        }}
                                     />
                                 </div>
-                                <div>
+                                <div className="sm:col-span-2">
                                     <label htmlFor="inspect-est-website" className="text-slate-600 font-semibold block text-[11px] mb-1">
-                                        Website / Social Link (Editable)
+                                        Facebook Page or Web Link
                                     </label>
                                     <div className="flex items-center gap-2">
                                         <input
@@ -627,78 +628,29 @@ export default function VerificationInspectionModal({
 
                             {(() => {
                                 let list = Array.isArray(inspectingItem.amenities) ? [...inspectingItem.amenities] : [];
-                                if (inspectingItem.has_prayer_space && !list.some(a => String(a).toLowerCase().includes('prayer') || String(a).toLowerCase().includes('musalah'))) {
+                                if (inspectingItem.has_prayer_space && !list.some((a) => String(a).toLowerCase().includes('prayer') || String(a).toLowerCase().includes('musalah'))) {
                                     list.push('Dedicated Prayer Space (Musalah)');
                                 }
                                 const activeAmenities = cleanAmenities(list);
 
                                 return (
-                                    <div className="pt-2 border-t border-slate-100">
-                                        <div className="flex items-center justify-between mb-1.5">
-                                            <span className="text-slate-600 font-semibold block text-[11px]">Amenities</span>
-                                            <span className="text-[10px] text-slate-400">Click to toggle</span>
-                                        </div>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {STANDARD_AMENITIES.map((facility) => {
-                                                const isSelected = activeAmenities.some(
-                                                    (a) => a.toLowerCase().trim() === facility.toLowerCase().trim()
-                                                );
-                                                return (
-                                                    <button
-                                                        key={facility}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            const nextAmenities = isSelected
-                                                                ? activeAmenities.filter((a) => a.toLowerCase().trim() !== facility.toLowerCase().trim())
-                                                                : [...activeAmenities, facility];
-                                                            setInspectingItem?.((prev) =>
-                                                                prev ? {
-                                                                    ...prev,
-                                                                    amenities: nextAmenities,
-                                                                    has_prayer_space: nextAmenities.some(a => a.toLowerCase().includes('prayer')),
-                                                                } : prev
-                                                            );
-                                                        }}
-                                                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer border ${
-                                                            isSelected
-                                                                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 shadow-xs'
-                                                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                                                        }`}
-                                                    >
-                                                        {facility.toLowerCase().includes('prayer') ? (
-                                                            <Compass size={11} className={isSelected ? 'text-emerald-700' : 'text-slate-400'} />
-                                                        ) : (
-                                                            <Store size={11} className={isSelected ? 'text-emerald-700' : 'text-slate-400'} />
-                                                        )}
-                                                        <span>{facility}</span>
-                                                    </button>
-                                                );
-                                            })}
-                                            {activeAmenities
-                                                .filter((a) => !STANDARD_AMENITIES.some((std) => std.toLowerCase().trim() === a.toLowerCase().trim()))
-                                                .map((custom) => (
-                                                    <span
-                                                        key={custom}
-                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300"
-                                                    >
-                                                        <CheckCircle2 size={11} className="text-emerald-700" />
-                                                        <span>{custom}</span>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const next = activeAmenities.filter((a) => a !== custom);
-                                                                setInspectingItem?.((prev) =>
-                                                                    prev ? { ...prev, amenities: next } : prev
-                                                                );
-                                                            }}
-                                                            className="text-emerald-600 hover:text-rose-600 ml-0.5 cursor-pointer"
-                                                            title={`Remove ${custom}`}
-                                                        >
-                                                            <X size={11} />
-                                                        </button>
-                                                    </span>
-                                                ))}
-                                        </div>
+                                    <div className="pt-1">
+                                        <AmenitiesPicker
+                                            variant="queue"
+                                            amenities={activeAmenities}
+                                            allowCustom={true}
+                                            onChange={(nextAmenities) =>
+                                                setInspectingItem?.((prev) =>
+                                                    prev
+                                                        ? {
+                                                              ...prev,
+                                                              amenities: nextAmenities,
+                                                              has_prayer_space: nextAmenities.some((a) => a.toLowerCase().includes('prayer')),
+                                                          }
+                                                        : prev
+                                                )
+                                            }
+                                        />
                                     </div>
                                 );
                             })()}
@@ -714,7 +666,7 @@ export default function VerificationInspectionModal({
                         {inspectingType !== 'product' && (
                             <div>
                                 <label htmlFor="inspect-classification-tier" className="block text-xs font-semibold text-slate-700 mb-1">
-                                    Halal Classification Tier
+                                    Verification Standard
                                 </label>
                                 <select
                                     id="inspect-classification-tier"
@@ -723,9 +675,9 @@ export default function VerificationInspectionModal({
                                     className="w-full rounded-xl border border-slate-300 p-2 text-xs font-semibold text-slate-800 bg-white focus:border-emerald-500 focus:outline-none cursor-pointer"
                                 >
                                     <option value="" disabled>Select verification tier…</option>
-                                    <option value="verified">Formally Halal Certified</option>
-                                    <option value="muslim_owned">Muslim-Owned Kitchen (Pork-Free)</option>
-                                    <option value="muslim_friendly">Muslim-Friendly Venue</option>
+                                    <option value="verified">Halal Certified</option>
+                                    <option value="muslim_owned">Muslim-Owned</option>
+                                    <option value="muslim_friendly">Muslim-Friendly</option>
                                 </select>
                             </div>
                         )}
@@ -817,64 +769,67 @@ export default function VerificationInspectionModal({
                                 : extractMenuHighlights(inspectingItem).map((name, idx) => ({ id: `dish-${idx}`, name }));
 
                             return (
-                                <div className="pt-2 border-t border-slate-100 space-y-2">
+                                <div className="pt-2 border-t border-slate-100 space-y-1.5">
                                     <div className="flex items-center justify-between">
                                         <span className="font-semibold text-slate-700 text-xs">
-                                            Menu
+                                            Popular Dishes / Specialties
                                         </span>
-                                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                                        <span className="text-[11px] font-medium text-slate-400">
                                             {dishesList.length} dish{dishesList.length === 1 ? '' : 'es'}
                                         </span>
                                     </div>
 
-                                    {dishesList.length > 0 ? (
-                                        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+                                    <div className="rounded-xl border border-slate-300 bg-white p-2.5 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500 transition">
+                                        <div className="flex flex-wrap gap-1.5 mb-2 max-h-24 overflow-y-auto pr-1">
                                             {dishesList.map((p, idx) => (
                                                 <span
                                                     key={p.id || `${p.name}-${idx}`}
-                                                    className="text-[11px] bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg font-medium text-slate-700 flex items-center gap-1.5"
+                                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-semibold"
                                                 >
-                                                    <CheckCircle2 size={11} className="text-emerald-600 shrink-0" />
                                                     <span>{p.name}</span>
                                                     {handleDeleteMenuItem && (
                                                         <button
                                                             type="button"
                                                             onClick={() => handleDeleteMenuItem(p)}
-                                                            className="text-slate-400 hover:text-red-500 transition cursor-pointer ml-0.5"
+                                                            className="text-emerald-600 hover:text-red-500 transition cursor-pointer"
                                                             title={`Remove ${p.name}`}
+                                                            aria-label={`Remove ${p.name}`}
                                                         >
-                                                            <X size={12} />
+                                                            <X size={13} />
                                                         </button>
                                                     )}
                                                 </span>
                                             ))}
+                                            {dishesList.length === 0 && (
+                                                <span className="text-[11px] text-slate-400 py-0.5">
+                                                    No dishes added yet. Type below and press Enter or click Add.
+                                                </span>
+                                            )}
                                         </div>
-                                    ) : (
-                                        <p className="text-[11px] text-slate-400">No menu items listed yet.</p>
-                                    )}
 
-                                    <div className="flex items-center gap-2 pt-1">
-                                        <input
-                                            type="text"
-                                            value={newMenuItemName}
-                                            onChange={(e) => setNewMenuItemName(e.target.value)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    e.preventDefault();
-                                                    handleAddMenuItem();
-                                                }
-                                            }}
-                                            placeholder="Add a dish (e.g. Beef Satti)..."
-                                            className="flex-1 rounded-xl border border-slate-300 p-2 text-xs text-slate-800 bg-white focus:border-emerald-500 focus:outline-none"
-                                        />
-                                        <button
-                                            type="button"
-                                            disabled={addingMenuItem || !newMenuItemName.trim()}
-                                            onClick={handleAddMenuItem}
-                                            className="px-3 py-2 rounded-xl text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition disabled:opacity-50 cursor-pointer"
-                                        >
-                                            {addingMenuItem ? 'Adding...' : '+ Add'}
-                                        </button>
+                                        <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+                                            <input
+                                                type="text"
+                                                value={newMenuItemName}
+                                                onChange={(e) => setNewMenuItemName(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        handleAddMenuItem();
+                                                    }
+                                                }}
+                                                placeholder="Add specialty or dish, e.g. Beef Satti, Chicken Inasal..."
+                                                className="flex-1 text-xs text-slate-800 placeholder:text-slate-400 outline-none bg-transparent"
+                                            />
+                                            <button
+                                                type="button"
+                                                disabled={addingMenuItem || !newMenuItemName.trim()}
+                                                onClick={handleAddMenuItem}
+                                                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-emerald-600 hover:text-white text-slate-700 text-xs font-semibold flex items-center gap-1 transition cursor-pointer disabled:opacity-40"
+                                            >
+                                                <span>{addingMenuItem ? 'Adding...' : '+ Add'}</span>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             );

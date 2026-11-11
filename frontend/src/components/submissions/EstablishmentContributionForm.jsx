@@ -5,7 +5,6 @@ import {
   HeartHandshake,
   BadgeCheck,
   Store,
-  Leaf,
   Navigation,
   CheckCircle2,
   ArrowRight,
@@ -56,13 +55,6 @@ const TIER_STYLES = {
     badge: 'bg-indigo-50 text-indigo-700 border-indigo-200',
     activeBorder: 'border-indigo-600 bg-indigo-50/70 ring-1 ring-indigo-500/20',
     dot: 'border-indigo-600 bg-indigo-600',
-  },
-  vegetarian_vegan: {
-    icon: Leaf,
-    iconActive: 'bg-teal-600 text-white',
-    badge: 'bg-teal-50 text-teal-700 border-teal-200',
-    activeBorder: 'border-teal-600 bg-teal-50/70 ring-1 ring-teal-500/20',
-    dot: 'border-teal-600 bg-teal-600',
   },
 };
 
@@ -470,9 +462,12 @@ export default function EstablishmentContributionForm({
                 </div>
                 <div className={styles.grid}>
                   <div>
-                    <label htmlFor="submit-est-certno" className={styles.label}>
-                      Certificate Number <span className="text-slate-400 font-normal">Read from the upload when possible</span>
-                    </label>
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <label htmlFor="submit-est-certno" className="block text-xs font-bold text-slate-700">
+                        Certificate Number
+                      </label>
+                      <span className={styles.hint}>Auto-read on upload</span>
+                    </div>
                     <input
                       id="submit-est-certno"
                       type="text"
@@ -483,7 +478,12 @@ export default function EstablishmentContributionForm({
                     />
                   </div>
                   <div>
-                    <label htmlFor="submit-est-expiry" className={styles.label}>Certificate Expiry Date</label>
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <label htmlFor="submit-est-expiry" className="block text-xs font-bold text-slate-700">
+                        Certificate Expiry Date
+                      </label>
+                      <span className={styles.hint}>Optional</span>
+                    </div>
                     <input
                       id="submit-est-expiry"
                       type="date"

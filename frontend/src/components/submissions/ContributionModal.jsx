@@ -408,18 +408,6 @@ export default function ContributionModal({
   const auditNotes = submissionResult?.audit_trail?.notes || [];
   const reviewReasons = submissionResult?.audit_trail?.reasons || [];
 
-  const submittedItemSubtitle =
-    activeTab === 'establishment'
-      ? [
-          estForm.type || 'Restaurant',
-          estForm.barangay || submissionResult?.data?.address || 'Zamboanga City',
-        ]
-          .filter(Boolean)
-          .join(' · ')
-      : [prodForm.brand, prodForm.category || 'Food & Beverage']
-          .filter(Boolean)
-          .join(' · ');
-
   const displayHighlights = auditNotes
     .filter(
       (note) =>
@@ -497,15 +485,12 @@ export default function ContributionModal({
           {/* Submission Receipt Card */}
           <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 text-left space-y-2.5 shadow-2xs">
             {/* Header info */}
-            <div className="flex items-start justify-between gap-2 pb-2 border-b border-slate-200/80">
+            <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-200/80">
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Submitted Entry</p>
                 <h4 className="font-bold text-slate-800 text-sm truncate">
                   {submittedItemName || 'New Contribution'}
                 </h4>
-                {submittedItemSubtitle && (
-                  <p className="text-[11px] text-slate-500 truncate mt-0.5">{submittedItemSubtitle}</p>
-                )}
               </div>
               {tierBadge && (
                 <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md border shrink-0 ${tierBadge.color}`}>
