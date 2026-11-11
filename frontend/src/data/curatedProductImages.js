@@ -97,8 +97,17 @@ function normalizeText(value = '') {
 
 export function getCuratedProductImage(product) {
     if (!product?.name) return null;
-    const curated = CURATED_PRODUCT_IMAGES[normalizeText(product.name)];
+    const normalizedName = normalizeText(product.name);
+    const curated = CURATED_PRODUCT_IMAGES[normalizedName];
     if (!curated) return null;
+
+    // Bypass brand check for newly added products
+    if (normalizedName === 'amigo segurado big elbow macaroni 5kg' || 
+        normalizedName === 'authentic sulu kahawa sug coffee' ||
+        normalizedName === 'authentic tausug tiyula itum black soup' ||
+        normalizedName === 'beef satti') {
+        return curated;
+    }
 
     const brand = normalizeText(product.brand || product.manufacturers?.name || '');
     return brand === curated.brand ? curated : null;
