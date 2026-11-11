@@ -337,16 +337,7 @@ export default function AddressFields({
                         <label htmlFor={`${idPrefix}-street`} className={labelClass}>
                             Street / Landmark
                         </label>
-                        {streetAction || (
-                            <button
-                                type="button"
-                                onClick={() => setMapOpen((prev) => !prev)}
-                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 transition cursor-pointer"
-                            >
-                                <MapPin size={11} className="text-emerald-600" />
-                                <span>{mapOpen ? 'Hide Map' : hasCustomPin ? 'Adjust Map Pin' : 'Pin on Map'}</span>
-                            </button>
-                        )}
+                        {streetAction}
                     </div>
                     <input
                         id={`${idPrefix}-street`}
@@ -413,18 +404,22 @@ export default function AddressFields({
                         <button
                             type="button"
                             onClick={handleCenterOnAddress}
-                            className="text-[11px] font-semibold text-slate-400 hover:text-rose-600 transition cursor-pointer"
+                            className="text-[11px] font-semibold text-slate-400 hover:text-rose-600 transition cursor-pointer whitespace-nowrap"
                         >
-                            Reset Pin
+                            Reset
                         </button>
                     )}
                     <button
                         type="button"
                         onClick={() => setMapOpen((prev) => !prev)}
-                        className="inline-flex items-center gap-1 font-semibold text-emerald-700 hover:text-emerald-800 transition cursor-pointer"
+                        className="inline-flex items-center gap-1 font-semibold text-emerald-700 hover:text-emerald-800 transition cursor-pointer whitespace-nowrap"
                     >
-                        <Crosshair size={11} className="text-emerald-600" />
-                        <span>{mapOpen ? 'Done Pinning' : hasCustomPin ? 'Edit Pin' : 'Pin Exact Spot'}</span>
+                        {mapOpen ? (
+                            <ChevronUp size={12} className="text-emerald-600 shrink-0" />
+                        ) : (
+                            <Crosshair size={11} className="text-emerald-600 shrink-0" />
+                        )}
+                        <span>{mapOpen ? 'Close Map' : hasCustomPin ? 'Adjust Pin' : 'Pin on Map'}</span>
                     </button>
                 </div>
             </div>
@@ -432,71 +427,63 @@ export default function AddressFields({
             {/* Collapsible Interactive Leaflet Map Picker */}
             {mapOpen && (
                 <div className="rounded-xl border border-emerald-200 bg-slate-50 overflow-hidden shadow-2xs space-y-0">
-                    <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-emerald-50/70 border-b border-emerald-100 text-[11px]">
-                        <span className="font-semibold text-emerald-950 flex items-center gap-1.5">
-                            <MapPin size={13} className="text-emerald-600 shrink-0" />
-                            <span>Click map or drag the green pin to the exact establishment spot</span>
+                    <div className="flex items-center justify-between gap-2 px-2.5 sm:px-3 py-1.5 bg-emerald-50/70 border-b border-emerald-100 text-[11px]">
+                        <span className="font-semibold text-emerald-950 flex items-center gap-1.5 min-w-0 truncate">
+                            <MapPin size={12} className="text-emerald-600 shrink-0" />
+                            <span className="truncate">Tap map or drag pin to exact spot</span>
                         </span>
-                        <div className="flex items-center gap-1.5 ml-auto">
+                        <div className="flex items-center gap-1 shrink-0">
                             {(street || barangay) && (
                                 <button
                                     type="button"
                                     onClick={handleCenterOnAddress}
                                     disabled={locatingStreet}
-                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 font-semibold transition cursor-pointer disabled:opacity-50"
+                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 font-semibold transition cursor-pointer whitespace-nowrap disabled:opacity-50"
                                     title="Move pin back to the selected barangay or street center"
                                 >
                                     {locatingStreet ? (
-                                        <Loader2 size={11} className="animate-spin text-emerald-600" />
+                                        <Loader2 size={11} className="animate-spin text-emerald-600 shrink-0" />
                                     ) : (
-                                        <RotateCcw size={11} className="text-slate-500" />
+                                        <RotateCcw size={11} className="text-slate-500 shrink-0" />
                                     )}
-                                    <span>Center on Barangay</span>
+                                    <span>Reset</span>
                                 </button>
                             )}
                             <button
                                 type="button"
                                 onClick={handleUseDeviceGps}
                                 disabled={locatingGps}
-                                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold transition cursor-pointer disabled:opacity-50"
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold transition cursor-pointer whitespace-nowrap disabled:opacity-50"
                                 title="Use your device GPS if you are currently at the venue"
                             >
                                 {locatingGps ? (
-                                    <Loader2 size={11} className="animate-spin text-emerald-600" />
+                                    <Loader2 size={11} className="animate-spin text-emerald-600 shrink-0" />
                                 ) : (
-                                    <Navigation size={11} className="text-emerald-600" />
+                                    <Navigation size={11} className="text-emerald-600 shrink-0" />
                                 )}
-                                <span>{locatingGps ? 'Locating...' : 'My Current GPS'}</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setMapOpen(false)}
-                                className="inline-flex items-center gap-0.5 px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition cursor-pointer"
-                            >
-                                <span>Done</span>
-                                <ChevronUp size={12} />
+                                <span>{locatingGps ? 'Locating...' : 'Use GPS'}</span>
                             </button>
                         </div>
                     </div>
 
                     <div
                         ref={mapContainerRef}
-                        className="w-full h-52 sm:h-56 bg-slate-100 relative z-0"
+                        className="w-full h-44 sm:h-52 bg-slate-100 relative z-0"
                     />
 
-                    <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-white border-t border-slate-200/80 text-[11px] text-slate-500">
+                    <div className="flex items-center justify-between gap-2 px-2.5 sm:px-3 py-1.5 bg-white border-t border-slate-200/80 text-[11px] text-slate-500">
                         {mapNotice ? (
-                            <span className="text-amber-700 font-medium">{mapNotice}</span>
+                            <span className="text-amber-700 font-medium truncate">{mapNotice}</span>
                         ) : hasCustomPin ? (
-                            <span className="text-emerald-700 font-medium flex items-center gap-1">
+                            <span className="text-emerald-700 font-medium flex items-center gap-1 truncate">
                                 <CheckCircle2 size={12} className="text-emerald-600 shrink-0" />
-                                <span>
+                                <span className="truncate">
                                     Exact pin saved at {Number(value.latitude).toFixed(5)}, {Number(value.longitude).toFixed(5)}
                                 </span>
                             </span>
                         ) : (
-                            <span>
-                                Currently using {barangay ? `${barangay} barangay center` : 'default city center'} — tap the map to adjust
+                            <span className="truncate">
+                                Centered on {barangay ? `${barangay}` : 'Zamboanga City'}
                             </span>
                         )}
                     </div>
