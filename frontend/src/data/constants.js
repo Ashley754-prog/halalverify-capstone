@@ -702,12 +702,15 @@ const ZAMBOANGA_STREET_LANDMARK_COORDS = {
     'camins': { lat: 6.9198, lng: 122.0735, barangay: 'Camino Nuevo' },
     'zppsu': { lat: 6.9145, lng: 122.0625, barangay: 'Baliwasan' },
     'r.t. lim': { lat: 6.9145, lng: 122.0625, barangay: 'Baliwasan' },
+    'san jose road': { lat: 6.916325, lng: 122.059571, barangay: 'Baliwasan' },
     'veterans': { lat: 6.9117, lng: 122.0762, barangay: 'Zone II' },
     'mayor jaldon': { lat: 6.9110, lng: 122.0735, barangay: 'Canelar' },
     'gov. alvarez': { lat: 6.9142, lng: 122.0745, barangay: 'Zone III' },
     'governor alvarez': { lat: 6.9142, lng: 122.0745, barangay: 'Zone III' },
     'gov. ramos': { lat: 6.9320, lng: 122.0710, barangay: 'Sta. Maria' },
     'atilano': { lat: 6.9181, lng: 122.0884, barangay: 'Tetuan' },
+    'yubenco tetuan': { lat: 6.9158, lng: 122.0905, barangay: 'Tetuan' },
+    'don alfaro': { lat: 6.9158, lng: 122.0905, barangay: 'Tetuan' },
     'yubenco starmall': { lat: 6.9357, lng: 122.0921, barangay: 'Putik' },
 };
 
@@ -715,7 +718,13 @@ const ZAMBOANGA_STREET_LANDMARK_COORDS = {
  * Finds the matching Zamboanga Barangay object from an explicit barangay name or full address string.
  */
 export const findZamboangaBarangay = (text, allowLandmarkInference = false) => {
-    const raw = String(text || '').trim().toLowerCase();
+    const rawOriginal = String(text || '').trim().toLowerCase();
+    if (!rawOriginal) return null;
+
+    // Strip highway designations that span multiple barangays so they are not mistaken for the terminal barangay
+    const raw = rawOriginal
+        .replace(/labuan\s*-\s*limpapa\s*(?:national\s*)?(?:road|rd|hwy|highway)?/gi, '')
+        .trim();
     if (!raw) return null;
 
     // 1. Check exact match against barangay names or aliases
