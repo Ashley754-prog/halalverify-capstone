@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Award,  Building2, Globe, ShieldCheck, Calendar, FileText, ExternalLink, Pencil, Trash2 } from 'lucide-react';
+import { Award, Building2, Globe, ShieldCheck, Calendar, FileText, ExternalLink, Pencil, Trash2 } from 'lucide-react';
 import Pagination from '../ui/Pagination';
 import EmptyState from '../ui/EmptyState';
 import SearchBar from '../ui/SearchBar';
+import Modal from '../ui/Modal';
 
 const HCB_LOGO_LOOKUP = {
     IDCP: '/logos/IDCP.png',
@@ -39,20 +40,31 @@ function resolveHcbLogo(body) {
     return null;
 }
 
-function HcbCategoryIcon({ body, isGov, isIntl, isLocal }) {
+function HcbCategoryIcon({ body, isGov, isIntl, isLocal, onPreview }) {
     const logoSrc = resolveHcbLogo(body);
     if (logoSrc) {
         return (
-            <div className="w-12 h-12 rounded-full border-2 border-emerald-600/30 bg-white p-0.5 flex items-center justify-center shrink-0 shadow-xs overflow-hidden">
-                <img src={logoSrc} alt={body.code || body.name || 'HCB'} className="w-full h-full object-contain rounded-full" loading="lazy" />
-            </div>
+            <button
+                type="button"
+                onClick={() => onPreview?.(body)}
+                className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border border-slate-200/90 bg-white p-1.5 sm:p-2 flex items-center justify-center shrink-0 shadow-xs hover:border-emerald-500 hover:shadow-sm transition cursor-pointer group"
+                title="Click to view full seal"
+                aria-label={`View ${body.code || body.name} official seal`}
+            >
+                <img
+                    src={logoSrc}
+                    alt={body.code || body.name || 'HCB'}
+                    className="w-full h-full object-contain group-hover:scale-105 transition-transform"
+                    loading="lazy"
+                />
+            </button>
         );
     }
     return (
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+        <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center shrink-0 ${
             isGov ? 'bg-blue-100 text-blue-700' : isIntl ? 'bg-purple-100 text-purple-700' : isLocal ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
         }`}>
-            {isGov ? <Building2 size={22} /> : isIntl ? <Globe size={22} /> : isLocal ? <Award size={22} /> : <ShieldCheck size={22} />}
+            {isGov ? <Building2 size={26} /> : isIntl ? <Globe size={26} /> : isLocal ? <Award size={26} /> : <ShieldCheck size={26} />}
         </div>
     );
 }
@@ -69,6 +81,7 @@ export default function HcbsRegistryTab({
 }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(6);
+    const [previewHcb, setPreviewHcb] = useState(null);
 
     const filteredHcbs = hcbs.filter(body => {
         const matchesSearch = (body.name || '').toLowerCase().includes(hcbSearch.toLowerCase()) ||
@@ -152,11 +165,11 @@ export default function HcbsRegistryTab({
                         return (
                             <div key={body.id || body.code} className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between gap-3.5 hover:border-slate-300 transition shadow-xs">
                                 <div className="flex items-start justify-between gap-3">
-                                    <div className="flex items-center gap-3">
-                                        <HcbCategoryIcon body={body} isGov={isGov} isIntl={isIntl} isLocal={isLocal} />
-                                        <div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-mono font-bold text-xs bg-slate-200 text-slate-800 px-2 py-0.5 rounded">
+                                    <div className="flex items-start gap-3 sm:gap-3.5 min-w-0 flex-1">
+                                        <HcbCategoryIcon body={body} isGov={isGov} isIntl={isIntl} isLocal={isLocal} onPreview={setPreviewHcb} />
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                                                <span className="font-mono font-bold text-xs bg-slate-200/90 text-slate-800 px-2 py-0.5 rounded-md">
                                                     {body.code || body.acronym || 'HCB'}
                                                 </span>
                                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
@@ -168,7 +181,7 @@ export default function HcbsRegistryTab({
                                                     {body.category || 'Accredited HCB'}
                                                 </span>
                                             </div>
-                                            <h4 className="font-bold text-slate-900 text-sm mt-1 leading-snug">{body.name}</h4>
+                                            <h4 className="font-bold text-slate-900 text-xs sm:text-sm leading-snug break-words">{body.name}</h4>
                                         </div>
                                     </div>
                                 </div>
@@ -252,6 +265,98 @@ export default function HcbsRegistryTab({
                     itemLabel="certifiers"
                 />
             )}
+
+            {/* Seal Preview Modal */}
+            {previewHcb && (() => {
+                const isGov = previewHcb.category?.toLowerCase().includes('government');
+                const isIntl = previewHcb.category?.toLowerCase().includes('international');
+                const isLocal = previewHcb.category?.toLowerCase().includes('local');
+                const previewLogoSrc = resolveHcbLogo(previewHcb);
+
+                return (
+                    <Modal
+                        isOpen={Boolean(previewHcb)}
+                        onClose={() => setPreviewHcb(null)}
+                        title={`${previewHcb.code || previewHcb.acronym || 'HCB'} Official Seal`}
+                        description={previewHcb.name}
+                        size="md"
+                        compactOnMobile
+                        footer={
+                            <div className="flex items-center justify-between w-full">
+                                {previewHcb.website ? (
+                                    <a
+                                        href={previewHcb.website}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:underline"
+                                    >
+                                        <span>Visit Official Portal</span>
+                                        <ExternalLink size={13} />
+                                    </a>
+                                ) : (
+                                    <span className="text-xs text-slate-400 italic">No web portal listed</span>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => setPreviewHcb(null)}
+                                    className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition cursor-pointer"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        }
+                    >
+                        <div className="flex flex-col items-center gap-3.5 py-1">
+                            <div className="w-full flex items-center justify-center bg-slate-50 border border-slate-200/80 rounded-2xl p-6 sm:p-8 min-h-[190px] sm:min-h-[220px]">
+                                {previewLogoSrc ? (
+                                    <img
+                                        src={previewLogoSrc}
+                                        alt={previewHcb.name}
+                                        className="max-h-48 sm:max-h-56 max-w-full object-contain drop-shadow-sm select-none"
+                                    />
+                                ) : (
+                                    <div className="text-slate-400 text-sm italic">No image available</div>
+                                )}
+                            </div>
+
+                            <div className="w-full flex flex-wrap items-center gap-1.5">
+                                <span className="font-mono font-bold text-xs bg-slate-200/90 text-slate-800 px-2 py-0.5 rounded-md">
+                                    {previewHcb.code || previewHcb.acronym || 'HCB'}
+                                </span>
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                    isGov ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                                    isIntl ? 'bg-purple-50 text-purple-700 border border-purple-200' :
+                                    isLocal ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                                    'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                }`}>
+                                    {previewHcb.category || 'Accredited HCB'}
+                                </span>
+                            </div>
+
+                            {previewHcb.accreditation_details && (
+                                <p className="w-full text-xs text-slate-600 leading-relaxed bg-white p-3 rounded-xl border border-slate-200/70">
+                                    {previewHcb.accreditation_details}
+                                </p>
+                            )}
+
+                            <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs bg-slate-100/70 p-3 rounded-xl border border-slate-200/60 font-mono">
+                                <div>
+                                    <span className="text-[10px] uppercase font-sans text-slate-400 block">Validity</span>
+                                    <span className="font-bold text-slate-800 text-[11px]">{previewHcb.validity_period || 'Continuous Audit'}</span>
+                                </div>
+                                <div>
+                                    <span className="text-[10px] uppercase font-sans text-slate-400 block">Registry Ref</span>
+                                    <span className="font-bold text-slate-800 text-[11px] truncate block">{previewHcb.registry_reference || 'N/A'}</span>
+                                </div>
+                                <div>
+                                    <span className="text-[10px] uppercase font-sans text-slate-400 block">Jurisdiction</span>
+                                    <span className="font-semibold text-slate-700 text-[11px]">{previewHcb.country || 'Philippines'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </Modal>
+                );
+            })()}
         </div>
     );
 }
