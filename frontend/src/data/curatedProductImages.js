@@ -31,17 +31,9 @@ const CURATED_PRODUCT_IMAGES = {
         brand: 'jack n jill',
         imageUrl: '/product_images/piattos-cheese-flavored-potato-chips.jpeg',
     },
-    '2k salted brown peanuts 300g': {
+    '2k peanuts 300g': {
         brand: '2k peanuts',
         imageUrl: '/product_images/2k-salted-brown-peanuts-300g.webp',
-    },
-    '2k spicy garlic brown peanuts 300g': {
-        brand: '2k peanuts',
-        imageUrl: '/product_images/2k-spicy-garlic-brown-peanuts-300g.webp',
-    },
-    '2k spicy garlic skinless peanuts 300g': {
-        brand: '2k peanuts',
-        imageUrl: '/product_images/2k-spicy-garlic-skinless-peanuts-300g.webp',
     },
     'akao farms certified halal fresh table eggs 12s': {
         brand: 'akao farms',
@@ -82,9 +74,7 @@ export const CURATED_PRODUCT_NAMES = [
     "JACK N' JILL DEWBERRY YOGURT CAKE STRAWBERRY",
     'Purefoods Corned Beef 150g',
     'Piattos Cheese Flavored Potato Crisps',
-    '2K Salted Brown Peanuts 300g',
-    '2K Spicy Garlic Brown Peanuts 300g',
-    '2K Spicy Garlic Skinless Peanuts 300g',
+    '2K Peanuts 300g',
     'AKAO Farms Certified Halal Fresh Table Eggs 12s',
     'Lucky Me! Instant Pancit Canton Original',
     'The Ultimate Chocolate Chip Cookies',
@@ -97,6 +87,7 @@ function normalizeText(value = '') {
 
 // Studio photos extracted directly from the DTI Region IX Halal in ZAMPEN Product Catalogue 2026
 const CURATED_BRAND_IMAGES = {
+    '2k peanuts': '/product_images/2k-salted-brown-peanuts-300g.webp',
     'mapzacara': '/product_images/dti-mapzacara.webp',
     'antiens': '/product_images/dti-antiens.webp',
     'auntie nitz': '/product_images/dti-auntie-nitz.webp',
