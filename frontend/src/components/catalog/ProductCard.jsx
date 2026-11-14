@@ -70,6 +70,23 @@ function formatShortExpiryDate(value) {
     });
 }
 
+function getVariantBadgeLabel(product, variants) {
+    const count = variants.length;
+    if (count === 1) return '1 Variant';
+
+    const variantText = variants.join(' ').toLowerCase();
+    if (/\b(bottle|pouch|pack|jug|sachet|cup|can|container)\b/.test(variantText)) {
+        return `${count} Options`;
+    }
+
+    const titleAndCategory = `${product?.name || ''} ${product?.category || ''}`.toLowerCase();
+    if (/\b(rice|grain|powder|bread|loaf|loaves|biscuit|cookie|pastry|pastries|cake|kakanin|salt|rub|confectionery|crispy snacks)\b/.test(titleAndCategory)) {
+        return `${count} Varieties`;
+    }
+
+    return `${count} Flavors`;
+}
+
 export default function ProductCard({
     product,
     isAdmin,
@@ -225,7 +242,7 @@ export default function ProductCard({
                         </span>
                         {variants.length > 0 && (
                             <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-md bg-white text-slate-700 border border-slate-200 text-[10px] font-semibold">
-                                {variants.length} {variants.length === 1 ? 'Variant' : 'Flavors'}
+                                {getVariantBadgeLabel(product, variants)}
                             </span>
                         )}
                     </div>

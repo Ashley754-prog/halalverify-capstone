@@ -63,6 +63,82 @@ const CURATED_PRODUCT_IMAGES = {
         brand: 'local regional producer',
         imageUrl: '/product_images/satti.jpg',
     },
+    'batang buruk sweet spring rolls 150g': {
+        brand: 'antiens',
+        imageUrl: '/product_images/dti-antiens-batang-buruk.webp',
+    },
+    'kuih kacang peanut cookies 200g': {
+        brand: 'antiens',
+        imageUrl: '/product_images/dti-antiens-kuih-kacang.webp',
+    },
+    'lara lara sweet rice crackers 150g': {
+        brand: 'antiens',
+        imageUrl: '/product_images/dti-antiens-lara-lara.webp',
+    },
+    'dsf delicious krill mildly salted alamang 200g': {
+        brand: 'dsf tesda',
+        imageUrl: '/product_images/dti-dsf-krill.webp',
+    },
+    'dsf spanish style herring in corn oil 200g': {
+        brand: 'dsf tesda',
+        imageUrl: '/product_images/dti-dsf-herring.webp',
+    },
+    'dsf spanish style bangus milkfish in corn oil 200g': {
+        brand: 'dsf tesda',
+        imageUrl: '/product_images/dti-dsf-bangus.webp',
+    },
+    'desa garlic gourmet tuyo in corn oil 208g': {
+        brand: 'desa',
+        imageUrl: '/product_images/dti-desa-tuyo.webp',
+    },
+    'desa spanish style sardines in corn oil 208g': {
+        brand: 'desa',
+        imageUrl: '/product_images/dti-desa-sardines.webp',
+    },
+    'desa spanish style bangus milkfish in corn oil 216g': {
+        brand: 'desa',
+        imageUrl: '/product_images/dti-desa-bangus.webp',
+    },
+    'lianas 100 pure tablea': {
+        brand: 'lianas',
+        imageUrl: '/product_images/dti-lianas-tablea.webp',
+    },
+    'lianas artisan dark milk chocolate bars': {
+        brand: 'lianas artisan',
+        imageUrl: '/product_images/dti-lianas-bars.webp',
+    },
+    'picker s calamansi concentrate 1l': {
+        brand: 'picker s',
+        imageUrl: '/product_images/dti-pickers-concentrate.webp',
+    },
+    'picker s calamansi juice drink': {
+        brand: 'picker s',
+        imageUrl: '/product_images/dti-pickers-juice.webp',
+    },
+    'pomona calamansi pur e 1 liter jug': {
+        brand: 'pomona',
+        imageUrl: '/product_images/dti-pomona-puree.webp',
+    },
+    'pomona calamansi juice drink 300ml': {
+        brand: 'pomona',
+        imageUrl: '/product_images/dti-pomona-juice.webp',
+    },
+    'a5 delight healthymansi calamansi concentrate': {
+        brand: 'a5 delight',
+        imageUrl: '/product_images/dti-a5-concentrate.webp',
+    },
+    'a5 delight healthymansi ready to drink calamansi juice': {
+        brand: 'a5 delight',
+        imageUrl: '/product_images/dti-a5-juice.webp',
+    },
+    'k three coolers calamansi puree 1000ml': {
+        brand: 'k three coolers',
+        imageUrl: '/product_images/dti-kthree-puree.webp',
+    },
+    'k three coolers calamansi juice drink': {
+        brand: 'k three coolers',
+        imageUrl: '/product_images/dti-kthree-juice.webp',
+    },
 };
 
 export const CURATED_PRODUCT_NAMES = [

@@ -3,6 +3,24 @@ import { Cookie, CupSoda, Fish, Leaf, Package, Wheat } from 'lucide-react';
 import { getCuratedProductImage } from '../../data/curatedProductImages';
 import { getSafeUrl } from '../../utils/security';
 
+const ISOLATED_PACKSHOT_TOKENS = [
+    '2k-',
+    'dti-2k-peanuts',
+    'gardenia-',
+    'amigo-',
+    'blanched-potato',
+    'dewberry-',
+    'gold-heritage',
+    'lucky-me',
+    'piattos-',
+    'purefoods-corned-beef',
+];
+
+function isIsolatedPackshotUrl(url = '') {
+    const lower = String(url).toLowerCase();
+    return ISOLATED_PACKSHOT_TOKENS.some((token) => lower.includes(token));
+}
+
 function getCategoryIcon(category = '') {
     const value = category.toLowerCase();
 
@@ -19,24 +37,46 @@ export default function ProductImage({ product, className = '' }) {
     const curatedImage = getCuratedProductImage(product);
     const imageUrl = curatedImage?.imageUrl || getSafeUrl(product?.image_url);
     const hasValidImage = Boolean(imageUrl && failedUrl !== imageUrl);
+    const isIsolatedPackshot = hasValidImage && isIsolatedPackshotUrl(imageUrl);
     const categoryIcon = getCategoryIcon(product?.category);
+
+    const frameBackground = hasValidImage
+        ? isIsolatedPackshot
+            ? 'bg-white'
+            : 'bg-slate-100'
+        : 'bg-gradient-to-br from-emerald-50 via-[#F4F8F5] to-amber-50 text-emerald-800/60';
 
     return (
         <div
-            className={`relative flex aspect-[4/3] items-center justify-center overflow-hidden border-b border-slate-100 ${
-                hasValidImage
-                    ? 'bg-white'
-                    : 'bg-gradient-to-br from-emerald-50 via-[#F4F8F5] to-amber-50 text-emerald-800/60'
-            } ${className}`}
+            className={`relative flex aspect-[4/3] items-center justify-center overflow-hidden border-b border-slate-100 ${frameBackground} ${className}`}
         >
             {hasValidImage ? (
-                <img
-                    src={imageUrl}
-                    alt={`${product?.name || 'Product'} photo`}
-                    loading="lazy"
-                    onError={() => setFailedUrl(imageUrl)}
-                    className="h-full w-full bg-white object-contain p-3"
-                />
+                isIsolatedPackshot ? (
+                    <img
+                        src={imageUrl}
+                        alt={`${product?.name || 'Product'} photo`}
+                        loading="lazy"
+                        onError={() => setFailedUrl(imageUrl)}
+                        className="h-full w-full bg-white object-contain p-3"
+                    />
+                ) : (
+                    <>
+                        <img
+                            src={imageUrl}
+                            alt=""
+                            aria-hidden="true"
+                            loading="lazy"
+                            className="pointer-events-none absolute inset-0 h-full w-full scale-125 object-cover blur-2xl brightness-105 saturate-110 opacity-90"
+                        />
+                        <img
+                            src={imageUrl}
+                            alt={`${product?.name || 'Product'} photo`}
+                            loading="lazy"
+                            onError={() => setFailedUrl(imageUrl)}
+                            className="relative z-10 h-full w-full object-contain"
+                        />
+                    </>
+                )
             ) : (
                 <div className="flex flex-col items-center gap-2 px-4 text-center">
                     {categoryIcon}
