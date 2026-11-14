@@ -289,9 +289,9 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                     }
                 }
 
-                // Prioritize active Verified & Halal food items over expired items
+                // Prioritize active Halal products with future expiry dates on Page 1
                 pBuilder = pBuilder
-                    .order('status', { ascending: false })
+                    .order('expiry_date', { ascending: false, nullsFirst: false })
                     .order('name', { ascending: true })
                     .range(from, to);
 

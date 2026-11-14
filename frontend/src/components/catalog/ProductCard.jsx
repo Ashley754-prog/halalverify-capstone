@@ -188,7 +188,7 @@ export default function ProductCard({
                     <div className="flex items-center gap-1.5">
                         <Building2 size={11} className="text-slate-400 shrink-0 sm:w-[13px] sm:h-[13px]" />
                         <span className="font-semibold text-slate-800">
-                            {product.manufacturers?.name || 'Local / Regional Producer'}
+                            {product.manufacturers?.name || product.brand || 'Local / Regional Producer'}
                         </span>
                     </div>
 
@@ -225,10 +225,10 @@ export default function ProductCard({
                         </div>
                     )}
 
-                    {product.expiry_date && (
+                    {(product.expiry_date || (isHalal && (product.certifying_body_id || product.certificate_no))) && (
                         <div className="flex items-center gap-1 text-xs text-slate-500">
                             <Calendar size={10} className="shrink-0 sm:w-[11px] sm:h-[11px]" />
-                            <span>Valid until: {product.expiry_date}</span>
+                            <span>Valid until: {product.expiry_date || 'Continuous / Active Registry'}</span>
                         </div>
                     )}
                 </div>
