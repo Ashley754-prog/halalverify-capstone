@@ -89,6 +89,11 @@ class ProductSubmissionRequest(BaseModel):
         if not v:
             return None
         v_clean = v.strip()
-        if not (v_clean.startswith("http://") or v_clean.startswith("https://") or v_clean.startswith("data:image/")):
-            raise ValueError("URL must use http, https, or safe data URI")
+        if not (
+            v_clean.startswith("http://")
+            or v_clean.startswith("https://")
+            or v_clean.startswith("data:image/")
+            or v_clean.startswith("/product_images/")
+        ):
+            raise ValueError("URL must use http, https, /product_images/, or safe data URI")
         return v_clean

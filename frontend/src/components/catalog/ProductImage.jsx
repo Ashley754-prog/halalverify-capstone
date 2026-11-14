@@ -14,6 +14,9 @@ const ISOLATED_PACKSHOT_TOKENS = [
     'lucky-me',
     'piattos-',
     'purefoods-corned-beef',
+    'idcp-argentina-corned-beef',
+    'idcp-fita',
+    'idcp-great-taste-white',
 ];
 
 function isIsolatedPackshotUrl(url = '') {

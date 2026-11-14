@@ -24,8 +24,200 @@ const CURATED_PRODUCT_IMAGES = {
         imageUrl: '/product_images/dewberry-yogurt-cake.jpeg',
     },
     'purefoods corned beef 150g': {
-        brand: 'purefoods',
+        brands: ['purefoods', 'the pure foods hornel co inc'],
         imageUrl: '/product_images/purefoods-corned-beef-150g.png',
+    },
+    'purefoods corned beef 210g': {
+        brand: 'the pure foods hornel co inc',
+        imageUrl: '/product_images/purefoods-corned-beef-150g.png',
+    },
+    'purefoods corned beef 210g 150g': {
+        brand: 'the purefoods hormel co inc',
+        imageUrl: '/product_images/purefoods-corned-beef-150g.png',
+    },
+    '555 sardines in tomato sauce': {
+        brands: ['century pacific food inc sardines div', 'century pacific food inc sardines div qatar', 'general tuna corp'],
+        imageUrl: '/product_images/idcp-555-sardines.webp',
+    },
+    'argentina corned beef 150g': {
+        brand: 'century pacific food inc export',
+        imageUrl: '/product_images/idcp-argentina-corned-beef.webp',
+    },
+    'argentina corned beef 175g': {
+        brand: 'century pacific food inc',
+        imageUrl: '/product_images/idcp-argentina-corned-beef.webp',
+    },
+    'argentina corned beef 260g': {
+        brand: 'century pacific food inc',
+        imageUrl: '/product_images/idcp-argentina-corned-beef.webp',
+    },
+    'argentina corned beef premium': {
+        brand: 'century pacific food inc meat div',
+        imageUrl: '/product_images/idcp-argentina-corned-beef.webp',
+    },
+    'bear brand powdered milk drink mqav008e 2': {
+        brand: 'nestle philippines inc tanauan',
+        imageUrl: '/product_images/idcp-bear-brand-milk.webp',
+    },
+    'bear brand powdered milk mqav008e 2': {
+        brands: ['nestle philippines inc', 'nestle phils inc'],
+        imageUrl: '/product_images/idcp-bear-brand-milk.webp',
+    },
+    'c2 green tea apple 500ml': {
+        brand: 'c2 cool clean',
+        imageUrl: '/product_images/idcp-c2-apple.webp',
+    },
+    'century tuna chunks hot spicy': {
+        brand: 'general tuna corp',
+        imageUrl: '/product_images/idcp-century-tuna-hot-spicy.webp',
+    },
+    'century tuna flakes in brine': {
+        brands: ['general tuna corp', 'general tuna corporation'],
+        imageUrl: '/product_images/idcp-century-tuna-brine.webp',
+    },
+    'century tuna hot spicy': {
+        brands: ['general tuna corp', 'general tuna corp qatar'],
+        imageUrl: '/product_images/idcp-century-tuna-hot-spicy.webp',
+    },
+    'del monte desserts fruit salad': {
+        brand: 'del monte philippines inc cannery',
+        imageUrl: '/product_images/idcp-delmonte-fruitsalad.webp',
+    },
+    'del monte spaghetti value pack 400g 700g': {
+        brand: 'philippine foremost milling corp pasta plant f 1473',
+        imageUrl: '/product_images/idcp-delmonte-spaghetti.webp',
+    },
+    'eden original processed filled cheese spread': {
+        brand: 'mondelez philippines inc',
+        imageUrl: '/product_images/idcp-eden-original.webp',
+    },
+    'fita crackers all sku s': {
+        brands: ['monde m y san calamba', 'monde m y san corp'],
+        imageUrl: '/product_images/idcp-fita.webp',
+    },
+    'gardenia classic enriched white bread 400g 600g regular slice 600g thick slice': {
+        brands: ['gardenia bakeries philippines inc', 'gardenia bakeries philippines inc f 1104'],
+        imageUrl: '/product_images/idcp-gardenia-classic.webp',
+    },
+    'great taste white caramel coffee mix': {
+        brands: ['urc esmo plant 1170', 'urc pampanga coffee b 1078'],
+        imageUrl: '/product_images/idcp-great-taste-white.webp',
+    },
+    'great taste white caramel coffee mix twinpack': {
+        brands: ['urc esmo plant 1170', 'urc pampanga coffee b 1078'],
+        imageUrl: '/product_images/idcp-great-taste-white.webp',
+    },
+    'great taste white coffee mix': {
+        brands: ['urc esmo plant 1170', 'urc pampanga coffee b 1078'],
+        imageUrl: '/product_images/idcp-great-taste-white.webp',
+    },
+    'great taste white twinpack': {
+        brand: 'universal robina corporation san pedro 2 f b 1158',
+        imageUrl: '/product_images/idcp-great-taste-white.webp',
+    },
+    'jack n jill cream o chocolate chips': {
+        brand: 'urc cebu 2 1 plant bakery f 1569',
+        imageUrl: '/product_images/idcp-cream-o-cookies.webp',
+    },
+    'jack n jill cream o chocolate chips cookies': {
+        brand: 'universal robina corporation bagong ilog plant f 1168',
+        imageUrl: '/product_images/idcp-cream-o-cookies.webp',
+    },
+    'kopiko black 3 in 1 twin pack': {
+        brand: 'kopiko philippines corp',
+        imageUrl: '/product_images/idcp-kopiko-black.webp',
+    },
+    'kopiko blanca twin pack': {
+        brand: 'kopiko philippines corp',
+        imageUrl: '/product_images/idcp-kopiko-blanca.webp',
+    },
+    'ligo premium sardines in tomato sauce': {
+        brand: 'century pacific food inc ligo brand',
+        imageUrl: '/product_images/idcp-ligo-sardines.webp',
+    },
+    'ligo sardines in tomato sauce': {
+        brands: ['century pacific food inc ligo brand', 'general tuna corp'],
+        imageUrl: '/product_images/idcp-ligo-sardines.webp',
+    },
+    'lucky me beef': {
+        brand: 'monde nissin corporation',
+        imageUrl: '/product_images/idcp-luckyme-beef.webp',
+    },
+    'lucky me chicken': {
+        brand: 'monde nissin corporation',
+        imageUrl: '/product_images/idcp-luckyme-chicken.webp',
+    },
+    'lucky me pancit canton chilimansi': {
+        brand: 'monde nissin corporation',
+        imageUrl: '/product_images/idcp-luckyme-chilimansi.webp',
+    },
+    'lucky me pancit canton kalamansi': {
+        brand: 'monde nissin corporation',
+        imageUrl: '/product_images/idcp-luckyme-kalamansi.webp',
+    },
+    'magnolia cheezee': {
+        brand: 'magnolia inc',
+        imageUrl: '/product_images/idcp-magnolia-cheezee.webp',
+    },
+    'mega fried sardines in tausi 155g canned': {
+        brand: 'mega prime foods inc',
+        imageUrl: '/product_images/idcp-mega-sardines-tausi.webp',
+    },
+    'mega fried sardines with tausi 155g': {
+        brand: 'mega seafoods corp',
+        imageUrl: '/product_images/idcp-mega-sardines-tausi.webp',
+    },
+    'milo powdered choco malt': {
+        brands: ['nestle philippines inc antonina industrial corp', 'nestle philippines inc portion fillers inc', 'nestle philippines inc quaensa foods inc'],
+        imageUrl: '/product_images/idcp-milo-powdered.webp',
+    },
+    'milo powdered chocomalt': {
+        brand: 'nestle philippines inc cofipac corp',
+        imageUrl: '/product_images/idcp-milo-powdered.webp',
+    },
+    'nescafe classic': {
+        brands: ['nestle philippines inc cofipac corp', 'nestle philippines inc rmfi plant'],
+        imageUrl: '/product_images/idcp-nescafe-classic.webp',
+    },
+    'nescafe classic pure soluble coffee krrf 581 krrf 586': {
+        brand: 'nestle philippines cagayan',
+        imageUrl: '/product_images/idcp-nescafe-classic.webp',
+    },
+    'nescafe creamy white': {
+        brands: ['nestle philippines inc cofipac corp', 'nestle philippines inc rmfi plant'],
+        imageUrl: '/product_images/idcp-nescafe-creamy-white.webp',
+    },
+    'nescafe creamy white twinpack 40g': {
+        brand: 'nestle philippines inc cofipac corp',
+        imageUrl: '/product_images/idcp-nescafe-creamy-white.webp',
+    },
+    'nestle milo': {
+        brand: 'cpw philippines inc',
+        imageUrl: '/product_images/idcp-milo-cereal.webp',
+    },
+    'nestle milo rtd with activ go choco malt drink mtuf13 1': {
+        brand: 'nestle philippines inc',
+        imageUrl: '/product_images/idcp-milo-rtd.webp',
+    },
+    'payless xtra big pancit canton chilimansi flavor': {
+        brand: 'urc esmo plant payless',
+        imageUrl: '/product_images/idcp-payless-xtrabig.webp',
+    },
+    'skyflakes condensada all sku s': {
+        brand: 'monde m y san calamba',
+        imageUrl: '/product_images/idcp-skyflakes-condensada.webp',
+    },
+    'skyflakes sandwich condensada flavor all sku s': {
+        brand: 'monde m y san calamba',
+        imageUrl: '/product_images/idcp-skyflakes-condensada.webp',
+    },
+    'skyflakes sandwich tsokolate flavor all sku s': {
+        brand: 'monde m y san calamba',
+        imageUrl: '/product_images/idcp-skyflakes-tsokolate.webp',
+    },
+    'skyflakes tsokolate all sku s': {
+        brand: 'monde m y san calamba',
+        imageUrl: '/product_images/idcp-skyflakes-tsokolate.webp',
     },
     'piattos cheese flavored potato crisps': {
         brand: 'jack n jill',
@@ -120,7 +312,10 @@ export function getCuratedProductImage(product) {
             normalizedName === 'beef satti') {
             return curated;
         }
-        if (brand === curated.brand) {
+        const allowedBrands = Array.isArray(curated.brands)
+            ? curated.brands
+            : [curated.brand];
+        if (allowedBrands.includes(brand)) {
             return curated;
         }
     }
