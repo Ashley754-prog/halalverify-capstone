@@ -20,7 +20,7 @@ export default function ProductImage({ product, className = '' }) {
 
     return (
         <div
-            className={`relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-gradient-to-br from-emerald-50 via-[#F4F8F5] to-amber-50 text-emerald-800/60 ${className}`}
+            className={`relative flex aspect-[4/3] items-center justify-center overflow-hidden border-b border-slate-100 bg-gradient-to-br from-emerald-50 via-[#F4F8F5] to-amber-50 text-emerald-800/60 ${className}`}
         >
             <div className="flex flex-col items-center gap-2 px-4 text-center">
                 {categoryIcon}
@@ -34,7 +34,7 @@ export default function ProductImage({ product, className = '' }) {
                     alt={`${product?.name || 'Product'} photo`}
                     loading="lazy"
                     onError={(event) => event.currentTarget.classList.add('hidden')}
-                    className="absolute inset-0 h-full w-full bg-white object-contain p-4"
+                    className="absolute inset-0 h-full w-full bg-slate-50/40 object-contain p-4"
                 />
             )}
         </div>

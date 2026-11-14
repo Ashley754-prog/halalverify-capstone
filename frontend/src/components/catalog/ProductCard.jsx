@@ -57,6 +57,25 @@ function getProductCertifierBadge(product) {
     return product.certifying_bodies?.code || null;
 }
 
+function normalizeIdentityStem(value = '') {
+    return String(value).toLowerCase().replace(/[^a-z0-9]/g, '').replace(/s$/, '');
+}
+
+function formatShortExpiryDate(value) {
+    if (!value) return '';
+    const match = String(value).trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!match) return String(value);
+    const [, y, m, d] = match;
+    const date = new Date(Date.UTC(Number(y), Number(m) - 1, Number(d)));
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        timeZone: 'UTC',
+    });
+}
+
 export default function ProductCard({
     product,
     isAdmin,
@@ -78,6 +97,14 @@ export default function ProductCard({
     const isCommunityListed = statusLower === 'community_listed' && !isPorkFree && !isVegetarian;
 
     const certBadge = !isPorkFree && !isVegetarian ? getProductCertifierBadge(product) : null;
+    const brandStem = normalizeIdentityStem(product.brand);
+    const nameAlpha = String(product.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const brandAlpha = String(product.brand || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const manufacturerStem = normalizeIdentityStem(product.manufacturers?.name);
+    const nameStartsWithBrand = Boolean(brandAlpha && (nameAlpha.startsWith(brandAlpha) || (brandStem.length >= 2 && nameAlpha.startsWith(brandStem))));
+    const brandMatchesManufacturer = Boolean(brandStem && manufacturerStem && brandStem === manufacturerStem);
+    const showBrandBadge = Boolean(product.brand && !nameStartsWithBrand && !brandMatchesManufacturer);
+    const showCertBadge = Boolean(certBadge && !product.certifying_bodies?.name);
     const districtInfo = resolveZamboangaDistrict(product);
     const variants = parseProductVariants(product.admin_notes);
     const rawEvidenceUrl = getSafeUrl(product.image_url);
@@ -104,19 +131,21 @@ export default function ProductCard({
                 {/* Header: Brand & Status Badge */}
                 <div className="flex items-start justify-between gap-2">
                     <div className="space-y-1 min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                            {product.brand && (
-                                <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-1.5 sm:px-2 py-0.5 rounded-md border border-emerald-100">
-                                    {product.brand}
-                                </span>
-                            )}
-                            {certBadge && (
-                                <span className="text-[10px] sm:text-[10px] font-semibold text-blue-700 bg-blue-50 px-1.5 sm:px-2 py-0.5 rounded-md border border-blue-100 flex items-center gap-1">
-                                    <Award size={10} className="text-blue-600 shrink-0" />
-                                    {certBadge}
-                                </span>
-                            )}
-                        </div>
+                        {(showBrandBadge || showCertBadge) && (
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                {showBrandBadge && (
+                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                                        {product.brand}
+                                    </span>
+                                )}
+                                {showCertBadge && (
+                                    <span className="text-[10px] sm:text-[10px] font-semibold text-blue-700 bg-blue-50 px-1.5 sm:px-2 py-0.5 rounded-md border border-blue-100 flex items-center gap-1">
+                                        <Award size={10} className="text-blue-600 shrink-0" />
+                                        {certBadge}
+                                    </span>
+                                )}
+                            </div>
+                        )}
                         <h3 className="text-xs sm:text-base font-bold text-slate-900 leading-tight pt-0.5 break-words">
                             {product.name}
                         </h3>
@@ -223,16 +252,26 @@ export default function ProductCard({
                         </div>
                     ) : null}
 
-                    {product.certificate_no && (
-                        <div className="text-xs text-slate-500 font-mono">
-                            Cert #: {product.certificate_no}
-                        </div>
-                    )}
-
-                    {(product.expiry_date || (isHalal && (product.certifying_body_id || product.certificate_no))) && (
-                        <div className="flex items-center gap-1 text-xs text-slate-500">
-                            <Calendar size={10} className="shrink-0 sm:w-[11px] sm:h-[11px]" />
-                            <span>Valid until: {product.expiry_date || 'Continuous / Active Registry'}</span>
+                    {(product.certificate_no || product.expiry_date || (isHalal && product.certifying_body_id)) && (
+                        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500 pt-0.5">
+                            {product.certificate_no && (
+                                <span className="font-mono text-slate-600">
+                                    Cert #: {product.certificate_no}
+                                </span>
+                            )}
+                            {product.certificate_no && (product.expiry_date || (isHalal && (product.certifying_body_id || product.certificate_no))) && (
+                                <span className="text-slate-300" aria-hidden="true">
+                                    &middot;
+                                </span>
+                            )}
+                            {(product.expiry_date || (isHalal && (product.certifying_body_id || product.certificate_no))) && (
+                                <span className="flex items-center gap-1">
+                                    <Calendar size={10} className="shrink-0 sm:w-[11px] sm:h-[11px]" />
+                                    <span>
+                                        Valid until: {product.expiry_date ? formatShortExpiryDate(product.expiry_date) : 'Continuous / Active Registry'}
+                                    </span>
+                                </span>
+                            )}
                         </div>
                     )}
                 </div>
@@ -247,7 +286,7 @@ export default function ProductCard({
                             {variants.slice(0, 4).map((variant) => (
                                 <span
                                     key={variant}
-                                    className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-emerald-50/80 text-emerald-800 border border-emerald-200/80 text-[10px] font-medium"
+                                    className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-medium"
                                 >
                                     {variant}
                                 </span>

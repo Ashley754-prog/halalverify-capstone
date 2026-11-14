@@ -11,7 +11,7 @@ UPDATE products
 SET
   name = '2K Peanuts 300g',
   category = 'Snacks & Chips',
-  admin_notes = '[Variants: Salted Brown Peanuts | Spicy Garlic Brown Peanuts | Spicy Garlic Skinless Peanuts]'
+  admin_notes = '[Variants: Salted Brown | Spicy Garlic Brown | Spicy Garlic Skinless]'
 WHERE name = '2K Salted Brown Peanuts 300g' AND brand = '2K Peanuts';
 
 DELETE FROM products
