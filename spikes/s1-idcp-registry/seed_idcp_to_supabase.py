@@ -140,7 +140,39 @@ def seed_idcp(seed_all: bool = True):
             print(f"  Error on batch {i // batch_size + 1}: {e}")
 
     print(f"\nSuccessfully seeded {inserted_count:,} IDCP products into Supabase!")
-    
+
+    if seed_all and inserted_count >= int(total_to_insert * 0.9):
+        print("\n3. Checking for superseded IDCP rows to prune...")
+        seeded_ids = {p["id"] for p in product_payloads}
+        stale_ids = []
+        offset = 0
+        page_size = 1000
+        while True:
+            res = (
+                supabase.table("products")
+                .select("id, barcode")
+                .eq("source", SOURCE_NAME)
+                .range(offset, offset + page_size - 1)
+                .execute()
+            )
+            rows = res.data or []
+            for r in rows:
+                if r["id"] not in seeded_ids and not r.get("barcode"):
+                    stale_ids.append(r["id"])
+            if len(rows) < page_size:
+                break
+            offset += page_size
+
+        pruned_count = 0
+        for i in range(0, len(stale_ids), 100):
+            batch_ids = stale_ids[i:i + 100]
+            try:
+                res_del = supabase.table("products").delete().in_("id", batch_ids).execute()
+                pruned_count += len(res_del.data) if res_del.data else len(batch_ids)
+            except Exception as e:
+                print(f"  Error pruning stale batch {i // 100 + 1}: {e}")
+        print(f"Pruned {pruned_count:,} superseded IDCP rows (found {len(stale_ids):,}).")
+
     # Check total products count now in Supabase
     total_res = supabase.table("products").select("count", count="exact").execute()
     print(f"Total products in Supabase database now: {total_res.count:,}")
