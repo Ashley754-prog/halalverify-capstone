@@ -144,3 +144,12 @@ BEGIN
         END IF;
     END LOOP;
 END $$;
+
+-- 7. Clear unverified assumed BUSC certifying_body_id on MSMEs absent from NCMF 003
+-- (DTI ZAMPEN 2026 PDF does not name individual Halal certifying bodies)
+UPDATE public.products p
+SET certifying_body_id = NULL,
+    updated_at = now()
+FROM public.manufacturers m
+WHERE p.manufacturer_id = m.id
+  AND (m.name ILIKE '%RURU Mushrooms%' OR m.name ILIKE '%Laguerta%');

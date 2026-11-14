@@ -79,7 +79,10 @@ export default function ProductCard({
 
     const certBadge = !isPorkFree && !isVegetarian ? getProductCertifierBadge(product) : null;
     const districtInfo = resolveZamboangaDistrict(product);
-    const evidenceUrl = getSafeUrl(product.image_url);
+    const rawEvidenceUrl = getSafeUrl(product.image_url);
+    const evidenceUrl = rawEvidenceUrl && !rawEvidenceUrl.includes('/dti-catalogue/') && !rawEvidenceUrl.includes('/product_images/')
+        ? rawEvidenceUrl
+        : null;
 
     return (
         <div
