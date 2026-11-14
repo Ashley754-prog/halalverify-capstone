@@ -60,7 +60,7 @@ def get_products(
         sanitized_query = sanitize_postgrest_search(query)
         if sanitized_query:
             builder = builder.or_(
-                f"name.ilike.%{sanitized_query}%,brand.ilike.%{sanitized_query}%,barcode.ilike.%{sanitized_query}%"
+                f"name.ilike.%{sanitized_query}%,brand.ilike.%{sanitized_query}%,barcode.ilike.%{sanitized_query}%,certificate_no.ilike.%{sanitized_query}%"
             )
 
     if category:

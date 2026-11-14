@@ -643,7 +643,8 @@ export default function LandingPage({ onViewChange, userRole }) {
     const matchedProducts = allProducts.filter((p) =>
       (p.name && p.name.toLowerCase().includes(qLower)) ||
       (p.brand && p.brand.toLowerCase().includes(qLower)) ||
-      (p.category && p.category.toLowerCase().includes(qLower))
+      (p.category && p.category.toLowerCase().includes(qLower)) ||
+      (p.certificate_no && p.certificate_no.toLowerCase().includes(qLower))
     );
 
     const matchedEstablishments = allEstablishments.filter((e) =>
@@ -663,13 +664,13 @@ export default function LandingPage({ onViewChange, userRole }) {
 
     searchDebounceRef.current = setTimeout(async () => {
       try {
-        const safeQ = q.replace(/[,()'"%&|{}]/g, '').trim().slice(0, 100);
+        const safeQ = q.replace(/[,()'"%&|{}\s]+/g, '%').slice(0, 200).replace(/^%+|%+$/g, '');
         if (!safeQ) return;
         const [liveProdRes, liveEstRes] = await Promise.all([
           supabase
             .from('products')
-            .select('id, name, brand, category, status')
-            .or(`name.ilike.%${safeQ}%,brand.ilike.%${safeQ}%,category.ilike.%${safeQ}%`)
+            .select('id, name, brand, category, status, certificate_no')
+            .or(`name.ilike.%${safeQ}%,brand.ilike.%${safeQ}%,category.ilike.%${safeQ}%,certificate_no.ilike.%${safeQ}%`)
             .not('status', 'in', '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft)')
             .limit(25),
           supabase

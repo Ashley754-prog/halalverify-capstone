@@ -250,7 +250,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                     .from('products')
                     .select('*, manufacturers(*), certifying_bodies(*)', { count: 'exact' });
 
-                const safeQ = q.replace(/[,()'"%&|{}]/g, '').trim().slice(0, 100);
+                const safeQ = q.replace(/[,()'"%&|{}\s]+/g, '%').slice(0, 200).replace(/^%+|%+$/g, '');
                 if (safeQ) {
                     pBuilder = pBuilder.or(`name.ilike.%${safeQ}%,brand.ilike.%${safeQ}%,barcode.ilike.%${safeQ}%,certificate_no.ilike.%${safeQ}%`);
                 }
