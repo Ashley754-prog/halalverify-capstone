@@ -31,14 +31,6 @@ const CURATED_PRODUCT_IMAGES = {
         brand: 'jack n jill',
         imageUrl: '/product_images/piattos-cheese-flavored-potato-chips.jpeg',
     },
-    '2k peanuts 300g': {
-        brand: '2k peanuts',
-        imageUrl: '/product_images/dti-2k-peanuts.webp',
-    },
-    'akao farms certified halal fresh table eggs 12s': {
-        brand: 'akao farms',
-        imageUrl: '/product_images/akao-farms-eggs.jpeg',
-    },
     'lucky me instant pancit canton original': {
         brand: 'lucky me',
         imageUrl: '/product_images/lucky-me-pancit-canton-original.webp',
@@ -63,82 +55,6 @@ const CURATED_PRODUCT_IMAGES = {
         brand: 'local regional producer',
         imageUrl: '/product_images/satti.jpg',
     },
-    'batang buruk sweet spring rolls 150g': {
-        brand: 'antiens',
-        imageUrl: '/product_images/dti-antiens-batang-buruk.webp',
-    },
-    'kuih kacang peanut cookies 200g': {
-        brand: 'antiens',
-        imageUrl: '/product_images/dti-antiens-kuih-kacang.webp',
-    },
-    'lara lara sweet rice crackers 150g': {
-        brand: 'antiens',
-        imageUrl: '/product_images/dti-antiens-lara-lara.webp',
-    },
-    'dsf delicious krill mildly salted alamang 200g': {
-        brand: 'dsf tesda',
-        imageUrl: '/product_images/dti-dsf-krill.webp',
-    },
-    'dsf spanish style herring in corn oil 200g': {
-        brand: 'dsf tesda',
-        imageUrl: '/product_images/dti-dsf-herring.webp',
-    },
-    'dsf spanish style bangus milkfish in corn oil 200g': {
-        brand: 'dsf tesda',
-        imageUrl: '/product_images/dti-dsf-bangus.webp',
-    },
-    'desa garlic gourmet tuyo in corn oil 208g': {
-        brand: 'desa',
-        imageUrl: '/product_images/dti-desa-tuyo.webp',
-    },
-    'desa spanish style sardines in corn oil 208g': {
-        brand: 'desa',
-        imageUrl: '/product_images/dti-desa-sardines.webp',
-    },
-    'desa spanish style bangus milkfish in corn oil 216g': {
-        brand: 'desa',
-        imageUrl: '/product_images/dti-desa-bangus.webp',
-    },
-    'lianas 100 pure tablea': {
-        brand: 'lianas',
-        imageUrl: '/product_images/dti-lianas-tablea.webp',
-    },
-    'lianas artisan dark milk chocolate bars': {
-        brand: 'lianas artisan',
-        imageUrl: '/product_images/dti-lianas-bars.webp',
-    },
-    'picker s calamansi concentrate 1l': {
-        brand: 'picker s',
-        imageUrl: '/product_images/dti-pickers-concentrate.webp',
-    },
-    'picker s calamansi juice drink': {
-        brand: 'picker s',
-        imageUrl: '/product_images/dti-pickers-juice.webp',
-    },
-    'pomona calamansi pur e 1 liter jug': {
-        brand: 'pomona',
-        imageUrl: '/product_images/dti-pomona-puree.webp',
-    },
-    'pomona calamansi juice drink 300ml': {
-        brand: 'pomona',
-        imageUrl: '/product_images/dti-pomona-juice.webp',
-    },
-    'a5 delight healthymansi calamansi concentrate': {
-        brand: 'a5 delight',
-        imageUrl: '/product_images/dti-a5-concentrate.webp',
-    },
-    'a5 delight healthymansi ready to drink calamansi juice': {
-        brand: 'a5 delight',
-        imageUrl: '/product_images/dti-a5-juice.webp',
-    },
-    'k three coolers calamansi puree 1000ml': {
-        brand: 'k three coolers',
-        imageUrl: '/product_images/dti-kthree-puree.webp',
-    },
-    'k three coolers calamansi juice drink': {
-        brand: 'k three coolers',
-        imageUrl: '/product_images/dti-kthree-juice.webp',
-    },
 };
 
 export const CURATED_PRODUCT_NAMES = [
@@ -150,8 +66,6 @@ export const CURATED_PRODUCT_NAMES = [
     "JACK N' JILL DEWBERRY YOGURT CAKE STRAWBERRY",
     'Purefoods Corned Beef 150g',
     'Piattos Cheese Flavored Potato Crisps',
-    '2K Peanuts 300g',
-    'AKAO Farms Certified Halal Fresh Table Eggs 12s',
     'Lucky Me! Instant Pancit Canton Original',
     'The Ultimate Chocolate Chip Cookies',
     'AMIGO SEGURADO BIG ELBOW MACARONI - 5kg',
@@ -161,40 +75,35 @@ function normalizeText(value = '') {
     return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
-// Studio photos extracted directly from the DTI Region IX Halal in ZAMPEN Product Catalogue 2026
+// One showcase photo per MSME extracted directly from the DTI Region IX Halal in ZAMPEN Product Catalogue 2026
 const CURATED_BRAND_IMAGES = {
+    'malandi patalon zamboanga city agrarian reform association mpc mapzacara': '/product_images/dti-mapzacara.webp',
+    'antiens food products': '/product_images/dti-antiens.webp',
     '2k peanuts': '/product_images/dti-2k-peanuts.webp',
-    'mapzacara': '/product_images/dti-mapzacara.webp',
-    'antiens': '/product_images/dti-antiens.webp',
-    'auntie nitz': '/product_images/dti-auntie-nitz.webp',
-    'mch carmela': '/product_images/dti-mch-carmela.webp',
+    'auntie nitz bakeshop': '/product_images/dti-auntie-nitz.webp',
+    'mch carmela the food shop': '/product_images/dti-mch-carmela.webp',
     'ruru mushrooms': '/product_images/dti-ruru-mushrooms.webp',
-    'holisticare': '/product_images/dti-oasis-holisticare.webp',
-    'silsilah harmony': '/product_images/dti-oasis-holisticare.webp',
-    'ola': '/product_images/dti-ola-food.webp',
-    'jing homemade': '/product_images/dti-jing-bagoong.webp',
-    'laguerta': '/product_images/dti-laguerta.webp',
-    'dsf tesda': '/product_images/dti-dsf-tesda.webp',
-    'desa': '/product_images/dti-desa.webp',
-    'cagapa': '/product_images/dti-cagapa.webp',
-    'dipmayo': '/product_images/dti-dipmayo.webp',
-    'agriko organic': '/product_images/dti-agriko.webp',
-    'agriko eco farm': '/product_images/dti-agriko.webp',
-    'altoberos': '/product_images/dti-altoberos.webp',
-    'heaven s gift': '/product_images/dti-heavens-gift.webp',
-    'lianas': '/product_images/dti-lianas.webp',
-    'lianas artisan': '/product_images/dti-lianas.webp',
-    'mifamco': '/product_images/dti-mifamco.webp',
-    'mifamco artisan': '/product_images/dti-mifamco.webp',
-    'a5 delight': '/product_images/dti-a5-healthymansi.webp',
-    'garden zest': '/product_images/dti-rossvell-gardenzest.webp',
-    'k three coolers': '/product_images/dti-kthree-coolers.webp',
-    'picker s': '/product_images/dti-pickers.webp',
-    'pomona': '/product_images/dti-pomona.webp',
-    'zasihivac': '/product_images/dti-pomona.webp',
-    'imavemco': '/product_images/dti-imavemco.webp',
-    'cymon': '/product_images/dti-cymon.webp',
-    'jerusalem herbal': '/product_images/dti-cymon.webp',
+    'oasis livelihood and training center': '/product_images/dti-oasis-holisticare.webp',
+    'ola food products': '/product_images/dti-ola-food.webp',
+    'jing homemade products': '/product_images/dti-jing-bagoong.webp',
+    'laguerta food products': '/product_images/dti-laguerta.webp',
+    'dipolog school of fisheries': '/product_images/dti-dsf-tesda.webp',
+    'sar den s food products': '/product_images/dti-desa.webp',
+    'cassava growers and processors association inc cagapa': '/product_images/dti-cagapa.webp',
+    'fml agriventures corporation': '/product_images/dti-fml-agriventures.webp',
+    'fml safeeats corporation': '/product_images/dti-dipmayo.webp',
+    'agriko multi trade enterprise corp': '/product_images/dti-agriko.webp',
+    'altoberos food products': '/product_images/dti-altoberos.webp',
+    'heaven s gift bakehaus': '/product_images/dti-heavens-gift.webp',
+    'liana s food products manufacturing': '/product_images/dti-lianas.webp',
+    'midsalip farmers multi purpose cooperative mifamco': '/product_images/dti-mifamco.webp',
+    'a5 food products': '/product_images/dti-a5-healthymansi.webp',
+    'rossvell enterprises': '/product_images/dti-rossvell-gardenzest.webp',
+    'k three food products': '/product_images/dti-kthree-coolers.webp',
+    'picker s calamansi food products': '/product_images/dti-pickers.webp',
+    'zamboanga sibugay high value crops marketing cooperative': '/product_images/dti-pomona.webp',
+    'ipil market vendors marketing cooperative imavemco': '/product_images/dti-imavemco.webp',
+    'jerusalem herbal products manufacturing': '/product_images/dti-cymon.webp',
 };
 
 export function getCuratedProductImage(product) {
@@ -214,6 +123,10 @@ export function getCuratedProductImage(product) {
         if (brand === curated.brand) {
             return curated;
         }
+    }
+
+    if (CURATED_BRAND_IMAGES[normalizedName]) {
+        return { brand: normalizedName, imageUrl: CURATED_BRAND_IMAGES[normalizedName] };
     }
 
     if (brand && CURATED_BRAND_IMAGES[brand]) {

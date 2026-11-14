@@ -1,8 +1,8 @@
-import { AlertCircle, Building2, CheckCircle2, Leaf, ShieldCheck } from 'lucide-react';
+import { AlertCircle, Building2, CheckCircle2, Leaf, Mail, MapPin, Package, Phone, ShieldCheck, User } from 'lucide-react';
 import Modal from '../ui/Modal';
 import ProductImage from '../catalog/ProductImage';
 import { getSafeUrl } from '../../utils/security';
-import { parseProductVariants, simplifyStatus } from '../../utils/textFormatters';
+import { parseProductLines, parseProductVariants, simplifyStatus } from '../../utils/textFormatters';
 
 function formatDate(value) {
   if (!value) return '';
@@ -90,6 +90,7 @@ export default function ProductCardDetail({ product, onClose }) {
     : product.certifying_bodies;
   const sourceUrl = getSafeUrl(product.source_url);
   const variants = parseProductVariants(product.admin_notes);
+  const productLines = parseProductLines(product.admin_notes);
   const statusMeta = getStatusMeta(product);
   const StatusIcon = statusMeta.Icon;
 
@@ -110,7 +111,7 @@ export default function ProductCardDetail({ product, onClose }) {
     <Modal
       isOpen={Boolean(product)}
       title="Product details"
-      description="Product record from the registry"
+      description={isDtiDirectory ? 'DTI Region IX ZAMPEN directory record' : 'Product record from the registry'}
       onClose={onClose}
       size="lg"
       maxHeightClass="max-h-[calc(100dvh-2rem)] sm:max-h-[88vh]"
@@ -137,67 +138,147 @@ export default function ProductCardDetail({ product, onClose }) {
             {product.name}
           </h2>
           <dl className="mt-3 divide-y divide-[#DCE7E0] border-t border-[#DCE7E0]">
-            <div className="py-2.5">
-              <dt className="flex items-center gap-1.5 text-[11px] font-semibold text-[#52645B]">
-                <Building2 size={13} aria-hidden="true" /> Company
-              </dt>
-              <dd className="mt-0.5 break-words text-xs font-medium text-[#17251F] sm:text-sm">
-                {companyName}
-              </dd>
-            </div>
-            {hasDistinctBrand && (
-              <div className="py-2.5">
-                <dt className="text-[11px] font-semibold text-[#52645B]">Brand</dt>
-                <dd className="mt-0.5 break-words text-xs font-medium text-[#17251F] sm:text-sm">
-                  {product.brand}
-                </dd>
-              </div>
+            {isDtiDirectory ? (
+              <>
+                <div className="py-2.5">
+                  <dt className="flex items-center gap-1.5 text-[11px] font-semibold text-[#52645B]">
+                    <Package size={13} aria-hidden="true" /> Product lines
+                  </dt>
+                  <dd className="mt-0.5 break-words text-xs font-medium text-[#17251F] sm:text-sm">
+                    {productLines || 'Not listed in catalogue'}
+                  </dd>
+                </div>
+                <div className="py-2.5">
+                  <dt className="flex items-center gap-1.5 text-[11px] font-semibold text-[#52645B]">
+                    <User size={13} aria-hidden="true" /> Contact name
+                  </dt>
+                  <dd className="mt-0.5 break-words text-xs font-medium text-[#17251F] sm:text-sm">
+                    {manufacturer?.contact_person || 'Not listed in catalogue'}
+                  </dd>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="py-2.5">
+                  <dt className="flex items-center gap-1.5 text-[11px] font-semibold text-[#52645B]">
+                    <Building2 size={13} aria-hidden="true" /> Company
+                  </dt>
+                  <dd className="mt-0.5 break-words text-xs font-medium text-[#17251F] sm:text-sm">
+                    {companyName}
+                  </dd>
+                </div>
+                {hasDistinctBrand && (
+                  <div className="py-2.5">
+                    <dt className="text-[11px] font-semibold text-[#52645B]">Brand</dt>
+                    <dd className="mt-0.5 break-words text-xs font-medium text-[#17251F] sm:text-sm">
+                      {product.brand}
+                    </dd>
+                  </div>
+                )}
+              </>
             )}
           </dl>
         </div>
 
         <dl className="grid min-w-0 grid-cols-1 border-t border-[#DCE7E0] sm:col-span-2 sm:grid-cols-2 sm:gap-x-6">
-          <div className="border-b border-[#DCE7E0] py-2.5">
-            <dt className="flex items-center gap-1.5 text-[11px] font-semibold text-[#52645B]">
-              <ShieldCheck size={13} aria-hidden="true" /> Certification body
-            </dt>
-            <dd className="mt-0.5 break-words text-xs font-medium text-[#17251F] sm:text-sm">
-              {certifierLabel}
-            </dd>
-          </div>
-          {hasCertificateMeta && (
+          {isDtiDirectory ? (
             <>
-              <div className="border-b border-[#DCE7E0] py-2.5">
-                <dt className="text-[11px] font-semibold text-[#52645B]">Certificate number</dt>
+              <div className="border-b border-[#DCE7E0] py-2.5 sm:col-span-2">
+                <dt className="flex items-center gap-1.5 text-[11px] font-semibold text-[#52645B]">
+                  <MapPin size={13} aria-hidden="true" /> Company address
+                </dt>
                 <dd className="mt-0.5 break-words text-xs font-medium text-[#17251F] sm:text-sm">
-                  {product.certificate_no || 'Not on file'}
+                  {manufacturer?.address || 'Not listed in catalogue'}
                 </dd>
               </div>
               <div className="border-b border-[#DCE7E0] py-2.5">
-                <dt className="text-[11px] font-semibold text-[#52645B]">Certificate expiry date</dt>
+                <dt className="flex items-center gap-1.5 text-[11px] font-semibold text-[#52645B]">
+                  <Phone size={13} aria-hidden="true" /> Contact number
+                </dt>
                 <dd className="mt-0.5 break-words text-xs font-medium text-[#17251F] sm:text-sm">
-                  {product.expiry_date ? formatDate(product.expiry_date) : 'Not on file'}
+                  {manufacturer?.contact_phone || 'Not listed in catalogue'}
+                </dd>
+              </div>
+              <div className="border-b border-[#DCE7E0] py-2.5">
+                <dt className="flex items-center gap-1.5 text-[11px] font-semibold text-[#52645B]">
+                  <Mail size={13} aria-hidden="true" /> Email address
+                </dt>
+                <dd className="mt-0.5 break-all text-xs font-medium text-[#17251F] sm:text-sm">
+                  {manufacturer?.contact_email ? (
+                    <a
+                      href={`mailto:${manufacturer.contact_email}`}
+                      className="text-emerald-800 underline underline-offset-2"
+                    >
+                      {manufacturer.contact_email}
+                    </a>
+                  ) : (
+                    'Not listed in catalogue'
+                  )}
+                </dd>
+              </div>
+              <div className="border-b border-[#DCE7E0] py-2.5 sm:col-span-2">
+                <dt className="text-[11px] font-semibold text-[#52645B]">Registry source</dt>
+                <dd className="mt-0.5 break-words text-xs font-medium text-[#17251F] sm:text-sm">
+                  {sourceUrl ? (
+                    <a
+                      href={sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-emerald-800 underline underline-offset-2"
+                    >
+                      {product.source || sourceUrl}
+                    </a>
+                  ) : (
+                    product.source || 'Not provided'
+                  )}
+                </dd>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="border-b border-[#DCE7E0] py-2.5">
+                <dt className="flex items-center gap-1.5 text-[11px] font-semibold text-[#52645B]">
+                  <ShieldCheck size={13} aria-hidden="true" /> Certification body
+                </dt>
+                <dd className="mt-0.5 break-words text-xs font-medium text-[#17251F] sm:text-sm">
+                  {certifierLabel}
+                </dd>
+              </div>
+              {hasCertificateMeta && (
+                <>
+                  <div className="border-b border-[#DCE7E0] py-2.5">
+                    <dt className="text-[11px] font-semibold text-[#52645B]">Certificate number</dt>
+                    <dd className="mt-0.5 break-words text-xs font-medium text-[#17251F] sm:text-sm">
+                      {product.certificate_no || 'Not on file'}
+                    </dd>
+                  </div>
+                  <div className="border-b border-[#DCE7E0] py-2.5">
+                    <dt className="text-[11px] font-semibold text-[#52645B]">Certificate expiry date</dt>
+                    <dd className="mt-0.5 break-words text-xs font-medium text-[#17251F] sm:text-sm">
+                      {product.expiry_date ? formatDate(product.expiry_date) : 'Not on file'}
+                    </dd>
+                  </div>
+                </>
+              )}
+              <div className="border-b border-[#DCE7E0] py-2.5">
+                <dt className="text-[11px] font-semibold text-[#52645B]">Registry source</dt>
+                <dd className="mt-0.5 break-words text-xs font-medium text-[#17251F] sm:text-sm">
+                  {sourceUrl ? (
+                    <a
+                      href={sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-emerald-800 underline underline-offset-2"
+                    >
+                      {product.source || sourceUrl}
+                    </a>
+                  ) : (
+                    product.source || 'Not provided'
+                  )}
                 </dd>
               </div>
             </>
           )}
-          <div className="border-b border-[#DCE7E0] py-2.5">
-            <dt className="text-[11px] font-semibold text-[#52645B]">Registry source</dt>
-            <dd className="mt-0.5 break-words text-xs font-medium text-[#17251F] sm:text-sm">
-              {sourceUrl ? (
-                <a
-                  href={sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-emerald-800 underline underline-offset-2"
-                >
-                  {product.source || sourceUrl}
-                </a>
-              ) : (
-                product.source || 'Not provided'
-              )}
-            </dd>
-          </div>
           {variants.length > 0 && (
             <div className="border-b border-[#DCE7E0] py-2.5 sm:col-span-2">
               <dt className="text-[11px] font-semibold text-[#52645B]">

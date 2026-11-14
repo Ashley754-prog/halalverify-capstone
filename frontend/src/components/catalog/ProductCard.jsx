@@ -12,10 +12,11 @@ import {
     ExternalLink,
     Leaf,
     MapPin,
+    Package,
     ShieldAlert,
 } from 'lucide-react';
 import { getSafeUrl } from '../../utils/security';
-import { parseProductVariants, simplifyStatus } from '../../utils/textFormatters';
+import { parseProductLines, parseProductVariants, simplifyStatus } from '../../utils/textFormatters';
 import { resolveZamboangaDistrict } from '../../data/constants';
 import ProductImage from './ProductImage';
 
@@ -110,6 +111,10 @@ export default function ProductCard({
     const certBadge = !isPorkFree && !isVegetarian ? getProductCertifierBadge(product) : null;
     const districtInfo = resolveZamboangaDistrict(product);
     const variants = parseProductVariants(product.admin_notes);
+    const productLines = parseProductLines(product.admin_notes);
+    const isDtiDirectory =
+        `${product.source || ''}`.toLowerCase().includes('zampen') ||
+        `${product.source || ''}`.toLowerCase().includes('dti region ix');
 
     return (
         <div
@@ -176,16 +181,25 @@ export default function ProductCard({
                         </span>
                     </div>
 
-                    {/* Slot 3: Fixed 2-Line Product Title + 1-Line Producer Name */}
+                    {/* Slot 3: Fixed 2-Line Product Title + 1-Line Producer / Product Lines */}
                     <div className="space-y-1">
                         <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug line-clamp-2 min-h-[2.5rem] break-words">
                             {product.name}
                         </h3>
                         <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
-                            <Building2 size={12} className="text-slate-400 shrink-0" />
-                            <span className="truncate">
-                                {product.manufacturers?.name || product.brand || 'Local / Regional Producer'}
-                            </span>
+                            {isDtiDirectory && productLines ? (
+                                <>
+                                    <Package size={12} className="text-slate-400 shrink-0" />
+                                    <span className="truncate">{productLines}</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Building2 size={12} className="text-slate-400 shrink-0" />
+                                    <span className="truncate">
+                                        {product.manufacturers?.name || product.brand || 'Local / Regional Producer'}
+                                    </span>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -231,14 +245,23 @@ export default function ProductCard({
 
                     <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500">
                         <span className="flex items-center gap-1 min-w-0 truncate">
-                            <Calendar size={11} className="shrink-0" />
-                            <span className="truncate">
-                                {product.expiry_date
-                                    ? `Valid until ${formatShortExpiryDate(product.expiry_date)}`
-                                    : product.certificate_no
-                                    ? `Cert # ${product.certificate_no}`
-                                    : 'Verified Registry Record'}
-                            </span>
+                            {isDtiDirectory && !product.expiry_date && !product.certificate_no && product.manufacturers?.address ? (
+                                <>
+                                    <MapPin size={11} className="shrink-0" />
+                                    <span className="truncate">{product.manufacturers.address}</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Calendar size={11} className="shrink-0" />
+                                    <span className="truncate">
+                                        {product.expiry_date
+                                            ? `Valid until ${formatShortExpiryDate(product.expiry_date)}`
+                                            : product.certificate_no
+                                            ? `Cert # ${product.certificate_no}`
+                                            : 'Verified Registry Record'}
+                                    </span>
+                                </>
+                            )}
                         </span>
                         {variants.length > 0 && (
                             <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-md bg-white text-slate-700 border border-slate-200 text-[10px] font-semibold">

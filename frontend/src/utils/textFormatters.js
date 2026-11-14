@@ -61,3 +61,13 @@ export function parseProductVariants(adminNotes) {
         .map((item) => item.trim())
         .filter(Boolean);
 }
+
+/**
+ * Extracts structured [Product Lines: ...] text stored in admin_notes
+ * for DTI Region IX ZAMPEN directory showcase entries.
+ */
+export function parseProductLines(adminNotes) {
+    if (!adminNotes || typeof adminNotes !== 'string') return '';
+    const match = adminNotes.match(/\[Product Lines:\s*([^\]]+)\]/i);
+    return match && match[1] ? match[1].trim() : '';
+}
