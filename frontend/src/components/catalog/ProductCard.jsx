@@ -17,7 +17,7 @@ import {
     ShieldAlert,
 } from 'lucide-react';
 import { getSafeUrl } from '../../utils/security';
-import { simplifyStatus } from '../../utils/textFormatters';
+import { parseProductVariants, simplifyStatus } from '../../utils/textFormatters';
 import { resolveZamboangaDistrict } from '../../data/constants';
 import ProductImage from './ProductImage';
 
@@ -79,6 +79,7 @@ export default function ProductCard({
 
     const certBadge = !isPorkFree && !isVegetarian ? getProductCertifierBadge(product) : null;
     const districtInfo = resolveZamboangaDistrict(product);
+    const variants = parseProductVariants(product.admin_notes);
     const rawEvidenceUrl = getSafeUrl(product.image_url);
     const evidenceUrl = rawEvidenceUrl && !rawEvidenceUrl.includes('/dti-catalogue/') && !rawEvidenceUrl.includes('/product_images/')
         ? rawEvidenceUrl
@@ -235,6 +236,30 @@ export default function ProductCard({
                         </div>
                     )}
                 </div>
+
+                {/* Consolidated Product Line Flavors / Variants */}
+                {variants.length > 0 && (
+                    <div className="space-y-1">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Available Flavors &amp; Variants ({variants.length})
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                            {variants.slice(0, 4).map((variant) => (
+                                <span
+                                    key={variant}
+                                    className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-emerald-50/80 text-emerald-800 border border-emerald-200/80 text-[10px] font-medium"
+                                >
+                                    {variant}
+                                </span>
+                            ))}
+                            {variants.length > 4 && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-semibold">
+                                    +{variants.length - 4} more
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {/* Ingredients Summary (only shown when actual ingredients exist, not generic registry imports) */}
                 {product.ingredients_summary && !product.ingredients_summary.toLowerCase().startsWith('verified product certified under') && (

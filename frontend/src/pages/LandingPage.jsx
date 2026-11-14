@@ -550,14 +550,14 @@ export default function LandingPage({ onViewChange, userRole }) {
             .limit(200),
           supabase
             .from('products')
-            .select('id, name, brand, category, status, image_url, created_at, expiry_date, certificate_no, certifying_body_id, source, source_url, manufacturers(name), certifying_bodies(name, code)')
+            .select('id, name, brand, category, status, image_url, created_at, expiry_date, certificate_no, certifying_body_id, source, source_url, admin_notes, manufacturers(name), certifying_bodies(name, code)')
             .in('status', ['Halal', 'halal', 'HALAL', 'Verified', 'verified', 'VERIFIED'])
             .or(`and(certifying_body_id.not.is.null,expiry_date.is.null),and(certifying_body_id.not.is.null,expiry_date.gte.${new Date().toISOString().slice(0, 10)}),and(certificate_no.not.is.null,expiry_date.is.null),and(certificate_no.not.is.null,expiry_date.gte.${new Date().toISOString().slice(0, 10)})`)
             .order('created_at', { ascending: false })
             .limit(500),
           supabase
             .from('products')
-            .select('id, name, brand, category, status, image_url, created_at, expiry_date, certificate_no, certifying_body_id, source, source_url, manufacturers(name), certifying_bodies(name, code)')
+            .select('id, name, brand, category, status, image_url, created_at, expiry_date, certificate_no, certifying_body_id, source, source_url, admin_notes, manufacturers(name), certifying_bodies(name, code)')
             .in('name', CURATED_PRODUCT_NAMES)
             .in('status', ['Halal', 'halal', 'HALAL', 'Verified', 'verified', 'VERIFIED'])
             .or(`and(certifying_body_id.not.is.null,expiry_date.is.null),and(certifying_body_id.not.is.null,expiry_date.gte.${new Date().toISOString().slice(0, 10)}),and(certificate_no.not.is.null,expiry_date.is.null),and(certificate_no.not.is.null,expiry_date.gte.${new Date().toISOString().slice(0, 10)})`),

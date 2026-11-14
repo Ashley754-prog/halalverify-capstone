@@ -2,6 +2,7 @@ import { Building2, ShieldCheck } from 'lucide-react';
 import Modal from '../ui/Modal';
 import ProductImage from '../catalog/ProductImage';
 import { getSafeUrl } from '../../utils/security';
+import { parseProductVariants } from '../../utils/textFormatters';
 
 function formatDate(value) {
   if (!value) return 'Not provided';
@@ -21,6 +22,7 @@ export default function ProductCardDetail({ product, onClose }) {
     ? product.certifying_bodies[0]
     : product.certifying_bodies;
   const sourceUrl = getSafeUrl(product.source_url);
+  const variants = parseProductVariants(product.admin_notes);
 
   return (
     <Modal
@@ -106,6 +108,23 @@ export default function ProductCardDetail({ product, onClose }) {
               {formatDate(product.expiry_date)}
             </dd>
           </div>
+          {variants.length > 0 && (
+            <div className="py-2.5 sm:col-span-2 sm:border-t sm:border-[#DCE7E0]">
+              <dt className="text-[11px] font-semibold text-[#52645B]">
+                Available flavors and variants ({variants.length})
+              </dt>
+              <dd className="mt-1.5 flex flex-wrap gap-1.5">
+                {variants.map((variant) => (
+                  <span
+                    key={variant}
+                    className="inline-flex items-center rounded-md border border-[#DCE7E0] bg-[#F4F8F5] px-2 py-0.5 text-xs font-medium text-[#17251F]"
+                  >
+                    {variant}
+                  </span>
+                ))}
+              </dd>
+            </div>
+          )}
         </dl>
 
         <p className="mt-3 w-full rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-[11px] leading-relaxed text-amber-900 sm:col-span-2 sm:mt-0 sm:p-3 sm:text-xs">

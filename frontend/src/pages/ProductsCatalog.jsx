@@ -252,7 +252,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
 
                 const safeQ = q.replace(/[,()'"%&|{}\s]+/g, '%').slice(0, 200).replace(/^%+|%+$/g, '');
                 if (safeQ) {
-                    pBuilder = pBuilder.or(`name.ilike.%${safeQ}%,brand.ilike.%${safeQ}%,barcode.ilike.%${safeQ}%,certificate_no.ilike.%${safeQ}%`);
+                    pBuilder = pBuilder.or(`name.ilike.%${safeQ}%,brand.ilike.%${safeQ}%,barcode.ilike.%${safeQ}%,certificate_no.ilike.%${safeQ}%,admin_notes.ilike.%${safeQ}%`);
                 }
 
                 if (cat && cat !== 'All Categories') {

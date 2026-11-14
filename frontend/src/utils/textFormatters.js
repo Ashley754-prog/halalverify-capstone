@@ -47,3 +47,17 @@ export function simplifyStatus(status) {
     }
     return clean;
 }
+
+/**
+ * Extracts structured [Variants: A | B | C] lists stored in admin_notes
+ * for consolidated product-family cards without leaking admin audit strings.
+ */
+export function parseProductVariants(adminNotes) {
+    if (!adminNotes || typeof adminNotes !== 'string') return [];
+    const match = adminNotes.match(/\[Variants:\s*([^\]]+)\]/i);
+    if (!match || !match[1]) return [];
+    return match[1]
+        .split('|')
+        .map((item) => item.trim())
+        .filter(Boolean);
+}
