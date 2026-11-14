@@ -33,7 +33,7 @@ const CURATED_PRODUCT_IMAGES = {
     },
     '2k peanuts 300g': {
         brand: '2k peanuts',
-        imageUrl: '/product_images/2k-salted-brown-peanuts-300g.webp',
+        imageUrl: '/product_images/dti-2k-peanuts.webp',
     },
     'akao farms certified halal fresh table eggs 12s': {
         brand: 'akao farms',
@@ -87,7 +87,7 @@ function normalizeText(value = '') {
 
 // Studio photos extracted directly from the DTI Region IX Halal in ZAMPEN Product Catalogue 2026
 const CURATED_BRAND_IMAGES = {
-    '2k peanuts': '/product_images/2k-salted-brown-peanuts-300g.webp',
+    '2k peanuts': '/product_images/dti-2k-peanuts.webp',
     'mapzacara': '/product_images/dti-mapzacara.webp',
     'antiens': '/product_images/dti-antiens.webp',
     'auntie nitz': '/product_images/dti-auntie-nitz.webp',

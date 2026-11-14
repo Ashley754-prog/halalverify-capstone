@@ -125,6 +125,16 @@ export default function ProductCardDetail({ product, onClose }) {
               </dd>
             </div>
           )}
+          {product.ingredients_summary && !product.ingredients_summary.toLowerCase().startsWith('verified product certified under') && (
+            <div className="py-2.5 sm:col-span-2 sm:border-t sm:border-[#DCE7E0]">
+              <dt className="text-[11px] font-semibold text-[#52645B]">
+                Ingredients summary
+              </dt>
+              <dd className="mt-1 break-words text-xs leading-relaxed text-[#17251F] sm:text-sm">
+                {product.ingredients_summary}
+              </dd>
+            </div>
+          )}
         </dl>
 
         <p className="mt-3 w-full rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-[11px] leading-relaxed text-amber-900 sm:col-span-2 sm:mt-0 sm:p-3 sm:text-xs">

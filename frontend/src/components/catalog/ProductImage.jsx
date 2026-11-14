@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Cookie, CupSoda, Fish, Leaf, Package, Wheat } from 'lucide-react';
 import { getCuratedProductImage } from '../../data/curatedProductImages';
 import { getSafeUrl } from '../../utils/security';
@@ -14,28 +15,35 @@ function getCategoryIcon(category = '') {
 }
 
 export default function ProductImage({ product, className = '' }) {
+    const [failedUrl, setFailedUrl] = useState(null);
     const curatedImage = getCuratedProductImage(product);
     const imageUrl = curatedImage?.imageUrl || getSafeUrl(product?.image_url);
+    const hasValidImage = Boolean(imageUrl && failedUrl !== imageUrl);
     const categoryIcon = getCategoryIcon(product?.category);
 
     return (
         <div
-            className={`relative flex aspect-[4/3] items-center justify-center overflow-hidden border-b border-slate-100 bg-gradient-to-br from-emerald-50 via-[#F4F8F5] to-amber-50 text-emerald-800/60 ${className}`}
+            className={`relative flex aspect-[4/3] items-center justify-center overflow-hidden border-b border-slate-100 ${
+                hasValidImage
+                    ? 'bg-white'
+                    : 'bg-gradient-to-br from-emerald-50 via-[#F4F8F5] to-amber-50 text-emerald-800/60'
+            } ${className}`}
         >
-            <div className="flex flex-col items-center gap-2 px-4 text-center">
-                {categoryIcon}
-                <span className="text-[10px] font-semibold text-slate-500">
-                    No image available for this product.
-                </span>
-            </div>
-            {imageUrl && (
+            {hasValidImage ? (
                 <img
                     src={imageUrl}
                     alt={`${product?.name || 'Product'} photo`}
                     loading="lazy"
-                    onError={(event) => event.currentTarget.classList.add('hidden')}
-                    className="absolute inset-0 h-full w-full bg-slate-50/40 object-contain p-4"
+                    onError={() => setFailedUrl(imageUrl)}
+                    className="h-full w-full bg-white object-contain p-3"
                 />
+            ) : (
+                <div className="flex flex-col items-center gap-2 px-4 text-center">
+                    {categoryIcon}
+                    <span className="text-[10px] font-semibold text-slate-500">
+                        No image available for this product.
+                    </span>
+                </div>
             )}
         </div>
     );

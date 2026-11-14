@@ -6,14 +6,12 @@ import {
     Award,
     Calendar,
     Tag,
-    FileText,
     Flag,
     Pencil,
     Trash2,
     ExternalLink,
     Leaf,
     MapPin,
-    ShieldCheck,
     ShieldAlert,
 } from 'lucide-react';
 import { getSafeUrl } from '../../utils/security';
@@ -57,10 +55,6 @@ function getProductCertifierBadge(product) {
     return product.certifying_bodies?.code || null;
 }
 
-function normalizeIdentityStem(value = '') {
-    return String(value).toLowerCase().replace(/[^a-z0-9]/g, '').replace(/s$/, '');
-}
-
 function formatShortExpiryDate(value) {
     if (!value) return '';
     const match = String(value).trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -87,7 +81,7 @@ export default function ProductCard({
     const statusLower = (product.status || '').toLowerCase();
     const adminNotesLower = (product.admin_notes || '').toLowerCase();
 
-    const isPorkFree = statusLower.includes('pork-free') || 
+    const isPorkFree = statusLower.includes('pork-free') ||
                        (statusLower === 'community_listed' && adminNotesLower.includes('pork-free'));
     const isVegetarian = statusLower.includes('vegetarian') || statusLower.includes('vegan') ||
                          (statusLower === 'community_listed' && (adminNotesLower.includes('vegetarian') || adminNotesLower.includes('vegan')));
@@ -97,25 +91,13 @@ export default function ProductCard({
     const isCommunityListed = statusLower === 'community_listed' && !isPorkFree && !isVegetarian;
 
     const certBadge = !isPorkFree && !isVegetarian ? getProductCertifierBadge(product) : null;
-    const brandStem = normalizeIdentityStem(product.brand);
-    const nameAlpha = String(product.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-    const brandAlpha = String(product.brand || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-    const manufacturerStem = normalizeIdentityStem(product.manufacturers?.name);
-    const nameStartsWithBrand = Boolean(brandAlpha && (nameAlpha.startsWith(brandAlpha) || (brandStem.length >= 2 && nameAlpha.startsWith(brandStem))));
-    const brandMatchesManufacturer = Boolean(brandStem && manufacturerStem && brandStem === manufacturerStem);
-    const showBrandBadge = Boolean(product.brand && !nameStartsWithBrand && !brandMatchesManufacturer);
-    const showCertBadge = Boolean(certBadge && !product.certifying_bodies?.name);
     const districtInfo = resolveZamboangaDistrict(product);
     const variants = parseProductVariants(product.admin_notes);
-    const rawEvidenceUrl = getSafeUrl(product.image_url);
-    const evidenceUrl = rawEvidenceUrl && !rawEvidenceUrl.includes('/dti-catalogue/') && !rawEvidenceUrl.includes('/product_images/')
-        ? rawEvidenceUrl
-        : null;
 
     return (
         <div
-            style={{ contentVisibility: 'auto', containIntrinsicSize: '0 260px' }}
-            className="relative bg-white rounded-xl sm:rounded-2xl border border-slate-200 p-3 sm:p-5 mb-4 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-3 sm:space-y-4 min-w-0"
+            style={{ contentVisibility: 'auto', containIntrinsicSize: '0 380px' }}
+            className="relative h-full bg-white rounded-xl sm:rounded-2xl border border-slate-200 p-3 sm:p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between min-w-0"
         >
             <button
                 type="button"
@@ -123,201 +105,137 @@ export default function ProductCard({
                 className="absolute inset-0 z-0 cursor-pointer rounded-xl sm:rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600"
                 aria-label={`View details for ${product.name}`}
             />
+
+            {/* Slot 1: Framed Product Image */}
             <ProductImage
                 product={product}
-                className="z-10 pointer-events-none -mx-3 -mt-3 rounded-t-xl sm:-mx-5 sm:-mt-5 sm:rounded-t-2xl"
+                className="z-10 pointer-events-none -mx-3 -mt-3 rounded-t-xl sm:-mx-5 sm:-mt-5 sm:rounded-t-2xl shrink-0"
             />
-            <div className="relative z-10 space-y-2 sm:space-y-3 pointer-events-none">
-                {/* Header: Brand & Status Badge */}
-                <div className="flex items-start justify-between gap-2">
-                    <div className="space-y-1 min-w-0">
-                        {(showBrandBadge || showCertBadge) && (
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                                {showBrandBadge && (
-                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
-                                        {product.brand}
-                                    </span>
-                                )}
-                                {showCertBadge && (
-                                    <span className="text-[10px] sm:text-[10px] font-semibold text-blue-700 bg-blue-50 px-1.5 sm:px-2 py-0.5 rounded-md border border-blue-100 flex items-center gap-1">
-                                        <Award size={10} className="text-blue-600 shrink-0" />
-                                        {certBadge}
-                                    </span>
-                                )}
-                            </div>
-                        )}
-                        <h3 className="text-xs sm:text-base font-bold text-slate-900 leading-tight pt-0.5 break-words">
+
+            <div className="relative z-10 flex-1 flex flex-col justify-between space-y-2.5 sm:space-y-3 pointer-events-none pt-3 pb-3">
+                <div className="space-y-2">
+                    {/* Slot 2: Single-Row Category/District + Halal Status Bar */}
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap min-w-0 text-[10px] sm:text-xs text-slate-500">
+                            <span className="flex items-center gap-1 bg-slate-100 px-1.5 sm:px-2 py-0.5 rounded-md truncate max-w-full">
+                                <Tag size={10} className="sm:w-3 sm:h-3 shrink-0" />
+                                <span className="truncate">{product.category || 'Food'}</span>
+                            </span>
+                            {districtInfo && districtInfo.id !== 'commercial' && (
+                                <span className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md font-bold border shrink-0 ${districtInfo.badgeClass}`}>
+                                    <MapPin size={10} className="shrink-0" />
+                                    <span>{districtInfo.shortLabel}</span>
+                                </span>
+                            )}
+                        </div>
+
+                        <span
+                            className={`text-xs font-bold px-2 py-0.5 sm:py-1 rounded-lg shrink-0 flex items-center gap-1 border ${
+                                isHalal
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    : isPorkFree
+                                    ? 'bg-sky-50 text-sky-700 border-sky-200'
+                                    : isVegetarian
+                                    ? 'bg-teal-50 text-teal-700 border-teal-200'
+                                    : isCommunityListed
+                                    ? 'bg-sky-50 text-sky-700 border-sky-200'
+                                    : isDoubtful || isExpired
+                                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                    : 'bg-red-50 text-red-700 border-red-200'
+                            }`}
+                        >
+                            {isHalal && <CheckCircle2 size={10} className="sm:w-3 sm:h-3" />}
+                            {isPorkFree && <CheckCircle2 size={10} className="sm:w-3 sm:h-3" />}
+                            {isVegetarian && <Leaf size={10} className="sm:w-3 sm:h-3" />}
+                            {isCommunityListed && <CheckCircle2 size={10} className="sm:w-3 sm:h-3" />}
+                            {(isDoubtful || isExpired) && <AlertCircle size={10} className="sm:w-3 sm:h-3" />}
+                            {isPorkFree
+                                ? 'Pork-Free Declared'
+                                : isVegetarian
+                                ? 'Vegetarian / Vegan'
+                                : isCommunityListed
+                                ? 'Community Listed'
+                                : simplifyStatus(product.status)}
+                        </span>
+                    </div>
+
+                    {/* Slot 3: Fixed 2-Line Product Title + 1-Line Producer Name */}
+                    <div className="space-y-1">
+                        <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug line-clamp-2 min-h-[2.5rem] break-words">
                             {product.name}
                         </h3>
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                            <Building2 size={12} className="text-slate-400 shrink-0" />
+                            <span className="truncate">
+                                {product.manufacturers?.name || product.brand || 'Local / Regional Producer'}
+                            </span>
+                        </div>
                     </div>
-
-                    <span
-                        className={`text-xs font-bold px-1.5 sm:px-2.5 py-1 rounded-lg shrink-0 flex items-center gap-1 border ${
-                            isHalal
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : isPorkFree
-                                ? 'bg-sky-50 text-sky-700 border-sky-200'
-                                : isVegetarian
-                                ? 'bg-teal-50 text-teal-700 border-teal-200'
-                                : isCommunityListed
-                                ? 'bg-sky-50 text-sky-700 border-sky-200'
-                                : isDoubtful || isExpired
-                                ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                : 'bg-red-50 text-red-700 border-red-200'
-                        }`}
-                    >
-                        {isHalal && <CheckCircle2 size={10} className="sm:w-3 sm:h-3" />}
-                        {isPorkFree && <CheckCircle2 size={10} className="sm:w-3 sm:h-3" />}
-                        {isVegetarian && <Leaf size={10} className="sm:w-3 sm:h-3" />}
-                        {isCommunityListed && <CheckCircle2 size={10} className="sm:w-3 sm:h-3" />}
-                        {(isDoubtful || isExpired) && <AlertCircle size={10} className="sm:w-3 sm:h-3" />}
-                        {isPorkFree
-                            ? 'Pork-Free Declared'
-                            : isVegetarian
-                            ? 'Vegetarian / Vegan'
-                            : isCommunityListed
-                            ? 'Community Listed'
-                            : simplifyStatus(product.status)}
-                    </span>
                 </div>
 
-                {/* Category & District Badge */}
-                <div className="flex flex-wrap gap-1 sm:gap-2 text-[10px] sm:text-xs text-slate-500 pt-1">
-                    <span className="flex items-center gap-1 bg-slate-100 px-1.5 sm:px-2 py-0.5 rounded-md">
-                        <Tag size={10} className="sm:w-3 sm:h-3" /> {product.category || 'Food'}
-                    </span>
-                    {districtInfo && districtInfo.id !== 'commercial' && (
-                        <span className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md font-bold border ${districtInfo.badgeClass}`}>
-                            <MapPin size={10} className="shrink-0" />
-                            <span>{districtInfo.shortLabel}</span>
-                        </span>
-                    )}
-                    {evidenceUrl && (
-                        <a
-                            href={evidenceUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="pointer-events-auto flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 px-1.5 sm:px-2 py-0.5 rounded-md font-bold transition"
-                        >
-                            <ShieldCheck size={10} className="text-emerald-600 shrink-0" />
-                            <span>View Certificate / Evidence</span>
-                            <ExternalLink size={9} />
-                        </a>
-                    )}
-                </div>
-
-                {/* Consumer Discretion Advisory for Doubtful / Expired / Non-Certified */}
-                {(isDoubtful || isExpired) && (
-                    <div className="rounded-lg bg-amber-50/90 border border-amber-200 px-2.5 py-1.5 text-xs text-amber-900 leading-snug flex items-start gap-1.5">
-                        <AlertCircle size={12} className="text-amber-700 shrink-0 mt-0.5" />
-                        <span>
-                            <strong>Consumer Discretion Advisory:</strong> Verify active certification or ingredient sources directly with the manufacturer before consumption.
-                        </span>
-                    </div>
-                )}
-
-                {/* Manufacturer & Certification Info */}
-                <div className="space-y-1 text-xs sm:text-sm text-slate-600 bg-slate-50 rounded-lg sm:rounded-xl p-2 sm:p-3 border border-slate-100">
-                    <div className="flex items-center gap-1.5">
-                        <Building2 size={11} className="text-slate-400 shrink-0 sm:w-[13px] sm:h-[13px]" />
-                        <span className="font-semibold text-slate-800">
-                            {product.manufacturers?.name || product.brand || 'Local / Regional Producer'}
-                        </span>
-                    </div>
-
+                {/* Slot 4: Uniform 2-Line Verification & Variant Summary Box */}
+                <div className="bg-slate-50 rounded-xl p-2.5 sm:p-3 border border-slate-100 space-y-1.5">
                     {isPorkFree ? (
                         <div className="flex items-center gap-1.5 text-sky-800 font-medium text-xs">
-                            <CheckCircle2 size={11} className="text-sky-600 shrink-0 sm:w-[13px] sm:h-[13px]" />
+                            <CheckCircle2 size={12} className="text-sky-600 shrink-0" />
                             <span className="truncate">Manufacturer Declared Pork-Free</span>
                         </div>
                     ) : isVegetarian ? (
                         <div className="flex items-center gap-1.5 text-teal-800 font-medium text-xs">
-                            <Leaf size={11} className="text-teal-600 shrink-0 sm:w-[13px] sm:h-[13px]" />
+                            <Leaf size={12} className="text-teal-600 shrink-0" />
                             <span className="truncate">Dietary Standard: Vegetarian / Vegan</span>
                         </div>
                     ) : product.certifying_bodies?.name ? (
                         <div className="flex items-center gap-1.5 text-emerald-800 font-medium text-xs">
-                            <Award size={11} className="text-emerald-600 shrink-0 sm:w-[13px] sm:h-[13px]" />
+                            <Award size={12} className="text-emerald-600 shrink-0" />
                             <span className="truncate">{product.certifying_bodies.name}</span>
+                        </div>
+                    ) : certBadge === 'DTI ZAMPEN' ? (
+                        <div className="flex items-center gap-1.5 text-blue-800 font-medium text-xs">
+                            <Award size={12} className="text-blue-600 shrink-0" />
+                            <span className="truncate">DTI Region IX ZAMPEN Directory</span>
                         </div>
                     ) : isHalal && (product.certifying_body_id || product.certificate_no || product.halal_tier === 'halal_certified') ? (
                         <div className="flex items-center gap-1.5 text-emerald-800 font-medium text-xs">
-                            <Award size={11} className="text-emerald-600 shrink-0 sm:w-[13px] sm:h-[13px]" />
+                            <Award size={12} className="text-emerald-600 shrink-0" />
                             <span className="truncate">Accredited Halal Certifier</span>
                         </div>
                     ) : isCommunityListed ? (
                         <div className="flex items-center gap-1.5 text-slate-700 font-medium text-xs">
-                            <ShieldAlert size={11} className="text-slate-500 shrink-0 sm:w-[13px] sm:h-[13px]" />
+                            <ShieldAlert size={12} className="text-slate-500 shrink-0" />
                             <span className="truncate">Community Listed Product</span>
                         </div>
-                    ) : null}
-
-                    {(product.certificate_no || product.expiry_date || (isHalal && product.certifying_body_id)) && (
-                        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500 pt-0.5">
-                            {product.certificate_no && (
-                                <span className="font-mono text-slate-600">
-                                    Cert #: {product.certificate_no}
-                                </span>
-                            )}
-                            {product.certificate_no && (product.expiry_date || (isHalal && (product.certifying_body_id || product.certificate_no))) && (
-                                <span className="text-slate-300" aria-hidden="true">
-                                    &middot;
-                                </span>
-                            )}
-                            {(product.expiry_date || (isHalal && (product.certifying_body_id || product.certificate_no))) && (
-                                <span className="flex items-center gap-1">
-                                    <Calendar size={10} className="shrink-0 sm:w-[11px] sm:h-[11px]" />
-                                    <span>
-                                        Valid until: {product.expiry_date ? formatShortExpiryDate(product.expiry_date) : 'Continuous / Active Registry'}
-                                    </span>
-                                </span>
-                            )}
+                    ) : (
+                        <div className="flex items-center gap-1.5 text-slate-600 font-medium text-xs">
+                            <ShieldAlert size={12} className="text-slate-400 shrink-0" />
+                            <span className="truncate">HalalVerify Registry Record</span>
                         </div>
                     )}
+
+                    <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500">
+                        <span className="flex items-center gap-1 min-w-0 truncate">
+                            <Calendar size={11} className="shrink-0" />
+                            <span className="truncate">
+                                {product.expiry_date
+                                    ? `Valid until ${formatShortExpiryDate(product.expiry_date)}`
+                                    : product.certificate_no
+                                    ? `Cert # ${product.certificate_no}`
+                                    : 'Verified Registry Record'}
+                            </span>
+                        </span>
+                        {variants.length > 0 && (
+                            <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-md bg-white text-slate-700 border border-slate-200 text-[10px] font-semibold">
+                                {variants.length} {variants.length === 1 ? 'Variant' : 'Flavors'}
+                            </span>
+                        )}
+                    </div>
                 </div>
-
-                {/* Consolidated Product Line Flavors / Variants */}
-                {variants.length > 0 && (
-                    <div className="space-y-1">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Available Flavors &amp; Variants ({variants.length})
-                        </p>
-                        <div className="flex flex-wrap gap-1">
-                            {variants.slice(0, 4).map((variant) => (
-                                <span
-                                    key={variant}
-                                    className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-medium"
-                                >
-                                    {variant}
-                                </span>
-                            ))}
-                            {variants.length > 4 && (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-semibold">
-                                    +{variants.length - 4} more
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* Ingredients Summary (only shown when actual ingredients exist, not generic registry imports) */}
-                {product.ingredients_summary && !product.ingredients_summary.toLowerCase().startsWith('verified product certified under') && (
-                    <div className="text-xs text-slate-600">
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">
-                            Ingredients:
-                        </p>
-                        <p className="line-clamp-2 text-slate-600 text-xs leading-relaxed">
-                            {product.ingredients_summary}
-                        </p>
-                    </div>
-                )}
             </div>
 
-            {/* Footer: Provenance & Actions */}
-            <div className="relative z-10 pointer-events-none pt-2 sm:pt-3 border-t border-slate-100 flex items-center justify-between text-[10px] sm:text-xs gap-1">
-                <span className="text-slate-400 flex items-center gap-1 min-w-0" title={product.source_url || product.source}>
-                    <FileText size={11} className="shrink-0 text-slate-400" />
-                    <span className="truncate">{product.source || 'HalalVerify Registry'}</span>
+            {/* Slot 5: Clean Footer */}
+            <div className="relative z-10 pointer-events-none pt-2 sm:pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] sm:text-xs gap-2 shrink-0">
+                <span className="font-semibold text-emerald-700 flex items-center gap-1 whitespace-nowrap">
+                    View details &rarr;
                 </span>
 
                 <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
