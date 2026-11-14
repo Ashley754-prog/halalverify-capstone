@@ -95,20 +95,63 @@ function normalizeText(value = '') {
     return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
+// Studio photos extracted directly from the DTI Region IX Halal in ZAMPEN Product Catalogue 2026
+const CURATED_BRAND_IMAGES = {
+    'mapzacara': '/product_images/dti-mapzacara.webp',
+    'antiens': '/product_images/dti-antiens.webp',
+    'auntie nitz': '/product_images/dti-auntie-nitz.webp',
+    'mch carmela': '/product_images/dti-mch-carmela.webp',
+    'ruru mushrooms': '/product_images/dti-ruru-mushrooms.webp',
+    'holisticare': '/product_images/dti-oasis-holisticare.webp',
+    'silsilah harmony': '/product_images/dti-oasis-holisticare.webp',
+    'ola': '/product_images/dti-ola-food.webp',
+    'jing homemade': '/product_images/dti-jing-bagoong.webp',
+    'laguerta': '/product_images/dti-laguerta.webp',
+    'dsf tesda': '/product_images/dti-dsf-tesda.webp',
+    'desa': '/product_images/dti-desa.webp',
+    'cagapa': '/product_images/dti-cagapa.webp',
+    'dipmayo': '/product_images/dti-dipmayo.webp',
+    'agriko organic': '/product_images/dti-agriko.webp',
+    'agriko eco farm': '/product_images/dti-agriko.webp',
+    'altoberos': '/product_images/dti-altoberos.webp',
+    'heaven s gift': '/product_images/dti-heavens-gift.webp',
+    'lianas': '/product_images/dti-lianas.webp',
+    'lianas artisan': '/product_images/dti-lianas.webp',
+    'mifamco': '/product_images/dti-mifamco.webp',
+    'mifamco artisan': '/product_images/dti-mifamco.webp',
+    'a5 delight': '/product_images/dti-a5-healthymansi.webp',
+    'garden zest': '/product_images/dti-rossvell-gardenzest.webp',
+    'k three coolers': '/product_images/dti-kthree-coolers.webp',
+    'picker s': '/product_images/dti-pickers.webp',
+    'pomona': '/product_images/dti-pomona.webp',
+    'zasihivac': '/product_images/dti-pomona.webp',
+    'imavemco': '/product_images/dti-imavemco.webp',
+    'cymon': '/product_images/dti-cymon.webp',
+    'jerusalem herbal': '/product_images/dti-cymon.webp',
+};
+
 export function getCuratedProductImage(product) {
     if (!product?.name) return null;
     const normalizedName = normalizeText(product.name);
+    const brand = normalizeText(product.brand || product.manufacturers?.name || '');
     const curated = CURATED_PRODUCT_IMAGES[normalizedName];
-    if (!curated) return null;
 
-    // Bypass brand check for newly added products
-    if (normalizedName === 'amigo segurado big elbow macaroni 5kg' || 
-        normalizedName === 'authentic sulu kahawa sug coffee' ||
-        normalizedName === 'authentic tausug tiyula itum black soup' ||
-        normalizedName === 'beef satti') {
-        return curated;
+    if (curated) {
+        // Bypass brand check for newly added products
+        if (normalizedName === 'amigo segurado big elbow macaroni 5kg' ||
+            normalizedName === 'authentic sulu kahawa sug coffee' ||
+            normalizedName === 'authentic tausug tiyula itum black soup' ||
+            normalizedName === 'beef satti') {
+            return curated;
+        }
+        if (brand === curated.brand) {
+            return curated;
+        }
     }
 
-    const brand = normalizeText(product.brand || product.manufacturers?.name || '');
-    return brand === curated.brand ? curated : null;
+    if (brand && CURATED_BRAND_IMAGES[brand]) {
+        return { brand, imageUrl: CURATED_BRAND_IMAGES[brand] };
+    }
+
+    return null;
 }
