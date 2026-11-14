@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
     Search,
     AlertCircle,
@@ -7,7 +7,6 @@ import {
     Camera,
     ChevronLeft,
     ChevronRight,
-    X,
     RotateCcw,
     Package,
 } from 'lucide-react';
@@ -24,7 +23,7 @@ import ProductFormModal from '../components/catalog/ProductFormModal';
 import ProductDeleteModal from '../components/catalog/ProductDeleteModal';
 import { supabase } from '../lib/supabaseClient';
 import { API_BASE_URL, authFetch } from '../utils/api';
-import { ZAMBOANGA_DISTRICTS, resolveZamboangaDistrict } from '../data/constants';
+import { resolveZamboangaDistrict } from '../data/constants';
 import { SEED_ESTABLISHMENTS } from '../data/seedEstablishments';
 
 const PRODUCT_CATEGORIES = [
@@ -50,6 +49,7 @@ const QUICK_CATEGORIES = [
     { label: 'Food & Beverage', value: 'Food & Beverage' },
     { label: 'Bakery & Biscuits', value: 'Bakery & Biscuits' },
     { label: 'Spices & Seasonings', value: 'Spices & Seasonings' },
+    { label: 'Condiments & Sauces', value: 'Condiments & Sauces' },
     { label: 'Dairy & Milk', value: 'Dairy & Milk' },
     { label: 'Canned Fish & Meat', value: 'Canned Fish & Meat' },
     { label: 'Instant Noodles & Pasta', value: 'Instant Noodles & Pasta' },
@@ -68,15 +68,24 @@ const PRODUCT_STATUSES = [
     'Doubtful',
 ];
 
+const STATUS_FILTER_OPTIONS = [
+    { label: 'All Halal Statuses', value: 'All Statuses' },
+    { label: 'Certified Halal', value: 'Halal' },
+    { label: 'Pork-Free / Self-Declared', value: 'Pork-Free Declared' },
+    { label: 'Vegetarian / Plant-Based', value: 'Vegetarian / Vegan' },
+    { label: 'Expired Certificate', value: 'Expired' },
+    { label: 'Doubtful / Needs Check', value: 'Doubtful' },
+];
+
 const CERTIFIER_ORIGINS = [
-    { label: 'All Certifiers & Registries', value: 'ALL' },
-    { label: "IDCP (Islamic Da'wah Council)", value: 'IDCP' },
-    { label: 'HDIP (Halal Development Institute)', value: 'HDIP' },
-    { label: 'BPCC (Bangsamoro Consultative Council)', value: 'BPCC' },
-    { label: 'BUSC (Basilan Ulama Council)', value: 'BUSC' },
-    { label: 'DTI Region IX (ZAMPEN MSMEs)', value: 'ZAMPEN' },
+    { label: 'All Certifiers', value: 'ALL' },
+    { label: 'IDCP Certified', value: 'IDCP' },
+    { label: 'HDIP Certified', value: 'HDIP' },
+    { label: 'BPCC Regional Certified', value: 'BPCC' },
+    { label: 'BUSC Regional Certified', value: 'BUSC' },
+    { label: 'DTI Zampen Local MSMEs', value: 'ZAMPEN' },
     { label: 'Muslim in Manila Directory', value: 'Muslim in Manila' },
-    { label: 'Community User Submissions', value: 'Community' },
+    { label: 'Community Listed', value: 'Community' },
 ];
 
 const CB_UUID_MAP = {
@@ -133,15 +142,6 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
     const [reportingTarget, setReportingTarget] = useState(null);
     const isAdmin = userRole === 'admin';
 
-    const availableCategories = useMemo(() => {
-        const cats = new Set(PRODUCT_CATEGORIES);
-        products.forEach((p) => {
-            if (p.category && p.category.trim()) {
-                cats.add(p.category.trim());
-            }
-        });
-        return Array.from(cats);
-    }, [products]);
     const handleOpenContribution = () => {
         if (!userRole) {
             setShowAuthPrompt(true);
@@ -408,32 +408,6 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         loadData(1, searchQuery, cat, selectedStatus, selectedCertifier, selectedDistrict);
     };
 
-    const handleClearFilter = (filterType) => {
-        if (filterType === 'search') {
-            handleClearSearch();
-        } else if (filterType === 'category') {
-            handleCategorySelect('All Categories');
-        } else if (filterType === 'status') {
-            setSelectedStatus('All Statuses');
-            filtersRef.current.status = 'All Statuses';
-            filtersRef.current.page = 1;
-            setCurrentPage(1);
-            loadData(1, searchQuery, selectedCategory, 'All Statuses', selectedCertifier, selectedDistrict);
-        } else if (filterType === 'certifier') {
-            setSelectedCertifier('ALL');
-            filtersRef.current.certifier = 'ALL';
-            filtersRef.current.page = 1;
-            setCurrentPage(1);
-            loadData(1, searchQuery, selectedCategory, selectedStatus, 'ALL', selectedDistrict);
-        } else if (filterType === 'district') {
-            setSelectedDistrict('all');
-            filtersRef.current.district = 'all';
-            filtersRef.current.page = 1;
-            setCurrentPage(1);
-            loadData(1, searchQuery, selectedCategory, selectedStatus, selectedCertifier, 'all');
-        }
-    };
-
     const showToast = (message, type = 'success') => {
         setToast({ visible: true, message, type });
     };
@@ -670,7 +644,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                                 loadData(1, searchQuery, selectedCategory, selectedStatus, selectedCertifier, selectedDistrict);
                             }
                         }}
-                        placeholder="Search by product name, brand, manufacturer, or certificate #..."
+                        placeholder="Search product name, brand, or certificate number..."
                         className="flex-1 min-w-0"
                     />
 
@@ -708,31 +682,11 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                     })}
                 </div>
 
-                {/* Filter Tags */}
+                {/* Filter Row */}
                 <div className="flex flex-wrap sm:flex-nowrap gap-2 sm:gap-2.5 items-center pt-2 border-t border-slate-100 text-xs">
                     <div className="flex items-center gap-1 text-slate-500 font-medium shrink-0">
                         <Filter size={13} className="sm:w-3.5 sm:h-3.5" /> Filter:
                     </div>
-
-                    {/* Category Selector */}
-                    <select
-                        value={selectedCategory}
-                        onChange={(e) => {
-                            const val = e.target.value;
-                            setSelectedCategory(val);
-                            filtersRef.current.category = val;
-                            filtersRef.current.page = 1;
-                            setCurrentPage(1);
-                            loadData(1, searchQuery, val, selectedStatus, selectedCertifier, selectedDistrict);
-                        }}
-                        className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500"
-                    >
-                        {availableCategories.map((cat) => (
-                            <option key={cat} value={cat}>
-                                {cat}
-                            </option>
-                        ))}
-                    </select>
 
                     {/* Status Selector */}
                     <select
@@ -745,11 +699,12 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                             setCurrentPage(1);
                             loadData(1, searchQuery, selectedCategory, val, selectedCertifier, selectedDistrict);
                         }}
-                        className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500"
+                        aria-label="Filter by halal status"
+                        className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500"
                     >
-                        {PRODUCT_STATUSES.map((st) => (
-                            <option key={st} value={st}>
-                                {st}
+                        {STATUS_FILTER_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                                {opt.label}
                             </option>
                         ))}
                     </select>
@@ -765,34 +720,13 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                             setCurrentPage(1);
                             loadData(1, searchQuery, selectedCategory, selectedStatus, val, selectedDistrict);
                         }}
-                        className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500 max-w-[210px] truncate"
+                        aria-label="Filter by certifier"
+                        className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500 max-w-[210px] truncate"
                         title="Filter by certifying body or registry origin"
                     >
                         {CERTIFIER_ORIGINS.map((c) => (
                             <option key={c.value} value={c.value}>
                                 {c.label}
-                            </option>
-                        ))}
-                    </select>
-
-                    {/* Zamboanga City District Selector */}
-                    <select
-                        value={selectedDistrict}
-                        onChange={(e) => {
-                            const val = e.target.value;
-                            setSelectedDistrict(val);
-                            filtersRef.current.district = val;
-                            filtersRef.current.page = 1;
-                            setCurrentPage(1);
-                            loadData(1, searchQuery, selectedCategory, selectedStatus, selectedCertifier, val);
-                        }}
-                        className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500 max-w-[205px] truncate"
-                        title="Filter products & dishes by Zamboanga City District"
-                        aria-label="Filter products by Zamboanga District"
-                    >
-                        {ZAMBOANGA_DISTRICTS.map((d) => (
-                            <option key={d.id} value={d.id}>
-                                {d.label}
                             </option>
                         ))}
                     </select>
@@ -815,60 +749,6 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                         <strong className="text-slate-700">{totalItems}</strong> products
                     </span>
                 </div>
-
-                {/* Active Filter Chips */}
-                {isFilterActive && (
-                    <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-slate-100 text-xs">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Active:</span>
-                        {searchQuery && (
-                            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md text-[11px] font-medium">
-                                Search: &quot;{searchQuery}&quot;
-                                <button type="button" onClick={() => handleClearFilter('search')} className="hover:text-emerald-950 cursor-pointer">
-                                    <X size={12} />
-                                </button>
-                            </span>
-                        )}
-                        {selectedCategory !== 'All Categories' && (
-                            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md text-[11px] font-medium">
-                                {selectedCategory}
-                                <button type="button" onClick={() => handleClearFilter('category')} className="hover:text-emerald-950 cursor-pointer">
-                                    <X size={12} />
-                                </button>
-                            </span>
-                        )}
-                        {selectedStatus !== 'All Statuses' && (
-                            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md text-[11px] font-medium">
-                                Status: {selectedStatus}
-                                <button type="button" onClick={() => handleClearFilter('status')} className="hover:text-emerald-950 cursor-pointer">
-                                    <X size={12} />
-                                </button>
-                            </span>
-                        )}
-                        {selectedCertifier !== 'ALL' && (
-                            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md text-[11px] font-medium">
-                                Certifier: {selectedCertifier}
-                                <button type="button" onClick={() => handleClearFilter('certifier')} className="hover:text-emerald-950 cursor-pointer">
-                                    <X size={12} />
-                                </button>
-                            </span>
-                        )}
-                        {selectedDistrict !== 'all' && (
-                            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md text-[11px] font-medium">
-                                District: {ZAMBOANGA_DISTRICTS.find(d => d.id === selectedDistrict)?.shortLabel || selectedDistrict}
-                                <button type="button" onClick={() => handleClearFilter('district')} className="hover:text-emerald-950 cursor-pointer">
-                                    <X size={12} />
-                                </button>
-                            </span>
-                        )}
-                        <button
-                            type="button"
-                            onClick={handleResetFilters}
-                            className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 underline underline-offset-2 ml-1 cursor-pointer"
-                        >
-                            Clear all
-                        </button>
-                    </div>
-                )}
             </div>
 
             {/* Error Message */}
