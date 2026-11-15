@@ -4,7 +4,7 @@ import os
 import re
 import sys
 import uuid
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from collections import defaultdict
 import urllib.request
 
@@ -16,11 +16,30 @@ SHEET_URL = "https://docs.google.com/spreadsheets/d/17bwhxAWpMZorckQtjzPFZP2e9P_
 SOURCE_PAGE_URL = "https://www.idcphalal.org/clients/client-search"
 SOURCE_NAME = "IDCP Published Registry"
 
+MONTH_FIXES = [
+    ("febuary", "February"), ("febraury", "February"), ("frbruary", "February"), ("feruary", "February"),
+    ("januray", "January"), ("janaury", "January"),
+    ("septemeber", "September"), ("septemer", "September"), ("saptember", "September"),
+    ("novemeber", "November"), ("decemeber", "December"),
+    ("auguest", "August"), ("octuber", "October"), ("octoer", "October"),
+    ("mat ", "May "), ("marh ", "March "),
+]
+
+NON_PRODUCT_NAMES = {
+    "halal registration certificate",
+    "halal certificate",
+    "product",
+    "products",
+    "registered products",
+}
+
 DATE_FORMATS = [
     "%d-%b-%y", "%d-%b-%Y", "%d/%m/%Y", "%Y-%m-%d", "%m/%d/%Y",
     "%B %d, %Y", "%b %d, %Y", "%B %d %Y", "%b %d %Y",
     "%d %B %Y", "%d %b %Y", "%d-%B-%y", "%d-%B-%Y", "%m/%d/%y",
-    "%d-%m-%Y", "%d.%m.%Y", "%Y/%m/%d"
+    "%d-%m-%Y", "%d.%m.%Y", "%Y/%m/%d",
+    "%d-%b %y", "%d-%B %y", "%b-%d-%Y", "%B-%d-%Y",
+    "%B %Y", "%b %Y",
 ]
 
 def clean_text(text: str) -> str:
@@ -32,14 +51,25 @@ def clean_text(text: str) -> str:
 def parse_date(date_str: str):
     if not date_str:
         return None
-    raw = clean_text(date_str).rstrip('.')
+    raw = clean_text(date_str).rstrip('.,;')
+    if raw.isdigit() and 35000 <= int(raw) <= 60000:
+        return date(1899, 12, 30) + timedelta(days=int(raw))
+    for bad, good in MONTH_FIXES:
+        raw = re.sub(bad, good, raw, flags=re.IGNORECASE)
     # Remove ordinal suffixes: 1st, 2nd, 3rd, 4th
     raw = re.sub(r'(\d+)(st|nd|rd|th)', r'\1', raw, flags=re.IGNORECASE)
-    
+    raw = re.sub(r'\s*,\s*', ', ', raw)
+    raw = re.sub(r'\s*-\s*', '-', raw)
+    raw = re.sub(r'-+', '-', raw)
+    raw = re.sub(r'([A-Za-z]+)\.\s*(\d)', r'\1 \2', raw)
+    raw = re.sub(r'(\d+)\.\s*(\d{4})', r'\1, \2', raw)
+
     for fmt in DATE_FORMATS:
         try:
             parsed = datetime.strptime(raw, fmt).date()
-            if parsed.year < 2000:
+            if parsed.year < 100:
+                parsed = parsed.replace(year=parsed.year + 2000)
+            elif parsed.year < 2000:
                 parsed = parsed.replace(year=parsed.year + 100)
             return parsed
         except ValueError:
@@ -86,6 +116,8 @@ def run_sync(force_download: bool = True):
         if not comp_name or not prod_name:
             continue
         if comp_name.lower() in ["company name", "company", "client"]:
+            continue
+        if prod_name.lower() in NON_PRODUCT_NAMES:
             continue
             
         cert_dt = parse_date(cert_date_raw)

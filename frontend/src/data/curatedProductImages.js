@@ -35,6 +35,10 @@ const CURATED_PRODUCT_IMAGES = {
         brand: 'the purefoods hormel co inc',
         imageUrl: '/product_images/purefoods-corned-beef-150g.png',
     },
+    'purefoods corned beef 150g 210g': {
+        brand: 'the purefoods hormel co inc',
+        imageUrl: '/product_images/purefoods-corned-beef-150g.png',
+    },
     '555 sardines in tomato sauce': {
         brands: ['century pacific food inc sardines div', 'century pacific food inc sardines div qatar', 'general tuna corp'],
         imageUrl: '/product_images/idcp-555-sardines.webp',
