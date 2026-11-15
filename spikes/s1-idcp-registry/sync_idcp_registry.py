@@ -12,7 +12,10 @@ RAW_CSV = os.path.join(os.path.dirname(__file__), "idcp_raw_registry.csv")
 MANUFACTURERS_CSV = os.path.join(os.path.dirname(__file__), "idcp_manufacturers.csv")
 PRODUCTS_CSV = os.path.join(os.path.dirname(__file__), "idcp_products.csv")
 
-SHEET_URL = "https://docs.google.com/spreadsheets/d/17bwhxAWpMZorckQtjzPFZP2e9P_zOkapIa5JKy-aU9Y/export?format=csv"
+# Match the live gviz feed queried by idcphalal.org by default; pass --full-sheet for the unfiltered export
+GVIZ_CSV_URL = "https://docs.google.com/spreadsheets/d/17bwhxAWpMZorckQtjzPFZP2e9P_zOkapIa5JKy-aU9Y/gviz/tq?tqx=out:csv&gid=0"
+FULL_CSV_URL = "https://docs.google.com/spreadsheets/d/17bwhxAWpMZorckQtjzPFZP2e9P_zOkapIa5JKy-aU9Y/export?format=csv"
+SHEET_URL = GVIZ_CSV_URL
 SOURCE_PAGE_URL = "https://www.idcphalal.org/clients/client-search"
 SOURCE_NAME = "IDCP Published Registry"
 
@@ -76,18 +79,19 @@ def parse_date(date_str: str):
             continue
     return None
 
-def download_registry(force: bool = False):
+def download_registry(force: bool = False, use_full_sheet: bool = False):
+    target_url = FULL_CSV_URL if use_full_sheet else GVIZ_CSV_URL
     if force or not os.path.exists(RAW_CSV) or os.path.getsize(RAW_CSV) < 1000:
-        print(f"Downloading latest raw IDCP registry from Google Sheets ({SHEET_URL})...")
-        req = urllib.request.Request(SHEET_URL, headers={"User-Agent": "Mozilla/5.0"})
+        print(f"Downloading latest raw IDCP registry from Google Sheets ({target_url})...")
+        req = urllib.request.Request(target_url, headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(req, timeout=90) as resp:
             data = resp.read()
         with open(RAW_CSV, "wb") as f:
             f.write(data)
         print(f"Saved {len(data):,} bytes to {RAW_CSV}")
 
-def run_sync(force_download: bool = True):
-    download_registry(force=force_download)
+def run_sync(force_download: bool = True, use_full_sheet: bool = False):
+    download_registry(force=force_download, use_full_sheet=use_full_sheet)
     
     with open(RAW_CSV, "r", encoding="utf-8", errors="ignore") as f:
         reader = csv.reader(f)
@@ -238,4 +242,5 @@ def run_sync(force_download: bool = True):
 
 if __name__ == "__main__":
     force = "--no-download" not in sys.argv
-    run_sync(force_download=force)
+    use_full = "--full-sheet" in sys.argv
+    run_sync(force_download=force, use_full_sheet=use_full)

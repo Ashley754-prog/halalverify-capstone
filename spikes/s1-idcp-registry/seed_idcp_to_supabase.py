@@ -192,7 +192,10 @@ def seed_idcp(seed_all: bool = True, clean_first: bool = False):
 
         cat = guess_category(p["name"], m_name)
         val_date = p.get("expiry_date") or None
-        curated_img = CURATED_IMAGE_BY_NAME.get(p["name"])
+        curated_img = CURATED_IMAGE_BY_NAME.get(p["name"]) or next(
+            (v for k, v in CURATED_IMAGE_BY_NAME.items() if k.upper() == p["name"].upper()),
+            None,
+        )
         if curated_img:
             curated_restored += 1
 
