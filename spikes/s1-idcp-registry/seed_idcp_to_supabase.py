@@ -68,6 +68,108 @@ CURATED_IMAGE_BY_NAME = {
     "LUCKY ME! BEEF": "/product_images/idcp-luckyme-beef.webp",
     "LUCKY ME! CHICKEN": "/product_images/idcp-luckyme-chicken.webp",
     "PAYLESS XTRA BIG PANCIT CANTON CHILIMANSI FLAVOR": "/product_images/idcp-payless-xtrabig.webp",
+    # Verified retail product images for live gviz IDCP catalog
+    "PUREFOODS CORNED BEEF": "/product_images/purefoods-corned-beef-150g.png",
+    "PUREFOODS CORNED BEEF 24X380g": "/product_images/purefoods-corned-beef-150g.png",
+    "PUREFOODS CORNED BEEF HOT & SPICY": "/product_images/idcp-purefoods-corned-beef-hot-spicy.jpg",
+    "GARDENIA HIGH FIBER WHEAT BREAD 600G-THICK SLICE,400G": "/product_images/idcp-gardenia-wheat-bread.jpg",
+    "GARDENIA CHOCO BRIOCHE BUN": "/product_images/idcp-gardenia-choco-brioche.jpg",
+    "GARDENIA BUTTER TOAST SINGLES/5-SLICE PACK/2 SLICE PACK": "/product_images/idcp-gardenia-butter-toast.jpg",
+    "BUTTER TOAST SINGLES POLYBAG": "/product_images/idcp-gardenia-butter-toast.jpg",
+    "NEUBAKE WHEATEN BREAD 560G": "/product_images/Gardenia-Neubake-Wheaten-Bread-560g.png",
+    "NEUBAKE WHEATEN BREAD 375G ECONO PACK": "/product_images/Gardenia-Neubake-Wheaten-Bread-560g.png",
+    "GARDENIA NEUBAKE WHEATEN LOAF 560G": "/product_images/Gardenia-Neubake-Wheaten-Bread-560g.png",
+    "NEUBAKE WHITE BREAD 450G": "/product_images/idcp-neubake-white-bread.jpg",
+    "NEUBAKE WHITE BREAD 300G ECONO PACK": "/product_images/idcp-neubake-white-bread.jpg",
+    "GARDENIA NEUBAKE 450G/BS WHITE BREAD LOAF": "/product_images/idcp-neubake-white-bread.jpg",
+    "SKYFLAKES SANDWICH CONDENSADA FLAVOR - ALL SKU'S": "/product_images/idcp-skyflakes-condensada.webp",
+    "SKYFLAKES SANDWICH TSOKOLATE FLAVOR - ALL SKU'S": "/product_images/idcp-skyflakes-tsokolate.webp",
+    "SKYFLAKES CRACKERS - ALL SKU'S": "/product_images/idcp-skyflakes-crackers.jpg",
+    "SKYFLAKES GARLIC - ALL SKU'S": "/product_images/idcp-skyflakes-garlic.jpg",
+    "SKYFLAKES CRACKERS FIT OATFIBER CRACKERS WITH FIBER - ALL SKU'S": "/product_images/idcp-skyflakes-oatfiber.jpg",
+    "SKYFLAKES CRACKERS FIT-CRACKERS WITH FLAXSEED - ALL SKU'S)": "/product_images/idcp-skyflakes-flaxseed.jpg",
+    "SKYFLAKES SANDWICH SWEET BUTTER FLAVOR - ALL SKU'S": "/product_images/idcp-skyflakes-sweet-butter.jpg",
+    "FITA CRACKERS": "/product_images/idcp-fita.webp",
+    "FITA CRACKERS - ALL SKU'S": "/product_images/idcp-fita.webp",
+    "CRUSHED GRAHAMS - ALL SKU'S": "/product_images/idcp-crushed-grahams.jpg",
+    "BEAR BRAND ADULT PLUS - MPAVD010-1": "/product_images/idcp-bear-brand-adult-plus.jpg",
+    "NESTLE ALL PURPOSE CREAM - S2UA002-3": "/product_images/idcp-nestle-all-purpose-cream.jpg",
+    "NESTLE CHUCKIE OPTI-GROW - CKUF1-2": "/product_images/idcp-nestle-chuckie.jpg",
+    "NESTLE COFFEE MATE COFFEE CREAMER - CNNN325": "/product_images/idcp-nestle-coffee-mate.jpg",
+    "NESTLE COFFEE MATE COFFEE CREAMER - CNNN347": "/product_images/idcp-nestle-coffee-mate.jpg",
+    "MAGGI MAGIC SARAP POWER 60 (12X8g) ME": "/product_images/idcp-maggi-magic-sarap.jpg",
+    "MAGGI MAGIC SARAP POWER 60 (12X8g) ME - SEASONING GRANULES": "/product_images/idcp-maggi-magic-sarap.jpg",
+    "MAGGI MAGIC SARAP POWER 60 (12X8g) ME GRANULES SEASONING": "/product_images/idcp-maggi-magic-sarap.jpg",
+    "MAGGI MAGIC SARAP POWER 60 (12X8g) ME SEASONING GRANULES": "/product_images/idcp-maggi-magic-sarap.jpg",
+    "SAN MIGUEL MAGNOLIA ALL PURPOSE FLOUR": "/product_images/idcp-magnolia-all-purpose-flour.jpg",
+    "LADY'S CHOICE REAL MAYONNAISE": "/product_images/idcp-ladys-choice-real-mayo.jpg",
+    "LADY'S CHOICE REAL MAYONNAISE (FOOD SOLUTIONS)": "/product_images/idcp-ladys-choice-real-mayo.jpg",
+    "LADY'S CHOICE MAYONIS SEBENAR REAL MAYONNAISE": "/product_images/idcp-ladys-choice-real-mayo.jpg",
+    "LADY'S CHOICE SANDWICH SPREAD": "/product_images/idcp-ladys-choice-sandwich-spread.jpg",
+    "LADY'S CHOICE SANDWICH SPREAD TARTINADE A SANDWICH": "/product_images/idcp-ladys-choice-sandwich-spread.jpg",
+    "LADY'S CHOICE CHICKEN SPREAD": "/product_images/idcp-ladys-choice-chicken-spread.jpg",
+    "LADY'S CHOICE TUNA SPREAD": "/product_images/idcp-ladys-choice-tuna-spread.jpg",
+    "LADY'S CHOICE TUNA SPREAD TARTINADE AU THON": "/product_images/idcp-ladys-choice-tuna-spread.jpg",
+    "LADY'S CHOICE CAESAR DRESSING": "/product_images/idcp-ladys-choice-caesar-dressing.jpg",
+    "BEST FOODS REAL MAYONNAISE": "/product_images/idcp-best-foods-real-mayo.jpg",
+    "BEST FOODS REAL MAYONAISE": "/product_images/idcp-best-foods-real-mayo.jpg",
+    "BEST FOODS REAL MAYONNAISE HK": "/product_images/idcp-best-foods-real-mayo.jpg",
+    "SELECTA MOO CHOCOLATE MILK DRINK 245ML & 290ML": "/product_images/idcp-selecta-moo-chocolate.jpg",
+    "DING DONG - DING DONG MIXED MATCH": "/product_images/idcp-ding-dong-mixed-nuts.jpg",
+    "DING DONG - DING DONG MIXED NUTS HOT & SPICY": "/product_images/idcp-ding-dong-hot-spicy.jpg",
+    "DING DONG - DING DONG SNACK MIX WITH CHIPS AND CURLS 95g": "/product_images/idcp-ding-dong-snack-mix.jpg",
+    "GROWERS GARLIC FLAVOR PEANUT": "/product_images/idcp-growers-garlic-peanuts.jpg",
+    "GROWERS GARLIC FLAVOR PEANUTS 8g": "/product_images/idcp-growers-garlic-peanuts.jpg",
+    "GROWERS SALTED CASHEW NUTS": "/product_images/idcp-growers-salted-cashew.jpg",
+    "GROWERS SALTED PISTACHIO NUTS": "/product_images/idcp-growers-salted-pistachio.jpg",
+    "GROWERS GLAZED PILI NUTS": "/product_images/idcp-growers-glazed-pili.jpg",
+    "GROWERS NUTRIBAR APPLE CINNAMON": "/product_images/idcp-growers-nutribar-apple.jpg",
+    "GROWERS INION AND GARLIC ALMONDS": "/product_images/idcp-growers-onion-garlic-almonds.jpg",
+    "MEGA SARDINES IN TOMATO SAUCE - 155g/425g": "/product_images/idcp-mega-sardines-tomato.jpg",
+    "MEGA SARDINES IN TOMATO SAUCE 155G/425G": "/product_images/idcp-mega-sardines-tomato.jpg",
+    "MEGA SARDINES IN NATURAL OIL - 155g/425g": "/product_images/idcp-mega-sardines-natural-oil.jpg",
+    "MEGA SARDINES IN NATURAL OIL 155G/425G": "/product_images/idcp-mega-sardines-natural-oil.jpg",
+    "MEGA FRIED SARDINES IN HOT & SPICY - 155g": "/product_images/idcp-mega-fried-sardines-hot-spicy.jpg",
+    "MEGA FRIED SARDINES IN HOT & SPICY 155G": "/product_images/idcp-mega-fried-sardines-hot-spicy.jpg",
+    "MEGA FRIED SARDINE WITH TAUSI - 155g": "/product_images/idcp-mega-sardines-tausi.webp",
+    "MEGA TUNA PREMIUM TUNA FLAKES IN OIL - 155g": "/product_images/idcp-mega-tuna-flakes-oil.jpg",
+    "MEG TUNA PREMIUM FLAKES IN OIL - 155g": "/product_images/idcp-mega-tuna-flakes-oil.jpg",
+    "MAMA TUNA FLAKES IN OIL - 155g": "/product_images/idcp-mega-tuna-flakes-oil.jpg",
+    "MEGA MAMA TUNA IN FLAKES IN OIL - 155g": "/product_images/idcp-mega-tuna-flakes-oil.jpg",
+    "MEGA TUNA PREMIUM FLAKES HOT AND SPICY - 155g": "/product_images/idcp-mega-tuna-hot-spicy.jpg",
+    "MEGA TUNA PREMIUM FLAKES IN HOT & SPICY - 155G": "/product_images/idcp-mega-tuna-hot-spicy.jpg",
+    "MAMA TUNA HOT AND SPICY - 155g": "/product_images/idcp-mega-tuna-hot-spicy.jpg",
+    "MEGA MAMA TUNA IN HOT & SPICY - 155g": "/product_images/idcp-mega-tuna-hot-spicy.jpg",
+    "MEGA TUNA PREMIUM FLAKES IN SPANISH STYLE - 155g": "/product_images/idcp-mega-tuna-spanish.jpg",
+    "MEGA TUNA PREMIUM FLAKES SPANISH STYLE - 155g": "/product_images/idcp-mega-tuna-spanish.jpg",
+    "555 SARDINES IN TOMATO SAUCE EXTRA HOT": "/product_images/idcp-555-sardines-extra-hot.jpg",
+    "FAMILY'S BRAND SARDINES IN SPANISH STYLE HOT 155g": "/product_images/idcp-familys-sardines-spanish.jpg",
+    "MASTER FRIED SARDINES IN TOMATO SAUCE HOT & SPICY 155g": "/product_images/idcp-master-sardines-hot-spicy.jpg",
+    "FIT N' RIGHT BURN APPLE FLAVORED JUICE DRINK IN TETRA": "/product_images/idcp-delmonte-fitnright-apple.jpg",
+    "DEL MONTE FIT 'N RIGHT GREEN APPLE JUICE DRINK WITH 450mg GCE AND 500mg L-CARNATINE": "/product_images/idcp-delmonte-fitnright-apple.jpg",
+    "FIT N' RIGHT APPLE FLAVORED JUICE DRINK IN TETRA": "/product_images/idcp-delmonte-fitnright-apple.jpg",
+    "FIT 'N RIGHT FOUR SEASONS JUICE DRINK WITH 450mg GCE AND 500mg L-CARNATINE": "/product_images/idcp-delmonte-fitnright-four-seasons.jpg",
+    "FIT N' RIGHT BURN FOUR SEASONS FLAVORED JUICE DRIK IN TETRA": "/product_images/idcp-delmonte-fitnright-four-seasons.jpg",
+    "FIT N' RIGHT BURN PINEAPPLE FLAVORED JUICE DRINK IN TETRA": "/product_images/idcp-delmonte-fitnright-burn-pineapple.jpg",
+    "FIT 'N RIGHT PINEAPPLE JUICE DRINK WITH 450mg GCE AND 500mh L-CARNATINE": "/product_images/idcp-delmonte-fitnright-pineapple.jpg",
+    "CANNED PINEAPPLE JUICE 100% UNSWEETENED": "/product_images/idcp-delmonte-pineapple-juice.jpg",
+    "MAMA SITA'S - OYATER SAUCE": "/product_images/idcp-mamasita-oyster-sauce.jpg",
+    "MAMA SITA'S - BACOLOD-STYLE INASAL - LEMONGRASS GINGER SPICE - MARINADE": "/product_images/idcp-mamasita-inasal.jpg",
+    "MAMA SITA'S - BARBECUE MARINADE": "/product_images/idcp-mamasita-bbq-marinade.jpg",
+    "MAMA SITA'S - BARBECUE MARINADE MIX": "/product_images/idcp-mamasita-bbq-marinade.jpg",
+    "MAMA SITA'S - KARE-KARE - PEANUT SAUCE - MIX": "/product_images/idcp-mamasita-karekare.jpg",
+    "MAMA SITA'S - KARE-KARE SAUCE": "/product_images/idcp-mamasita-karekare.jpg",
+    "MAMA SITA'S - ORIENTAL GRAVY - PALABOK - MIX": "/product_images/idcp-mamasita-palabok.jpg",
+    "MAMA SITA'S - BREADING MIX": "/product_images/idcp-mamasita-breading-mix.jpg",
+    "MAMA SITA'S - STIR-FRY - CHOPSUEY/PANCIT CANTON - MIX": "/product_images/idcp-mamasita-chopsuey.jpg",
+    "DELFI KNICK KNACKS CHOCOLATE - CHOCOLATE COATED BISCUITS": "/product_images/idcp-delfi-knick-knacks.jpg",
+    "AURO CHOCOLATE - 64% DARK CHOCOLATE COINS, BAR, BLOCK": "/product_images/idcp-auro-64-dark.jpg",
+    "AURO CHOCOATE - 64% DARK CHOCOLATE COINS,BAR,BLOCK": "/product_images/idcp-auro-64-dark.jpg",
+    "AURO CHOCOLATE - SALTED PEANUT WITH PLANT BASED 47% MILK CHOCOLATE": "/product_images/idcp-auro-salted-chocolate.jpg",
+    "ANCHOR BUTTERY RICH AND CREAMY - SALTED": "/product_images/idcp-anchor-butter-salted.jpg",
+    "ANCHOR BUTTERY RICH AND CREAMY - UNSALTED": "/product_images/idcp-anchor-butter-unsalted.jpg",
+    "GOLD HERITAGE CORNED BEEF": "/product_images/gold-heritage-corned-beef.jpeg",
+    "BLANCHED POTATO DICED": "/product_images/blanched-potato-dice.jpeg",
 }
 
 def guess_category(name: str, comp: str) -> str:
@@ -184,6 +286,7 @@ def seed_idcp(seed_all: bool = True, clean_first: bool = False):
     print(f"\n2. Seeding {len(target_products):,} Products into Supabase...")
     product_payloads = []
     curated_restored = 0
+    curated_by_url = {}
     for p in target_products:
         m_name = p["manufacturer_name"]
         m_id = mfg_map.get(m_name)
@@ -198,6 +301,7 @@ def seed_idcp(seed_all: bool = True, clean_first: bool = False):
         )
         if curated_img:
             curated_restored += 1
+            curated_by_url.setdefault(curated_img, []).append(p["id"])
 
         payload = {
             "id": p["id"],
@@ -216,8 +320,6 @@ def seed_idcp(seed_all: bool = True, clean_first: bool = False):
             "source_url": SOURCE_PAGE_URL,
             "synced_at": now_iso,
         }
-        if curated_img:
-            payload["image_url"] = curated_img
         product_payloads.append(payload)
 
     # Upsert products in batches of 250
@@ -236,7 +338,18 @@ def seed_idcp(seed_all: bool = True, clean_first: bool = False):
         except Exception as e:
             print(f"  Error on batch {i // batch_size + 1}: {e}")
 
-    print(f"\nSuccessfully seeded {inserted_count:,} IDCP products into Supabase (restored {curated_restored} curated images)!")
+    # Apply curated local image URLs explicitly per image path so PostgREST key uniformity never skips them
+    applied_img_rows = 0
+    for img_url, id_list in curated_by_url.items():
+        for j in range(0, len(id_list), 100):
+            chunk = id_list[j:j + 100]
+            try:
+                upd = supabase.table("products").update({"image_url": img_url}).in_("id", chunk).execute()
+                applied_img_rows += len(upd.data) if upd.data else len(chunk)
+            except Exception as e:
+                print(f"  Error applying image {img_url}: {e}")
+
+    print(f"\nSuccessfully seeded {inserted_count:,} IDCP products into Supabase (applied {applied_img_rows} curated images across {curated_restored} matches)!")
 
     if seed_all and not clean_first and inserted_count >= int(total_to_insert * 0.9):
         print("\n3. Checking for superseded IDCP rows to prune...")
