@@ -24,7 +24,7 @@ const CURATED_PRODUCT_IMAGES = {
         imageUrl: '/product_images/dewberry-yogurt-cake.jpeg',
     },
     'purefoods corned beef 150g': {
-        brands: ['purefoods', 'the pure foods hornel co inc'],
+        brand: 'the pure foods hornel co inc',
         imageUrl: '/product_images/purefoods-corned-beef-150g.png',
     },
     'purefoods corned beef 210g': {
@@ -63,8 +63,8 @@ const CURATED_PRODUCT_IMAGES = {
         brands: ['nestle philippines inc', 'nestle phils inc'],
         imageUrl: '/product_images/idcp-bear-brand-milk.webp',
     },
-    'c2 green tea apple 500ml': {
-        brand: 'c2 cool clean',
+    'c2 cool clean green tea apple flavor': {
+        brands: ['urc beverage calamba c2 b 146', 'urc pampanga beverage plant f 163', 'urc balud cebu plant b 1035'],
         imageUrl: '/product_images/idcp-c2-apple.webp',
     },
     'century tuna chunks hot spicy': {
@@ -219,12 +219,8 @@ const CURATED_PRODUCT_IMAGES = {
         brand: 'monde m y san calamba',
         imageUrl: '/product_images/idcp-skyflakes-tsokolate.webp',
     },
-    'piattos cheese flavored potato crisps': {
-        brand: 'jack n jill',
-        imageUrl: '/product_images/piattos-cheese-flavored-potato-chips.jpeg',
-    },
-    'lucky me instant pancit canton original': {
-        brand: 'lucky me',
+    'lucky me pancit canton original': {
+        brand: 'monde nissin corporation',
         imageUrl: '/product_images/lucky-me-pancit-canton-original.webp',
     },
     'the ultimate chocolate chip cookies': {
@@ -256,9 +252,11 @@ export const CURATED_PRODUCT_NAMES = [
     'GOLD HERITAGE CORNED BEEF',
     'RUSK POWDER',
     "JACK N' JILL DEWBERRY YOGURT CAKE STRAWBERRY",
-    'Purefoods Corned Beef 150g',
-    'Piattos Cheese Flavored Potato Crisps',
-    'Lucky Me! Instant Pancit Canton Original',
+    'PUREFOODS CORNED BEEF 150G',
+    'ARGENTINA CORNED BEEF 175G',
+    'CENTURY TUNA HOT & SPICY',
+    'C2 COOL & CLEAN GREEN TEA APPLE FLAVOR',
+    'LUCKY ME! PANCIT CANTON ORIGINAL',
     'The Ultimate Chocolate Chip Cookies',
     'AMIGO SEGURADO BIG ELBOW MACARONI - 5kg',
 ];
