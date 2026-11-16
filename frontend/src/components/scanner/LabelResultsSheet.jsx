@@ -76,6 +76,7 @@ export const LabelResultsSheet = ({
     onClose,
     onViewChange,
     onScanSecondary,
+    onContributeProduct,
 }) => {
     const [touchStartY, setTouchStartY] = useState(null);
     const [selectedHcbProfile, setSelectedHcbProfile] = useState(null);
@@ -534,16 +535,30 @@ export const LabelResultsSheet = ({
                                 )
                             )}
 
-                            {/* Optional Catalog Lookup Shortcut if no logo was found */}
-                            {(scanResult.riskLevel === 'No Halal Logo Found' || scanResult.riskLevel === 'Halal-Compliant Ingredients') && (
-                                <button
-                                    type="button"
-                                    onClick={() => onViewChange?.('products')}
-                                    className="w-full py-2.5 px-3.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 font-semibold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-xs cursor-pointer"
-                                >
-                                    <Package size={14} className="text-emerald-400 shrink-0" />
-                                    <span>Search Brand in Verified Catalog</span>
-                                </button>
+                            {/* Optional Catalog Lookup & Directory Contribution Shortcuts */}
+                            {scanResult.riskLevel !== 'No Product Detected' && !scanResult.isInvalidLogo && (
+                                <div className="space-y-2">
+                                    {(scanResult.riskLevel === 'No Halal Logo Found' || scanResult.riskLevel === 'Halal-Compliant Ingredients') && (
+                                        <button
+                                            type="button"
+                                            onClick={() => onViewChange?.('products')}
+                                            className="w-full py-2.5 px-3.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 font-semibold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-xs cursor-pointer"
+                                        >
+                                            <Package size={14} className="text-emerald-400 shrink-0" />
+                                            <span>Search Brand in Verified Catalog</span>
+                                        </button>
+                                    )}
+                                    {onContributeProduct && (
+                                        <button
+                                            type="button"
+                                            onClick={() => onContributeProduct(scanResult)}
+                                            className="w-full py-2.5 px-3.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-slate-200 font-semibold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-xs cursor-pointer"
+                                        >
+                                            <PlusCircle size={14} className="text-emerald-400 shrink-0" />
+                                            <span>Submit Product to Directory</span>
+                                        </button>
+                                    )}
+                                </div>
                             )}
 
                             {/* 5. Advisory Disclaimer Card */}

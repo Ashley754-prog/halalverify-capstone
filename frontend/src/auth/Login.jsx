@@ -64,10 +64,11 @@ export const Login = ({ onLogin, onViewChange, layout = 'login' }) => {
             return;
         }
 
-        const role = await fetchUserRole(data.user.id);
+        const role = await fetchUserRole(data.user);
 
         if (!role) {
-            setErrorMessage('Login succeeded, but no profile record was found. Please contact support.');
+            await supabase.auth.signOut().catch(() => {});
+            setErrorMessage('Unable to verify your account profile. Please try again or contact support.');
             setIsLoading(false);
             return;
         }

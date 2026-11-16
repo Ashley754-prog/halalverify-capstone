@@ -104,20 +104,21 @@ export const AppTopbar = ({
                         {isSidebarOpen ? <X size={22} /> : <Menu size={22} />}
                     </button>
 
-                    <div 
-                        onClick={onLogoClick} 
-                        className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group min-w-0"
+                    <button
+                        type="button"
+                        onClick={onLogoClick}
+                        className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group min-w-0 text-left rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
                         title="Return to Home Landing Page"
                     >
-                        <img 
-                            src="/halalverify-logo.png" 
-                            alt="HALALVERIFY logo" 
-                            className="h-8 w-8 sm:h-9 sm:w-9 rounded-full object-cover border border-slate-700 group-hover:scale-105 transition shrink-0" 
+                        <img
+                            src="/halalverify-logo.png"
+                            alt="HALALVERIFY logo"
+                            className="h-8 w-8 sm:h-9 sm:w-9 rounded-full object-cover border border-slate-700 group-hover:scale-105 transition shrink-0"
                         />
                         <div className="min-w-0">
                             <h1 className="text-sm sm:text-xl font-black tracking-[0.12em] sm:tracking-[0.18em] text-white group-hover:text-emerald-400 transition truncate">HALALVERIFY</h1>
                         </div>
-                    </div>
+                    </button>
                 </div>
 
                 {/* Right side: User Profile Dropdown or Sign In button */}

@@ -1,6 +1,7 @@
-from app.auth import get_current_user, require_admin
-from app.supabase_client import supabase
-from app.utils.db_helpers import count_by_status, fetch_table_rows
+from app.auth import extract_user_id, get_current_user, is_admin_user, require_admin
+from app.routes.products import EXCLUDED_UNVERIFIED_STATUSES_LOWER
+from app.routes.registry import EXCLUDED_UNVERIFIED_ESTABLISHMENT_STATUSES
+from app.utils.db_helpers import count_by_status, fetch_table_rows, strip_private_fields
 from fastapi import APIRouter, Depends
 
 router = APIRouter(tags=["summaries"])
@@ -8,21 +9,33 @@ router = APIRouter(tags=["summaries"])
 
 @router.get("/dashboard-summary")
 def get_dashboard_summary(user: dict = Depends(get_current_user)):
-    user_id = getattr(user, "id", None) or (user.get("id") if isinstance(user, dict) else None)
-    is_admin = False
-    if user_id:
-        try:
-            profile_res = supabase.table("profiles").select("role").eq("id", user_id).single().execute()
-            is_admin = (profile_res.data or {}).get("role") == "admin"
-        except Exception:
-            is_admin = False
+    user_id = extract_user_id(user)
+    is_admin = is_admin_user(user_id)
 
     additives = fetch_table_rows("additives")
     establishments = fetch_table_rows("establishments")
     products = fetch_table_rows("products")
     manufacturers = fetch_table_rows("manufacturers")
+    certifiers = fetch_table_rows("certifying_bodies")
     scan_history = fetch_table_rows("scan_history")
-    issue_reports = fetch_table_rows("issue_reports")
+    issue_reports = fetch_table_rows("issue_reports") if is_admin else []
+
+    visible_establishments = (
+        establishments
+        if is_admin
+        else [
+            e for e in establishments
+            if (e.get("halal_status") or "").strip().lower() not in EXCLUDED_UNVERIFIED_ESTABLISHMENT_STATUSES
+        ]
+    )
+    visible_products = (
+        products
+        if is_admin
+        else [
+            p for p in products
+            if (p.get("status") or "").strip().lower() not in EXCLUDED_UNVERIFIED_STATUSES_LOWER
+        ]
+    )
 
     # Regular users only see their own scan history; admins view system-wide scans
     scoped_scans = scan_history if is_admin else [
@@ -49,19 +62,20 @@ def get_dashboard_summary(user: dict = Depends(get_current_user)):
                 "certificate_scans": len(certificate_scans),
                 "additives": len(additives),
                 "flagged_additives": len(flagged_additives),
-                "establishments": len(establishments),
-                "products": len(products),
+                "establishments": len(visible_establishments),
+                "products": len(visible_products),
                 "manufacturers": len(manufacturers),
+                "certifiers": len(certifiers),
                 "open_reports": len(open_reports) if is_admin else 0,
             },
             "breakdowns": {
                 "scan_verdicts": count_by_status(scoped_scans, "verdict"),
                 "additive_statuses": count_by_status(additives, "status"),
-                "establishment_statuses": count_by_status(establishments, "halal_status"),
-                "product_statuses": count_by_status(products, "status"),
+                "establishment_statuses": count_by_status(visible_establishments, "halal_status"),
+                "product_statuses": count_by_status(visible_products, "status"),
                 "report_statuses": count_by_status(issue_reports, "status") if is_admin else {},
             },
-            "latest_scans": scoped_scans[:5],
+            "latest_scans": strip_private_fields(scoped_scans[:5], is_admin=is_admin),
         },
     }
 

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-    ShieldCheck,
     Store,
     Package,
     CheckCircle2,
@@ -58,6 +57,8 @@ export default function VerificationInspectionModal({
     addingMenuItem,
     handleAddMenuItem,
     handleDeleteMenuItem,
+    adminNotes = '',
+    setAdminNotes,
 }) {
     const [selectedImageTab, setSelectedImageTab] = useState('primary');
     const [copiedCert, setCopiedCert] = useState(false);
@@ -221,6 +222,8 @@ export default function VerificationInspectionModal({
                                     ? 'Approve as Muslim-Owned'
                                     : selectedStatus === 'muslim_friendly'
                                     ? 'Approve as Muslim-Friendly'
+                                    : selectedStatus === 'vegetarian_vegan'
+                                    ? 'Approve as Vegetarian / Vegan'
                                     : 'Approve & Publish'}
                             </span>
                         </button>
@@ -694,6 +697,7 @@ export default function VerificationInspectionModal({
                                     <option value="verified">Halal Certified</option>
                                     <option value="muslim_owned">Muslim-Owned</option>
                                     <option value="muslim_friendly">Muslim-Friendly</option>
+                                    <option value="vegetarian_vegan">Vegetarian / Vegan</option>
                                 </select>
                             </div>
                         )}
@@ -769,6 +773,8 @@ export default function VerificationInspectionModal({
                                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 font-semibold text-teal-800 ml-auto border border-teal-200">
                                         {selectedStatus === 'muslim_owned'
                                             ? 'Muslim-Owned'
+                                            : selectedStatus === 'vegetarian_vegan'
+                                            ? 'Vegetarian / Vegan'
                                             : 'Muslim-Friendly'}
                                     </span>
                                 </div>
@@ -850,6 +856,23 @@ export default function VerificationInspectionModal({
                                 </div>
                             );
                         })()}
+
+                        {/* Administrative Review Notes / Rejection Rationale */}
+                        {setAdminNotes && (
+                            <div className="pt-2 border-t border-slate-100 space-y-1.5">
+                                <label htmlFor="inspect-admin-notes" className="block text-xs font-semibold text-slate-700">
+                                    Administrative Review Notes &amp; Rationale
+                                </label>
+                                <textarea
+                                    id="inspect-admin-notes"
+                                    rows={3}
+                                    value={adminNotes}
+                                    onChange={(e) => setAdminNotes(e.target.value)}
+                                    placeholder="Optional notes or rejection rationale shown to the submitter (e.g., certificate verified with IDCP, blurry packaging label, unaccredited logo)..."
+                                    className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none resize-none"
+                                />
+                            </div>
+                        )}
 
                     </div>
                 </div>

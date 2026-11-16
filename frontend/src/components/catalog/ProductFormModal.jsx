@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Upload, Loader2, ExternalLink } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { supabase } from '../../lib/supabaseClient';
+import { buildScopedUploadPath, getSafeUrl, validateUploadFile } from '../../utils/security';
 
 export default function ProductFormModal({
     isOpen,
@@ -18,42 +19,65 @@ export default function ProductFormModal({
     onSubmit,
 }) {
     const [isUploadingEvidence, setIsUploadingEvidence] = useState(false);
+    const [uploadError, setUploadError] = useState('');
 
     if (!isOpen) return null;
 
     const handleEvidenceUpload = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        const check = validateUploadFile(file, {
+            maxSizeMB: 10,
+            allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
+        });
+        if (!check.valid) {
+            setUploadError(check.error || 'Unsupported file.');
+            return;
+        }
+
+        setUploadError('');
+        setIsUploadingEvidence(true);
         try {
-            setIsUploadingEvidence(true);
-            const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '');
-            const filePath = `certificates/prod_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+            const { data: userRes } = await supabase.auth.getUser();
+            const filePath = buildScopedUploadPath(userRes?.user?.id, 'certificates/products', file.name);
             const { error: upErr } = await supabase.storage
                 .from('submissions')
-                .upload(filePath, file, { upsert: true });
+                .upload(filePath, file, { upsert: false });
 
             if (!upErr) {
                 const { data: pub } = supabase.storage.from('submissions').getPublicUrl(filePath);
                 if (pub?.publicUrl) {
                     setModalForm((prev) => ({ ...prev, image_url: pub.publicUrl }));
+                    setIsUploadingEvidence(false);
                     return;
                 }
             }
-            const reader = new FileReader();
-            reader.onload = () => {
-                if (typeof reader.result === 'string') {
-                    setModalForm((prev) => ({ ...prev, image_url: reader.result }));
-                }
-            };
-            reader.readAsDataURL(file);
+
+            await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    if (typeof reader.result === 'string') {
+                        setModalForm((prev) => ({ ...prev, image_url: reader.result }));
+                    }
+                    resolve();
+                };
+                reader.onerror = () => {
+                    setUploadError('Failed to read the selected image file.');
+                    resolve();
+                };
+                reader.readAsDataURL(file);
+            });
         } catch (err) {
             console.warn('Product evidence upload fallback:', err);
+            setUploadError('Image upload failed. Please try another file.');
         } finally {
             setIsUploadingEvidence(false);
         }
     };
 
     const isNonCertified = modalForm.status === 'Pork-Free Declared' || modalForm.status === 'Vegetarian / Vegan';
+    const safeImageUrl = getSafeUrl(modalForm.image_url);
 
     return (
         <Modal
@@ -211,9 +235,9 @@ export default function ProductFormModal({
                             <label className="text-xs font-bold text-slate-700">
                                 Product Photo / Packaging Evidence <span className="font-normal text-slate-400">(Optional)</span>
                             </label>
-                            {modalForm.image_url && (
+                            {safeImageUrl && (
                                 <a
-                                    href={modalForm.image_url}
+                                    href={safeImageUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-[11px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-1"
@@ -223,6 +247,9 @@ export default function ProductFormModal({
                                 </a>
                             )}
                         </div>
+                        {uploadError && (
+                            <p className="text-[11px] font-medium text-red-600">{uploadError}</p>
+                        )}
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                             <label className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold cursor-pointer transition shrink-0">
                                 {isUploadingEvidence ? (
@@ -275,10 +302,10 @@ export default function ProductFormModal({
                     </button>
                     <button
                         type="submit"
-                        disabled={isSaving}
+                        disabled={isSaving || isUploadingEvidence}
                         className="px-5 py-2 text-xs sm:text-sm rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition disabled:opacity-50"
                     >
-                        {isSaving ? 'Saving...' : 'Save Product'}
+                        {isUploadingEvidence ? 'Uploading Photo...' : isSaving ? 'Saving...' : 'Save Product'}
                     </button>
                 </div>
             </form>

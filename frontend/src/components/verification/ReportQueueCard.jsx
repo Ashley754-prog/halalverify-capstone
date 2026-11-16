@@ -1,4 +1,4 @@
-import { AlertTriangle, FileText, ExternalLink, Loader2, ShieldAlert } from 'lucide-react';
+import { FileText, ExternalLink, Loader2, ShieldAlert } from 'lucide-react';
 import QueueStatusBadge from './QueueStatusBadge';
 import { getSafeUrl } from '../../utils/security';
 import { formatShortDate } from '../../utils/verificationNotes';

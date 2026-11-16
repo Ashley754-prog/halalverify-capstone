@@ -109,7 +109,13 @@ export default function AnalyticsSurveillanceSections({
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 text-slate-700">
-                                    {topAdditives.slice(0, 5).map((add, idx) => {
+                                    {topAdditives.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={6} className="py-6 px-4 text-center text-xs text-slate-400">
+                                                No flagged additive detections recorded in this reporting window.
+                                            </td>
+                                        </tr>
+                                    ) : topAdditives.slice(0, 5).map((add, idx) => {
                                         const rawStatus = (add.status || '').toLowerCase();
                                         const isHaram = rawStatus === 'haram' || rawStatus === 'prohibited';
                                         const isHalal = rawStatus === 'halal';

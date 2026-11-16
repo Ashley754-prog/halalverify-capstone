@@ -177,7 +177,7 @@ export default function VerificationQueue({ onViewChange, initialTab = 'establis
                 setSelectedStatus('');
             } else if (derivedTier === 'halal_certified') {
                 setSelectedStatus('verified');
-            } else if (['muslim_owned', 'muslim_friendly'].includes(derivedTier)) {
+            } else if (['muslim_owned', 'muslim_friendly', 'vegetarian_vegan'].includes(derivedTier)) {
                 setSelectedStatus(derivedTier);
             } else if (derivedTier === 'pork_free_declared') {
                 setSelectedStatus('muslim_friendly');
@@ -500,9 +500,13 @@ export default function VerificationQueue({ onViewChange, initialTab = 'establis
                 inspectingItem.original_address !== undefined &&
                 inspectingItem.address.trim().toLowerCase() !== inspectingItem.original_address.trim().toLowerCase()
             );
+            const normalizedNotes =
+                status.toUpperCase() === 'REJECTED' && !adminNotes?.trim()
+                    ? 'Declined during administrative audit.'
+                    : (adminNotes?.trim() || '');
             const auditedNotes = addressEdited
-                ? `${adminNotes?.trim() ? `${adminNotes.trim()}\n` : ''}Address corrected by admin. Submitted as: ${inspectingItem.original_address || 'none'}`
-                : (adminNotes?.trim() ? adminNotes : undefined);
+                ? `${normalizedNotes ? `${normalizedNotes}\n` : ''}Address corrected by admin. Submitted as: ${inspectingItem.original_address || 'none'}`
+                : (normalizedNotes || undefined);
 
             const hasManualPin =
                 (inspectingItem.pin_source === 'map' || inspectingItem.pin_source === 'gps') &&
@@ -611,7 +615,12 @@ export default function VerificationQueue({ onViewChange, initialTab = 'establis
         try {
             setProcessingId(product.id);
             const isModalTarget = inspectingItem && inspectingItem.id === product.id;
-            const finalNotes = notesOverride !== undefined ? notesOverride : (isModalTarget ? adminNotes : undefined);
+            const finalNotes =
+                notesOverride !== undefined
+                    ? notesOverride
+                    : isModalTarget
+                    ? (adminNotes?.trim() || (status.toUpperCase() === 'REJECTED' ? 'Declined during administrative audit.' : undefined))
+                    : undefined;
 
             const payload = {
                 status: status,
@@ -694,21 +703,46 @@ export default function VerificationQueue({ onViewChange, initialTab = 'establis
             }
 
             if (!success) {
-                const dbStatus = resolutionStatus === 'dismissed' ? 'resolved' : resolutionStatus;
                 const { data: { session } } = await supabase.auth.getSession();
                 const adminId = session?.user?.id;
 
-                const { error: sbErr } = await supabase
+                let { error: sbErr } = await supabase
                     .from('issue_reports')
                     .update({
-                        status: dbStatus,
+                        status: resolutionStatus,
                         resolution_notes: finalNotes,
                         resolved_at: new Date().toISOString(),
                         resolved_by: adminId || null,
                     })
                     .eq('id', report.id);
 
+                if (sbErr && resolutionStatus === 'dismissed') {
+                    const fallbackUpdate = await supabase
+                        .from('issue_reports')
+                        .update({
+                            status: 'resolved',
+                            resolution_notes: finalNotes,
+                            resolved_at: new Date().toISOString(),
+                            resolved_by: adminId || null,
+                        })
+                        .eq('id', report.id);
+                    sbErr = fallbackUpdate.error;
+                }
+
                 if (sbErr) throw sbErr;
+
+                if (suspendEstablishment && resolutionStatus === 'resolved' && report.establishment_id) {
+                    const { error: estSuspendErr } = await supabase
+                        .from('establishments')
+                        .update({
+                            halal_status: 'suspended',
+                            verified_at: null,
+                            verified_by: null,
+                            admin_notes: `Suspended after compliance report #${String(report.id).slice(0, 8)}: ${finalNotes}`,
+                        })
+                        .eq('id', report.establishment_id);
+                    if (estSuspendErr) throw estSuspendErr;
+                }
             }
 
             const repLabel = report?.id ? `Report #${String(report.id).slice(0, 8)}` : 'Report';

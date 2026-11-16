@@ -5,18 +5,15 @@ import {
     Award,
     Trash2,
     Camera,
-    ShieldCheck,
     CheckCircle2,
     AlertCircle,
     RefreshCw,
-    User,
-    ExternalLink,
     HardDrive,
 } from 'lucide-react';
 import { PROPONENTS, JURISDICTION } from '../data/constants';
 import Toast from '../components/ui/Toast';
 
-export const Settings = ({ onViewChange, userRole }) => {
+export const Settings = () => {
     const [clearing, setClearing] = useState(false);
     const [cameraTesting, setCameraTesting] = useState(false);
     const [cameraStatus, setCameraStatus] = useState(null);
@@ -189,7 +186,7 @@ export const Settings = ({ onViewChange, userRole }) => {
                 <div>
                     <h3 className="text-sm sm:text-base font-bold text-slate-800">Cloud Database &amp; Model Architecture</h3>
                     <p className="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
-                        Product and establishment searches connect to the Supabase PostgreSQL cloud database holding 13,000+ verified records.
+                        Product and establishment searches connect to the Supabase PostgreSQL cloud database holding our curated registry of verified food products, local establishments, accredited Halal certifying bodies, and screened additives.
                         Optical barcode reading, ingredient parsing, and Halal logo localization run through the high-performance YOLOv8-Nano and RapidOCR (ONNX Runtime) microservice.
                     </p>
                 </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Eye, EyeOff, Compass, ChevronRight, X } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
-import { signInWithProvider } from '../lib/auth';
+import { fetchUserRole, signInWithProvider } from '../lib/auth';
 
 export const CreateAccount = ({ onViewChange, layout = 'create' }) => {
   const [mounted, setMounted] = useState(false);
@@ -78,8 +78,8 @@ export const CreateAccount = ({ onViewChange, layout = 'create' }) => {
       return;
     }
 
-    if (form.password.length < 6) {
-      setErrorMessage('Password must be at least 6 characters.');
+    if (form.password.length < 8) {
+      setErrorMessage('Password must be at least 8 characters.');
       setIsLoading(false);
       return;
     }
@@ -101,6 +101,13 @@ export const CreateAccount = ({ onViewChange, layout = 'create' }) => {
     }
 
     if (data?.session) {
+      const role = await fetchUserRole(data.session.user);
+      if (!role) {
+        await supabase.auth.signOut().catch(() => {});
+        setErrorMessage('Account created, but your profile could not be initialized. Please try signing in again.');
+        setIsLoading(false);
+        return;
+      }
       setSuccessMessage('Account created successfully! Taking you to your dashboard...');
       setIsLoading(false);
       setTimeout(() => {

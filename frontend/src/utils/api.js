@@ -1,10 +1,39 @@
 import { supabase } from '../lib/supabaseClient';
 
-// Cleanse any legacy local tunnel pointers from browser localStorage
+const DEFAULT_PROD_API_URL = 'https://halalverify-backend.onrender.com';
+
+function isTrustedCustomApiUrl(candidate) {
+    if (!candidate || typeof candidate !== 'string') return false;
+    try {
+        const parsed = new URL(candidate);
+        if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return false;
+        const host = parsed.hostname.toLowerCase();
+        const envUrl = import.meta.env.VITE_API_BASE_URL;
+        const allowedHosts = new Set(['halalverify-backend.onrender.com']);
+        if (envUrl) {
+            try {
+                allowedHosts.add(new URL(envUrl).hostname.toLowerCase());
+            } catch {
+                // ignore invalid build-time URL
+            }
+        }
+        if (import.meta.env.DEV && (host === 'localhost' || host === '127.0.0.1')) {
+            return true;
+        }
+        if (typeof window !== 'undefined' && parsed.origin === window.location.origin) {
+            return true;
+        }
+        return parsed.protocol === 'https:' && allowedHosts.has(host);
+    } catch {
+        return false;
+    }
+}
+
+// Cleanse any untrusted/legacy custom API pointers from browser localStorage
 if (typeof window !== 'undefined') {
     try {
         const stored = localStorage.getItem('halalverify_api_url');
-        if (stored && (stored.includes('ngrok') || stored.includes('trycloudflare') || stored.includes('localhost'))) {
+        if (stored && !isTrustedCustomApiUrl(stored)) {
             localStorage.removeItem('halalverify_api_url');
         }
     } catch (e) {
@@ -15,7 +44,7 @@ if (typeof window !== 'undefined') {
 function resolveApiBaseUrl() {
     if (typeof window !== 'undefined') {
         const customUrl = localStorage.getItem('halalverify_api_url');
-        if (customUrl && !customUrl.includes('trycloudflare.com') && !customUrl.includes('ngrok')) {
+        if (isTrustedCustomApiUrl(customUrl)) {
             return customUrl.replace(/\/+$/, '');
         }
 
@@ -31,7 +60,7 @@ function resolveApiBaseUrl() {
     }
 
     // Default primary cloud backend (100% cloud execution, 0MB local dependency)
-    return 'https://halalverify-backend.onrender.com';
+    return DEFAULT_PROD_API_URL;
 }
 
 export const API_BASE_URL = resolveApiBaseUrl();

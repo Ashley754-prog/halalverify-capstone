@@ -1,6 +1,7 @@
 from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
+from app.utils.db_helpers import validate_safe_url
 
 
 class AdditiveCreate(BaseModel):
@@ -34,6 +35,11 @@ class HcbRegistryCreate(BaseModel):
     validity_period: Optional[str] = None
     registry_reference: Optional[str] = None
 
+    @field_validator("website", "seal_url")
+    @classmethod
+    def validate_safe_urls(cls, v: Optional[str]) -> Optional[str]:
+        return validate_safe_url(v, allow_data_image=True, allow_relative_path=True)
+
 
 class HcbRegistryUpdate(BaseModel):
     name: Optional[str] = None
@@ -47,6 +53,11 @@ class HcbRegistryUpdate(BaseModel):
     seal_url: Optional[str] = None
     validity_period: Optional[str] = None
     registry_reference: Optional[str] = None
+
+    @field_validator("website", "seal_url")
+    @classmethod
+    def validate_safe_urls(cls, v: Optional[str]) -> Optional[str]:
+        return validate_safe_url(v, allow_data_image=True, allow_relative_path=True)
 
 
 class EstablishmentCreate(BaseModel):
@@ -75,6 +86,11 @@ class EstablishmentCreate(BaseModel):
     facebook_url: Optional[str] = None
     photo_url: Optional[str] = None
 
+    @field_validator("source_url", "certificate_url", "logo_url", "facebook_url", "photo_url")
+    @classmethod
+    def validate_safe_urls(cls, v: Optional[str]) -> Optional[str]:
+        return validate_safe_url(v, allow_data_image=True, allow_relative_path=True, allow_none_literal=True)
+
 
 class EstablishmentUpdate(BaseModel):
     name: Optional[str] = None
@@ -102,6 +118,11 @@ class EstablishmentUpdate(BaseModel):
     facebook_url: Optional[str] = None
     photo_url: Optional[str] = None
 
+    @field_validator("source_url", "certificate_url", "logo_url", "facebook_url", "photo_url")
+    @classmethod
+    def validate_safe_urls(cls, v: Optional[str]) -> Optional[str]:
+        return validate_safe_url(v, allow_data_image=True, allow_relative_path=True, allow_none_literal=True)
+
 
 class EstablishmentSubmissionRequest(BaseModel):
     name: str = Field(..., max_length=255)
@@ -126,11 +147,4 @@ class EstablishmentSubmissionRequest(BaseModel):
     @field_validator("social_media_url", "certificate_url", "logo_url")
     @classmethod
     def validate_safe_urls(cls, v: Optional[str]) -> Optional[str]:
-        if not v:
-            return None
-        v_clean = v.strip()
-        if v_clean.lower() == 'none':
-            return 'none'
-        if not (v_clean.startswith("http://") or v_clean.startswith("https://") or v_clean.startswith("data:image/")):
-            raise ValueError("URL must use http, https, or safe data URI")
-        return v_clean
+        return validate_safe_url(v, allow_data_image=True, allow_none_literal=True)

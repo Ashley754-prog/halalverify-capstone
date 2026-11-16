@@ -4,8 +4,8 @@ import Modal from '../components/ui/Modal';
 import Toast from '../components/ui/Toast';
 import { supabase } from '../lib/supabaseClient';
 import { API_BASE_URL, authFetch } from '../utils/api';
-import { validateUploadFile } from '../utils/security';
-import { getCategoriesForTarget } from '../components/reports/ReportIssueModal';
+import { validateUploadFile, buildScopedUploadPath } from '../utils/security';
+import { getCategoriesForTarget } from '../data/reportCategories';
 
 export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
     const [submitted, setSubmitted] = useState(false);
@@ -90,12 +90,16 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
 
         try {
             setUploadingImage(true);
-            const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-            const filePath = `reports/${Date.now()}_${cleanName}`;
+            const uploaderId =
+                currentUserId || (await supabase.auth.getSession())?.data?.session?.user?.id;
+            if (!uploaderId) {
+                throw new Error('You must be signed in before uploading photo proof.');
+            }
+            const filePath = buildScopedUploadPath(uploaderId, 'reports', file.name);
 
             const { data, error } = await supabase.storage
                 .from('submissions')
-                .upload(filePath, file, { cacheControl: '3600', upsert: true });
+                .upload(filePath, file, { cacheControl: '3600', upsert: false });
 
             if (error) throw error;
 
@@ -108,7 +112,7 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
             console.error('Evidence upload error:', err);
             setToast({
                 visible: true,
-                message: 'Failed to upload photo proof. Please try again.',
+                message: err?.message || 'Failed to upload photo proof. Please try again.',
                 type: 'error',
             });
         } finally {
@@ -158,20 +162,33 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
             };
 
             let success = false;
+            let response = null;
             try {
-                const response = await authFetch(`${API_BASE_URL}/reports/submit`, {
+                response = await authFetch(`${API_BASE_URL}/reports/submit`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify(payload),
                 });
-
-                if (response.ok) {
-                    success = true;
-                }
             } catch (apiErr) {
                 console.warn('Backend reporting API unavailable, falling back to direct Supabase:', apiErr);
+            }
+
+            if (response) {
+                if (response.ok) {
+                    success = true;
+                } else if (response.status >= 400 && response.status < 500) {
+                    const errData = await response.json().catch(() => ({}));
+                    const detailMsg = Array.isArray(errData?.detail)
+                        ? errData.detail.map((d) => d?.msg || JSON.stringify(d)).join('; ')
+                        : errData?.detail;
+                    throw new Error(
+                        response.status === 401
+                            ? 'You must be logged in to submit a report.'
+                            : (detailMsg || errData?.message || 'Report submission was rejected.')
+                    );
+                }
             }
 
             if (!success) {
@@ -246,7 +263,7 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
                     </button>
                     {onViewChange && (
                         <button
-                            onClick={() => onViewChange('home')}
+                            onClick={() => onViewChange('landing')}
                             className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 font-bold text-xs sm:text-sm text-white hover:bg-emerald-700 transition cursor-pointer"
                         >
                             Return to Home
@@ -349,10 +366,11 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
                     </div>
 
                     <div>
-                        <label className="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-1.5 sm:mb-2">
+                        <label htmlFor="report-issue-type" className="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-1.5 sm:mb-2">
                             Issue Category <span className="text-red-500">*</span>
                         </label>
                         <select
+                            id="report-issue-type"
                             required
                             value={form.issueType}
                             onChange={e => handleChange('issueType', e.target.value)}
@@ -363,10 +381,11 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
 
                         {form.issueType === 'Other' && (
                             <div className="mt-2.5 space-y-1">
-                                <label className="block text-xs font-semibold text-slate-700">
+                                <label htmlFor="report-custom-category" className="block text-xs font-semibold text-slate-700">
                                     Please specify the issue <span className="text-red-500">*</span>
                                 </label>
                                 <input
+                                    id="report-custom-category"
                                     type="text"
                                     required
                                     placeholder="Type specific issue (e.g. Menu prices mismatch, Missing signboard, etc.)..."
@@ -379,10 +398,11 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
                     </div>
 
                     <div>
-                        <label className="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-1.5 sm:mb-2">
+                        <label htmlFor="report-subject-name" className="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-1.5 sm:mb-2">
                             {form.relatedTo === 'establishment' ? 'Establishment Name' : 'Product / Brand Name'} <span className="text-red-500">*</span>
                         </label>
                         <input
+                            id="report-subject-name"
                             required
                             type="text"
                             value={form.name}
@@ -394,7 +414,7 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
 
                     <div>
                         <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                            <label className="block text-xs font-bold uppercase tracking-wide text-slate-600">
+                            <label htmlFor="report-description" className="block text-xs font-bold uppercase tracking-wide text-slate-600">
                                 Description <span className="text-red-500">*</span>
                             </label>
                             <span className={`text-[10px] font-semibold ${form.description.trim().length >= 4 ? 'text-emerald-600' : 'text-slate-400'}`}>
@@ -402,6 +422,7 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
                             </span>
                         </div>
                         <textarea
+                            id="report-description"
                             required
                             value={form.description}
                             onChange={e => handleChange('description', e.target.value)}
@@ -412,7 +433,7 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
                     </div>
 
                     <div>
-                        <label className="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-1.5 sm:mb-2">
+                        <label htmlFor="report-evidence-file" className="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-1.5 sm:mb-2">
                             Attach Photo Proof (Packaging, Receipt, or Certificate)
                         </label>
                         <div className="rounded-xl border-2 border-dashed border-slate-200 p-3.5 text-center hover:border-emerald-500 transition bg-slate-50/50">
@@ -432,13 +453,14 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
                                     </button>
                                 </div>
                             ) : (
-                                <label className="cursor-pointer flex flex-col items-center">
+                                <label htmlFor="report-evidence-file" className="cursor-pointer flex flex-col items-center">
                                     <Upload size={20} className="text-slate-400 mb-1" />
                                     <span className="text-xs font-semibold text-emerald-600 hover:underline">
                                         {uploadingImage ? 'Uploading photo...' : 'Click to take or upload photo evidence'}
                                     </span>
                                     <span className="text-[11px] text-slate-400 mt-0.5">PNG, JPG, PDF up to 10MB</span>
                                     <input
+                                        id="report-evidence-file"
                                         type="file"
                                         accept="image/*,application/pdf"
                                         disabled={uploadingImage}
@@ -454,6 +476,7 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
                         type="submit"
                         disabled={
                             isSubmitting ||
+                            uploadingImage ||
                             form.description.trim().length < 4 ||
                             (form.issueType === 'Other' && !form.customCategory.trim())
                         }

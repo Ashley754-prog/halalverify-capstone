@@ -2,7 +2,7 @@ import { ScanSearch, FileText, Clock, Eye, ShieldCheck } from 'lucide-react';
 import VerdictBadge from './VerdictBadge';
 import { getFlaggedItems, getConfidencePct, formatDate, hasRecognizedLogo } from './scanHistoryUtils';
 
-export const ScanDesktopTable = ({ items, onSelectItem, onClearFilters }) => {
+export const ScanDesktopTable = ({ items, onSelectItem }) => {
     return (
         <div className="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">

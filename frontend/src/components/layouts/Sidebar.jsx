@@ -14,7 +14,7 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
         let isMounted = true;
         const fetchPendingCount = async () => {
             try {
-                const [estRes, prodRes] = await Promise.all([
+                const [estRes, prodRes, repRes] = await Promise.all([
                     supabase
                         .from('establishments')
                         .select('id', { count: 'exact', head: true })
@@ -23,12 +23,17 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                         .from('products')
                         .select('id', { count: 'exact', head: true })
                         .ilike('status', '%pending%'),
+                    supabase
+                        .from('issue_reports')
+                        .select('id', { count: 'exact', head: true })
+                        .in('status', ['open', 'reviewing', 'pending']),
                 ]);
 
                 if (isMounted) {
                     const estCount = typeof estRes.count === 'number' ? estRes.count : 0;
                     const prodCount = typeof prodRes.count === 'number' ? prodRes.count : 0;
-                    setPendingCount(estCount + prodCount);
+                    const repCount = typeof repRes.count === 'number' ? repRes.count : 0;
+                    setPendingCount(estCount + prodCount + repCount);
                 }
             } catch {
                 // Silently ignore if offline
@@ -76,14 +81,15 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                 {/* Sidebar Header */}
                 <div className={`border-b border-slate-800 flex items-center ${isOpen ? 'p-4 justify-between' : 'p-4 justify-center'}`}>
                     {isOpen && (
-                        <div 
-                            className="flex items-center gap-2 cursor-pointer group"
+                        <button
+                            type="button"
+                            className="flex items-center gap-2 cursor-pointer group text-left rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                             onClick={() => handleNavClick('landing')}
                             title="Return to Home Landing Page"
                         >
                             <img src="/halalverify-logo.png" alt="HalalVerify Logo" className="h-8 w-8 rounded-full group-hover:scale-105 transition" />
                             <span className="font-extrabold tracking-wider text-white text-sm group-hover:text-emerald-400 transition">HALALVERIFY</span>
-                        </div>
+                        </button>
                     )}
                     <button
                         type="button"

@@ -1,7 +1,8 @@
+import datetime
 import logging
 from typing import Optional
 
-from app.auth import get_current_user, require_admin
+from app.auth import extract_user_id, get_current_user, get_optional_current_user, is_admin_user, require_admin
 from app.schemas.products import (
     ManufacturerCreate,
     ManufacturerUpdate,
@@ -12,7 +13,13 @@ from app.schemas.products import (
 from app.supabase_client import supabase
 from app.auto_verification_service import evaluate_product_submission
 from app.notification_service import notify_admins, notify_user
-from app.utils.db_helpers import ensure_deleted, ensure_updated, model_dump_without_none, sanitize_postgrest_search
+from app.utils.db_helpers import (
+    ensure_deleted,
+    ensure_updated,
+    model_dump_without_none,
+    sanitize_postgrest_search,
+    strip_private_fields,
+)
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 logger = logging.getLogger(__name__)
@@ -29,9 +36,21 @@ PUBLIC_PRODUCT_STATUSES = {
 }
 
 EXCLUDED_UNVERIFIED_STATUSES = [
-    "REJECTED", "rejected", "PENDING_VERIFICATION", "pending",
-    "needs_review", "draft", "Expired", "expired",
+    "REJECTED", "rejected",
+    "PENDING_VERIFICATION", "pending_verification",
+    "pending", "PENDING",
+    "needs_review", "NEEDS_REVIEW",
+    "pending_review", "PENDING_REVIEW",
+    "draft", "DRAFT",
+    "Expired", "expired", "EXPIRED",
+    "Flagged", "flagged", "FLAGGED",
+    "Suspended", "suspended", "SUSPENDED",
+    "HARAM", "haram", "Haram",
+    "inactive", "INACTIVE",
 ]
+
+EXCLUDED_UNVERIFIED_STATUSES_LOWER = {s.lower() for s in EXCLUDED_UNVERIFIED_STATUSES}
+APPROVED_PRODUCT_STATUSES_LOWER = {"halal", "verified", "pork-free declared", "vegetarian / vegan", "community_listed"}
 
 
 # ---------------------------------------------------------------------------
@@ -48,7 +67,9 @@ def get_products(
     page: Optional[int] = Query(None, ge=1, description="1-based page number (alias for offset)"),
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
+    user: Optional[dict] = Depends(get_optional_current_user),
 ):
+    is_admin = is_admin_user(user)
     builder = (
         supabase
         .table("products")
@@ -60,19 +81,19 @@ def get_products(
         sanitized_query = sanitize_postgrest_search(query)
         if sanitized_query:
             builder = builder.or_(
-                f"name.ilike.%{sanitized_query}%,brand.ilike.%{sanitized_query}%,barcode.ilike.%{sanitized_query}%,certificate_no.ilike.%{sanitized_query}%,admin_notes.ilike.%{sanitized_query}%"
+                f"name.ilike.%{sanitized_query}%,brand.ilike.%{sanitized_query}%,barcode.ilike.%{sanitized_query}%,certificate_no.ilike.%{sanitized_query}%"
             )
 
     if category:
         builder = builder.eq("category", category)
 
     if status and status != "all":
-        if status.strip().lower() not in PUBLIC_PRODUCT_STATUSES:
+        if not is_admin and status.strip().lower() not in PUBLIC_PRODUCT_STATUSES:
             raise HTTPException(status_code=400, detail="Invalid public status filter")
         # Case-insensitive match: stored statuses use display casing (e.g. "Halal").
         builder = builder.ilike("status", status.strip())
-    else:
-        # By default, exclude rejected, pending, and expired items from public listings
+    elif not is_admin:
+        # By default, exclude rejected, pending, flagged, suspended, and expired items from public listings
         builder = builder.not_.in_("status", EXCLUDED_UNVERIFIED_STATUSES)
 
     if manufacturer_id:
@@ -85,18 +106,20 @@ def get_products(
         offset = (page - 1) * limit
 
     response = builder.order("name").range(offset, offset + limit - 1).execute()
+    rows = strip_private_fields(response.data or [], is_admin=is_admin)
 
-    total = response.count if response.count is not None else len(response.data or [])
+    total = response.count if response.count is not None else len(rows)
     return {
         "success": True,
-        "data": response.data or [],
-        "count": len(response.data or []),
+        "data": rows,
+        "count": len(rows),
         "total": total,
     }
 
 
 @router.get("/products/{product_id}")
-def get_product(product_id: str):
+def get_product(product_id: str, user: Optional[dict] = Depends(get_optional_current_user)):
+    is_admin = is_admin_user(user)
     response = (
         supabase
         .table("products")
@@ -109,15 +132,13 @@ def get_product(product_id: str):
         raise HTTPException(status_code=404, detail="Product not found")
 
     row = response.data[0]
-    if (row.get("status") or "").strip().lower() in {
-        "rejected", "pending_verification", "pending", "needs_review", "draft",
-    }:
-        # Do not disclose unapproved products through the public detail endpoint.
+    if not is_admin and (row.get("status") or "").strip().lower() in EXCLUDED_UNVERIFIED_STATUSES_LOWER:
+        # Do not disclose unapproved, expired, flagged, or suspended products through the public detail endpoint.
         raise HTTPException(status_code=404, detail="Product not found")
 
     return {
         "success": True,
-        "data": row,
+        "data": strip_private_fields(row, is_admin=is_admin),
     }
 
 
@@ -153,6 +174,7 @@ def create_product(product: ProductCreate, user: dict = Depends(require_admin)):
 @router.put("/api/v1/products/{product_id}")
 def update_product(product_id: str, product: ProductUpdate, user: dict = Depends(require_admin)):
     payload = product.model_dump(exclude_unset=True)
+    payload.pop("submitted_by", None)
 
     if not payload:
         raise HTTPException(status_code=400, detail="No product fields to update")
@@ -165,6 +187,15 @@ def update_product(product_id: str, product: ProductUpdate, user: dict = Depends
     for k in ["certificate_no", "expiry_date", "source_url", "barcode", "brand", "ingredients_summary"]:
         if k in payload and isinstance(payload[k], str) and not payload[k].strip():
             payload[k] = None
+
+    if "status" in payload and payload["status"]:
+        st_lower = payload["status"].strip().lower()
+        if st_lower in APPROVED_PRODUCT_STATUSES_LOWER:
+            payload["verified_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            payload["verified_by"] = extract_user_id(user)
+        elif st_lower in EXCLUDED_UNVERIFIED_STATUSES_LOWER or st_lower == "doubtful":
+            payload["verified_at"] = None
+            payload["verified_by"] = None
 
     response = (
         supabase
@@ -201,12 +232,29 @@ def delete_product(product_id: str, user: dict = Depends(require_admin)):
 # Manufacturers Endpoints
 # ---------------------------------------------------------------------------
 
+def _filter_manufacturer_products(rows: list, *, is_admin: bool) -> list:
+    if is_admin or not rows:
+        return rows
+    for mfr in rows:
+        if isinstance(mfr, dict) and isinstance(mfr.get("products"), list):
+            mfr["products"] = strip_private_fields(
+                [
+                    p for p in mfr["products"]
+                    if (p.get("status") or "").strip().lower() not in EXCLUDED_UNVERIFIED_STATUSES_LOWER
+                ],
+                is_admin=False,
+            )
+    return rows
+
+
 @router.get("/manufacturers")
 def get_manufacturers(
     query: Optional[str] = Query(None, description="Search by manufacturer name or country"),
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
+    user: Optional[dict] = Depends(get_optional_current_user),
 ):
+    is_admin = is_admin_user(user)
     builder = (
         supabase
         .table("manufacturers")
@@ -221,16 +269,18 @@ def get_manufacturers(
             )
 
     response = builder.order("name").range(offset, offset + limit - 1).execute()
+    rows = _filter_manufacturer_products(response.data or [], is_admin=is_admin)
 
     return {
         "success": True,
-        "data": response.data or [],
-        "count": len(response.data or []),
+        "data": rows,
+        "count": len(rows),
     }
 
 
 @router.get("/manufacturers/{manufacturer_id}")
-def get_manufacturer(manufacturer_id: str):
+def get_manufacturer(manufacturer_id: str, user: Optional[dict] = Depends(get_optional_current_user)):
+    is_admin = is_admin_user(user)
     response = (
         supabase
         .table("manufacturers")
@@ -242,9 +292,10 @@ def get_manufacturer(manufacturer_id: str):
     if not response.data:
         raise HTTPException(status_code=404, detail="Manufacturer not found")
 
+    rows = _filter_manufacturer_products(response.data, is_admin=is_admin)
     return {
         "success": True,
-        "data": response.data[0],
+        "data": rows[0],
     }
 
 
@@ -332,7 +383,6 @@ def submit_product(
         "expiry_date": submission.expiry_date,
         "image_url": submission.image_url,
         "ingredients_summary": submission.ingredients_summary,
-        "halal_tier": submission.halal_tier or "halal_certified",
         "submitted_by": str(user_id),
         "source": "Brand Representative Submission" if submission.submitter_role == "brand" else "Community User Submission",
         "source_url": submission.source_url if submission.source_url else None,
@@ -356,8 +406,8 @@ def submit_product(
     valid_prod_cols = {
         "name", "brand", "category", "barcode", "establishment_id", "manufacturer_id",
         "certifying_body_id", "certificate_no", "expiry_date", "image_url",
-        "ingredients_summary", "submitted_by", "source", "status", "halal_tier", "verified_at",
-        "verified_by", "admin_notes", "source_url"
+        "ingredients_summary", "submitted_by", "submitter_role", "source", "status",
+        "halal_tier", "verified_at", "verified_by", "admin_notes", "source_url",
     }
     clean_payload = {k: v for k, v in product_payload.items() if k in valid_prod_cols and v is not None}
     # Ensure source_url is explicitly None if not provided so postgres does not default to IDCP URL
@@ -373,8 +423,11 @@ def submit_product(
         )
     except Exception as ins_err:
         err_msg = str(ins_err).lower()
-        if "column" in err_msg or "42703" in err_msg or "halal_tier" in err_msg:
-            legacy_payload = {k: v for k, v in clean_payload.items() if k != "halal_tier"}
+        if "column" in err_msg or "42703" in err_msg or "halal_tier" in err_msg or "submitter_role" in err_msg:
+            legacy_payload = {
+                k: v for k, v in clean_payload.items()
+                if k not in {"halal_tier", "submitter_role"}
+            }
             response = (
                 supabase
                 .table("products")
@@ -391,7 +444,7 @@ def submit_product(
     if ai_eval["is_auto_approved"]:
         msg = (
             "Instant AI Verification Complete! Formally Halal Certified product authenticated and published live to catalog."
-            if ai_eval["status"] == "VERIFIED"
+            if ai_eval["status"] in ("Halal", "VERIFIED")
             else "Community Screening Complete! Product listed under community declared registry."
         )
     else:

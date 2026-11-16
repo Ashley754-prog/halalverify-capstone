@@ -13,6 +13,7 @@ import {
     BookOpen,
     AlertTriangle,
 } from 'lucide-react';
+import { getSafeUrl } from '../../utils/security';
 
 export const CertifyingBodyDetailModal = ({ profile, onClose }) => {
     // Keyboard Escape listener and body scroll lock
@@ -150,9 +151,9 @@ export const CertifyingBodyDetailModal = ({ profile, onClose }) => {
                 {/* Scrollable Body Content */}
                 <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 scrollbar-thin">
                     {/* Quick Action Button */}
-                    {profile.website && (
+                    {getSafeUrl(profile.website) && (
                         <a
-                            href={profile.website}
+                            href={getSafeUrl(profile.website)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg active:scale-95 transition cursor-pointer"

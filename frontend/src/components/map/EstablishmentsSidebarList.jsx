@@ -4,8 +4,6 @@ import {
     MapPin,
     ChevronRight,
     Navigation,
-    Compass,
-    ShieldCheck,
 } from 'lucide-react';
 import { getStatusConfig, resolveZamboangaDistrict, cleanAmenities } from '../../data/constants';
 import { extractMenuHighlights } from '../../utils/verificationNotes';

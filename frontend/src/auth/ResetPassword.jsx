@@ -29,7 +29,16 @@ export const ResetPassword = ({ onViewChange, userRole, isRecoveryFlow = false }
         verifyRecoverySession();
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && session)) {
+            if (event === 'SIGNED_OUT') {
+                setHasRecoverySession(false);
+                setCheckingSession(false);
+                return;
+            }
+            if (
+                event === 'PASSWORD_RECOVERY' ||
+                (event === 'USER_UPDATED' && isRecoveryFlow && session) ||
+                (event === 'SIGNED_IN' && session && (isRecoveryFlow || window.location.hash.includes('type=recovery') || window.location.search.includes('type=recovery')))
+            ) {
                 setHasRecoverySession(Boolean(session));
                 setCheckingSession(false);
             }
@@ -39,7 +48,7 @@ export const ResetPassword = ({ onViewChange, userRole, isRecoveryFlow = false }
             isMounted = false;
             subscription.unsubscribe();
         };
-    }, []);
+    }, [isRecoveryFlow]);
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -50,8 +59,8 @@ export const ResetPassword = ({ onViewChange, userRole, isRecoveryFlow = false }
             return;
         }
 
-        if (password.length < 6) {
-            setErrorMessage('Password must be at least 6 characters.');
+        if (password.length < 8) {
+            setErrorMessage('Password must be at least 8 characters.');
             return;
         }
 

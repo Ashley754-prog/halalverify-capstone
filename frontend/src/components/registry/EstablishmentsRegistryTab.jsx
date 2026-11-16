@@ -67,6 +67,7 @@ export default function EstablishmentsRegistryTab({
         const isNonActiveStatus =
             shopStatus === 'suspended' ||
             shopStatus === 'flagged' ||
+            shopStatus === 'expired' ||
             shopStatus === 'rejected' ||
             shopStatus.includes('reject') ||
             shopStatus === 'needs_review' ||
@@ -75,13 +76,14 @@ export default function EstablishmentsRegistryTab({
             shopStatus === 'permanently_closed' ||
             shopStatus === 'demolished' ||
             shopStatus === 'relocated' ||
+            cfg.key === 'expired' ||
             cfg.key === 'suspended' ||
             cfg.key === 'rejected' ||
             cfg.key === 'needs_review' ||
             cfg.key === 'permanently_closed' ||
             cfg.key === 'demolished';
 
-        // Unverified drafts and pending review submissions are strictly private to administrators
+        // Unverified drafts and moderated records are strictly private to administrators
         const isUnverifiedDraft =
             shopStatus === 'needs_review' ||
             shopStatus === 'pending' ||
@@ -90,7 +92,12 @@ export default function EstablishmentsRegistryTab({
             cfg.key === 'needs_review' ||
             cfg.key === 'pending_review';
 
-        if (!isAdmin && isUnverifiedDraft) {
+        const isHiddenModeration =
+            ['rejected', 'flagged', 'suspended', 'haram', 'non_halal'].includes(shopStatus) ||
+            shopStatus.includes('reject') ||
+            ['rejected', 'flagged', 'suspended'].includes(cfg.key);
+
+        if (!isAdmin && (isUnverifiedDraft || isHiddenModeration)) {
             return false;
         }
 
@@ -103,6 +110,8 @@ export default function EstablishmentsRegistryTab({
                 if (tier !== 'muslim_owned' && cfg.key !== 'muslim_owned' && cfg.key !== 'community') return false;
             } else if (standardFilter === 'muslim_friendly') {
                 if (tier !== 'muslim_friendly' && cfg.key !== 'muslim_friendly') return false;
+            } else if (standardFilter === 'vegetarian_vegan') {
+                if (tier !== 'vegetarian_vegan' && cfg.key !== 'vegetarian_vegan') return false;
             }
         }
 
@@ -120,7 +129,19 @@ export default function EstablishmentsRegistryTab({
             return cfg.key === 'needs_review' || cfg.key === 'pending_review' || shopStatus === 'needs_review' || shopStatus.includes('pending');
         }
         if (statusFilter === 'suspended') {
-            return cfg.key === 'suspended' || cfg.key === 'flagged' || shopStatus === 'suspended' || shopStatus === 'flagged';
+            return cfg.key === 'suspended' || shopStatus === 'suspended';
+        }
+        if (statusFilter === 'flagged') {
+            return cfg.key === 'flagged' || shopStatus === 'flagged';
+        }
+        if (statusFilter === 'rejected') {
+            return cfg.key === 'rejected' || shopStatus === 'rejected' || shopStatus.includes('reject');
+        }
+        if (statusFilter === 'for_renewal') {
+            return cfg.key === 'for_renewal' || shopStatus === 'for_renewal' || shopStatus.includes('renewal');
+        }
+        if (statusFilter === 'expired') {
+            return cfg.key === 'expired' || shopStatus === 'expired';
         }
         if (statusFilter === 'permanently_closed') {
             return cfg.key === 'permanently_closed' || shopStatus === 'permanently_closed' || shopStatus.includes('close') || shopStatus.includes('demolish');
@@ -178,6 +199,7 @@ export default function EstablishmentsRegistryTab({
                         <option value="halal_certified">Halal Certified</option>
                         <option value="muslim_owned">Muslim-Owned</option>
                         <option value="muslim_friendly">Muslim-Friendly</option>
+                        <option value="vegetarian_vegan">Vegetarian / Vegan</option>
                     </select>
 
                     <select
@@ -200,12 +222,16 @@ export default function EstablishmentsRegistryTab({
                         aria-label="Filter by registry status"
                     >
                         <option value="all_active">Operational / Published</option>
-                        <option value="suspended">Suspended</option>
+                        <option value="for_renewal">For Renewal</option>
+                        <option value="expired">Expired Certificate</option>
                         <option value="permanently_closed">Permanently Closed</option>
                         {isAdmin && (
                             <>
                                 <option value="all">All Records (Admin)</option>
                                 <option value="needs_review">Needs Review (Admin)</option>
+                                <option value="suspended">Suspended (Admin)</option>
+                                <option value="flagged">Flagged (Admin)</option>
+                                <option value="rejected">Rejected (Admin)</option>
                             </>
                         )}
                     </select>
@@ -231,7 +257,10 @@ export default function EstablishmentsRegistryTab({
                         const establishmentImageUrl = hasExplicitNoPhoto ? null : (customPhoto || getEstablishmentPhoto(shop));
                         const rawCertUrl = shop.certificate_url ? getSafeUrl(shop.certificate_url) : null;
                         const hasActualCertificateDoc = Boolean(rawCertUrl && rawCertUrl !== establishmentImageUrl && rawCertUrl !== 'none');
-                        const isFormallyCertified = Boolean(shop.certificate_number || statusConfig.key === 'verified');
+                        const isFormallyCertified = Boolean(
+                            (shop.certificate_number || statusConfig.key === 'verified' || statusConfig.key === 'for_renewal' || statusConfig.key === 'expired') &&
+                            (shop.certifying_body_id || shop.certifying_bodies || shop.halal_tier === 'halal_certified')
+                        );
                         const hasPrayer = Boolean(
                             shop.has_prayer_space ||
                             (shop.description && (shop.description.toLowerCase().includes('prayer') || shop.description.toLowerCase().includes('musalah'))) ||
@@ -317,42 +346,56 @@ export default function EstablishmentsRegistryTab({
                                     </div>
                                 </div>
 
-                                {isFormallyCertified && shop.certificate_number && (
-                                    hasActualCertificateDoc ? (
+                                {isFormallyCertified && (shop.certificate_number || shop.certifying_bodies?.code) && (() => {
+                                    const isExpiredCard = statusConfig.key === 'expired';
+                                    const isRenewalCard = statusConfig.key === 'for_renewal';
+                                    const badgeText = isExpiredCard
+                                        ? `Expired ${shop.expiry_date || ''}`.trim()
+                                        : isRenewalCard
+                                        ? `Renews ${shop.expiry_date || 'Pending'}`.trim()
+                                        : (shop.expiry_date || 'Active');
+                                    const certBoxClass = isExpiredCard
+                                        ? 'bg-rose-50/75 border-rose-200/80 text-rose-800'
+                                        : isRenewalCard
+                                        ? 'bg-amber-50/75 border-amber-200/80 text-amber-800'
+                                        : 'bg-emerald-50/70 border-emerald-100 text-emerald-700';
+                                    const certLabel = shop.certificate_number || shop.certifying_bodies?.code || 'Accredited Record';
+
+                                    return hasActualCertificateDoc ? (
                                         <a
                                             href={rawCertUrl}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="flex items-center justify-between gap-2 text-xs bg-emerald-50/80 hover:bg-emerald-100/80 px-2.5 py-1.5 rounded-xl border border-emerald-200/80 font-mono text-slate-700 min-w-0 overflow-hidden transition group"
+                                            className={`flex items-center justify-between gap-2 text-xs px-2.5 py-1.5 rounded-xl border font-mono text-slate-700 min-w-0 overflow-hidden transition group ${certBoxClass}`}
                                             title="Click to inspect official certificate document"
                                         >
                                             <div className="flex items-center gap-1.5 min-w-0 truncate">
-                                                <ShieldCheck size={12} className="text-emerald-700 shrink-0" />
-                                                <span className="font-bold text-slate-800 text-[11px] truncate group-hover:text-emerald-900">
-                                                    {shop.certificate_number}
+                                                <ShieldCheck size={12} className="shrink-0" />
+                                                <span className="font-bold text-slate-800 text-[11px] truncate">
+                                                    {certLabel}
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-1 shrink-0">
-                                                <span className="font-bold text-emerald-700 text-[10px] font-sans">
-                                                    {shop.expiry_date || 'Active'}
+                                                <span className="font-bold text-[10px] font-sans">
+                                                    {badgeText}
                                                 </span>
-                                                <ExternalLink size={10} className="text-emerald-600 group-hover:text-emerald-800" />
+                                                <ExternalLink size={10} className="shrink-0" />
                                             </div>
                                         </a>
                                     ) : (
-                                        <div className="flex items-center justify-between gap-2 text-xs bg-emerald-50/70 px-2.5 py-1.5 rounded-xl border border-emerald-100 font-mono text-slate-700 min-w-0 overflow-hidden">
+                                        <div className={`flex items-center justify-between gap-2 text-xs px-2.5 py-1.5 rounded-xl border font-mono text-slate-700 min-w-0 overflow-hidden ${certBoxClass}`}>
                                             <div className="flex items-center gap-1.5 min-w-0 truncate">
-                                                <ShieldCheck size={12} className="text-emerald-600 shrink-0" />
+                                                <ShieldCheck size={12} className="shrink-0" />
                                                 <span className="font-bold text-slate-800 text-[11px] truncate">
-                                                    {shop.certificate_number}
+                                                    {certLabel}
                                                 </span>
                                             </div>
-                                            <span className="font-bold text-emerald-700 text-[10px] font-sans shrink-0">
-                                                {shop.expiry_date || 'Active'}
+                                            <span className="font-bold text-[10px] font-sans shrink-0">
+                                                {badgeText}
                                             </span>
                                         </div>
-                                    )
-                                )}
+                                    );
+                                })()}
 
                                 {(() => {
                                     const dishesCount = extractMenuHighlights(shop).length;

@@ -15,7 +15,7 @@ export const ForgotPassword = ({ onViewChange }) => {
         setErrorMessage('');
 
         const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-            redirectTo: `${window.location.origin}/reset-password`,
+            redirectTo: getAuthRedirectUrl('/reset-password'),
         });
 
         if (error) {

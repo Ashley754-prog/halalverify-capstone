@@ -9,6 +9,9 @@ import numpy as np
 from PIL import Image, ImageEnhance, ImageOps, UnidentifiedImageError
 from fastapi import HTTPException
 
+# Protect 512MB cloud workers against decompression bombs / oversized image OOM
+Image.MAX_IMAGE_PIXELS = 25_000_000
+
 logger = logging.getLogger(__name__)
 
 _rapid_ocr = None
@@ -47,6 +50,8 @@ def safe_load_pil_image(image_base64: str) -> Image.Image:
         image = Image.open(BytesIO(image_bytes))
         image.load()  # Force decode to detect corrupted data or decompression bombs early
         return image.convert("RGB")
+    except Image.DecompressionBombError as err:
+        raise HTTPException(status_code=400, detail="Image resolution exceeds maximum safe limit") from err
     except (UnidentifiedImageError, OSError, ValueError) as err:
         raise HTTPException(status_code=400, detail="Unsupported or corrupt image format") from err
 
@@ -204,7 +209,7 @@ def extract_text_with_gemini(image_base64: str) -> str:
 
         # Try gemini-flash-lite-latest first, fallback to gemini-2.5-flash and gemini-flash-latest
         for model_name in ["gemini-flash-lite-latest", "gemini-2.5-flash", "gemini-flash-latest"]:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
             payload = json.dumps({
                 "contents": [{
                     "parts": [
@@ -229,7 +234,10 @@ def extract_text_with_gemini(image_base64: str) -> str:
             req = urllib.request.Request(
                 url,
                 data=payload,
-                headers={"Content-Type": "application/json"},
+                headers={
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": api_key,
+                },
                 method="POST"
             )
             try:

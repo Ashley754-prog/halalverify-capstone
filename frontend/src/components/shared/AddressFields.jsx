@@ -90,7 +90,9 @@ export default function AddressFields({
     const mapInstanceRef = useRef(null);
     const markerRef = useRef(null);
     const latestStateRef = useRef({ street, barangay, city, value, onChange });
-    latestStateRef.current = { street, barangay, city, value, onChange };
+    useEffect(() => {
+        latestStateRef.current = { street, barangay, city, value, onChange };
+    });
 
     const hasCustomPin =
         (value?.pin_source === 'map' || value?.pin_source === 'gps') &&

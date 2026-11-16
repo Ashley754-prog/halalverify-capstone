@@ -1,4 +1,3 @@
-import React from 'react';
 import {
     MapPin,
     ShieldCheck,
@@ -11,7 +10,6 @@ import {
     Navigation,
     Store,
     HeartHandshake,
-    Compass,
     Camera,
 } from 'lucide-react';
 import Modal from '../ui/Modal';
@@ -36,9 +34,14 @@ export default function EstablishmentDetailModal({
     const isActualCertDoc = Boolean(rawCertDocUrl && rawCertDocUrl !== venuePhotoUrl && rawCertDocUrl !== 'none');
     const evidenceUrl = (isActualCertDoc ? rawCertDocUrl : null) || venuePhotoUrl;
 
+    const hasHcbRecord = Boolean(establishment.certifying_bodies || establishment.certifying_body_id || establishment.certificate_number);
     const isFormallyCertified = Boolean(
-        (statusConfig.key === 'verified' || establishment.halal_tier === 'halal_certified') &&
+        (statusConfig.key === 'verified' || statusConfig.key === 'for_renewal') &&
         (establishment.certifying_bodies || establishment.certifying_body_id)
+    );
+    const isExpiredCert = Boolean(
+        statusConfig.key === 'expired' &&
+        (hasHcbRecord || establishment.halal_tier === 'halal_certified')
     );
 
     const isDirectoryVenue = Boolean(
@@ -190,13 +193,23 @@ export default function EstablishmentDetailModal({
 
                 {/* Classification & Certification Standing */}
                 {isFormallyCertified ? (
-                    <div className="rounded-xl bg-emerald-50/60 border border-emerald-200 p-3 text-xs space-y-2">
+                    <div className={`rounded-xl border p-3 text-xs space-y-2 ${
+                        statusConfig.key === 'for_renewal'
+                            ? 'bg-amber-50/70 border-amber-200'
+                            : 'bg-emerald-50/60 border-emerald-200'
+                    }`}>
                         <div className="flex items-center justify-between">
-                            <span className="font-bold text-emerald-900 flex items-center gap-1.5">
-                                <Award size={15} className="text-emerald-600" />
+                            <span className={`font-bold flex items-center gap-1.5 ${
+                                statusConfig.key === 'for_renewal' ? 'text-amber-900' : 'text-emerald-900'
+                            }`}>
+                                <Award size={15} className={statusConfig.key === 'for_renewal' ? 'text-amber-600' : 'text-emerald-600'} />
                                 Halal Certifying Authority (HCB)
                             </span>
-                            <span className="font-black text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-300">
+                            <span className={`font-black bg-white px-2 py-0.5 rounded border ${
+                                statusConfig.key === 'for_renewal'
+                                    ? 'text-amber-800 border-amber-300'
+                                    : 'text-emerald-800 border-emerald-300'
+                            }`}>
                                 {establishment.certifying_bodies?.code || establishment.certifying_bodies?.acronym || 'Accredited HCB'}
                             </span>
                         </div>
@@ -205,7 +218,9 @@ export default function EstablishmentDetailModal({
                             {establishment.certifying_bodies?.name || 'Formally certified under accredited Halal standards and administrative review.'}
                         </p>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1 border-t border-emerald-200/60 text-[11px]">
+                        <div className={`grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1 border-t text-[11px] ${
+                            statusConfig.key === 'for_renewal' ? 'border-amber-200/60' : 'border-emerald-200/60'
+                        }`}>
                             <div>
                                 <span className="text-slate-500 block">Certificate No:</span>
                                 <span className="font-bold text-slate-800 font-mono">
@@ -215,14 +230,55 @@ export default function EstablishmentDetailModal({
                             {establishment.expiry_date && (
                                 <div>
                                     <span className="text-slate-500 block">Expiry Date:</span>
-                                    <span className="font-bold text-emerald-800 font-mono">
+                                    <span className={`font-bold font-mono ${
+                                        statusConfig.key === 'for_renewal' ? 'text-amber-800' : 'text-emerald-800'
+                                    }`}>
                                         {establishment.expiry_date}
                                     </span>
                                 </div>
                             )}
                             <div>
                                 <span className="text-slate-500 block">Accreditation:</span>
-                                <span className="font-bold text-emerald-700">Official Compliant</span>
+                                <span className={`font-bold ${
+                                    statusConfig.key === 'for_renewal' ? 'text-amber-800' : 'text-emerald-700'
+                                }`}>
+                                    {statusConfig.key === 'for_renewal' ? 'Pending Renewal' : 'Official Compliant'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                ) : isExpiredCert ? (
+                    <div className="rounded-xl bg-rose-50/75 border border-rose-200 p-3 text-xs space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span className="font-bold text-rose-900 flex items-center gap-1.5">
+                                <AlertCircle size={15} className="text-rose-600" />
+                                Expired Halal Certification Record
+                            </span>
+                            <span className="font-black text-rose-800 bg-white px-2 py-0.5 rounded border border-rose-300">
+                                {establishment.certifying_bodies?.code || establishment.certifying_bodies?.acronym || 'HCB'}
+                            </span>
+                        </div>
+
+                        <p className="text-slate-600 text-[11px]">
+                            {establishment.certifying_bodies?.name || 'Prior Halal certifying authority record on file.'} This certification has passed its recorded validity window and requires verification of renewal.
+                        </p>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1 border-t border-rose-200/60 text-[11px]">
+                            <div>
+                                <span className="text-slate-500 block">Certificate No:</span>
+                                <span className="font-bold text-slate-800 font-mono">
+                                    {establishment.certificate_number || 'On File'}
+                                </span>
+                            </div>
+                            <div>
+                                <span className="text-slate-500 block">Expired On:</span>
+                                <span className="font-bold text-rose-700 font-mono">
+                                    {establishment.expiry_date || 'Past Validity'}
+                                </span>
+                            </div>
+                            <div>
+                                <span className="text-slate-500 block">Standing:</span>
+                                <span className="font-bold text-rose-700">Expired / Unrenewed</span>
                             </div>
                         </div>
                     </div>

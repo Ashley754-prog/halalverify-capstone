@@ -145,15 +145,17 @@ def verify_establishment(
     Cross-matches issuing HCB credentials and updates audit notes.
     """
     user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
-    status_clean = (payload.status or "").strip().lower()
+    status_clean = (payload.status or "").strip().lower().replace(" ", "_").replace("-", "_")
     valid_est_statuses = {
-        "verified", "rejected", "suspended", "flagged",
+        "verified", "for_renewal", "needs_review", "pending_review",
+        "pending_verification", "expired", "flagged", "suspended",
+        "rejected", "relocated", "permanently_closed", "demolished", "closed",
         "community_listed", "muslim_owned", "muslim_friendly", "vegetarian_vegan",
     }
     if status_clean not in valid_est_statuses:
         raise HTTPException(
             status_code=400,
-            detail="Invalid status. Must be a valid certification, community tier, or rejection status.",
+            detail="Invalid status. Must be a valid certification, community tier, or lifecycle status.",
         )
 
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -191,6 +193,9 @@ def verify_establishment(
         # verified_at means "approved by a reviewer", not "last touched".
         update_fields["verified_at"] = now_iso
         update_fields["verified_by"] = str(user_id) if user_id else None
+    elif status_clean != "for_renewal":
+        update_fields["verified_at"] = None
+        update_fields["verified_by"] = None
 
     if payload.certificate_number:
         update_fields["certificate_number"] = payload.certificate_number.strip()
@@ -289,13 +294,13 @@ def verify_establishment(
                 entity_id=establishment_id,
                 action_view="profile",
             )
-        elif status_clean == "rejected":
-            rejection_reason = notes_str or "Does not meet verification standards."
+        elif status_clean in {"rejected", "flagged", "suspended", "expired", "for_renewal"}:
+            status_reason = notes_str or "Does not meet verification standards."
             notify_user(
                 submitted_by,
                 category="verification",
                 title="Establishment declined" if status_clean == "rejected" else "Establishment status update",
-                message=f'"{est_name}" was marked as {status_clean}. Note - {rejection_reason}',
+                message=f'"{est_name}" was marked as {status_clean.replace("_", " ")}. Note - {status_reason}',
                 entity_type="establishment",
                 entity_id=establishment_id,
                 action_view="profile",
@@ -319,14 +324,29 @@ def verify_product(
     Preserves granular halal tiers (pork_free, vegetarian_vegan, community_listed) rather than blindly flattening.
     """
     user_id = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
-    status_clean = (payload.status or "").strip().upper()
-    valid_prod_statuses = {"VERIFIED", "REJECTED", "HALAL", "COMMUNITY_LISTED", "DOUBTFUL"}
+    status_clean = (payload.status or "").strip().upper().replace(" ", "_").replace("-", "_")
+    valid_prod_statuses = {
+        "VERIFIED", "REJECTED", "HALAL", "COMMUNITY_LISTED", "DOUBTFUL",
+        "EXPIRED", "FOR_RENEWAL", "FLAGGED", "SUSPENDED", "HARAM",
+        "PENDING_VERIFICATION", "NEEDS_REVIEW",
+    }
     if status_clean not in valid_prod_statuses:
         raise HTTPException(status_code=400, detail="Status must be a valid verification status")
 
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
-    target_status = status_clean
+    product_status_display_map = {
+        "EXPIRED": "Expired",
+        "FOR_RENEWAL": "For Renewal",
+        "FLAGGED": "Flagged",
+        "SUSPENDED": "Suspended",
+        "HARAM": "HARAM",
+        "REJECTED": "REJECTED",
+        "DOUBTFUL": "DOUBTFUL",
+        "PENDING_VERIFICATION": "PENDING_VERIFICATION",
+        "NEEDS_REVIEW": "PENDING_VERIFICATION",
+    }
+    target_status = product_status_display_map.get(status_clean, status_clean)
     target_tier = (payload.halal_tier or "").strip().lower()
 
     if status_clean in {"VERIFIED", "HALAL"}:
@@ -364,11 +384,17 @@ def verify_product(
             target_tier = "community_listed"
             target_status = "COMMUNITY_LISTED"
 
+    non_approved_prod_statuses = {
+        "REJECTED", "DOUBTFUL", "Expired", "Flagged", "Suspended", "HARAM", "PENDING_VERIFICATION",
+    }
     update_fields = {"status": target_status}
-    if target_status not in {"REJECTED", "DOUBTFUL"}:
+    if target_status not in non_approved_prod_statuses:
         # verified_at means "approved by a reviewer", not "last touched".
         update_fields["verified_at"] = now_iso
         update_fields["verified_by"] = str(user_id) if user_id else None
+    elif target_status != "For Renewal":
+        update_fields["verified_at"] = None
+        update_fields["verified_by"] = None
     if target_tier:
         update_fields["halal_tier"] = target_tier
     if payload.admin_notes is not None:
@@ -410,13 +436,13 @@ def verify_product(
     submitted_by = res.data[0].get("submitted_by") if res.data else None
     if submitted_by:
         prod_name = res.data[0].get("name") or "Your product"
-        if target_status in {"REJECTED", "DOUBTFUL"}:
+        if target_status in non_approved_prod_statuses or target_status == "For Renewal":
             rej_reason = payload.admin_notes or "Does not meet verification criteria."
             notify_user(
                 submitted_by,
                 category="verification",
                 title="Product review update",
-                message=f'"{prod_name}" was marked as {target_status.capitalize()}: {rej_reason}',
+                message=f'"{prod_name}" was marked as {target_status}: {rej_reason}',
                 entity_type="product",
                 entity_id=product_id,
                 action_view="profile",
@@ -459,26 +485,40 @@ def resolve_issue_report(
 
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
-    # Map 'dismissed' to 'resolved' with clear note prefix to satisfy PostgreSQL check constraint:
-    # issue_reports_status_check (status IN ('open', 'resolved', 'reviewing'))
-    db_status = "resolved" if status_clean == "dismissed" else status_clean
     clean_notes = (payload.resolution_notes or "").strip()
-    if status_clean == "dismissed" and not clean_notes.lower().startswith("dismissed"):
-        clean_notes = f"Dismissed: {clean_notes}" if clean_notes else "Dismissed by administrator."
+    if status_clean == "dismissed" and not clean_notes:
+        clean_notes = "Dismissed by administrator."
 
     update_fields = {
-        "status": db_status,
+        "status": status_clean,
         "resolution_notes": clean_notes,
         "resolved_at": now_iso,
         "resolved_by": str(user_id) if user_id else None,
     }
 
-    res = (
-        supabase.table("issue_reports")
-        .update(update_fields)
-        .eq("id", report_id)
-        .execute()
-    )
+    try:
+        res = (
+            supabase.table("issue_reports")
+            .update(update_fields)
+            .eq("id", report_id)
+            .execute()
+        )
+    except Exception as rep_err:
+        err_lower = str(rep_err).lower()
+        if status_clean == "dismissed" and ("check" in err_lower or "23514" in err_lower or "issue_reports_status_check" in err_lower):
+            fallback_notes = clean_notes if clean_notes.lower().startswith("dismissed") else f"Dismissed: {clean_notes}"
+            res = (
+                supabase.table("issue_reports")
+                .update({
+                    **update_fields,
+                    "status": "resolved",
+                    "resolution_notes": fallback_notes,
+                })
+                .eq("id", report_id)
+                .execute()
+            )
+        else:
+            raise
 
     if not res.data:
         raise HTTPException(status_code=404, detail="Issue report not found or update failed")
@@ -490,6 +530,8 @@ def resolve_issue_report(
         try:
             supabase.table("establishments").update({
                 "halal_status": "flagged",
+                "verified_at": None,
+                "verified_by": None,
                 "admin_notes": f"Suspended via report #{report_id}: {payload.resolution_notes or ''}",
             }).eq("id", est_id).execute()
         except Exception as s_err:
@@ -586,11 +628,6 @@ def get_analytics_trends(
                     c_upper = code.upper()
                     additive_counts[c_upper] = additive_counts.get(c_upper, 0) + 1
 
-        default_top = ["E120", "E441", "E471", "E422", "E631"]
-        for d in default_top:
-            if d not in additive_counts:
-                additive_counts[d] = 1
-
         ranked_additives = []
         for code, count in sorted(additive_counts.items(), key=lambda x: x[1], reverse=True)[:5]:
             ref = additives_map.get(code.upper(), {})
@@ -602,13 +639,15 @@ def get_analytics_trends(
                 "detection_count": count,
             })
 
-        est_breakdown = {"verified": 0, "pending_review": 0, "flagged": 0}
+        est_breakdown = {"verified": 0, "pending_review": 0, "flagged": 0, "rejected": 0}
         for e in establishments:
-            hs = (e.get("halal_status") or "").lower()
-            if "verif" in hs and "pending" not in hs:
+            hs = (e.get("halal_status") or "").strip().lower()
+            if hs in {"verified", "for_renewal"}:
                 est_breakdown["verified"] += 1
-            elif "flag" in hs or "suspend" in hs or "expir" in hs:
+            elif hs in {"flagged", "suspended", "expired"}:
                 est_breakdown["flagged"] += 1
+            elif hs in {"rejected", "relocated", "permanently_closed", "demolished", "closed"}:
+                est_breakdown["rejected"] += 1
             else:
                 est_breakdown["pending_review"] += 1
 
@@ -616,24 +655,15 @@ def get_analytics_trends(
             {"date": k, "scans": v}
             for k, v in sorted(scans_by_date.items())[-14:]
         ]
-        if not timeline:
-            timeline = [
-                {"date": "2026-09-01", "scans": 12},
-                {"date": "2026-09-02", "scans": 18},
-                {"date": "2026-09-03", "scans": 15},
-                {"date": "2026-09-04", "scans": 22},
-                {"date": "2026-09-05", "scans": 31},
-                {"date": "2026-09-06", "scans": 25},
-            ]
 
         return {
             "success": True,
             "data": {
                 "totals": {
-                    "total_scans": total_scans if total_scans > 0 else 123,
+                    "total_scans": total_scans,
                     "total_establishments": len(establishments),
-                    "verdicts": verdicts if total_scans > 0 else {"Halal": 86, "Doubtful": 28, "Haram": 9, "Other": 0},
-                    "compliance_rate": round((verdicts["Halal"] / total_scans * 100), 1) if total_scans > 0 else 69.9,
+                    "verdicts": verdicts,
+                    "compliance_rate": round((verdicts["Halal"] / total_scans * 100), 1) if total_scans > 0 else 0.0,
                 },
                 "top_non_compliant_additives": ranked_additives,
                 "establishment_breakdown": est_breakdown,
@@ -663,19 +693,20 @@ def get_reports_summary(user: dict = Depends(require_admin)):
 
         for r in reports:
             st = (r.get("status") or "").lower()
+            notes_lower = (r.get("resolution_notes") or "").strip().lower()
             if st in ["open", "reviewing", "pending"]:
                 open_count += 1
+            elif st == "dismissed" or (st == "resolved" and notes_lower.startswith("dismissed")):
+                dismissed_count += 1
             elif st == "resolved":
                 resolved_count += 1
-            elif st == "dismissed":
-                dismissed_count += 1
             else:
                 open_count += 1
 
             itype = r.get("issue_type") or "Other Concern"
             categories[itype] = categories.get(itype, 0) + 1
 
-        resolution_rate = round((resolved_count / total * 100), 1) if total > 0 else 100.0
+        resolution_rate = round(((resolved_count + dismissed_count) / total * 100), 1) if total > 0 else 0.0
 
         return {
             "success": True,
@@ -1001,14 +1032,23 @@ def auto_verify_product_endpoint(
     can_approve_prod = bool(eval_result.get("is_auto_approved"))
 
     if auto_approve and can_approve_prod:
-        approved_status = eval_result["status"] if eval_result["status"] != "PENDING_VERIFICATION" else "VERIFIED"
+        approved_status = "Halal" if eval_result["status"] in {"PENDING_VERIFICATION", "VERIFIED"} else eval_result["status"]
         update_fields["status"] = approved_status
+        update_fields["halal_tier"] = eval_result.get("halal_tier") or "halal_certified"
         update_fields["verified_at"] = now_iso
         update_fields["verified_by"] = admin_uuid
         eval_result["is_auto_approved"] = True
 
     if update_fields:
-        supabase.table("products").update(update_fields).eq("id", product_id).execute()
+        try:
+            supabase.table("products").update(update_fields).eq("id", product_id).execute()
+        except Exception as upd_err:
+            if "halal_tier" in str(upd_err).lower() or "42703" in str(upd_err):
+                supabase.table("products").update(
+                    {k: v for k, v in update_fields.items() if k != "halal_tier"}
+                ).eq("id", product_id).execute()
+            else:
+                raise
 
     updated_res = supabase.table("products").select("*, certifying_bodies(*)").eq("id", product_id).execute()
 
@@ -1133,14 +1173,23 @@ def auto_verify_all_pending(
             can_approve_prod = bool(eval_res.get("is_auto_approved"))
 
             if auto_approve and can_approve_prod:
-                approved_status = eval_res["status"] if eval_res["status"] != "PENDING_VERIFICATION" else "VERIFIED"
+                approved_status = "Halal" if eval_res["status"] in {"PENDING_VERIFICATION", "VERIFIED"} else eval_res["status"]
                 update_fields["status"] = approved_status
+                update_fields["halal_tier"] = eval_res.get("halal_tier") or "halal_certified"
                 update_fields["verified_at"] = now_iso
                 update_fields["verified_by"] = admin_uuid
                 approved_prod_count += 1
 
             if update_fields:
-                supabase.table("products").update(update_fields).eq("id", prod["id"]).execute()
+                try:
+                    supabase.table("products").update(update_fields).eq("id", prod["id"]).execute()
+                except Exception as upd_err:
+                    if "halal_tier" in str(upd_err).lower() or "42703" in str(upd_err):
+                        supabase.table("products").update(
+                            {k: v for k, v in update_fields.items() if k != "halal_tier"}
+                        ).eq("id", prod["id"]).execute()
+                    else:
+                        raise
                 if auto_approve and can_approve_prod and prod.get("submitted_by"):
                     notify_user(
                         prod["submitted_by"],

@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
+from app.utils.db_helpers import SAFE_DATA_IMAGE_RE
 
 
 class AnalyzeRequest(BaseModel):
@@ -13,8 +14,9 @@ class AnalyzeRequest(BaseModel):
         clean_v = v.strip()
         if "," in clean_v:
             prefix, data = clean_v.split(",", 1)
-            if not prefix.startswith("data:image/"):
-                raise ValueError("Payload must be an image Data URI (e.g., data:image/jpeg;base64,...).")
+            prefix_lower = prefix.lower()
+            if "svg" in prefix_lower or not SAFE_DATA_IMAGE_RE.match(clean_v):
+                raise ValueError("Payload must be a safe raster image Data URI (jpeg, png, webp, gif, or bmp).")
             if len(data) < 32:
                 raise ValueError("Image base64 payload is truncated or invalid.")
         elif len(clean_v) < 32:

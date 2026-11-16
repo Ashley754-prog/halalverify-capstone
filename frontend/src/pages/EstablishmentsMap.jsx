@@ -2,16 +2,15 @@ import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import {
     MapPin,
     Store,
-    Search,
     Compass,
     Crosshair,
     Loader2,
     X,
     Navigation,
-    ShieldCheck,
     UtensilsCrossed,
     Phone,
 } from 'lucide-react';
+import { escapeHtml } from '../utils/security';
 import Toast from '../components/ui/Toast';
 import AuthPromptModal from '../components/submissions/AuthPromptModal';
 import ReportIssueModal from '../components/reports/ReportIssueModal';
@@ -37,7 +36,9 @@ const VENUE_STATUS_PILLS = [
 
 const MODERATION_PILLS = [
     { key: 'needs_review', label: 'Pending Verification' },
-    { key: 'flagged', label: 'Expired / Flagged' },
+    { key: 'for_renewal', label: 'For Renewal' },
+    { key: 'expired', label: 'Expired' },
+    { key: 'flagged', label: 'Flagged / Suspended' },
 ];
 
 const AMENITY_PILLS = [
@@ -153,8 +154,14 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                 if (selectedStatus === 'muslim_friendly') {
                     return key === 'muslim_friendly';
                 }
+                if (selectedStatus === 'for_renewal') {
+                    return key === 'for_renewal';
+                }
+                if (selectedStatus === 'expired') {
+                    return key === 'expired';
+                }
                 if (selectedStatus === 'flagged') {
-                    return key === 'flagged' || key === 'rejected';
+                    return key === 'flagged' || key === 'rejected' || key === 'suspended';
                 }
                 return key === selectedStatus;
             });
@@ -199,17 +206,20 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                         .filter((e) => e.latitude && e.longitude);
                     withCoords = withCoords.filter((e) => {
                         const st = (e.halal_status || '').toLowerCase().trim();
+                        const cfg = getStatusConfig(e);
                         if (
                             st === 'rejected' ||
                             st.includes('reject') ||
                             st === 'flagged' ||
                             st === 'suspended' ||
-                            st === 'expired' ||
                             st === 'permanently_closed' ||
                             st === 'demolished' ||
                             st === 'relocated'
                         ) {
                             return selectedStatus === 'flagged' || selectedStatus === 'rejected';
+                        }
+                        if (st === 'expired' || cfg.key === 'expired') {
+                            return selectedStatus === 'expired';
                         }
                         if (st === 'needs_review' || st === 'pending' || st.includes('pending') || st.includes('needs_review')) {
                             return selectedStatus === 'needs_review' || selectedStatus === 'pending_review';
@@ -226,6 +236,7 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                                 cfg.key !== 'flagged' &&
                                 cfg.key !== 'rejected' &&
                                 cfg.key !== 'suspended' &&
+                                cfg.key !== 'expired' &&
                                 cfg.key !== 'permanently_closed' &&
                                 cfg.key !== 'demolished' &&
                                 cfg.key !== 'relocated'
@@ -237,6 +248,12 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                             if (selectedStatus === 'verified' || selectedStatus === 'halal_certified') {
                                 return cfg.key === 'verified';
                             }
+                            if (selectedStatus === 'for_renewal') {
+                                return cfg.key === 'for_renewal';
+                            }
+                            if (selectedStatus === 'expired') {
+                                return cfg.key === 'expired';
+                            }
                             if (selectedStatus === 'muslim_owned') {
                                 return cfg.key === 'muslim_owned' || cfg.key === 'community';
                             }
@@ -247,7 +264,7 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                                 return cfg.key === 'needs_review' || cfg.key === 'pending_review';
                             }
                             if (selectedStatus === 'flagged') {
-                                return cfg.key === 'flagged' || cfg.key === 'rejected';
+                                return cfg.key === 'flagged' || cfg.key === 'rejected' || cfg.key === 'suspended';
                             }
                             return cfg.key === selectedStatus;
                         });
@@ -550,7 +567,9 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                         // Compact single-line name badge on hover for pointer/mouse devices (never pop up over pins on touchscreens)
                         const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
                         if (!isTouchDevice) {
-                            marker.bindTooltip(est.name, {
+                            const tooltipEl = document.createElement('span');
+                            tooltipEl.textContent = est.name || '';
+                            marker.bindTooltip(tooltipEl, {
                                 direction: 'top',
                                 offset: [0, -10],
                                 opacity: 1,
@@ -585,9 +604,9 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                             className: 'map-pin-selected-container',
                             html: `
                                 <div class="selected-pin-wrapper">
-                                    <div class="selected-pin-halo" style="background-color: ${statusConfig.color}; border-color: ${statusConfig.color};"></div>
-                                    <div class="selected-pin-core" style="background-color: ${statusConfig.color};"></div>
-                                    <div class="selected-pin-name-label">${selectedEst.name}</div>
+                                    <div class="selected-pin-halo" style="background-color: ${escapeHtml(statusConfig.color)}; border-color: ${escapeHtml(statusConfig.color)};"></div>
+                                    <div class="selected-pin-core" style="background-color: ${escapeHtml(statusConfig.color)};"></div>
+                                    <div class="selected-pin-name-label">${escapeHtml(selectedEst.name || '')}</div>
                                 </div>
                             `,
                             iconSize: [44, 44],
@@ -896,6 +915,7 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                                     onClick={() => setActivePreviewEst(null)}
                                     className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition shrink-0"
                                     title="Close preview"
+                                    aria-label="Close venue preview"
                                 >
                                     <X size={15} />
                                 </button>

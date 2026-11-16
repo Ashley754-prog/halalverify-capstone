@@ -234,7 +234,7 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                 onClick={() => onViewChange('registry', { registryMode: 'hcb' })}
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[#DCE7E0] bg-white px-3.5 py-2 text-xs sm:text-sm font-semibold text-[#17251F] shadow-2xs transition hover:border-emerald-400 hover:bg-[#F4F8F5] cursor-pointer"
               >
-                <span>View all 19</span>
+                <span>View all 18</span>
                 <ChevronRight size={15} />
               </button>
             </div>

@@ -41,7 +41,7 @@ const DISTRICT_1_KEYWORDS = [
 export const resolveZamboangaDistrict = (itemOrAddress, fallbackLng = null) => {
   let text;
   let lng = fallbackLng;
-  let primaryAddressText = '';
+  let primaryAddressText;
 
   if (itemOrAddress && typeof itemOrAddress === 'object') {
     primaryAddressText = [
@@ -263,7 +263,7 @@ export const getSubmitterRoleLabel = (roleOrEst) => {
 /** Philippine phone check. Accepts mobile and landline formats, ignores spaces and dashes. */
 export const isValidPhPhone = (value) => {
   const digits = String(value || '').replace(/[^\d+]/g, '');
-  return /^(\+639\d{9}|09\d{9}|0\d{8,10})$/.test(digits);
+  return /^(\+63\d{9,10}|09\d{9}|0\d{8,10})$/.test(digits);
 };
 
 /** Adds https:// to links typed without a scheme. Returns null for blank input. */
@@ -298,8 +298,8 @@ export const PRODUCT_HALAL_TIERS = [
 ];
 
 export const getStatusConfig = (statusOrEst, rawNotes = '') => {
-    let status = '';
-    let notes = '';
+    let status;
+    let notes;
     let estObj = null;
 
     if (statusOrEst && typeof statusOrEst === 'object') {
@@ -352,13 +352,40 @@ export const getStatusConfig = (statusOrEst, rawNotes = '') => {
         };
     }
 
-    if (status.includes('flag') || status.includes('suspend') || status.includes('expir')) {
+    if (status.includes('flag') || status.includes('suspend')) {
         return {
             key: 'suspended',
             label: 'Suspended',
             color: '#ef4444',
             badgeBg: 'bg-red-50 text-red-700 border-red-200',
             weight: 0.1,
+        };
+    }
+
+    const isPastExpiry = isDateExpired(estObj?.expiry_date);
+    const terminalNonCert =
+        status.includes('reject') ||
+        status.includes('closed') ||
+        status.includes('demolish') ||
+        status.includes('relocat');
+
+    if (status.includes('expir') || (isPastExpiry && !terminalNonCert)) {
+        return {
+            key: 'expired',
+            label: status.includes('renewal') ? 'Expired (For Renewal)' : 'Expired Certificate',
+            color: '#e11d48',
+            badgeBg: 'bg-rose-50 text-rose-700 border-rose-200',
+            weight: 0.2,
+        };
+    }
+
+    if (status === 'for_renewal' || status.includes('renewal')) {
+        return {
+            key: 'for_renewal',
+            label: 'For Renewal',
+            color: '#d97706',
+            badgeBg: 'bg-amber-50 text-amber-800 border-amber-200',
+            weight: 0.7,
         };
     }
 
@@ -491,6 +518,47 @@ export const getStatusConfig = (statusOrEst, rawNotes = '') => {
         weight: 0.5,
     };
 };
+
+const CALENDAR_TIMEZONE = 'Asia/Manila';
+
+export function getTodayIsoDate(timeZone = CALENDAR_TIMEZONE) {
+    if (typeof globalThis.Temporal !== 'undefined') {
+        return globalThis.Temporal.Now.plainDateISO(timeZone).toString();
+    }
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    }).formatToParts(new Date());
+    const map = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+    return `${map.year}-${map.month}-${map.day}`;
+}
+
+export function isDateExpired(value, timeZone = CALENDAR_TIMEZONE) {
+    if (!value) return false;
+    const match = String(value).trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!match) return false;
+    if (typeof globalThis.Temporal !== 'undefined') {
+        const target = globalThis.Temporal.PlainDate.from(match[0]);
+        const today = globalThis.Temporal.Now.plainDateISO(timeZone);
+        return globalThis.Temporal.PlainDate.compare(target, today) < 0;
+    }
+    return match[0] < getTodayIsoDate(timeZone);
+}
+
+export function formatPlainCalendarDate(value, format = 'long') {
+    if (!value) return '';
+    const match = String(value).trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!match) return String(value);
+    const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+    return new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: format === 'short' ? 'short' : 'long',
+        day: 'numeric',
+        timeZone: 'UTC',
+    }).format(date);
+}
 
 export const LOCAL_ESTABLISHMENT_PHOTOS = {
     'Al Halal Grill': '/establishments/al-halal-grill.jpg',

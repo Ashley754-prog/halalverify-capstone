@@ -61,8 +61,17 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
         if request.method in ["OPTIONS", "HEAD"] or request.url.path in ["/health", "/"]:
             return await call_next(request)
 
+        # Extract client IP from trusted reverse-proxy hops (rightmost non-spoofable entries)
         forwarded = request.headers.get("x-forwarded-for")
-        client_ip = forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "unknown")
+        try:
+            proxy_hops = max(0, int(os.getenv("TRUSTED_PROXY_HOPS", "1")))
+        except ValueError:
+            proxy_hops = 1
+        if forwarded and proxy_hops > 0:
+            xff_parts = [part.strip() for part in forwarded.split(",") if part.strip()]
+            client_ip = xff_parts[-min(proxy_hops, len(xff_parts))] if xff_parts else (request.client.host if request.client else "unknown")
+        else:
+            client_ip = request.client.host if request.client else "unknown"
         now = time.time()
         is_heavy = request.url.path.startswith("/analyze/")
 
@@ -114,11 +123,14 @@ DEFAULT_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
 allowed_origins = [
     origin.strip()
     for origin in os.getenv("ALLOWED_ORIGINS", DEFAULT_ORIGINS).split(",")
-    if origin.strip()
+    if origin.strip() and origin.strip() not in ("*", "https://*", "http://*")
 ]
 
-# Matches localhost, 127.0.0.1, Vercel deployments (*.vercel.app), and ngrok domains
-CORS_ORIGIN_REGEX = r"^(https?://(localhost|127\.0\.0\.1)(:\d+)?|https://.*\.vercel\.app|https://.*\.hf\.space|https://.*\.ngrok-free\.(dev|app)|https://.*\.onrender\.com)$"
+# Default regex restricts to local development origins unless ALLOWED_ORIGIN_REGEX is explicitly configured
+CORS_ORIGIN_REGEX = os.getenv(
+    "ALLOWED_ORIGIN_REGEX",
+    r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+).strip() or None
 
 app.add_middleware(
     CORSMiddleware,

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import {
-    ScanSearch,
     ShieldAlert,
     Store,
     Flag,
@@ -13,8 +12,6 @@ import {
     Cpu,
     ChevronDown,
     ChevronUp,
-    CheckCircle2,
-    ShieldCheck,
 } from 'lucide-react';
 import KpiCard from '../components/ui/KpiCard';
 import { API_BASE_URL, authFetch } from '../utils/api';
@@ -35,16 +32,32 @@ export const Dashboard = ({ userRole, onViewChange }) => {
         const loadSummary = async () => {
             // 1. Direct Supabase telemetry query (Instant ~100ms, zero cold start)
             try {
+                let prodQuery = supabase.from('products').select('*', { count: 'exact', head: true });
+                let estQuery = supabase.from('establishments').select('*', { count: 'exact', head: true });
+
+                if (!isAdmin) {
+                    prodQuery = prodQuery.not(
+                        'status',
+                        'in',
+                        '("REJECTED","PENDING","PENDING_VERIFICATION","needs_review","pending_review","draft","inactive","Expired","Flagged","Suspended","HARAM")'
+                    );
+                    estQuery = estQuery.not(
+                        'halal_status',
+                        'in',
+                        '("pending","pending_review","pending_verification","needs_review","rejected","flagged","suspended","relocated","permanently_closed","demolished","closed","haram","expired","REJECTED","PENDING_VERIFICATION","FLAGGED","SUSPENDED")'
+                    );
+                }
+
                 const queries = [
-                    supabase.from('products').select('*', { count: 'exact', head: true }),
+                    prodQuery,
                     supabase.from('additives').select('*', { count: 'exact', head: true }).in('status', ['Haram', 'Doubtful']),
-                    supabase.from('establishments').select('*', { count: 'exact', head: true }),
+                    estQuery,
                     supabase.from('certifying_bodies').select('*', { count: 'exact', head: true }),
                 ];
 
                 // Only query open reports and total scans for admin or high-level telemetry
                 if (isAdmin) {
-                    queries.push(supabase.from('issue_reports').select('*', { count: 'exact', head: true }).eq('status', 'open'));
+                    queries.push(supabase.from('issue_reports').select('*', { count: 'exact', head: true }).in('status', ['open', 'reviewing', 'pending']));
                     queries.push(supabase.from('scan_history').select('*', { count: 'exact', head: true }));
                 }
 
@@ -56,12 +69,16 @@ export const Dashboard = ({ userRole, onViewChange }) => {
                 const repCount = isAdmin ? results[4] : { count: 0 };
                 const scansCount = isAdmin ? results[5] : { count: 0 };
 
+                if (prodCount.error || estCount.error || hcbCount.error) {
+                    throw prodCount.error || estCount.error || hcbCount.error;
+                }
+
                 setSummary({
                     totals: {
                         products: prodCount.count ?? 0,
                         flagged_additives: addCount.count ?? 0,
                         establishments: estCount.count ?? 0,
-                        certifiers: hcbCount.count ?? 18,
+                        certifiers: hcbCount.count ?? 0,
                         open_reports: repCount.count ?? 0,
                         scans: scansCount.count ?? 0,
                     }
@@ -69,10 +86,15 @@ export const Dashboard = ({ userRole, onViewChange }) => {
                 setLoadError(false);
                 return;
             } catch (sbErr) {
-                console.warn('Direct Supabase summary failed, trying backend fallback:', sbErr);
+                console.warn('Direct Supabase summary failed:', sbErr);
             }
 
-            // 2. Fallback to backend API if direct query fails
+            // 2. Fallback to backend API only when authenticated (endpoint requires auth)
+            if (!userRole) {
+                setSummary(null);
+                setLoadError(true);
+                return;
+            }
             try {
                 const response = await authFetch(`${API_BASE_URL}/dashboard-summary`, { timeout: 2000 });
                 if (response.ok) {
@@ -88,7 +110,7 @@ export const Dashboard = ({ userRole, onViewChange }) => {
             }
         };
         loadSummary();
-    }, [isAdmin]);
+    }, [isAdmin, userRole]);
 
     useEffect(() => {
         if (isAdmin) return;
@@ -250,7 +272,7 @@ export const Dashboard = ({ userRole, onViewChange }) => {
                     <KpiCard title="Verified Products" value={totals ? (totals.products ?? 0) : '...'} icon={<Package />} color="emerald" />
                     <KpiCard title="Dining Venues" value={totals ? totals.establishments : '...'} icon={<Store />} color="blue" />
                     <KpiCard title="Screened Additives" value={totals ? totals.flagged_additives : '...'} icon={<ShieldAlert />} color="red" />
-                    <KpiCard title="Accredited HCBs" value={totals ? (totals.certifiers ?? 18) : 18} icon={<Award />} color="teal" />
+                    <KpiCard title="Accredited HCBs" value={totals ? (totals.certifiers ?? 0) : '...'} icon={<Award />} color="teal" />
                     {isAdmin && (
                         <KpiCard title="Open Reports" value={totals ? totals.open_reports : '...'} icon={<Flag />} color="yellow" />
                     )}

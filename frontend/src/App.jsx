@@ -99,7 +99,8 @@ export default function App() {
     if (typeof window !== 'undefined' && window.location.hash) {
       if (
         window.location.hash.includes('type=recovery') ||
-        window.location.hash.includes('access_token')
+        window.location.hash.includes('access_token') ||
+        window.location.hash.includes('id_token')
       ) {
         return;
       }
@@ -139,6 +140,8 @@ export default function App() {
       view = 'landing';
     }
 
+    const requestedView = view;
+
     if (view === 'profile' && !userRole) {
       view = 'login';
     }
@@ -151,16 +154,22 @@ export default function App() {
       view = 'dashboard';
     }
 
+    const wasRedirected = view !== requestedView;
+
     setViewParams(params || {});
     if (view !== 'reset-password') {
       setIsRecoveryFlow(false);
     }
     setCurrentView(view);
 
-    // Push clean path into browser history so back button navigates logically between in-app views
-    if (pushHistory && typeof window !== 'undefined') {
+    // Sync clean path into browser history; replaceState prevents trapped redirects or stale protected URLs
+    if (typeof window !== 'undefined' && (pushHistory || wasRedirected)) {
       const cleanPath = view === 'landing' ? '/' : `/${view}`;
-      window.history.pushState({ view, params: params || {} }, '', cleanPath);
+      if (wasRedirected || !pushHistory) {
+        window.history.replaceState({ view, params: params || {} }, '', cleanPath);
+      } else {
+        window.history.pushState({ view, params: params || {} }, '', cleanPath);
+      }
     }
   }, [userRole]);
 
@@ -192,6 +201,7 @@ export default function App() {
     const userObj = typeof userOrId === 'object' ? userOrId : { id: userOrId };
     const role = await ensureUserProfile(userObj);
     if (!role) {
+      await supabase.auth.signOut().catch(() => {});
       setUserRole(null);
       setCurrentUser(null);
       return false;
@@ -254,7 +264,7 @@ export default function App() {
       }
 
       if (AUTH_VIEWS.has(prev) || isOAuthRedirect) {
-        if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
+        if (typeof window !== 'undefined' && isOAuthRedirect) {
           window.history.replaceState({ view: 'dashboard', params: {} }, '', '/dashboard');
         }
         return 'dashboard';
@@ -310,6 +320,26 @@ export default function App() {
     };
   }, [restoreAuthenticatedUser, handleViewChange]);
 
+  // Enforce protected route redirects once initial auth session check finishes
+  useEffect(() => {
+    if (authLoading) return;
+
+    let redirectedView = null;
+    if (currentView === 'profile' && !userRole) {
+      redirectedView = 'login';
+    } else if ((currentView === 'analytics' || currentView === 'verification-queue') && userRole !== 'admin') {
+      redirectedView = 'dashboard';
+    }
+
+    if (redirectedView) {
+      setCurrentView(redirectedView);
+      if (typeof window !== 'undefined') {
+        const cleanPath = redirectedView === 'landing' ? '/' : `/${redirectedView}`;
+        window.history.replaceState({ view: redirectedView, params: {} }, '', cleanPath);
+      }
+    }
+  }, [authLoading, currentView, userRole]);
+
   const handleLogin = (view, role) => {
     if (role !== null) {
       setUserRole(role);
@@ -338,7 +368,9 @@ export default function App() {
       case 'landing':
         return <LandingPage onViewChange={handleViewChange} userRole={userRole} />;
       case 'profile':
-        return <ProfilePage onViewChange={handleViewChange} initialFilter={viewParams.tab || 'all'} />;
+        return userRole ? (
+          <ProfilePage onViewChange={handleViewChange} initialFilter={viewParams.tab || 'all'} />
+        ) : null;
       case 'dashboard':
         return <Dashboard userRole={userRole} onViewChange={handleViewChange} />;
       case 'scanner':

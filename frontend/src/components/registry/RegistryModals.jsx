@@ -8,10 +8,27 @@ import AmenitiesPicker from '../shared/AmenitiesPicker';
 import DishesInput from '../shared/DishesInput';
 import SubmitterRoleSelect from '../shared/SubmitterRoleSelect';
 import { supabase } from '../../lib/supabaseClient';
+import { buildScopedUploadPath, getSafeUrl, validateUploadFile } from '../../utils/security';
 
 const ADDITIVE_STATUSES = ['Halal', 'Doubtful', 'Haram'];
 const ADDITIVE_ORIGINS = ['Plant', 'Animal', 'Insect', 'Synthetic / Mineral', 'Multiple / Unknown'];
 const HCB_CATEGORIES = ['Local & Regional HCB', 'National HCB', 'Government Oversight', 'International Authority'];
+
+const ESTABLISHMENT_STATUS_OPTIONS = [
+    { value: 'verified', label: 'Operational / Verified' },
+    { value: 'for_renewal', label: 'For Renewal' },
+    { value: 'needs_review', label: 'Needs Review' },
+    { value: 'pending_review', label: 'Pending Review' },
+    { value: 'pending_verification', label: 'Pending Verification' },
+    { value: 'expired', label: 'Expired' },
+    { value: 'flagged', label: 'Flagged' },
+    { value: 'suspended', label: 'Suspended' },
+    { value: 'rejected', label: 'Rejected' },
+    { value: 'relocated', label: 'Relocated' },
+    { value: 'permanently_closed', label: 'Permanently Closed' },
+    { value: 'closed', label: 'Closed' },
+    { value: 'demolished', label: 'Demolished' },
+];
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const normalizeAdditiveCode = (code) => {
@@ -28,23 +45,36 @@ export default function RegistryModals({
     activeModal,
     modalForm,
     setModalForm,
+    certifyingBodies = [],
     onClose,
     onSubmit,
 }) {
     const [isUploadingCert, setIsUploadingCert] = useState(false);
+    const [uploadError, setUploadError] = useState('');
 
     if (!activeModal) return null;
 
     const handleCertFileUpload = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        const check = validateUploadFile(file, {
+            maxSizeMB: 10,
+            allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+        });
+        if (!check.valid) {
+            setUploadError(check.error || 'Unsupported file format or size.');
+            return;
+        }
+
+        setUploadError('');
+        setIsUploadingCert(true);
         try {
-            setIsUploadingCert(true);
-            const ext = (file.name.split('.').pop() || 'jpg').replace(/[^a-zA-Z0-9]/g, '');
-            const filePath = `certificates/est_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+            const { data: userRes } = await supabase.auth.getUser();
+            const filePath = buildScopedUploadPath(userRes?.user?.id, 'certificates/establishments', file.name);
             const { error: upErr } = await supabase.storage
                 .from('submissions')
-                .upload(filePath, file, { upsert: true });
+                .upload(filePath, file, { upsert: false });
 
             if (!upErr) {
                 const { data: pub } = supabase.storage.from('submissions').getPublicUrl(filePath);
@@ -56,25 +86,34 @@ export default function RegistryModals({
                         logo_url: pub.publicUrl,
                         certificate_url: isCertTier ? pub.publicUrl : '',
                     }));
+                    setIsUploadingCert(false);
                     return;
                 }
             }
-            // Fallback to local object URL or data URL if storage bucket is restricted
-            const reader = new FileReader();
-            reader.onload = () => {
-                if (typeof reader.result === 'string') {
-                    const isCertTier = (modalForm.halal_tier || 'halal_certified') === 'halal_certified';
-                    setModalForm((prev) => ({
-                        ...prev,
-                        photo_url: reader.result,
-                        logo_url: reader.result,
-                        certificate_url: isCertTier ? reader.result : '',
-                    }));
-                }
-            };
-            reader.readAsDataURL(file);
+            // Fallback to data URL if storage bucket upload fails
+            await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    if (typeof reader.result === 'string') {
+                        const isCertTier = (modalForm.halal_tier || 'halal_certified') === 'halal_certified';
+                        setModalForm((prev) => ({
+                            ...prev,
+                            photo_url: reader.result,
+                            logo_url: reader.result,
+                            certificate_url: isCertTier ? reader.result : '',
+                        }));
+                    }
+                    resolve();
+                };
+                reader.onerror = () => {
+                    setUploadError('Failed to read the selected file.');
+                    resolve();
+                };
+                reader.readAsDataURL(file);
+            });
         } catch (err) {
             console.warn('Certificate upload fallback:', err);
+            setUploadError('File upload failed. Please try again.');
         } finally {
             setIsUploadingCert(false);
         }
@@ -119,9 +158,10 @@ export default function RegistryModals({
                     key="save"
                     type="submit"
                     form="registry-modal-form"
-                    className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white hover:bg-emerald-700 active:scale-[0.98] transition shadow-sm"
+                    disabled={isUploadingCert}
+                    className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white hover:bg-emerald-700 active:scale-[0.98] transition shadow-sm disabled:opacity-50"
                 >
-                    {submitButtonLabel}
+                    {isUploadingCert ? 'Uploading File...' : submitButtonLabel}
                 </button>,
                 <button
                     key="cancel"
@@ -385,10 +425,9 @@ export default function RegistryModals({
                                     onChange={(e) => setModalForm(prev => ({ ...prev, status: e.target.value }))}
                                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
                                 >
-                                    <option value="verified">Operational / Published</option>
-                                    <option value="needs_review">Needs Review</option>
-                                    <option value="suspended">Suspended</option>
-                                    <option value="permanently_closed">Permanently Closed</option>
+                                    {ESTABLISHMENT_STATUS_OPTIONS.map((opt) => (
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
@@ -442,6 +481,25 @@ export default function RegistryModals({
                                 <p className="text-xs font-semibold text-emerald-800">
                                     Formal Halal Certification Credentials
                                 </p>
+                                {certifyingBodies.length > 0 && (
+                                    <div>
+                                        <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-emerald-900">
+                                            Accredited Certifying Body (HCB)
+                                        </label>
+                                        <select
+                                            value={modalForm.certifying_body_id || ''}
+                                            onChange={(e) => setModalForm(prev => ({ ...prev, certifying_body_id: e.target.value }))}
+                                            className="w-full rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
+                                        >
+                                            <option value="">-- Select Certifying Body --</option>
+                                            {certifyingBodies.map((cb) => (
+                                                <option key={cb.id} value={cb.id}>
+                                                    {cb.code ? `${cb.code} — ${cb.name}` : cb.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
                                 <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
                                     <div>
                                         <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-emerald-900">Certificate Number</label>
@@ -473,6 +531,8 @@ export default function RegistryModals({
                             const hasRemovedPhoto = modalForm.photo_url === 'none';
                             const defaultPhoto = getEstablishmentPhoto({ name: modalForm.name });
                             const isShowingDefault = !hasActivePhoto && !hasRemovedPhoto && Boolean(defaultPhoto);
+                            const rawPreviewHref = hasActivePhoto ? modalForm.photo_url : defaultPhoto;
+                            const safePreviewHref = getSafeUrl(rawPreviewHref);
 
                             return (
                                 <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2.5">
@@ -480,9 +540,9 @@ export default function RegistryModals({
                                         <span className="text-xs font-bold uppercase tracking-wide text-slate-700">
                                             Venue Storefront Photo
                                         </span>
-                                        {(hasActivePhoto || isShowingDefault) && (
+                                        {(hasActivePhoto || isShowingDefault) && safePreviewHref && (
                                             <a
-                                                href={hasActivePhoto ? modalForm.photo_url : defaultPhoto}
+                                                href={safePreviewHref}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="text-[11px] font-bold text-emerald-700 hover:underline inline-flex items-center gap-1"
@@ -492,6 +552,9 @@ export default function RegistryModals({
                                             </a>
                                         )}
                                     </div>
+                                    {uploadError && (
+                                        <p className="text-xs font-medium text-red-600">{uploadError}</p>
+                                    )}
                                     <div className="flex items-center gap-3">
                                         <label className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer transition shadow-xs active:scale-[0.98] shrink-0">
                                             {isUploadingCert ? (
@@ -577,8 +640,9 @@ export default function RegistryModals({
                         <div>
                             <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600">Review Status</label>
                             <select value={modalForm.status || ''} onChange={(e) => setModalForm(prev => ({ ...prev, status: e.target.value }))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-emerald-500 focus:outline-none">
-                                <option value="needs_review">Needs Review</option>
-                                <option value="verified">Operational / Published</option>
+                                {ESTABLISHMENT_STATUS_OPTIONS.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                ))}
                             </select>
                         </div>
                         <div>

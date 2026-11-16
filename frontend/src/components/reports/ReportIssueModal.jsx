@@ -14,50 +14,8 @@ import {
 import Modal from '../ui/Modal';
 import { supabase } from '../../lib/supabaseClient';
 import { API_BASE_URL, authFetch } from '../../utils/api';
-import { validateUploadFile } from '../../utils/security';
-
-export const CATEGORIES_BY_TARGET = {
-  establishment_certified: [
-    'Expired, Fake, or Questionable Halal Certificate',
-    'Permanently Closed or Relocated',
-    'Incorrect Address, Map Pin, or Phone',
-    'Pork or Alcohol Detected on Premises',
-    'Suspected Cross-Contamination or Storage Issue',
-    'Duplicate Establishment Listing',
-    'Other',
-  ],
-  establishment_community: [
-    'Permanently Closed or Relocated',
-    'Incorrect Address, Map Pin, or Phone',
-    'Pork or Alcohol Detected on Premises',
-    'Suspected Cross-Contamination or Storage Issue',
-    'Misleading Halal / Muslim-Friendly Claim',
-    'Duplicate Establishment Listing',
-    'Other',
-  ],
-  product: [
-    'Prohibited or Non-Halal Ingredient / E-Number Detected',
-    'Counterfeit or Unaccredited Halal Seal',
-    'Incorrect Product Details or Ingredients List',
-    'Product Discontinued or Recalled',
-    'Duplicate Product Listing',
-    'Other',
-  ],
-  scanner: [
-    'Safe Ingredient Falsely Flagged as Haram',
-    'Haram Ingredient Missed by Scanner',
-    'Text Recognition / Image Crop Failure',
-    'Other',
-  ],
-};
-
-export function getCategoriesForTarget(relatedTo, halalTier) {
-  if (relatedTo === 'product') return CATEGORIES_BY_TARGET.product;
-  if (relatedTo === 'scanner') return CATEGORIES_BY_TARGET.scanner;
-  const tierLower = String(halalTier || '').toLowerCase();
-  const isCertified = tierLower.includes('cert') || tierLower === 'halal_certified' || tierLower === 'certified';
-  return isCertified ? CATEGORIES_BY_TARGET.establishment_certified : CATEGORIES_BY_TARGET.establishment_community;
-}
+import { validateUploadFile, buildScopedUploadPath } from '../../utils/security';
+import { getCategoriesForTarget } from '../../data/reportCategories';
 
 export default function ReportIssueModal({
   isOpen,
@@ -142,14 +100,19 @@ export default function ReportIssueModal({
       setUploadingImage(true);
       setErrorMessage('');
 
-      const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-      const filePath = `reports/${Date.now()}_${cleanFileName}`;
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      if (!userId) {
+        throw new Error('Authentication required before uploading proof images.');
+      }
+
+      const filePath = buildScopedUploadPath(userId, 'reports', file.name);
 
       const { data, error: uploadError } = await supabase.storage
         .from('submissions')
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: true,
+          upsert: false,
         });
 
       if (uploadError) {
@@ -163,7 +126,7 @@ export default function ReportIssueModal({
       setEvidenceUrl(publicUrlData?.publicUrl || '');
     } catch (err) {
       console.error('Evidence upload error:', err);
-      setErrorMessage('Failed to upload proof image. Please try again.');
+      setErrorMessage(err?.message || 'Failed to upload proof image. Please try again.');
     } finally {
       setUploadingImage(false);
     }
@@ -202,20 +165,33 @@ export default function ReportIssueModal({
       };
 
       let success = false;
+      let response = null;
 
       // 1. Backend REST Endpoint
       try {
-        const response = await authFetch(`${API_BASE_URL}/reports/submit`, {
+        response = await authFetch(`${API_BASE_URL}/reports/submit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
-
-        if (response.ok) {
-          success = true;
-        }
       } catch (apiErr) {
         console.warn('Backend reporting endpoint unavailable, falling back to direct Supabase:', apiErr);
+      }
+
+      if (response) {
+        if (response.ok) {
+          success = true;
+        } else if (response.status >= 400 && response.status < 500) {
+          const errData = await response.json().catch(() => ({}));
+          const detailMsg = Array.isArray(errData?.detail)
+            ? errData.detail.map((d) => d?.msg || JSON.stringify(d)).join('; ')
+            : errData?.detail;
+          throw new Error(
+            response.status === 401
+              ? 'Authentication required to submit a report.'
+              : (detailMsg || errData?.message || 'Report submission was rejected.')
+          );
+        }
       }
 
       // 2. Direct Supabase Fallback
@@ -325,10 +301,11 @@ export default function ReportIssueModal({
             </div>
           ) : (
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">
+              <label htmlFor="modal-report-subject" className="block font-semibold text-slate-700 mb-1">
                 Establishment or Product Name <span className="text-red-500">*</span>
               </label>
               <input
+                id="modal-report-subject"
                 type="text"
                 placeholder="e.g., Al-Madina Eatery or Brand Name"
                 value={subjectName}
@@ -340,10 +317,11 @@ export default function ReportIssueModal({
 
           {/* Violation Category Selector */}
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">
+            <label htmlFor="modal-report-issue-type" className="block font-semibold text-slate-700 mb-1">
               Violation / Issue Category <span className="text-red-500">*</span>
             </label>
             <select
+              id="modal-report-issue-type"
               value={issueType}
               onChange={(e) => setIssueType(e.target.value)}
               className="w-full rounded-xl border border-slate-300 px-3 py-2.5 outline-none focus:border-emerald-500 bg-white font-medium text-slate-800 cursor-pointer"
@@ -358,10 +336,11 @@ export default function ReportIssueModal({
             {/* Custom Input when Other is selected */}
             {issueType === 'Other' && (
               <div className="mt-2.5 space-y-1">
-                <label className="block text-xs font-semibold text-slate-700">
+                <label htmlFor="modal-report-custom-category" className="block text-xs font-semibold text-slate-700">
                   Please specify the issue <span className="text-red-500">*</span>
                 </label>
                 <input
+                  id="modal-report-custom-category"
                   type="text"
                   required
                   placeholder="Type specific issue (e.g. Menu prices mismatch, Missing signboard, etc.)..."
@@ -376,7 +355,7 @@ export default function ReportIssueModal({
           {/* Detailed Description */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block font-semibold text-slate-700">
+              <label htmlFor="modal-report-description" className="block font-semibold text-slate-700">
                 Description of Issue <span className="text-red-500">*</span>
               </label>
               <span className={`text-[10px] font-semibold ${description.trim().length >= 4 ? 'text-emerald-600' : 'text-slate-400'}`}>
@@ -384,6 +363,7 @@ export default function ReportIssueModal({
               </span>
             </div>
             <textarea
+              id="modal-report-description"
               required
               rows={3}
               placeholder="Provide clear factual details (minimum 4 characters) about what you observed (e.g. venue permanently closed, alcohol served on site, incorrect address)..."
@@ -395,7 +375,7 @@ export default function ReportIssueModal({
 
           {/* Photo Evidence Upload */}
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">
+            <label htmlFor="modal-report-evidence-file" className="block font-semibold text-slate-700 mb-1">
               Attach Photo Proof <span className="text-slate-400 font-normal">(Recommended)</span>
             </label>
             <div className="rounded-xl border-2 border-dashed border-slate-200 p-3.5 text-center hover:border-emerald-500 transition bg-slate-50/50">
@@ -415,13 +395,14 @@ export default function ReportIssueModal({
                   </button>
                 </div>
               ) : (
-                <label className="cursor-pointer flex flex-col items-center">
+                <label htmlFor="modal-report-evidence-file" className="cursor-pointer flex flex-col items-center">
                   <Upload size={20} className="text-slate-400 mb-1" />
                   <span className="text-xs font-semibold text-emerald-600 hover:underline">
                     {uploadingImage ? 'Uploading photo...' : 'Click to take or upload photo evidence'}
                   </span>
                   <span className="text-[11px] text-slate-400 mt-0.5">PNG, JPG, PDF up to 10MB</span>
                   <input
+                    id="modal-report-evidence-file"
                     type="file"
                     accept="image/*,application/pdf"
                     disabled={uploadingImage}

@@ -1,7 +1,8 @@
+import datetime
 import logging
 from typing import Optional
 
-from app.auth import get_current_user, get_optional_current_user, require_admin
+from app.auth import extract_user_id, get_current_user, get_optional_current_user, is_admin_user, require_admin
 from app.auto_verification_service import evaluate_establishment_submission
 from app.notification_service import notify_admins, notify_user
 from app.schemas.registry import (
@@ -18,6 +19,7 @@ from app.utils.db_helpers import (
     model_dump_without_none,
     normalize_additive_code,
     sanitize_postgrest_search,
+    strip_private_fields,
 )
 from app.utils.geocoding import geocode_zamboanga_address
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -30,28 +32,27 @@ EXCLUDED_UNVERIFIED_ESTABLISHMENT_STATUSES = {
     "needs_review",
     "pending",
     "pending_review",
+    "pending_verification",
     "flagged",
     "rejected",
     "suspended",
     "expired",
+    "relocated",
+    "permanently_closed",
+    "demolished",
+    "closed",
+    "haram",
 }
 
 # Moderation states that must only be visible to authenticated administrators.
-PRIVILEGED_ESTABLISHMENT_STATUSES = {
-    "needs_review",
-    "pending",
-    "pending_review",
-    "flagged",
-    "rejected",
-    "suspended",
-    "expired",
-}
+PRIVILEGED_ESTABLISHMENT_STATUSES = set(EXCLUDED_UNVERIFIED_ESTABLISHMENT_STATUSES)
 
 # Status filters the public may request. This is an allowlist so that fuzzy or
 # partial values (e.g. "review", "rej") cannot be used to reach privileged rows.
 PUBLIC_ESTABLISHMENT_STATUS_FILTERS = {
     "all",
     "verified",
+    "for_renewal",
     "halal_certified",
     "community",
     "muslim_owned",
@@ -63,25 +64,117 @@ PUBLIC_ESTABLISHMENT_STATUS_FILTERS = {
     "pork_free",
 }
 
+TIER_STATUS_FILTER_MAP = {
+    "verified": "halal_certified",
+    "halal_certified": "halal_certified",
+    "muslim_owned": "muslim_owned",
+    "community": "muslim_owned",
+    "muslim_friendly": "muslim_friendly",
+    "vegetarian_vegan": "vegetarian_vegan",
+    "vegetarian": "vegetarian_vegan",
+    "vegan": "vegetarian_vegan",
+    "plant_based": "vegetarian_vegan",
+}
+
+EXCLUDED_PUBLIC_PRODUCT_STATUSES = {
+    "rejected",
+    "pending_verification",
+    "pending",
+    "needs_review",
+    "pending_review",
+    "draft",
+    "expired",
+    "flagged",
+    "suspended",
+    "haram",
+    "inactive",
+}
+
 
 def _is_admin_user(user: Optional[dict]) -> bool:
     """Resolve an optional bearer token to an admin profile without raising."""
-    if not user:
-        return False
-    uid = user.get("id") if isinstance(user, dict) else getattr(user, "id", None)
-    if not uid:
-        return False
+    return is_admin_user(user)
+
+
+def _attach_establishment_products(rows: list, *, is_admin: bool) -> list:
+    """Attach related products to establishments, hiding unapproved products from non-admins."""
+    if not rows:
+        return rows
+    est_ids = [d["id"] for d in rows if isinstance(d, dict) and d.get("id")]
+    if not est_ids:
+        return rows
     try:
-        res = (
-            supabase.table("profiles")
-            .select("role")
-            .eq("id", str(uid))
-            .single()
+        p_res = (
+            supabase.table("products")
+            .select("id, name, category, status, establishment_id")
+            .in_("establishment_id", est_ids)
             .execute()
         )
-        return (res.data or {}).get("role") == "admin"
-    except Exception:
-        return False
+        products_by_est = {}
+        for p in (p_res.data or []):
+            p_status = (p.get("status") or "").strip().lower()
+            if not is_admin and p_status in EXCLUDED_PUBLIC_PRODUCT_STATUSES:
+                continue
+            eid = p.get("establishment_id")
+            if eid:
+                products_by_est.setdefault(eid, []).append(p)
+        for d in rows:
+            d["products"] = products_by_est.get(d.get("id"), [])
+    except Exception as p_err:
+        logger.warning("Failed to fetch products for establishments: %s", p_err)
+    return rows
+
+
+def _filter_establishment_rows(
+    rows: list,
+    *,
+    is_admin: bool,
+    requested_status: str,
+    city: Optional[str] = None,
+    category: Optional[str] = None,
+    hcb: Optional[str] = None,
+) -> list:
+    """Enforce public moderation exclusions and requested tier/status/taxonomy filters."""
+    filtered = []
+    city_lower = city.strip().lower() if city and city.lower() != "all" else ""
+    cat_lower = category.strip().lower() if category and category.lower() != "all" else ""
+    hcb_lower = hcb.strip().lower() if hcb and hcb.lower() != "all" else ""
+
+    for d in rows or []:
+        if not isinstance(d, dict):
+            continue
+        est_status = (d.get("halal_status") or "").strip().lower()
+        if not is_admin and est_status in EXCLUDED_UNVERIFIED_ESTABLISHMENT_STATUSES:
+            continue
+
+        tier = derive_establishment_tier(d)
+        if requested_status and requested_status != "all":
+            if requested_status in TIER_STATUS_FILTER_MAP:
+                target_tier = TIER_STATUS_FILTER_MAP[requested_status]
+                if tier != target_tier:
+                    continue
+                if requested_status == "verified" and est_status != "verified":
+                    continue
+            elif requested_status == "for_renewal":
+                if est_status != "for_renewal":
+                    continue
+            elif requested_status not in est_status.replace("-", "_").replace(" ", "_"):
+                continue
+
+        if city_lower and city_lower not in (d.get("city") or "").lower():
+            continue
+        if cat_lower and cat_lower not in (d.get("type") or "").lower():
+            continue
+        if hcb_lower:
+            cb = d.get("certifying_bodies") or {}
+            cb_code = (cb.get("code") or "").lower()
+            cb_name = (cb.get("name") or "").lower()
+            if hcb_lower not in cb_code and hcb_lower not in cb_name:
+                continue
+
+        filtered.append(d)
+
+    return enrich_establishment_tier(filtered)
 
 
 def derive_establishment_tier(record: dict) -> str:
@@ -256,8 +349,9 @@ def get_establishments_map(
     and geographic coordinates across the Philippines (Zamboanga City core).
     Executes PostGIS ST_DWithin proximity search when coordinates are supplied.
     """
+    is_admin = _is_admin_user(user)
     requested_status = (status or "").strip().lower().replace(" ", "_").replace("-", "_")
-    if requested_status and not _is_admin_user(user):
+    if requested_status and not is_admin:
         if (
             requested_status in PRIVILEGED_ESTABLISHMENT_STATUSES
             or requested_status not in PUBLIC_ESTABLISHMENT_STATUS_FILTERS
@@ -267,26 +361,27 @@ def get_establishments_map(
             raise HTTPException(status_code=404, detail="Not found")
 
     try:
-        data = []
         if lat is not None and lng is not None:
+            rpc_status_arg = (
+                None
+                if (not status or status == "all" or requested_status in TIER_STATUS_FILTER_MAP)
+                else status
+            )
             rpc_params = {
                 "lat": float(lat),
                 "lng": float(lng),
                 "radius_meters": float(radius * 1000.0) if radius else 10000.0,
-                "filter_status": status if status and status != "all" else None,
+                "filter_status": rpc_status_arg,
                 "filter_city": city if city and city != "all" else None,
                 "filter_hcb": hcb if hcb and hcb != "all" else None,
             }
             rpc_res = supabase.rpc("get_nearby_establishments", rpc_params).execute()
             raw_data = rpc_res.data or []
-
+            formatted_rows = []
             for item in raw_data:
-                item_status = (item.get("halal_status") or "").strip().lower()
-                if (not status or status == "all") and item_status in EXCLUDED_UNVERIFIED_ESTABLISHMENT_STATUSES:
-                    continue
                 dist_m = item.get("distance_meters")
                 dist_km = round(dist_m / 1000.0, 2) if dist_m is not None else None
-                formatted_item = {
+                formatted_rows.append({
                     "id": item.get("id"),
                     "name": item.get("name"),
                     "type": item.get("type"),
@@ -294,6 +389,7 @@ def get_establishments_map(
                     "city": item.get("city"),
                     "halal_status": item.get("halal_status"),
                     "halal_tier": item.get("halal_tier"),
+                    "verification_tier": item.get("verification_tier") or item.get("halal_tier"),
                     "amenities": item.get("amenities") or [],
                     "menu_highlights": item.get("menu_highlights") or [],
                     "submitter_role": item.get("submitter_role"),
@@ -313,114 +409,62 @@ def get_establishments_map(
                         "code": item.get("hcb_code"),
                         "name": item.get("hcb_name"),
                     } if item.get("hcb_code") else None,
-                }
-                if category and category != "all":
-                    if category.lower() not in (item.get("type") or "").lower():
-                        continue
-                data.append(formatted_item)
+                })
+            data = _filter_establishment_rows(
+                formatted_rows,
+                is_admin=is_admin,
+                requested_status=requested_status,
+                city=city,
+                category=category,
+                hcb=hcb,
+            )
         else:
             query = supabase.table("establishments").select("*, certifying_bodies(*)")
-            if status and status != "all":
-                st_lower = status.lower()
-                if "muslim_owned" in st_lower or "muslim-owned" in st_lower or "community" in st_lower:
-                    query = query.or_("halal_status.ilike.%muslim_owned%,description.ilike.%[Tier: muslim_owned]%,admin_notes.ilike.%Muslim-Owned%,admin_notes.ilike.%Community Listed%")
-                elif "friendly" in st_lower:
-                    query = query.or_("halal_status.ilike.%friendly%,description.ilike.%[Tier: muslim_friendly]%,admin_notes.ilike.%Muslim-Friendly%")
-                elif "veg" in st_lower:
-                    query = query.or_("halal_status.ilike.%veg%,description.ilike.%[Tier: vegetarian_vegan]%,admin_notes.ilike.%Vegetarian%,admin_notes.ilike.%Plant-Based%")
-                elif "verified" in st_lower or "certified" in st_lower:
-                    query = query.eq("halal_status", "verified")
-                elif "needs_review" in st_lower or "pending" in st_lower:
-                    query = query.or_("halal_status.ilike.%needs_review%,halal_status.ilike.%pending%")
-                elif "flagged" in st_lower or "rejected" in st_lower:
-                    query = query.or_("halal_status.ilike.%flagged%,halal_status.ilike.%rejected%,halal_status.ilike.%suspended%")
-                else:
-                    query = query.ilike("halal_status", f"%{status}%")
+            if not is_admin:
+                query = query.not_.in_("halal_status", list(EXCLUDED_UNVERIFIED_ESTABLISHMENT_STATUSES))
             if city and city != "all":
                 query = query.ilike("city", f"%{city}%")
             if category and category != "all":
                 query = query.ilike("type", f"%{category}%")
             res = query.order("name").execute()
-            data = res.data or []
+            data = _filter_establishment_rows(
+                res.data or [],
+                is_admin=is_admin,
+                requested_status=requested_status,
+                city=city,
+                category=category,
+                hcb=hcb,
+            )
 
-            if status and ("verified" in status.lower() or "certified" in status.lower()):
-                data = [
-                    d for d in data
-                    if derive_establishment_tier(d) == "halal_certified"
-                ]
-
-            if not status or status == "all":
-                data = [
-                    d for d in data
-                    if (d.get("halal_status") or "").strip().lower() not in EXCLUDED_UNVERIFIED_ESTABLISHMENT_STATUSES
-                ]
-
-            if hcb and hcb != "all":
-                hcb_lower = hcb.lower()
-                data = [
-                    d for d in data
-                    if (d.get("certifying_bodies") and (
-                        hcb_lower in (d["certifying_bodies"].get("code") or "").lower() or
-                        hcb_lower in (d["certifying_bodies"].get("name") or "").lower()
-                    ))
-                ]
-
-        enrich_establishment_tier(data)
-
-        # Attach associated compliant products/menu items for rich details
-        if data:
-            est_ids = [d["id"] for d in data if d.get("id")]
-            if est_ids:
-                try:
-                    p_res = supabase.table("products").select("id, name, category, status, establishment_id").in_("establishment_id", est_ids).execute()
-                    products_by_est = {}
-                    for p in (p_res.data or []):
-                        eid = p.get("establishment_id")
-                        if eid:
-                            if eid not in products_by_est:
-                                products_by_est[eid] = []
-                            products_by_est[eid].append(p)
-                    for d in data:
-                        d["products"] = products_by_est.get(d.get("id"), [])
-                except Exception as p_err:
-                    logger.warning("Failed to fetch products for establishments: %s", p_err)
+        _attach_establishment_products(data, is_admin=is_admin)
+        clean_data = strip_private_fields(data, is_admin=is_admin)
 
         return {
             "success": True,
-            "count": len(data),
-            "data": data,
+            "count": len(clean_data),
+            "data": clean_data,
         }
     except Exception as e:
         logger.error("Error in map endpoint: %s", e)
         try:
-            fallback_res = supabase.table("establishments").select("*, certifying_bodies(*)").execute()
-            raw_fallback = fallback_res.data or []
-            # Security Guard: Never leak rejected, flagged, suspended, or pending_review rows in the fallback path
-            fallback_data = [
-                d for d in raw_fallback
-                if (d.get("halal_status") or "").strip().lower() not in EXCLUDED_UNVERIFIED_ESTABLISHMENT_STATUSES
-            ]
-            enrich_establishment_tier(fallback_data)
-            if fallback_data:
-                fb_ids = [d["id"] for d in fallback_data if d.get("id")]
-                if fb_ids:
-                    try:
-                        fb_prods = supabase.table("products").select("id, name, category, status, establishment_id").in_("establishment_id", fb_ids).execute()
-                        fb_by_est = {}
-                        for p in (fb_prods.data or []):
-                            eid = p.get("establishment_id")
-                            if eid:
-                                if eid not in fb_by_est:
-                                    fb_by_est[eid] = []
-                                fb_by_est[eid].append(p)
-                        for d in fallback_data:
-                            d["products"] = fb_by_est.get(d.get("id"), [])
-                    except Exception:
-                        pass
+            fb_query = supabase.table("establishments").select("*, certifying_bodies(*)")
+            if not is_admin:
+                fb_query = fb_query.not_.in_("halal_status", list(EXCLUDED_UNVERIFIED_ESTABLISHMENT_STATUSES))
+            fallback_res = fb_query.order("name").execute()
+            fallback_data = _filter_establishment_rows(
+                fallback_res.data or [],
+                is_admin=is_admin,
+                requested_status=requested_status,
+                city=city,
+                category=category,
+                hcb=hcb,
+            )
+            _attach_establishment_products(fallback_data, is_admin=is_admin)
+            clean_fallback = strip_private_fields(fallback_data, is_admin=is_admin)
             return {
                 "success": True,
-                "count": len(fallback_data),
-                "data": fallback_data,
+                "count": len(clean_fallback),
+                "data": clean_fallback,
                 "fallback": True,
             }
         except Exception:
@@ -439,14 +483,14 @@ def search_establishments(q: Optional[str] = Query(None, description="Search que
         base_query = (
             supabase.table("establishments")
             .select("*, certifying_bodies(*)")
-            .not_("halal_status", "in", "(rejected,REJECTED,needs_review,NEEDS_REVIEW,pending,PENDING,pending_review,flagged,suspended,expired,EXPIRED)")
+            .not_.in_("halal_status", list(EXCLUDED_UNVERIFIED_ESTABLISHMENT_STATUSES))
         )
         if query_str:
             base_query = base_query.or_(
                 f"name.ilike.%{query_str}%,city.ilike.%{query_str}%,address.ilike.%{query_str}%,type.ilike.%{query_str}%"
             )
         res = base_query.order("name").limit(30).execute()
-        rows = enrich_establishment_tier(res.data or [])
+        rows = strip_private_fields(enrich_establishment_tier(res.data or []), is_admin=False)
         return {
             "success": True,
             "count": len(rows),
@@ -468,13 +512,9 @@ def get_establishments(user: Optional[dict] = Depends(get_optional_current_user)
 
     query = supabase.table("establishments").select("*, certifying_bodies(*)")
     if not is_admin:
-        query = query.not_(
-            "halal_status",
-            "in",
-            "(rejected,REJECTED,flagged,suspended,needs_review,NEEDS_REVIEW,pending,PENDING,pending_review,expired,EXPIRED,permanently_closed,closed,demolished,relocated)",
-        )
+        query = query.not_.in_("halal_status", list(EXCLUDED_UNVERIFIED_ESTABLISHMENT_STATUSES))
     response = query.order("name").execute()
-    rows = enrich_establishment_tier(response.data or [])
+    rows = strip_private_fields(enrich_establishment_tier(response.data or []), is_admin=is_admin)
 
     return {
         "success": True,
@@ -482,11 +522,44 @@ def get_establishments(user: Optional[dict] = Depends(get_optional_current_user)
     }
 
 
-@router.post("/registry/establishments")
-@router.post("/api/v1/registry/establishments")
-@router.post("/establishments")
-def create_establishment(establishment: EstablishmentCreate, user: dict = Depends(require_admin)):
-    payload = model_dump_without_none(establishment)
+ESTABLISHMENT_STATUS_NORMALIZATION = {
+    "verified": ("verified", None),
+    "halal": ("verified", None),
+    "approved": ("verified", None),
+    "active": ("verified", None),
+    "published": ("verified", None),
+    "halal_certified": ("verified", "halal_certified"),
+    "muslim_owned": ("verified", "muslim_owned"),
+    "muslim_friendly": ("verified", "muslim_friendly"),
+    "vegetarian_vegan": ("verified", "vegetarian_vegan"),
+    "community_listed": ("verified", "muslim_owned"),
+    "community": ("verified", "muslim_owned"),
+    "for_renewal": ("for_renewal", None),
+    "renewal": ("for_renewal", None),
+    "needs_review": ("needs_review", None),
+    "pending": ("pending_verification", None),
+    "pending_verification": ("pending_verification", None),
+    "review": ("pending_review", None),
+    "doubtful": ("pending_review", None),
+    "pending_review": ("pending_review", None),
+    "flagged": ("flagged", None),
+    "warning": ("flagged", None),
+    "suspended": ("suspended", None),
+    "revoked": ("suspended", None),
+    "rejected": ("rejected", None),
+    "denied": ("rejected", None),
+    "haram": ("rejected", None),
+    "expired": ("expired", None),
+    "relocated": ("relocated", None),
+    "moved": ("relocated", None),
+    "closed": ("closed", None),
+    "permanently_closed": ("permanently_closed", None),
+    "demolished": ("demolished", None),
+}
+
+
+def _prepare_establishment_payload(payload: dict, user_id: Optional[str], *, is_update: bool) -> dict:
+    """Normalize status, tier, coordinates, and audit timestamps on admin establishment writes."""
     if "certifying_body_id" in payload and not payload["certifying_body_id"]:
         payload["certifying_body_id"] = None
 
@@ -504,43 +577,60 @@ def create_establishment(establishment: EstablishmentCreate, user: dict = Depend
             payload["verification_tier"] = tier
 
     if payload.get("halal_status"):
-        st = payload["halal_status"].strip().lower()
-        if st in ["verified", "halal", "approved", "muslim_owned", "muslim_friendly", "vegetarian_vegan", "community_listed", "community", "halal_certified", "active", "published"]:
-            payload["halal_status"] = "verified"
-        elif st in ["needs_review", "pending", "review", "doubtful", "pending_review", "pending_verification"]:
-            payload["halal_status"] = "needs_review"
-        elif st in ["flagged", "warning"]:
-            payload["halal_status"] = "flagged"
-        elif st in ["suspended", "revoked"]:
-            payload["halal_status"] = "suspended"
-        elif st in ["rejected", "denied", "haram"]:
-            payload["halal_status"] = "rejected"
-        elif st in ["expired"]:
-            payload["halal_status"] = "expired"
-        elif st in ["relocated", "moved"]:
-            payload["halal_status"] = "relocated"
-        elif st in ["closed", "permanently_closed"]:
-            payload["halal_status"] = "permanently_closed"
-        elif st in ["demolished"]:
-            payload["halal_status"] = "demolished"
-        else:
-            payload["halal_status"] = "verified"
+        st = payload["halal_status"].strip().lower().replace(" ", "_").replace("-", "_")
+        mapped = ESTABLISHMENT_STATUS_NORMALIZATION.get(st)
+        if not mapped:
+            raise HTTPException(status_code=400, detail=f"Invalid halal_status: {payload['halal_status']}")
+        canonical_status, inferred_tier = mapped
+        payload["halal_status"] = canonical_status
+        if inferred_tier and not payload.get("halal_tier"):
+            payload["halal_tier"] = inferred_tier
+            payload["verification_tier"] = inferred_tier
+
+        now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        if canonical_status == "verified":
+            payload["verified_at"] = now_iso
+            payload["verified_by"] = user_id
+        elif is_update and canonical_status != "for_renewal":
+            payload["verified_at"] = None
+            payload["verified_by"] = None
 
     if "photo_url" in payload:
         if not payload.get("logo_url"):
             payload["logo_url"] = payload["photo_url"]
         del payload["photo_url"]
 
-    response = (
-        supabase
-        .table("establishments")
-        .insert(payload)
-        .execute()
+    return payload
+
+
+@router.post("/registry/establishments")
+@router.post("/api/v1/registry/establishments")
+@router.post("/establishments")
+def create_establishment(establishment: EstablishmentCreate, user: dict = Depends(require_admin)):
+    payload = _prepare_establishment_payload(
+        model_dump_without_none(establishment),
+        extract_user_id(user),
+        is_update=False,
     )
 
+    try:
+        response = (
+            supabase
+            .table("establishments")
+            .insert(payload)
+            .execute()
+        )
+    except Exception as err:
+        if "verification_tier" in str(err).lower() or "42703" in str(err):
+            payload.pop("verification_tier", None)
+            response = supabase.table("establishments").insert(payload).execute()
+        else:
+            raise
+
+    created = enrich_establishment_tier(response.data or [])
     return {
         "success": True,
-        "data": response.data[0] if response.data else None,
+        "data": created[0] if created else None,
     }
 
 
@@ -556,63 +646,34 @@ def update_establishment(establishment_id: str, establishment: EstablishmentUpda
     if not payload:
         raise HTTPException(status_code=400, detail="No establishment fields to update")
 
-    if "certifying_body_id" in payload and not payload["certifying_body_id"]:
-        payload["certifying_body_id"] = None
+    payload = _prepare_establishment_payload(payload, extract_user_id(user), is_update=True)
 
-    if "address" in payload and (payload.get("latitude") is None or payload.get("longitude") is None):
-        g_lat, g_lng = geocode_zamboanga_address(payload["address"], payload.get("city", "Zamboanga City"))
-        if payload.get("latitude") is None:
-            payload["latitude"] = g_lat
-        if payload.get("longitude") is None:
-            payload["longitude"] = g_lng
-
-    if payload.get("halal_tier"):
-        tier = payload["halal_tier"].strip().lower()
-        if tier in ("halal_certified", "muslim_owned", "muslim_friendly", "vegetarian_vegan"):
-            payload["halal_tier"] = tier
-            payload["verification_tier"] = tier
-
-    if payload.get("halal_status"):
-        st = payload["halal_status"].strip().lower()
-        if st in ["verified", "halal", "approved", "muslim_owned", "muslim_friendly", "vegetarian_vegan", "community_listed", "community", "halal_certified", "active", "published"]:
-            payload["halal_status"] = "verified"
-        elif st in ["needs_review", "pending", "review", "doubtful", "pending_review", "pending_verification"]:
-            payload["halal_status"] = "needs_review"
-        elif st in ["flagged", "warning"]:
-            payload["halal_status"] = "flagged"
-        elif st in ["suspended", "revoked"]:
-            payload["halal_status"] = "suspended"
-        elif st in ["rejected", "denied", "haram"]:
-            payload["halal_status"] = "rejected"
-        elif st in ["expired"]:
-            payload["halal_status"] = "expired"
-        elif st in ["relocated", "moved"]:
-            payload["halal_status"] = "relocated"
-        elif st in ["closed", "permanently_closed"]:
-            payload["halal_status"] = "permanently_closed"
-        elif st in ["demolished"]:
-            payload["halal_status"] = "demolished"
+    try:
+        response = (
+            supabase
+            .table("establishments")
+            .update(payload)
+            .eq("id", establishment_id)
+            .execute()
+        )
+    except Exception as err:
+        if "verification_tier" in str(err).lower() or "42703" in str(err):
+            payload.pop("verification_tier", None)
+            response = (
+                supabase
+                .table("establishments")
+                .update(payload)
+                .eq("id", establishment_id)
+                .execute()
+            )
         else:
-            payload["halal_status"] = "verified"
-
-    if "photo_url" in payload:
-        if not payload.get("logo_url"):
-            payload["logo_url"] = payload["photo_url"]
-        del payload["photo_url"]
-
-    response = (
-        supabase
-        .table("establishments")
-        .update(payload)
-        .eq("id", establishment_id)
-        .execute()
-    )
+            raise
 
     res_obj = ensure_updated(response, "Establishment")
-    if isinstance(res_obj, dict):
-        tier = derive_establishment_tier(res_obj)
-        res_obj["halal_tier"] = tier
-        res_obj["verification_tier"] = tier
+    if isinstance(res_obj, dict) and isinstance(res_obj.get("data"), dict):
+        tier = derive_establishment_tier(res_obj["data"])
+        res_obj["data"]["halal_tier"] = tier
+        res_obj["data"]["verification_tier"] = tier
     return res_obj
 
 

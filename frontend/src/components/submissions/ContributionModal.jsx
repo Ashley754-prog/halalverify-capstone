@@ -10,7 +10,16 @@ import {
 import Modal from '../ui/Modal';
 import { supabase } from '../../lib/supabaseClient';
 import { API_BASE_URL, authFetch } from '../../utils/api';
-import { validateUploadFile } from '../../utils/security';
+import { validateUploadFile, buildScopedUploadPath } from '../../utils/security';
+
+function formatApiDetail(detail, fallback) {
+  if (!detail) return fallback;
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) {
+    return detail.map((item) => item?.msg || JSON.stringify(item)).join('; ') || fallback;
+  }
+  return JSON.stringify(detail);
+}
 import {
   geocodeZamboangaAddress,
   formatZamboangaAddress,
@@ -140,14 +149,19 @@ export default function ContributionModal({
       setUploadingImage(true);
       setErrorMessage('');
 
-      const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-      const filePath = `${type}/${Date.now()}_${cleanFileName}`;
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      if (!userId) {
+        throw new Error('Authentication required before uploading files.');
+      }
+
+      const filePath = buildScopedUploadPath(userId, type, file.name);
 
       const { data, error: uploadError } = await supabase.storage
         .from('submissions')
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: true,
+          upsert: false,
         });
 
       if (uploadError) {
@@ -262,7 +276,7 @@ export default function ContributionModal({
             throw new Error('Your session has expired or authentication is required. Please log in again.');
           }
           if (errData?.detail) {
-            throw new Error(errData.detail);
+            throw new Error(formatApiDetail(errData.detail, 'Establishment submission failed validation.'));
           }
         }
       } catch (apiErr) {
@@ -332,7 +346,7 @@ export default function ContributionModal({
             throw new Error('Your session has expired or authentication is required. Please log in again.');
           }
           if (errData?.detail) {
-            throw new Error(errData.detail);
+            throw new Error(formatApiDetail(errData.detail, 'Product submission failed validation.'));
           }
         }
       } catch (apiErr) {

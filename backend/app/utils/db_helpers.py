@@ -1,8 +1,56 @@
 import re
+from typing import Optional
 from pydantic import BaseModel
 
 from app.supabase_client import supabase
 from fastapi import HTTPException
+
+
+PRIVATE_MODERATION_FIELDS = ("admin_notes", "submitted_by")
+
+SAFE_DATA_IMAGE_RE = re.compile(
+    r"^data:image/(?:jpeg|jpg|png|webp|gif|bmp);base64,[a-z0-9+/=\s]+$",
+    re.IGNORECASE,
+)
+
+
+def validate_safe_url(
+    value: Optional[str],
+    *,
+    allow_data_image: bool = False,
+    allow_relative_path: bool = False,
+    allow_none_literal: bool = False,
+) -> Optional[str]:
+    """Validate external/asset URLs to block XSS (javascript:/vbscript:/SVG data URIs)."""
+    if not value:
+        return None
+    cleaned = value.strip()
+    if not cleaned:
+        return None
+    lower = cleaned.lower()
+    if allow_none_literal and lower == "none":
+        return "none"
+    if lower.startswith(("http://", "https://")):
+        return cleaned
+    if allow_relative_path and cleaned.startswith("/") and not cleaned.startswith("//"):
+        return cleaned
+    if allow_data_image and SAFE_DATA_IMAGE_RE.match(cleaned):
+        return cleaned
+    raise ValueError("URL must use http, https, or a safe raster image format")
+
+
+def strip_private_fields(data, *, is_admin: bool = False):
+    """Remove internal moderation fields from public API responses unless caller is admin."""
+    if is_admin or not data:
+        return data
+    if isinstance(data, list):
+        return [strip_private_fields(item, is_admin=False) for item in data]
+    if isinstance(data, dict):
+        cleaned = {k: v for k, v in data.items() if k not in PRIVATE_MODERATION_FIELDS}
+        if isinstance(cleaned.get("products"), list):
+            cleaned["products"] = strip_private_fields(cleaned["products"], is_admin=False)
+        return cleaned
+    return data
 
 
 def sanitize_postgrest_search(query: str, max_length: int = 200) -> str:

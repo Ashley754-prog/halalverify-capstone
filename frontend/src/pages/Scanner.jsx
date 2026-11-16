@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Camera, AlertTriangle } from 'lucide-react';
 import Toast from '../components/ui/Toast';
 import { analyzeImage, simulateFallback, API_BASE_URL, authFetch } from '../utils/api';
+import { validateUploadFile } from '../utils/security';
 import { mergeLabelScans } from '../utils/scanFusion';
 import { useCameraStream } from '../hooks/useCameraStream';
 import CameraViewfinder from '../components/scanner/CameraViewfinder';
@@ -215,9 +216,25 @@ export const Scanner = ({ isOnline, onViewChange }) => {
     const handleFileUpload = (e) => {
         const file = e.target.files?.[0];
         if (file) {
+            const validation = validateUploadFile(file, {
+                maxSizeMB: 10,
+                allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+            });
+            if (!validation.valid) {
+                setToast({ visible: true, message: validation.error, type: 'error' });
+                e.target.value = '';
+                return;
+            }
+
             const reader = new FileReader();
+            reader.onerror = () => {
+                setToast({ visible: true, message: 'Failed to read the selected image file.', type: 'error' });
+            };
             reader.onload = () => {
                 const img = new Image();
+                img.onerror = () => {
+                    setToast({ visible: true, message: 'Selected file could not be decoded as an image.', type: 'error' });
+                };
                 img.onload = () => {
                     const maxDim = 1280;
                     let w = img.width;
@@ -231,6 +248,10 @@ export const Scanner = ({ isOnline, onViewChange }) => {
                     canvas.width = w;
                     canvas.height = h;
                     const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        setToast({ visible: true, message: 'Unable to prepare image canvas for scanning.', type: 'error' });
+                        return;
+                    }
                     ctx.drawImage(img, 0, 0, w, h);
                     const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
 

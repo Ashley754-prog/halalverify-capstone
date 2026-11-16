@@ -36,14 +36,23 @@ const ProfilePage = ({ onViewChange, initialFilter = 'all' }) => {
     const [myEstablishments, setMyEstablishments] = useState([]);
     const [myProducts, setMyProducts] = useState([]);
     const [myReports, setMyReports] = useState([]);
-    const [activeFilter, setActiveFilter] = useState(
-        ['all', 'establishments', 'products', 'reports'].includes(initialFilter) ? initialFilter : 'all'
-    );
+    const normalizeFilter = (value) => {
+        const map = {
+            all: 'all',
+            establishment: 'establishment',
+            establishments: 'establishment',
+            product: 'product',
+            products: 'product',
+            report: 'report',
+            reports: 'report',
+        };
+        return map[String(value || '').toLowerCase()] || 'all';
+    };
+
+    const [activeFilter, setActiveFilter] = useState(() => normalizeFilter(initialFilter));
 
     useEffect(() => {
-        if (['all', 'establishments', 'products', 'reports'].includes(initialFilter)) {
-            setActiveFilter(initialFilter);
-        }
+        setActiveFilter(normalizeFilter(initialFilter));
     }, [initialFilter]);
     const [subPage, setSubPage] = useState(1);
     const [subItemsPerPage, setSubItemsPerPage] = useState(6);
@@ -72,13 +81,13 @@ const ProfilePage = ({ onViewChange, initialFilter = 'all' }) => {
                 .from('profiles')
                 .select('full_name, role, email')
                 .eq('id', user.id)
-                .single();
+                .maybeSingle();
 
             if (!isMounted) return;
 
             setUserId(user.id);
             setEmail(profile?.email || user.email || '');
-            setRole(profile?.role || user.user_metadata?.role || (user.email === 'admin@halalverify.com' ? 'admin' : 'user'));
+            setRole(profile?.role || 'user');
             setName(profile?.full_name || user.user_metadata?.name || user.user_metadata?.full_name || '');
 
             if (profileError) {
@@ -164,15 +173,13 @@ const ProfilePage = ({ onViewChange, initialFilter = 'all' }) => {
                 data: { name: cleanName, full_name: cleanName },
             }).catch(console.warn);
 
-            // 2. Upsert profile table
+            // 2. Update only mutable personal info fields on the user's own profile
             const { error } = await supabase
                 .from('profiles')
-                .upsert({
-                    id: userId,
+                .update({
                     full_name: cleanName,
-                    email: email,
-                    role: role,
-                });
+                })
+                .eq('id', userId);
 
             if (error) {
                 setErrorMessage(`Save failed: ${error.message}`);
@@ -196,12 +203,28 @@ const ProfilePage = ({ onViewChange, initialFilter = 'all' }) => {
             const rawStatus = (est.halal_status || '').toLowerCase();
             let badgeType = 'pending';
             let badgeLabel = 'Pending Review';
-            if (rawStatus === 'certified' || rawStatus === 'verified') {
+            if (['certified', 'verified', 'muslim_friendly', 'pork_free', 'vegetarian_vegan'].includes(rawStatus)) {
                 badgeType = 'approved';
                 badgeLabel = 'Verified & Live';
-            } else if (rawStatus === 'rejected' || rawStatus === 'non_halal') {
+            } else if (rawStatus === 'for_renewal') {
+                badgeType = 'pending';
+                badgeLabel = 'For Renewal';
+            } else if (rawStatus === 'expired') {
                 badgeType = 'rejected';
-                badgeLabel = 'Declined';
+                badgeLabel = 'Expired';
+            } else if ([
+                'rejected',
+                'non_halal',
+                'haram',
+                'suspended',
+                'flagged',
+                'permanently_closed',
+                'closed',
+                'demolished',
+                'relocated',
+            ].includes(rawStatus)) {
+                badgeType = 'rejected';
+                badgeLabel = 'Declined / Inactive';
             }
             return {
                 uid: `est-${est.id}`,
@@ -219,12 +242,22 @@ const ProfilePage = ({ onViewChange, initialFilter = 'all' }) => {
             const rawStatus = (prod.status || '').toUpperCase();
             let badgeType = 'pending';
             let badgeLabel = 'Pending Review';
-            if (rawStatus === 'VERIFIED' || rawStatus === 'CERTIFIED') {
+            if ([
+                'VERIFIED',
+                'CERTIFIED',
+                'HALAL',
+                'PORK-FREE DECLARED',
+                'VEGETARIAN / VEGAN',
+                'COMMUNITY_LISTED',
+            ].includes(rawStatus)) {
                 badgeType = 'approved';
                 badgeLabel = 'Verified & Live';
-            } else if (rawStatus === 'REJECTED' || rawStatus === 'NON_HALAL') {
+            } else if (rawStatus === 'FOR RENEWAL') {
+                badgeType = 'pending';
+                badgeLabel = 'For Renewal';
+            } else if (['EXPIRED', 'REJECTED', 'NON_HALAL', 'HARAM', 'SUSPENDED', 'FLAGGED'].includes(rawStatus)) {
                 badgeType = 'rejected';
-                badgeLabel = 'Declined';
+                badgeLabel = 'Declined / Flagged';
             }
             return {
                 uid: `prod-${prod.id}`,
@@ -240,14 +273,20 @@ const ProfilePage = ({ onViewChange, initialFilter = 'all' }) => {
         }),
         ...myReports.map((rep) => {
             const rawStatus = (rep.status || 'pending').toLowerCase();
+            const noteLower = (rep.resolution_notes || '').toLowerCase();
             let badgeType = 'pending';
             let badgeLabel = 'Under Review';
-            if (rawStatus === 'resolved' || rawStatus === 'approved' || rawStatus === 'closed') {
-                badgeType = 'approved';
-                badgeLabel = 'Resolved';
-            } else if (rawStatus === 'rejected' || rawStatus === 'dismissed') {
+            if (
+                rawStatus === 'rejected' ||
+                rawStatus === 'dismissed' ||
+                noteLower.startsWith('[dismissed]') ||
+                noteLower.startsWith('dismissed:')
+            ) {
                 badgeType = 'rejected';
                 badgeLabel = 'Dismissed';
+            } else if (rawStatus === 'resolved' || rawStatus === 'approved' || rawStatus === 'closed') {
+                badgeType = 'approved';
+                badgeLabel = 'Resolved';
             }
             return {
                 uid: `rep-${rep.id}`,
@@ -319,6 +358,19 @@ const ProfilePage = ({ onViewChange, initialFilter = 'all' }) => {
                 <div className="flex items-center justify-center gap-2 bg-white rounded-2xl border border-slate-200 p-10 text-sm text-slate-500 shadow-sm">
                     <Loader2 size={18} className="animate-spin text-emerald-600" />
                     Loading your profile...
+                </div>
+            ) : !userId ? (
+                <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center space-y-4 shadow-sm">
+                    <p className="text-sm font-semibold text-red-600">
+                        {errorMessage || 'You must sign in to view and manage your account profile.'}
+                    </p>
+                    <button
+                        type="button"
+                        onClick={() => onViewChange?.('login')}
+                        className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold transition cursor-pointer"
+                    >
+                        Sign In
+                    </button>
                 </div>
             ) : (
                 <>

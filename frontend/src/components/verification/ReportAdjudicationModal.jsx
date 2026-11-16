@@ -1,16 +1,13 @@
 import { useState, useEffect } from 'react';
 import {
-    Flag,
     AlertTriangle,
     CheckCircle2,
-    X,
     FileText,
     ExternalLink,
     Loader2,
     Store,
     Package,
     ScanSearch,
-    ShieldAlert,
     Clock,
 } from 'lucide-react';
 import Modal from '../ui/Modal';
@@ -26,11 +23,13 @@ export default function ReportAdjudicationModal({
     processingId,
 }) {
     const [notes, setNotes] = useState('');
+    const [suspendEstablishment, setSuspendEstablishment] = useState(false);
     const [actionError, setActionError] = useState('');
 
     useEffect(() => {
         if (isOpen && report) {
             setNotes(report.resolution_notes || '');
+            setSuspendEstablishment(false);
             setActionError('');
         }
     }, [isOpen, report]);
@@ -55,7 +54,7 @@ export default function ReportAdjudicationModal({
 
         try {
             setActionError('');
-            await onResolve(report, status, false, cleanNotes);
+            await onResolve(report, status, status === 'resolved' && suspendEstablishment, cleanNotes);
             onClose();
         } catch (err) {
             setActionError(err.message || 'Action failed. Please try again.');
@@ -186,6 +185,28 @@ export default function ReportAdjudicationModal({
                         className="w-full rounded-xl border border-slate-300 p-3 text-xs sm:text-sm outline-none focus:border-emerald-500 resize-none"
                     />
                 </div>
+
+                {/* Optional Establishment Suspension Enforcement */}
+                {(report.related_to === 'establishment' || Boolean(report.establishment_id)) && (
+                    <label
+                        htmlFor="suspend-establishment-checkbox"
+                        className="flex items-start gap-2.5 p-3 rounded-xl border border-rose-200 bg-rose-50/70 text-xs text-rose-900 cursor-pointer"
+                    >
+                        <input
+                            id="suspend-establishment-checkbox"
+                            type="checkbox"
+                            checked={suspendEstablishment}
+                            onChange={(e) => setSuspendEstablishment(e.target.checked)}
+                            className="mt-0.5 h-4 w-4 rounded border-rose-300 text-rose-600 focus:ring-rose-500 cursor-pointer"
+                        />
+                        <span>
+                            <strong className="font-bold block text-rose-950">Suspend establishment listing upon resolve</strong>
+                            <span className="text-[11px] text-rose-800">
+                                Marks the establishment as suspended, removes it from the public directory, and clears verification timestamps.
+                            </span>
+                        </span>
+                    </label>
+                )}
 
                 {/* Modal Footer Actions */}
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-200">

@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { getSafeUrl } from '../../utils/security';
 import { parseProductLines, parseProductVariants, simplifyStatus } from '../../utils/textFormatters';
-import { resolveZamboangaDistrict } from '../../data/constants';
+import { formatPlainCalendarDate, isDateExpired, resolveZamboangaDistrict } from '../../data/constants';
 import ProductImage from './ProductImage';
 
 function getProductCertifierBadge(product) {
@@ -49,6 +49,9 @@ function getProductCertifierBadge(product) {
     }
     if (raw.includes('bpcc') || raw.includes('bangsamoro')) {
         return 'BPCC';
+    }
+    if (raw.includes('uczp') || raw.includes('ulama council of zamboanga')) {
+        return 'UCZP';
     }
     if (raw.includes('zampen') || raw.includes('dti region ix')) {
         return 'DTI ZAMPEN';
@@ -103,9 +106,12 @@ export default function ProductCard({
                        (statusLower === 'community_listed' && adminNotesLower.includes('pork-free'));
     const isVegetarian = statusLower.includes('vegetarian') || statusLower.includes('vegan') ||
                          (statusLower === 'community_listed' && (adminNotesLower.includes('vegetarian') || adminNotesLower.includes('vegan')));
-    const isHalal = statusLower === 'halal' || statusLower === 'verified';
+    const rawIsHalal = statusLower === 'halal' || statusLower === 'verified';
     const isDoubtful = statusLower === 'doubtful' || statusLower.includes('syubhah');
-    const isExpired = statusLower === 'expired';
+    const isForRenewal = statusLower === 'for_renewal' || statusLower.includes('renewal');
+    const isPastValidity = isDateExpired(product.expiry_date);
+    const isExpired = statusLower === 'expired' || (isPastValidity && (rawIsHalal || isForRenewal));
+    const isHalal = rawIsHalal && !isExpired;
     const isCommunityListed = statusLower === 'community_listed' && !isPorkFree && !isVegetarian;
 
     const certBadge = !isPorkFree && !isVegetarian ? getProductCertifierBadge(product) : null;
@@ -161,8 +167,10 @@ export default function ProductCard({
                                     ? 'bg-teal-50 text-teal-700 border-teal-200'
                                     : isCommunityListed
                                     ? 'bg-sky-50 text-sky-700 border-sky-200'
-                                    : isDoubtful || isExpired
-                                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                    : isExpired
+                                    ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                    : isDoubtful || isForRenewal
+                                    ? 'bg-amber-50 text-amber-800 border-amber-200'
                                     : 'bg-red-50 text-red-700 border-red-200'
                             }`}
                         >
@@ -170,13 +178,17 @@ export default function ProductCard({
                             {isPorkFree && <CheckCircle2 size={10} className="sm:w-3 sm:h-3" />}
                             {isVegetarian && <Leaf size={10} className="sm:w-3 sm:h-3" />}
                             {isCommunityListed && <CheckCircle2 size={10} className="sm:w-3 sm:h-3" />}
-                            {(isDoubtful || isExpired) && <AlertCircle size={10} className="sm:w-3 sm:h-3" />}
+                            {(isDoubtful || isExpired || isForRenewal) && <AlertCircle size={10} className="sm:w-3 sm:h-3" />}
                             {isPorkFree
                                 ? 'Pork-Free Declared'
                                 : isVegetarian
                                 ? 'Vegetarian / Vegan'
                                 : isCommunityListed
                                 ? 'Community Listed'
+                                : isExpired
+                                ? 'Expired Certificate'
+                                : isForRenewal
+                                ? 'For Renewal'
                                 : simplifyStatus(product.status)}
                         </span>
                     </div>
@@ -217,8 +229,12 @@ export default function ProductCard({
                             <span className="truncate">Dietary Standard: Vegetarian / Vegan</span>
                         </div>
                     ) : product.certifying_bodies?.name ? (
-                        <div className="flex items-center gap-1.5 text-emerald-800 font-medium text-xs">
-                            <Award size={12} className="text-emerald-600 shrink-0" />
+                        <div className={`flex items-center gap-1.5 font-medium text-xs ${
+                            isExpired ? 'text-rose-700' : isForRenewal ? 'text-amber-800' : 'text-emerald-800'
+                        }`}>
+                            <Award size={12} className={`shrink-0 ${
+                                isExpired ? 'text-rose-600' : isForRenewal ? 'text-amber-600' : 'text-emerald-600'
+                            }`} />
                             <span className="truncate">{product.certifying_bodies.name}</span>
                         </div>
                     ) : certBadge === 'DTI ZAMPEN' ? (
@@ -253,9 +269,9 @@ export default function ProductCard({
                             ) : (
                                 <>
                                     <Calendar size={11} className="shrink-0" />
-                                    <span className="truncate">
+                                    <span className={`truncate ${isExpired ? 'font-semibold text-rose-700' : isForRenewal ? 'font-semibold text-amber-800' : ''}`}>
                                         {product.expiry_date
-                                            ? `Valid until ${formatShortExpiryDate(product.expiry_date)}`
+                                            ? `${isExpired ? 'Expired' : 'Valid until'} ${formatPlainCalendarDate(product.expiry_date, 'short') || formatShortExpiryDate(product.expiry_date)}`
                                             : product.certificate_no
                                             ? `Cert # ${product.certificate_no}`
                                             : 'Verified Registry Record'}

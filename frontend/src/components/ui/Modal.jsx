@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 import { X } from 'lucide-react';
 
 const SIZE_CLASSES = {
@@ -24,6 +24,8 @@ export default function Modal({
     maxHeightClass = 'max-h-[90dvh]',
     compactOnMobile = false,
 }) {
+    const titleId = useId();
+
     useEffect(() => {
         if (!isOpen) return;
 
@@ -40,16 +42,21 @@ export default function Modal({
     const sizeClass = SIZE_CLASSES[size] || 'max-w-md';
 
     return (
-        <div className={`fixed inset-0 z-[10001] flex items-center justify-center bg-slate-950/70 ${compactOnMobile ? 'p-4 sm:p-4 md:p-6' : 'p-3 sm:p-4 md:p-6'} overflow-y-auto backdrop-blur-xs`}>
+        <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={title ? titleId : undefined}
+            className={`fixed inset-0 z-[10001] flex items-center justify-center bg-slate-950/70 ${compactOnMobile ? 'p-4 sm:p-4 md:p-6' : 'p-3 sm:p-4 md:p-6'} overflow-y-auto backdrop-blur-xs`}
+        >
             <div className={`w-full ${sizeClass} ${maxHeightClass} flex flex-col rounded-2xl border border-slate-200 bg-white text-slate-900 [color-scheme:light] ${compactOnMobile ? 'p-3 sm:p-6' : 'p-4 sm:p-6'} shadow-2xl transition-all`}>
                 {(title || description) ? (
                     <div className="flex items-start justify-between gap-3 sm:gap-4 shrink-0 pb-2.5 sm:pb-3 border-b border-slate-100">
                         <div className="min-w-0 flex-1">
                             {title && (
                                 typeof title === 'string' ? (
-                                    <h3 className="text-base sm:text-lg font-bold text-slate-900">{title}</h3>
+                                    <h3 id={titleId} className="text-base sm:text-lg font-bold text-slate-900">{title}</h3>
                                 ) : (
-                                    title
+                                    <div id={titleId}>{title}</div>
                                 )
                             )}
                             {description && (

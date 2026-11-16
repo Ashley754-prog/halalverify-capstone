@@ -3,21 +3,10 @@ import Modal from '../ui/Modal';
 import ProductImage from '../catalog/ProductImage';
 import { getSafeUrl } from '../../utils/security';
 import { parseProductLines, parseProductVariants, simplifyStatus } from '../../utils/textFormatters';
+import { formatPlainCalendarDate, isDateExpired } from '../../data/constants';
 
 function formatDate(value) {
-  if (!value) return '';
-  const match = String(value).trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
-  const date = match
-    ? new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])))
-    : new Date(value);
-  return Number.isNaN(date.getTime())
-    ? value
-    : new Intl.DateTimeFormat('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        ...(match ? { timeZone: 'UTC' } : {}),
-      }).format(date);
+  return formatPlainCalendarDate(value, 'long');
 }
 
 function getStatusMeta(product) {
@@ -32,9 +21,13 @@ function getStatusMeta(product) {
     statusLower.includes('vegan') ||
     (statusLower === 'community_listed' &&
       (adminNotesLower.includes('vegetarian') || adminNotesLower.includes('vegan')));
-  const isHalal = statusLower === 'halal' || statusLower === 'verified';
+  const rawIsHalal = statusLower === 'halal' || statusLower === 'verified';
   const isDoubtful = statusLower === 'doubtful' || statusLower.includes('syubhah');
-  const isExpired = statusLower === 'expired';
+  const isForRenewal = statusLower === 'for_renewal' || statusLower.includes('renewal');
+  const isExpired =
+    statusLower === 'expired' ||
+    (isDateExpired(product?.expiry_date) && (rawIsHalal || isForRenewal));
+  const isHalal = rawIsHalal && !isExpired;
   const isCommunityListed = statusLower === 'community_listed' && !isPorkFree && !isVegetarian;
 
   if (isPorkFree) {
@@ -65,7 +58,21 @@ function getStatusMeta(product) {
       Icon: CheckCircle2,
     };
   }
-  if (isDoubtful || isExpired) {
+  if (isExpired) {
+    return {
+      label: 'Expired Certificate',
+      badgeClass: 'bg-rose-50 text-rose-700 border-rose-200',
+      Icon: AlertCircle,
+    };
+  }
+  if (isForRenewal) {
+    return {
+      label: 'For Renewal',
+      badgeClass: 'bg-amber-50 text-amber-800 border-amber-200',
+      Icon: AlertCircle,
+    };
+  }
+  if (isDoubtful) {
     return {
       label: simplifyStatus(product?.status),
       badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -253,8 +260,16 @@ export default function ProductCardDetail({ product, onClose }) {
                     </dd>
                   </div>
                   <div className="border-b border-[#DCE7E0] py-2.5">
-                    <dt className="text-[11px] font-semibold text-[#52645B]">Certificate expiry date</dt>
-                    <dd className="mt-0.5 break-words text-xs font-medium text-[#17251F] sm:text-sm">
+                    <dt className="text-[11px] font-semibold text-[#52645B]">
+                      {isDateExpired(product.expiry_date) || statusMeta.label.includes('Expired')
+                        ? 'Certificate expired on'
+                        : 'Certificate expiry date'}
+                    </dt>
+                    <dd className={`mt-0.5 break-words text-xs font-medium sm:text-sm ${
+                      isDateExpired(product.expiry_date) || statusMeta.label.includes('Expired')
+                        ? 'font-bold text-rose-700'
+                        : 'text-[#17251F]'
+                    }`}>
                       {product.expiry_date ? formatDate(product.expiry_date) : 'Not on file'}
                     </dd>
                   </div>

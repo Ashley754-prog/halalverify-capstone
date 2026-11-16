@@ -4,6 +4,7 @@ import Pagination from '../ui/Pagination';
 import EmptyState from '../ui/EmptyState';
 import SearchBar from '../ui/SearchBar';
 import Modal from '../ui/Modal';
+import { getSafeUrl } from '../../utils/security';
 
 const HCB_LOGO_LOOKUP = {
     IDCP: '/logos/IDCP.png',
@@ -61,11 +62,26 @@ function HcbCategoryIcon({ body, isGov, isIntl, isLocal, onPreview }) {
         );
     }
     return (
-        <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center shrink-0 ${
-            isGov ? 'bg-blue-100 text-blue-700' : isIntl ? 'bg-purple-100 text-purple-700' : isLocal ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
-        }`}>
-            {isGov ? <Building2 size={26} /> : isIntl ? <Globe size={26} /> : isLocal ? <Award size={26} /> : <ShieldCheck size={26} />}
-        </div>
+        <button
+            type="button"
+            onClick={() => onPreview?.(body)}
+            className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border flex flex-col items-center justify-center shrink-0 shadow-xs hover:shadow-sm transition cursor-pointer group ${
+                isGov
+                    ? 'bg-blue-50 text-blue-800 border-blue-200 hover:border-blue-400'
+                    : isIntl
+                    ? 'bg-purple-50 text-purple-800 border-purple-200 hover:border-purple-400'
+                    : isLocal
+                    ? 'bg-amber-50 text-amber-900 border-amber-200 hover:border-amber-400'
+                    : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:border-emerald-400'
+            }`}
+            title="Click to view official accreditation details"
+            aria-label={`View ${body.code || body.name} official accreditation card`}
+        >
+            {isGov ? <Building2 size={20} /> : isIntl ? <Globe size={20} /> : isLocal ? <Award size={20} /> : <ShieldCheck size={20} />}
+            <span className="text-[10px] font-black tracking-tight mt-0.5">
+                {body.code || body.acronym || 'HCB'}
+            </span>
+        </button>
     );
 }
 
@@ -214,11 +230,11 @@ export default function HcbsRegistryTab({
                                 </div>
 
                                 <div className="flex items-center justify-between pt-1 gap-2 border-t border-slate-200/60">
-                                    {body.website ? (
+                                    {getSafeUrl(body.website) ? (
                                         <a
-                                            href={body.website}
+                                            href={getSafeUrl(body.website)}
                                             target="_blank"
-                                            rel="noreferrer"
+                                            rel="noopener noreferrer"
                                             className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:underline"
                                         >
                                             <span>Official Portal</span>
@@ -315,7 +331,17 @@ export default function HcbsRegistryTab({
                                         className="max-h-48 sm:max-h-56 max-w-full object-contain drop-shadow-sm select-none"
                                     />
                                 ) : (
-                                    <div className="text-slate-400 text-sm italic">No image available</div>
+                                    <div className="flex flex-col items-center justify-center text-center gap-2 py-4">
+                                        <div className="w-20 h-20 rounded-2xl bg-emerald-100 text-emerald-800 border border-emerald-300 flex flex-col items-center justify-center shadow-xs">
+                                            <Award size={28} />
+                                            <span className="text-xs font-black tracking-wide mt-1">
+                                                {previewHcb.code || previewHcb.acronym || 'HCB'}
+                                            </span>
+                                        </div>
+                                        <span className="text-xs font-semibold text-slate-600">
+                                            Official City / Regional HCB Accreditation Record
+                                        </span>
+                                    </div>
                                 )}
                             </div>
 

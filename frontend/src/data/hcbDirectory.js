@@ -338,6 +338,42 @@ export const HCB_DIRECTORY = {
         address: 'Rizal Avenue, Gatas District, Pagadian City, Zamboanga del Sur, Philippines',
     },
 
+    UCZP: {
+        code: 'UCZP',
+        name: 'Ulama Council of Zamboanga Peninsula',
+        shortName: 'UCZP Halal',
+        logoSrc: null,
+        category: 'Local & Regional HCB',
+        country: 'Philippines',
+        flag: '🇵🇭',
+        status: 'Accredited',
+        statusBadge: 'Local Zamboanga Council (Ordinance No. 489)',
+        founded: 'Local Council',
+        headquarters: 'Zamboanga City (Region IX)',
+        legalMandate: 'Zamboanga City local Ulama Halal certification authority recognized under City Ordinance No. 489. Note: Not included in the 12-body NCMF-accredited slide list provided by NCMF Region IX.',
+        standards: [
+            'Zamboanga City Ordinance No. 489',
+            'PNS 2067:2008 (Philippine Halal Standard)',
+        ],
+        affiliations: [
+            'City Government of Zamboanga Local Halal Registry',
+            'Zamboanga Peninsula Local Ulama Council',
+        ],
+        auditingScope: [
+            'Zamboanga City Dining Venues, Restaurants, and Food Stalls (e.g. Royalle Chillie, Chick N\' Cow, Bandit Burger)',
+            'Local Processed Food, Rice Trading, Palm Oil, Beverage, and Soap Enterprises',
+        ],
+        overview:
+            'The Ulama Council of Zamboanga Peninsula (UCZP) conducts local Halal audits and issues 1-year and 2-year local certificates for restaurants, beverage kiosks, and MSMEs operating inside Zamboanga City.',
+        consumerAssurance:
+            'Verify whether a venue or product holds an active, For Renewal, or Expired UCZP entry in the HalalVerify Registry before relying on third-party Halal signage.',
+        website: null,
+        registryUrl: null,
+        phone: null,
+        email: null,
+        address: 'Zamboanga City, Region IX, Philippines',
+    },
+
     MINHA: {
         code: 'MinHA',
         name: 'Mindanao Halal Authority, Inc.',
@@ -784,6 +820,9 @@ export function getHcbProfile(scanResultOrCode) {
     }
     if (combined.includes('BPCC') || combined.includes('BANGSAMORO PROVINCIAL')) {
         return HCB_DIRECTORY.BPCC;
+    }
+    if (combined.includes('UCZP') || combined.includes('ULAMA COUNCIL OF ZAMBOANGA')) {
+        return HCB_DIRECTORY.UCZP;
     }
     if (combined.includes('MMHCB') || combined.includes('MINDANAO MUSLIM')) {
         return HCB_DIRECTORY.MMHCB;

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { RefreshCw, AlertTriangle, Layers, Lock, ChevronDown } from 'lucide-react';
+import { RefreshCw, AlertTriangle, Layers, Lock } from 'lucide-react';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
 import { simplifyStatus } from '../utils/textFormatters';

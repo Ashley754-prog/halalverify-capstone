@@ -48,6 +48,7 @@ const emptyEstablishmentForm = {
     city: 'Zamboanga City',
     status: 'verified',
     halal_tier: 'halal_certified',
+    certifying_body_id: '',
     phone: '',
     certNo: '',
     expiry: '',
@@ -140,7 +141,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 try {
                     const [sbAdd, sbEst, sbHcb] = await Promise.all([
                         supabase.from('additives').select('*').order('code'),
-                        supabase.from('establishments').select('*').order('name'),
+                        supabase.from('establishments').select('*, certifying_bodies(*)').order('name'),
                         supabase.from('certifying_bodies').select('*').order('name'),
                     ]);
 
@@ -242,12 +243,14 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
         } else {
             const statusConfig = getStatusConfig(item);
             const isCert = (statusConfig.key === 'verified' || item.halal_tier === 'halal_certified') && Boolean(item.certifying_body_id || item.certifying_bodies);
-            const validTiers = ['halal_certified', 'muslim_owned', 'muslim_friendly'];
+            const validTiers = ['halal_certified', 'muslim_owned', 'muslim_friendly', 'vegetarian_vegan'];
             let tierKey;
             if (item.halal_tier && validTiers.includes(item.halal_tier)) {
                 tierKey = item.halal_tier;
             } else if (isCert) {
                 tierKey = 'halal_certified';
+            } else if (statusConfig.key === 'vegetarian_vegan') {
+                tierKey = 'vegetarian_vegan';
             } else if (statusConfig.key === 'muslim_owned' || statusConfig.key === 'community') {
                 tierKey = 'muslim_owned';
             } else {
@@ -282,12 +285,24 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
 
             const rawStatus = (item.halal_status || item.status || '').toLowerCase().trim();
             const normalizedStatus =
-                ['needs_review', 'pending', 'pending_review', 'review', 'pending_verification'].includes(rawStatus)
+                ['needs_review', 'pending', 'review'].includes(rawStatus)
                     ? 'needs_review'
-                    : ['suspended', 'flagged'].includes(rawStatus)
-                    ? 'suspended'
-                    : ['permanently_closed', 'closed', 'demolished', 'relocated', 'moved'].includes(rawStatus)
-                    ? 'permanently_closed'
+                    : rawStatus === 'moved'
+                    ? 'relocated'
+                    : [
+                        'pending_review',
+                        'pending_verification',
+                        'for_renewal',
+                        'expired',
+                        'rejected',
+                        'flagged',
+                        'suspended',
+                        'permanently_closed',
+                        'closed',
+                        'demolished',
+                        'relocated',
+                    ].includes(rawStatus)
+                    ? rawStatus
                     : 'verified';
 
             const parsedAddress = parseZamboangaAddress(item.address || '');
@@ -306,9 +321,11 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 phone: item.phone || '',
                 certNo: item.certificate_number || item.certNo || '',
                 expiry: item.expiry_date || item.expiry || '',
+                certifying_body_id: item.certifying_body_id || item.certifying_bodies?.id || '',
                 status: normalizedStatus,
                 halal_tier: tierKey,
                 admin_notes: item.admin_notes || '',
+                reason: '',
                 submitter_role: detectedRole,
                 source: item.source || (detectedRole === 'owner' ? 'Business Owner Submission' : 'Community User Submission'),
                 has_prayer_space: hasPrayer,
@@ -335,12 +352,46 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
 
     const safeTrim = (v) => (typeof v === 'string' ? v.trim() : null) || null;
 
+    const getTierNote = (tier) => {
+        if (tier === 'muslim_owned') {
+            return '[Tier: muslim_owned] Community Listed - Muslim-Owned (Pork-Free Kitchen)';
+        }
+        if (tier === 'muslim_friendly') {
+            return '[Tier: muslim_friendly] Community Listed - Muslim-Friendly Venue';
+        }
+        if (tier === 'vegetarian_vegan') {
+            return '[Tier: vegetarian_vegan] Community Listed - 100% Vegetarian / Vegan Kitchen';
+        }
+        if (tier === 'halal_certified') {
+            return '[Tier: halal_certified] Formally Certified Halal Establishment';
+        }
+        return '';
+    };
+
+    const appendAdminNotes = (existingNotes, tierTag, actionLabel, reason) => {
+        const cleanExisting = typeof existingNotes === 'string' ? existingNotes.trim() : '';
+        const priorWithoutTier = cleanExisting
+            .replace(/^\[Tier:\s*[^\]]+\][^\n]*(?:\n|$)/i, '')
+            .trim();
+        const parts = [];
+        if (tierTag) parts.push(tierTag);
+        if (priorWithoutTier) parts.push(priorWithoutTier);
+        const cleanReason = safeTrim(reason);
+        if (cleanReason) {
+            const stamp = new Date().toISOString().slice(0, 10);
+            parts.push(`[${stamp} ${actionLabel}]: ${cleanReason}`);
+        }
+        return parts.join('\n').trim() || null;
+    };
+
     const parseApiError = async (response, fallbackMsg) => {
         let errorMsg = fallbackMsg;
         try {
             const errJson = await response.json();
             if (errJson?.detail) {
-                errorMsg = typeof errJson.detail === 'string'
+                errorMsg = Array.isArray(errJson.detail)
+                    ? errJson.detail.map((d) => d?.msg || JSON.stringify(d)).join('; ')
+                    : typeof errJson.detail === 'string'
                     ? errJson.detail
                     : JSON.stringify(errJson.detail);
             } else if (errJson?.message) {
@@ -424,7 +475,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                         .delete()
                         .eq('id', item.id);
                     if (sbErr) throw sbErr;
-                } catch (sbDelErr) {
+                } catch {
                     await deleteRegistryRecord(`/registry/establishments/${item.id}`);
                 }
                 setEstablishments(prev => prev.filter(entry => entry.id !== item.id));
@@ -539,15 +590,10 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 updateToast('Certifying body updated.', 'success');
             } else if (activeModal === 'add-establishment') {
                 const tier = modalForm.halal_tier || 'halal_certified';
-                let adminNotes = '';
-
-                if (tier === 'muslim_owned') {
-                    adminNotes = '[Tier: muslim_owned] Community Listed - Muslim-Owned (Pork-Free Kitchen)';
-                } else if (tier === 'muslim_friendly') {
-                    adminNotes = '[Tier: muslim_friendly] Community Listed - Muslim-Friendly Venue';
-                } else if (tier === 'halal_certified') {
-                    adminNotes = '[Tier: halal_certified] Formally Certified Halal Establishment';
-                }
+                const isCertTier = tier === 'halal_certified' || tier === 'verified';
+                const selectedHcbId = isCertTier ? safeTrim(modalForm.certifying_body_id) : null;
+                const matchedHcb = selectedHcbId ? (hcbs.find((h) => h.id === selectedHcbId) || null) : null;
+                const adminNotes = appendAdminNotes('', getTierNote(tier), 'Admin Created', modalForm.reason);
 
                 const amList = cleanAmenities(modalForm.amenities);
                 if (modalForm.has_prayer_space && !amList.some(a => a.toLowerCase().includes('prayer'))) {
@@ -583,8 +629,9 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     city: cleanCity,
                     latitude: createCoords.latitude,
                     longitude: createCoords.longitude,
-                    certificate_number: tier === 'halal_certified' ? safeTrim(modalForm.certNo) : null,
-                    expiry_date: tier === 'halal_certified' ? safeTrim(modalForm.expiry) : null,
+                    certifying_body_id: selectedHcbId,
+                    certificate_number: isCertTier ? safeTrim(modalForm.certNo) : null,
+                    expiry_date: isCertTier ? safeTrim(modalForm.expiry) : null,
                     halal_status: modalForm.status || 'verified',
                     halal_tier: tier,
                     submitter_role: role,
@@ -594,7 +641,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     description: description,
                     phone: safeTrim(modalForm.phone),
                     admin_notes: adminNotes,
-                    certificate_url: (tier === 'halal_certified' || tier === 'verified')
+                    certificate_url: isCertTier
                         ? (modalForm.photo_url === 'none' ? null : safeTrim(modalForm.certificate_url))
                         : null,
                     logo_url: modalForm.photo_url === 'none' ? 'none' : safeTrim(modalForm.photo_url || modalForm.certificate_url),
@@ -620,7 +667,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
 
                 if (!created) {
                     created = await saveRegistryRecord('/registry/establishments', 'POST', estCreatePayload);
-                    if (estCreatePayload.halal_status && estCreatePayload.halal_status !== 'needs_review' && created?.id) {
+                    if (estCreatePayload.halal_status && created?.id) {
                         await supabase
                             .from('establishments')
                             .update({ halal_status: estCreatePayload.halal_status })
@@ -635,6 +682,8 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     longitude: createCoords.longitude,
                     halal_tier: tier,
                     halal_status: modalForm.status || 'verified',
+                    certifying_body_id: selectedHcbId,
+                    certifying_bodies: matchedHcb || created?.certifying_bodies || null,
                     submitter_role: role,
                     source: modalForm.source || (role === 'owner' ? 'Business Owner Submission' : 'Community User Submission'),
                     amenities: amList,
@@ -646,15 +695,15 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 updateToast('New establishment saved to database.', 'success');
             } else if (activeModal === 'edit-establishment') {
                 const tier = (modalForm.halal_tier === 'verified' ? 'halal_certified' : modalForm.halal_tier) || 'halal_certified';
-                let adminNotes = '';
-
-                if (tier === 'muslim_owned') {
-                    adminNotes = '[Tier: muslim_owned] Community Listed - Muslim-Owned (Pork-Free Kitchen)';
-                } else if (tier === 'muslim_friendly') {
-                    adminNotes = '[Tier: muslim_friendly] Community Listed - Muslim-Friendly Venue';
-                } else if (tier === 'halal_certified') {
-                    adminNotes = '[Tier: halal_certified] Formally Certified Halal Establishment';
-                }
+                const isCertTier = tier === 'halal_certified' || tier === 'verified';
+                const selectedHcbId = isCertTier ? safeTrim(modalForm.certifying_body_id) : null;
+                const matchedHcb = selectedHcbId ? (hcbs.find((h) => h.id === selectedHcbId) || null) : null;
+                const adminNotes = appendAdminNotes(
+                    selectedItem?.admin_notes,
+                    getTierNote(tier),
+                    'Admin Edit',
+                    modalForm.reason
+                );
 
                 const amList = cleanAmenities(modalForm.amenities);
                 if (modalForm.has_prayer_space && !amList.some(a => a.toLowerCase().includes('prayer'))) {
@@ -717,8 +766,9 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     address: cleanAddress,
                     city: cleanCity,
                     ...coordsPatch,
-                    certificate_number: (tier === 'halal_certified' || tier === 'verified') ? safeTrim(modalForm.certNo) : null,
-                    expiry_date: (tier === 'halal_certified' || tier === 'verified') ? safeTrim(modalForm.expiry) : null,
+                    certifying_body_id: selectedHcbId,
+                    certificate_number: isCertTier ? safeTrim(modalForm.certNo) : null,
+                    expiry_date: isCertTier ? safeTrim(modalForm.expiry) : null,
                     halal_status: modalForm.status || 'verified',
                     halal_tier: tier,
                     submitter_role: role,
@@ -728,7 +778,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     admin_notes: adminNotes,
                     source: modalForm.source || (role === 'owner' ? 'Business Owner Submission' : 'Community User Submission'),
                     description: description,
-                    certificate_url: (tier === 'halal_certified' || tier === 'verified')
+                    certificate_url: isCertTier
                         ? (modalForm.photo_url === 'none' ? null : safeTrim(modalForm.certificate_url))
                         : null,
                     logo_url: modalForm.photo_url === 'none' ? 'none' : safeTrim(modalForm.photo_url || modalForm.certificate_url),
@@ -759,7 +809,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                         'PATCH',
                         patchPayload
                     );
-                    if (patchPayload.halal_status && patchPayload.halal_status !== 'needs_review') {
+                    if (patchPayload.halal_status) {
                         await supabase
                             .from('establishments')
                             .update({ halal_status: patchPayload.halal_status, ...coordsPatch })
@@ -784,6 +834,8 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     ...coordsPatch,
                     halal_tier: tier,
                     halal_status: modalForm.status || 'verified',
+                    certifying_body_id: selectedHcbId,
+                    certifying_bodies: matchedHcb || updated?.certifying_bodies || null,
                     submitter_role: role,
                     source: modalForm.source || (role === 'owner' ? 'Business Owner Submission' : 'Community User Submission'),
                     amenities: amList,
@@ -799,8 +851,14 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 );
                 updateToast('Establishment record saved to database.', 'success');
             } else if (activeModal === 'flag-establishment') {
+                const nextStatus = modalForm.status || 'needs_review';
+                const appendedNotes = safeTrim(modalForm.reason)
+                    ? appendAdminNotes(selectedItem?.admin_notes, '', `Status -> ${nextStatus}`, modalForm.reason)
+                    : selectedItem?.admin_notes;
+
                 const patchPayload = {
-                    halal_status: modalForm.status || 'needs_review',
+                    halal_status: nextStatus,
+                    ...(appendedNotes !== undefined ? { admin_notes: appendedNotes } : {}),
                 };
 
                 let updated = null;
@@ -826,7 +884,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                         'PATCH',
                         patchPayload
                     );
-                    if (patchPayload.halal_status && patchPayload.halal_status !== 'needs_review') {
+                    if (patchPayload.halal_status) {
                         await supabase
                             .from('establishments')
                             .update({ halal_status: patchPayload.halal_status })
@@ -837,8 +895,14 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     }
                 }
 
+                const safeUpdated = {
+                    ...selectedItem,
+                    ...updated,
+                    ...patchPayload,
+                };
+
                 setEstablishments(prev =>
-                    prev.map(item => item.id === selectedItem.id ? updated : item)
+                    prev.map(item => item.id === selectedItem.id ? safeUpdated : item)
                 );
                 updateToast('Establishment review saved to database.', 'success');
             }
@@ -880,6 +944,17 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
+                    {isAdmin && registryMode === 'establishments' && (
+                        <button
+                            type="button"
+                            onClick={() => openModal('add-establishment')}
+                            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 sm:px-3.5 sm:py-2 text-[11px] sm:text-sm font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+                        >
+                            <Plus size={14} />
+                            <span>Add <span className="hidden sm:inline">Establishment</span></span>
+                        </button>
+                    )}
+
                     {registryMode === 'establishments' && (
                         <button
                             type="button"
@@ -1051,6 +1126,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                 activeModal={activeModal}
                 modalForm={modalForm}
                 setModalForm={setModalForm}
+                certifyingBodies={hcbs}
                 onClose={closeModal}
                 onSubmit={handleModalSubmit}
             />

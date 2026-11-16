@@ -1,5 +1,6 @@
 from typing import Optional
 from pydantic import BaseModel, Field, field_validator
+from app.utils.db_helpers import validate_safe_url
 
 
 class ManufacturerCreate(BaseModel):
@@ -12,6 +13,11 @@ class ManufacturerCreate(BaseModel):
     source_url: Optional[str] = None
     synced_at: Optional[str] = None
 
+    @field_validator("source_url")
+    @classmethod
+    def validate_safe_urls(cls, v: Optional[str]) -> Optional[str]:
+        return validate_safe_url(v)
+
 
 class ManufacturerUpdate(BaseModel):
     name: Optional[str] = None
@@ -22,6 +28,11 @@ class ManufacturerUpdate(BaseModel):
     source: Optional[str] = None
     source_url: Optional[str] = None
     synced_at: Optional[str] = None
+
+    @field_validator("source_url")
+    @classmethod
+    def validate_safe_urls(cls, v: Optional[str]) -> Optional[str]:
+        return validate_safe_url(v)
 
 
 class ProductCreate(BaseModel):
@@ -44,6 +55,11 @@ class ProductCreate(BaseModel):
     image_url: Optional[str] = None
     synced_at: Optional[str] = None
 
+    @field_validator("source_url", "image_url")
+    @classmethod
+    def validate_safe_urls(cls, v: Optional[str]) -> Optional[str]:
+        return validate_safe_url(v, allow_data_image=True, allow_relative_path=True)
+
 
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
@@ -59,11 +75,15 @@ class ProductUpdate(BaseModel):
     halal_tier: Optional[str] = None
     halal_logo_present: Optional[bool] = None
     ingredients_summary: Optional[str] = None
-    submitted_by: Optional[str] = None
     source: Optional[str] = None
     source_url: Optional[str] = None
     image_url: Optional[str] = None
     synced_at: Optional[str] = None
+
+    @field_validator("source_url", "image_url")
+    @classmethod
+    def validate_safe_urls(cls, v: Optional[str]) -> Optional[str]:
+        return validate_safe_url(v, allow_data_image=True, allow_relative_path=True)
 
 
 class ProductSubmissionRequest(BaseModel):
@@ -86,14 +106,4 @@ class ProductSubmissionRequest(BaseModel):
     @field_validator("source_url", "image_url")
     @classmethod
     def validate_safe_urls(cls, v: Optional[str]) -> Optional[str]:
-        if not v:
-            return None
-        v_clean = v.strip()
-        if not (
-            v_clean.startswith("http://")
-            or v_clean.startswith("https://")
-            or v_clean.startswith("data:image/")
-            or v_clean.startswith("/product_images/")
-        ):
-            raise ValueError("URL must use http, https, /product_images/, or safe data URI")
-        return v_clean
+        return validate_safe_url(v, allow_data_image=True, allow_relative_path=True)

@@ -13,7 +13,6 @@ import {
     ChevronRight,
     Info,
     Layers,
-    Cpu,
     Sparkles,
 } from 'lucide-react';
 import Modal from '../ui/Modal';
@@ -108,7 +107,6 @@ const formatFriendlyPipelineStage = (stage) => {
 };
 
 export const ScanDetailModal = ({ scan, onClose }) => {
-    const [copiedText, setCopiedText] = useState(false);
     const [copiedId, setCopiedId] = useState(false);
     const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
 
@@ -118,17 +116,12 @@ export const ScanDetailModal = ({ scan, onClose }) => {
     const hasLogo = hasRecognizedLogo(scan);
     const certLogoSrc = resolveReferenceLogoSrc(scan.detected_logo || raw?.logoBody);
 
-    const handleCopy = async (text, type = 'text') => {
+    const handleCopy = async (text) => {
         if (!text) return;
         try {
             await navigator.clipboard.writeText(text);
-            if (type === 'text') {
-                setCopiedText(true);
-                setTimeout(() => setCopiedText(false), 2000);
-            } else {
-                setCopiedId(true);
-                setTimeout(() => setCopiedId(false), 2000);
-            }
+            setCopiedId(true);
+            setTimeout(() => setCopiedId(false), 2000);
         } catch {
             // Safe fallback
         }
@@ -158,14 +151,14 @@ export const ScanDetailModal = ({ scan, onClose }) => {
         defaultBannerDesc = 'Contains confirmed non-halal or prohibited ingredients.';
     }
 
+    const flagged = getFlaggedItems(scan);
+
     // Use actual dynamic analysis summary from the scanner if available
     const activeSummary = (!hasLogo && flagged.length === 0 && isDoubtful)
         ? 'Ingredients appear clean, but no official Halal seal was detected on the packaging.'
         : (raw?.analysisSummary
             ? simplifyHalalText(raw.analysisSummary)
             : defaultBannerDesc);
-
-    const flagged = getFlaggedItems(scan);
     const recommendations = Array.isArray(raw?.recommendations) ? raw.recommendations : [];
     const capturedImages = Array.isArray(raw?.images) ? raw.images : [];
     const pipelineStages = Array.isArray(raw?.pipelineStages) ? raw.pipelineStages : [];

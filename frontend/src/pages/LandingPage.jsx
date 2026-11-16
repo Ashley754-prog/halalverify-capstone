@@ -25,7 +25,7 @@ import ProductCardDetail from '../components/landing/ProductCardDetail';
 import ProductImage from '../components/catalog/ProductImage';
 import { CURATED_PRODUCT_NAMES, getCuratedProductImage } from '../data/curatedProductImages';
 import { getSafeUrl } from '../utils/security';
-import { getStatusConfig, getEstablishmentPhoto } from '../data/constants';
+import { getStatusConfig, getEstablishmentPhoto, getTodayIsoDate } from '../data/constants';
 
 const INITIAL_RECENT_ESTABLISHMENTS = [
   {
@@ -109,15 +109,15 @@ const INITIAL_RECENT_ESTABLISHMENTS = [
     description: 'Flagship Moro and Tausug restaurant located at SM City Mindpro, serving authentic Latal platters, beef kulma, and traditional dishes in a Moroccan-inspired setting. Halal certified by MMHCBI.',
   },
   {
-    id: 'black-plate-initial',
-    name: 'Black Plate Zamboanga',
-    type: 'Sizzling & Grill House',
-    address: 'Mayor Jaldon St, Canelar, Zamboanga City, 7000 Zamboanga del Sur, Philippines',
+    id: 'chick-n-cow-initial',
+    name: "Chick N' Cow Hotpot",
+    type: 'Hotpot & Tabletop Grill',
+    address: 'NS Building, MCLL Highway, Putik, Zamboanga City',
     city: 'Zamboanga City',
     halal_status: 'verified',
     halal_tier: 'halal_certified',
-    admin_notes: '[Tier: halal_certified] Synced from Muslim in Manila (ID: 1157). Amenities: Standard Dining.',
-    description: 'Casual dining venue on Mayor Jaldon Street offering grilled meats, rice bowls, and contemporary comfort dishes. Halal certified by the Ulama Council of Zamboanga Peninsula.',
+    admin_notes: '[Tier: halal_certified] Certified Halal by Ulama Council of Zamboanga Peninsula (UCZP), May 2026 (2 years).',
+    description: 'Hotpot and tabletop grill dining venue along MCLL Highway in Putik, Zamboanga City. Formally certified Halal by the Ulama Council of Zamboanga Peninsula.',
   },
 ];
 
@@ -204,12 +204,16 @@ export default function LandingPage({ onViewChange, userRole }) {
   const programmaticScrollRef = useRef(false);
   const programmaticScrollTimerRef = useRef(null);
 
+  const pauseCarousel = (pauseRef) => {
+    pauseRef.current = window.performance.timeOrigin + window.performance.now() + 6000;
+  };
+
   const scrollRecentProducts = (direction) => {
     const carousel = recentProductsScrollRef.current;
     const cards = carousel?.querySelectorAll('[data-recent-product-card]');
     if (!carousel || !cards?.length) return;
 
-    recentProductsPauseUntilRef.current = Date.now() + 6000;
+    pauseCarousel(recentProductsPauseUntilRef);
     const gap = Number.parseFloat(getComputedStyle(carousel).columnGap) || 0;
     const step = cards[0].getBoundingClientRect().width + gap;
     const maxScroll = carousel.scrollWidth - carousel.clientWidth;
@@ -238,7 +242,7 @@ export default function LandingPage({ onViewChange, userRole }) {
     const card = carousel?.querySelectorAll('[data-recent-product-card]')[index];
     if (!carousel || !card) return;
 
-    recentProductsPauseUntilRef.current = Date.now() + 6000;
+    pauseCarousel(recentProductsPauseUntilRef);
     carousel.scrollTo({ left: card.offsetLeft - carousel.offsetLeft, behavior: 'smooth' });
     setActiveRecentProductIndex(index);
   };
@@ -273,7 +277,7 @@ export default function LandingPage({ onViewChange, userRole }) {
     const cards = carousel?.querySelectorAll('[data-recent-establishment-card]');
     if (!carousel || !cards?.length) return;
 
-    recentEstablishmentsPauseUntilRef.current = Date.now() + 6000;
+    pauseCarousel(recentEstablishmentsPauseUntilRef);
     const gap = Number.parseFloat(getComputedStyle(carousel).columnGap) || 0;
     const step = cards[0].getBoundingClientRect().width + gap;
     const maxScroll = carousel.scrollWidth - carousel.clientWidth;
@@ -298,7 +302,7 @@ export default function LandingPage({ onViewChange, userRole }) {
     const card = carousel?.querySelectorAll('[data-recent-establishment-card]')[index];
     if (!carousel || !card) return;
 
-    recentEstablishmentsPauseUntilRef.current = Date.now() + 6000;
+    pauseCarousel(recentEstablishmentsPauseUntilRef);
     carousel.scrollTo({ left: card.offsetLeft - carousel.offsetLeft, behavior: 'smooth' });
     setActiveRecentEstablishmentIndex(index);
   };
@@ -537,22 +541,24 @@ export default function LandingPage({ onViewChange, userRole }) {
     let isMounted = true;
     const loadRegistryData = async () => {
       try {
+        const todayIso = getTodayIsoDate();
         const [prodRes, estRes, recentProductsRes, featuredImageProductsRes, recentEstablishmentsRes] = await Promise.all([
           supabase
             .from('products')
             .select('id, name, brand, category, status')
-            .not('status', 'in', '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft)')
-            .limit(300),
+            .not('status', 'in', '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft,Flagged,flagged,Suspended,suspended,Expired,expired,HARAM,haram)')
+            .limit(500),
           supabase
             .from('establishments')
-            .select('id, name, address, halal_status')
-            .not('halal_status', 'in', '(rejected,REJECTED,needs_review,pending,pending_review,flagged,suspended)')
-            .limit(200),
+            .select('id, name, address, halal_status, expiry_date')
+            .not('halal_status', 'in', '(rejected,REJECTED,needs_review,pending,pending_review,flagged,suspended,expired,EXPIRED,permanently_closed,closed,demolished,relocated)')
+            .or(`expiry_date.is.null,expiry_date.gte.${todayIso}`)
+            .limit(300),
           supabase
             .from('products')
             .select('id, name, brand, category, status, image_url, created_at, expiry_date, certificate_no, certifying_body_id, source, source_url, admin_notes, manufacturers(name, address, contact_phone, contact_email, contact_person), certifying_bodies(name, code)')
             .in('status', ['Halal', 'halal', 'HALAL', 'Verified', 'verified', 'VERIFIED'])
-            .or(`and(certifying_body_id.not.is.null,expiry_date.is.null),and(certifying_body_id.not.is.null,expiry_date.gte.${new Date().toISOString().slice(0, 10)}),and(certificate_no.not.is.null,expiry_date.is.null),and(certificate_no.not.is.null,expiry_date.gte.${new Date().toISOString().slice(0, 10)})`)
+            .or(`and(certifying_body_id.not.is.null,expiry_date.is.null),and(certifying_body_id.not.is.null,expiry_date.gte.${todayIso}),and(certificate_no.not.is.null,expiry_date.is.null),and(certificate_no.not.is.null,expiry_date.gte.${todayIso})`)
             .order('created_at', { ascending: false })
             .limit(500),
           supabase
@@ -560,12 +566,12 @@ export default function LandingPage({ onViewChange, userRole }) {
             .select('id, name, brand, category, status, image_url, created_at, expiry_date, certificate_no, certifying_body_id, source, source_url, admin_notes, manufacturers(name, address, contact_phone, contact_email, contact_person), certifying_bodies(name, code)')
             .in('name', CURATED_PRODUCT_NAMES)
             .in('status', ['Halal', 'halal', 'HALAL', 'Verified', 'verified', 'VERIFIED'])
-            .or(`and(certifying_body_id.not.is.null,expiry_date.is.null),and(certifying_body_id.not.is.null,expiry_date.gte.${new Date().toISOString().slice(0, 10)}),and(certificate_no.not.is.null,expiry_date.is.null),and(certificate_no.not.is.null,expiry_date.gte.${new Date().toISOString().slice(0, 10)})`),
+            .or(`and(certifying_body_id.not.is.null,expiry_date.is.null),and(certifying_body_id.not.is.null,expiry_date.gte.${todayIso}),and(certificate_no.not.is.null,expiry_date.is.null),and(certificate_no.not.is.null,expiry_date.gte.${todayIso})`),
           supabase
             .from('establishments')
             .select('id, name, type, address, city, halal_status, halal_tier, expiry_date, certificate_number, logo_url, certificate_url, description, admin_notes, created_at, facebook_url, website_url, certifying_bodies(name, code)')
             .in('halal_status', ['verified', 'VERIFIED', 'halal_certified', 'Halal Certified'])
-            .or(`expiry_date.is.null,expiry_date.gte.${new Date().toISOString().slice(0, 10)}`)
+            .or(`expiry_date.is.null,expiry_date.gte.${todayIso}`)
             .order('created_at', { ascending: false })
             .limit(100),
         ]);
@@ -584,7 +590,16 @@ export default function LandingPage({ onViewChange, userRole }) {
           if (recentEstablishmentsRes.data) {
             const approvedEstablishments = recentEstablishmentsRes.data.filter((establishment) => {
               const cfg = getStatusConfig(establishment);
-              return cfg.key !== 'needs_review' && cfg.key !== 'rejected' && cfg.key !== 'flagged';
+              return (
+                cfg.key !== 'needs_review' &&
+                cfg.key !== 'rejected' &&
+                cfg.key !== 'flagged' &&
+                cfg.key !== 'suspended' &&
+                cfg.key !== 'expired' &&
+                cfg.key !== 'permanently_closed' &&
+                cfg.key !== 'demolished' &&
+                cfg.key !== 'relocated'
+              );
             });
             const aldznisa = approvedEstablishments.find((e) => e.name.toLowerCase().includes('aldznisa')) ||
               INITIAL_RECENT_ESTABLISHMENTS[0];
@@ -592,15 +607,14 @@ export default function LandingPage({ onViewChange, userRole }) {
               INITIAL_RECENT_ESTABLISHMENTS[1];
             const andys = approvedEstablishments.find((e) => e.name.toLowerCase().includes('andy')) ||
               INITIAL_RECENT_ESTABLISHMENTS[2];
-            const antiens = approvedEstablishments.find((e) => e.name.toLowerCase().includes('antiens')) ||
-              INITIAL_RECENT_ESTABLISHMENTS[3];
+            const antiens = approvedEstablishments.find((e) => e.name.toLowerCase().includes('antiens'));
             const bambas = approvedEstablishments.find((e) => e.name.toLowerCase().includes('bambas')) ||
               INITIAL_RECENT_ESTABLISHMENTS[4];
             const bandit = approvedEstablishments.find((e) => e.name.toLowerCase().includes('bandit')) ||
               INITIAL_RECENT_ESTABLISHMENTS[5];
             const bayTalMal = approvedEstablishments.find((e) => e.name.toLowerCase().includes('bay tal mal')) ||
               INITIAL_RECENT_ESTABLISHMENTS[6];
-            const blackPlate = approvedEstablishments.find((e) => e.name.toLowerCase().includes('black plate')) ||
+            const chickNCow = approvedEstablishments.find((e) => e.name.toLowerCase().includes('chick n')) ||
               INITIAL_RECENT_ESTABLISHMENTS[7];
             const rest = approvedEstablishments.filter((e) =>
               !e.name.toLowerCase().includes('aldznisa') &&
@@ -610,9 +624,9 @@ export default function LandingPage({ onViewChange, userRole }) {
               !e.name.toLowerCase().includes('bambas') &&
               !e.name.toLowerCase().includes('bandit') &&
               !e.name.toLowerCase().includes('bay tal mal') &&
-              !e.name.toLowerCase().includes('black plate')
+              !e.name.toLowerCase().includes('chick n')
             );
-            const featuredWithPhotos = [aldznisa, alHalal, andys, antiens, bambas, bandit, bayTalMal, blackPlate].filter(Boolean);
+            const featuredWithPhotos = [aldznisa, alHalal, andys, antiens, bambas, bandit, bayTalMal, chickNCow].filter(Boolean);
             const combined = [...featuredWithPhotos, ...rest];
             setRecentEstablishments(combined.slice(0, 8));
           }
@@ -671,13 +685,13 @@ export default function LandingPage({ onViewChange, userRole }) {
             .from('products')
             .select('id, name, brand, category, status, certificate_no')
             .or(`name.ilike.%${safeQ}%,brand.ilike.%${safeQ}%,category.ilike.%${safeQ}%,certificate_no.ilike.%${safeQ}%`)
-            .not('status', 'in', '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft)')
+            .not('status', 'in', '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft,Flagged,flagged,Suspended,suspended,Expired,expired,HARAM,haram)')
             .limit(25),
           supabase
             .from('establishments')
             .select('id, name, address, halal_status')
             .or(`name.ilike.%${safeQ}%,address.ilike.%${safeQ}%`)
-            .not('halal_status', 'in', '(rejected,REJECTED,needs_review,pending,pending_review,flagged,suspended)')
+            .not('halal_status', 'in', '(rejected,REJECTED,needs_review,pending,pending_review,flagged,suspended,expired,EXPIRED,permanently_closed,closed,demolished,relocated)')
             .limit(25),
         ]);
 
@@ -1107,10 +1121,11 @@ export default function LandingPage({ onViewChange, userRole }) {
                       ))}
 
                       {searchResults.establishments.map(e => (
-                        <div
+                        <button
+                          type="button"
                           key={e.id}
-                          onClick={() => onViewChange('map')}
-                          className="flex items-center justify-between p-2.5 rounded-xl bg-white hover:bg-[#F4F8F5] cursor-pointer border border-[#DCE7E0] transition"
+                          onClick={() => onViewChange('map', { searchQuery: e.name })}
+                          className="w-full text-left flex items-center justify-between p-2.5 rounded-xl bg-white hover:bg-[#F4F8F5] cursor-pointer border border-[#DCE7E0] transition"
                         >
                           <div className="flex items-center gap-2.5">
                             <Building2 size={18} className="text-teal-700 shrink-0" />
@@ -1122,7 +1137,7 @@ export default function LandingPage({ onViewChange, userRole }) {
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-teal-50 text-teal-800 border border-teal-200">
                             {e.halal_status || 'Verified'}
                           </span>
-                        </div>
+                        </button>
                       ))}
                     </div>
                   ) : (
@@ -1314,7 +1329,7 @@ export default function LandingPage({ onViewChange, userRole }) {
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-800">Verified local places</p>
               <h2 className="mt-1 text-xl sm:text-2xl font-extrabold text-[#17251F]">Recently Added Establishments</h2>
               <p className="mt-1 text-xs sm:text-sm text-[#52645B]">
-                Showing featured dining spots from 40+ verified establishments across Zamboanga City.
+                Showing featured dining spots from {allEstablishments.length > 0 ? `${allEstablishments.length} ` : ''}verified and community-listed establishments across Zamboanga City.
               </p>
             </div>
             <div className="flex items-center justify-end gap-2">

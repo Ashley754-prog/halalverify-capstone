@@ -1,12 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import {
-    Search,
     AlertCircle,
     Filter,
     Plus,
-    Camera,
-    ChevronLeft,
-    ChevronRight,
     RotateCcw,
     Package,
 } from 'lucide-react';
@@ -23,7 +19,7 @@ import ProductFormModal from '../components/catalog/ProductFormModal';
 import ProductDeleteModal from '../components/catalog/ProductDeleteModal';
 import { supabase } from '../lib/supabaseClient';
 import { API_BASE_URL, authFetch } from '../utils/api';
-import { resolveZamboangaDistrict } from '../data/constants';
+import { getTodayIsoDate } from '../data/constants';
 import { SEED_ESTABLISHMENTS } from '../data/seedEstablishments';
 
 const PRODUCT_CATEGORIES = [
@@ -31,32 +27,33 @@ const PRODUCT_CATEGORIES = [
     'Food & Beverage',
     'Spices & Seasonings',
     'Bakery & Biscuits',
-    'Dairy & Milk',
     'Cooking Oils & Fats',
     'Condiments & Sauces',
-    'Canned Fish & Meat',
+    'Dairy & Milk',
     'Beverages',
-    'Instant Noodles & Pasta',
-    'Snacks & Chips',
     'Dressings & Mayonnaise',
-    'Fresh & Farm Produce',
+    'Canned Fish & Meat',
+    'Snacks & Chips',
+    'Instant Noodles & Pasta',
     'Personal Care & Household',
-    'Restaurant & Catering Menu',
+    'Fresh & Farm Produce',
 ];
 
 const QUICK_CATEGORIES = [
     { label: 'All Items', value: 'All Categories' },
     { label: 'Food & Beverage', value: 'Food & Beverage' },
-    { label: 'Bakery & Biscuits', value: 'Bakery & Biscuits' },
     { label: 'Spices & Seasonings', value: 'Spices & Seasonings' },
+    { label: 'Bakery & Biscuits', value: 'Bakery & Biscuits' },
+    { label: 'Cooking Oils & Fats', value: 'Cooking Oils & Fats' },
     { label: 'Condiments & Sauces', value: 'Condiments & Sauces' },
     { label: 'Dairy & Milk', value: 'Dairy & Milk' },
-    { label: 'Canned Fish & Meat', value: 'Canned Fish & Meat' },
-    { label: 'Instant Noodles & Pasta', value: 'Instant Noodles & Pasta' },
-    { label: 'Snacks & Chips', value: 'Snacks & Chips' },
     { label: 'Beverages', value: 'Beverages' },
-    { label: 'Cooking Oils & Fats', value: 'Cooking Oils & Fats' },
-    { label: 'Restaurant & Catering', value: 'Restaurant & Catering Menu' },
+    { label: 'Dressings & Mayonnaise', value: 'Dressings & Mayonnaise' },
+    { label: 'Canned Fish & Meat', value: 'Canned Fish & Meat' },
+    { label: 'Snacks & Chips', value: 'Snacks & Chips' },
+    { label: 'Instant Noodles & Pasta', value: 'Instant Noodles & Pasta' },
+    { label: 'Personal Care', value: 'Personal Care & Household' },
+    { label: 'Fresh & Farm Produce', value: 'Fresh & Farm Produce' },
 ];
 
 const PRODUCT_STATUSES = [
@@ -71,6 +68,7 @@ const PRODUCT_STATUSES = [
 const STATUS_FILTER_OPTIONS = [
     { label: 'All Halal Statuses', value: 'All Statuses' },
     { label: 'Certified Halal', value: 'Halal' },
+    { label: 'For Renewal', value: 'For Renewal' },
     { label: 'Pork-Free / Self-Declared', value: 'Pork-Free Declared' },
     { label: 'Vegetarian / Plant-Based', value: 'Vegetarian / Vegan' },
     { label: 'Expired Certificate', value: 'Expired' },
@@ -79,13 +77,12 @@ const STATUS_FILTER_OPTIONS = [
 
 const CERTIFIER_ORIGINS = [
     { label: 'All Certifiers', value: 'ALL' },
+    { label: 'Local & Zampen HCBs (BUSC, UCZP, BPCC, DTI)', value: 'REGION_IX' },
     { label: 'IDCP Certified', value: 'IDCP' },
-    { label: 'HDIP Certified', value: 'HDIP' },
-    { label: 'BPCC Regional Certified', value: 'BPCC' },
     { label: 'BUSC Regional Certified', value: 'BUSC' },
+    { label: 'UCZP Regional Certified', value: 'UCZP' },
+    { label: 'BPCC Regional Certified', value: 'BPCC' },
     { label: 'DTI Zampen Local MSMEs', value: 'ZAMPEN' },
-    { label: 'Muslim in Manila Directory', value: 'Muslim in Manila' },
-    { label: 'Community Listed', value: 'Community' },
 ];
 
 const CB_UUID_MAP = {
@@ -93,6 +90,7 @@ const CB_UUID_MAP = {
     HDIP: '4ef9426c-63f7-44b7-9738-f2b3144c77a5',
     BPCC: '1656c3e6-250c-4b70-81c0-3c084eb7ce80',
     BUSC: '7ffdaf0a-c5a2-4c14-b9c8-3f27d9568b48',
+    UCZP: '8d4eef9f-b276-4f0c-97f2-89c8b6a5677d',
     MMHCB: 'e276a8c2-bbd9-438e-9ec3-30f2073a3ef3',
     MASLAHA: 'c8db6788-4d40-4bd0-b5b9-da35ea7c175e',
     PRIME: '99538551-f559-4ef1-b6d8-db35692200d8',
@@ -126,9 +124,8 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
     const [selectedCategory, setSelectedCategory] = useState('All Categories');
     const [selectedStatus, setSelectedStatus] = useState('All Statuses');
     const [selectedCertifier, setSelectedCertifier] = useState('ALL');
-    const [selectedDistrict, setSelectedDistrict] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
-    const [totalServerCount, setTotalServerCount] = useState(13239);
+    const [totalServerCount, setTotalServerCount] = useState(0);
     const [itemsPerPage, setItemsPerPage] = useState(24);
 
     const [activeModal, setActiveModal] = useState(null); // 'add-product', 'edit-product', 'delete-product', 'view-product'
@@ -169,7 +166,6 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         category: 'All Categories',
         status: 'All Statuses',
         certifier: 'ALL',
-        district: 'all',
         page: 1,
     });
     const establishmentsMapRef = useRef({});
@@ -218,7 +214,6 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         categoryParam,
         statusParam,
         certifierParam,
-        districtParam,
         limitParam
     ) => {
         try {
@@ -230,62 +225,74 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             const cat = categoryParam !== undefined ? categoryParam : filtersRef.current.category;
             const st = statusParam !== undefined ? statusParam : filtersRef.current.status;
             const cert = certifierParam !== undefined ? certifierParam : filtersRef.current.certifier;
-            const dist = districtParam !== undefined ? districtParam : filtersRef.current.district;
             const limit = limitParam !== undefined ? limitParam : itemsPerPage;
             const from = (page - 1) * limit;
             const to = from + limit - 1;
 
             let loadedProducts = null;
             const estMap = establishmentsMapRef.current || {};
-            const matchingEstIds = dist && dist !== 'all'
-                ? Object.values(estMap)
-                    .filter((e) => resolveZamboangaDistrict(e).id === dist)
-                    .map((e) => e.id)
-                    .filter(Boolean)
-                : [];
+            const excludedStatuses = '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft,Flagged,flagged,Suspended,suspended,HARAM,haram)';
 
             // Direct Supabase Query with true count & range (Instant ~120ms response)
             try {
                 let pBuilder = supabase
                     .from('products')
-                    .select('*, manufacturers(*), certifying_bodies(*)', { count: 'exact' });
+                    .select('*, manufacturers(*), certifying_bodies(*)', { count: 'exact' })
+                    .or('establishment_id.is.null,brand.not.is.null,barcode.not.is.null,ingredients_summary.not.is.null');
 
                 const safeQ = q.replace(/[,()'"%&|{}\s]+/g, '%').slice(0, 200).replace(/^%+|%+$/g, '');
                 if (safeQ) {
-                    pBuilder = pBuilder.or(`name.ilike.%${safeQ}%,brand.ilike.%${safeQ}%,barcode.ilike.%${safeQ}%,certificate_no.ilike.%${safeQ}%,admin_notes.ilike.%${safeQ}%`);
+                    pBuilder = pBuilder.or(`name.ilike.%${safeQ}%,brand.ilike.%${safeQ}%,barcode.ilike.%${safeQ}%,certificate_no.ilike.%${safeQ}%`);
                 }
 
                 if (cat && cat !== 'All Categories') {
                     pBuilder = pBuilder.ilike('category', `%${cat}%`);
                 }
 
-                if (dist && dist !== 'all' && matchingEstIds.length > 0) {
-                    pBuilder = pBuilder.in('establishment_id', matchingEstIds);
-                }
+                const todayIso = getTodayIsoDate();
 
                 if (st && st !== 'All Statuses') {
                     if (st === 'Halal') {
-                        pBuilder = pBuilder.in('status', ['Halal', 'VERIFIED', 'Verified']);
+                        pBuilder = pBuilder
+                            .in('status', ['Halal', 'VERIFIED', 'Verified'])
+                            .or(`expiry_date.is.null,expiry_date.gte.${todayIso}`);
+                    } else if (st === 'Expired') {
+                        pBuilder = pBuilder
+                            .or(`status.eq.Expired,and(status.in.(Halal,Verified,VERIFIED,For Renewal,for_renewal),expiry_date.lt.${todayIso})`)
+                            .not('status', 'in', excludedStatuses);
+                    } else if (st === 'For Renewal') {
+                        pBuilder = pBuilder
+                            .in('status', ['For Renewal', 'for_renewal'])
+                            .or(`expiry_date.is.null,expiry_date.gte.${todayIso}`);
                     } else if (st === 'Pork-Free Declared') {
-                        pBuilder = pBuilder.or('status.ilike.%pork-free%,admin_notes.ilike.%pork-free%')
-                            .not('status', 'in', '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft)');
+                        pBuilder = pBuilder
+                            .in('status', ['Pork-Free Declared', 'COMMUNITY_LISTED'])
+                            .not('status', 'in', excludedStatuses);
                     } else if (st === 'Vegetarian / Vegan') {
-                        pBuilder = pBuilder.or('status.ilike.%vegetarian%,status.ilike.%vegan%,admin_notes.ilike.%vegetarian%')
-                            .not('status', 'in', '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft)');
+                        pBuilder = pBuilder
+                            .eq('status', 'Vegetarian / Vegan')
+                            .not('status', 'in', excludedStatuses);
                     } else {
                         pBuilder = pBuilder.eq('status', st)
-                            .not('status', 'in', '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft)');
+                            .not('status', 'in', excludedStatuses);
                     }
                 } else {
-                    pBuilder = pBuilder.not('status', 'in', '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft)');
+                    pBuilder = pBuilder.not('status', 'in', excludedStatuses);
                 }
 
                 if (cert && cert !== 'ALL' && cert !== 'All Certifiers / Origins') {
-                    const cbId = CB_UUID_MAP[cert];
-                    if (cbId) {
-                        pBuilder = pBuilder.or(`certifying_body_id.eq.${cbId},source.ilike.%${cert}%`);
+                    if (cert === 'REGION_IX') {
+                        const localIds = [CB_UUID_MAP.BUSC, CB_UUID_MAP.UCZP, CB_UUID_MAP.BPCC].filter(Boolean);
+                        pBuilder = pBuilder.or(
+                            `certifying_body_id.in.(${localIds.join(',')}),source.ilike.%ZAMPEN%,source.ilike.%UCZP%,source.ilike.%BUSC%`
+                        );
                     } else {
-                        pBuilder = pBuilder.ilike('source', `%${cert}%`);
+                        const cbId = CB_UUID_MAP[cert];
+                        if (cbId) {
+                            pBuilder = pBuilder.or(`certifying_body_id.eq.${cbId},source.ilike.%${cert}%`);
+                        } else {
+                            pBuilder = pBuilder.ilike('source', `%${cert}%`);
+                        }
                     }
                 }
 
@@ -310,9 +317,20 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             // Fallback to Backend API with a 3.5s timeout if direct Supabase didn't return items
             if (!loadedProducts) {
                 try {
-                    const searchArg = q ? `&query=${encodeURIComponent(q)}` : '';
+                    const params = new URLSearchParams({
+                        limit: String(limit),
+                        page: String(page),
+                    });
+                    if (q) params.set('query', q);
+                    if (cat && cat !== 'All Categories') params.set('category', cat);
+                    if (st && st !== 'All Statuses' && st !== 'Expired' && st !== 'For Renewal') {
+                        params.set('status', st);
+                    }
+                    if (cert && CB_UUID_MAP[cert]) {
+                        params.set('certifying_body_id', CB_UUID_MAP[cert]);
+                    }
                     const productsRes = await authFetch(
-                        `${API_BASE_URL}/products?limit=24&page=${page}${searchArg}`,
+                        `${API_BASE_URL}/products?${params.toString()}`,
                         { timeout: 3500 }
                     );
 
@@ -328,40 +346,13 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                 }
             }
 
-            // Enrich with establishment info if linked, or fallback to curated Zamboanga district specialties when filtering by District
-            let finalProducts = (loadedProducts || [])
+            // Enrich with establishment info if linked and guard fallback against dish-only rows
+            const finalProducts = (loadedProducts || [])
                 .filter((p) => !(p.establishment_id && !p.brand && !p.barcode && !p.ingredients_summary))
                 .map((p) => ({
                     ...p,
                     establishments: p.establishment_id ? estMap[p.establishment_id] : p.establishments,
                 }));
-
-            if (dist && dist !== 'all' && finalProducts.length === 0) {
-                const districtEsts = Object.values(estMap).filter((e) => resolveZamboangaDistrict(e).id === dist);
-                const seededItems = [];
-                districtEsts.forEach((est) => {
-                    (est.products || []).forEach((item) => {
-                        if (q && !item.name?.toLowerCase().includes(q.toLowerCase()) && !est.name?.toLowerCase().includes(q.toLowerCase())) {
-                            return;
-                        }
-                        seededItems.push({
-                            id: item.id || `${est.id}-${item.name}`,
-                            name: item.name,
-                            brand: est.name,
-                            category: item.category || 'Restaurant & Catering Menu',
-                            status: est.certificate_number ? 'Halal' : 'Pork-Free Declared',
-                            certificate_no: est.certificate_number || null,
-                            expiry_date: est.expiry_date || null,
-                            source: est.source || 'Zamboanga Local Halal Directory',
-                            establishment_id: est.id,
-                            establishments: est,
-                            certifying_bodies: est.certifying_bodies || null,
-                        });
-                    });
-                });
-                setTotalServerCount(seededItems.length);
-                finalProducts = seededItems.slice(from, to + 1);
-            }
 
             setProducts(finalProducts);
         } catch (err) {
@@ -387,7 +378,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         setCurrentPage(1);
         if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
         searchDebounceRef.current = setTimeout(() => {
-            loadData(1, val, selectedCategory, selectedStatus, selectedCertifier, selectedDistrict);
+            loadData(1, val, selectedCategory, selectedStatus, selectedCertifier);
         }, 350);
     };
 
@@ -397,7 +388,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         filtersRef.current.page = 1;
         setCurrentPage(1);
         if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-        loadData(1, '', selectedCategory, selectedStatus, selectedCertifier, selectedDistrict);
+        loadData(1, '', selectedCategory, selectedStatus, selectedCertifier);
     };
 
     const handleCategorySelect = (cat) => {
@@ -405,7 +396,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         filtersRef.current.category = cat;
         filtersRef.current.page = 1;
         setCurrentPage(1);
-        loadData(1, searchQuery, cat, selectedStatus, selectedCertifier, selectedDistrict);
+        loadData(1, searchQuery, cat, selectedStatus, selectedCertifier);
     };
 
     const showToast = (message, type = 'success') => {
@@ -461,7 +452,9 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         try {
             const errJson = await response.json();
             if (errJson?.detail) {
-                errorMsg = typeof errJson.detail === 'string'
+                errorMsg = Array.isArray(errJson.detail)
+                    ? errJson.detail.map((d) => d?.msg || JSON.stringify(d)).join('; ')
+                    : typeof errJson.detail === 'string'
                     ? errJson.detail
                     : JSON.stringify(errJson.detail);
             } else if (errJson?.message) {
@@ -530,7 +523,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
 
             showToast(isEdit ? 'Product updated successfully' : 'Product added successfully', 'success');
             closeModal();
-            loadData(currentPage, searchQuery, selectedCategory, selectedStatus, selectedCertifier, selectedDistrict);
+            loadData(currentPage, searchQuery, selectedCategory, selectedStatus, selectedCertifier);
         } catch (err) {
             console.error(err);
             showToast(err.message || 'Error saving product', 'error');
@@ -555,7 +548,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
 
             showToast('Product removed from catalog', 'success');
             closeModal();
-            loadData(currentPage, searchQuery, selectedCategory, selectedStatus, selectedCertifier, selectedDistrict);
+            loadData(currentPage, searchQuery, selectedCategory, selectedStatus, selectedCertifier);
         } catch (err) {
             console.error(err);
             showToast(err.message || 'Error deleting product', 'error');
@@ -574,7 +567,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         if (newPage < 1 || newPage > totalPages || newPage === currentPage) return;
         setCurrentPage(newPage);
         filtersRef.current.page = newPage;
-        loadData(newPage, searchQuery, selectedCategory, selectedStatus, selectedCertifier, selectedDistrict);
+        loadData(newPage, searchQuery, selectedCategory, selectedStatus, selectedCertifier);
         window.scrollTo({ top: 120, behavior: 'smooth' });
     };
 
@@ -582,15 +575,14 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         setItemsPerPage(newLimit);
         setCurrentPage(1);
         filtersRef.current.page = 1;
-        loadData(1, searchQuery, selectedCategory, selectedStatus, selectedCertifier, selectedDistrict, newLimit);
+        loadData(1, searchQuery, selectedCategory, selectedStatus, selectedCertifier, newLimit);
     };
 
     const isFilterActive = Boolean(
         (searchQuery && searchQuery.trim()) ||
         (selectedCategory && selectedCategory !== 'All Categories') ||
         (selectedStatus && selectedStatus !== 'All Statuses') ||
-        (selectedCertifier && selectedCertifier !== 'ALL') ||
-        (selectedDistrict && selectedDistrict !== 'all')
+        (selectedCertifier && selectedCertifier !== 'ALL')
     );
 
     const handleResetFilters = () => {
@@ -598,34 +590,16 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         setSelectedCategory('All Categories');
         setSelectedStatus('All Statuses');
         setSelectedCertifier('ALL');
-        setSelectedDistrict('all');
         filtersRef.current = {
             searchQuery: '',
             category: 'All Categories',
             status: 'All Statuses',
             certifier: 'ALL',
-            district: 'all',
             page: 1,
         };
         setCurrentPage(1);
         if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-        loadData(1, '', 'All Categories', 'All Statuses', 'ALL', 'all');
-    };
-
-    const getPageNumbers = () => {
-        const pages = [];
-        if (totalPages <= 5) {
-            for (let i = 1; i <= totalPages; i++) pages.push(i);
-        } else {
-            if (currentPage <= 3) {
-                pages.push(1, 2, 3, 4, '...', totalPages);
-            } else if (currentPage >= totalPages - 2) {
-                pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
-            } else {
-                pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
-            }
-        }
-        return pages;
+        loadData(1, '', 'All Categories', 'All Statuses', 'ALL');
     };
 
     return (
@@ -641,12 +615,24 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                                 if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-                                loadData(1, searchQuery, selectedCategory, selectedStatus, selectedCertifier, selectedDistrict);
+                                loadData(1, searchQuery, selectedCategory, selectedStatus, selectedCertifier);
                             }
                         }}
-                        placeholder="Search product name, brand, or certificate number..."
+                        placeholder="Search product name, brand, barcode, or certificate #..."
                         className="flex-1 min-w-0"
                     />
+
+                    {isAdmin && (
+                        <button
+                            type="button"
+                            onClick={() => openModal('add-product')}
+                            className="inline-flex items-center justify-center gap-1.5 sm:gap-2 rounded-lg sm:rounded-xl border border-slate-200 bg-white px-2.5 sm:px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition active:scale-[0.98] shrink-0 whitespace-nowrap"
+                            title="Add Product to Registry"
+                        >
+                            <Plus size={15} className="sm:w-4 sm:h-4" />
+                            <span className="hidden sm:inline">Add Product</span>
+                        </button>
+                    )}
 
                     {/* Community Submit Button (Accessible to all users; triggers auth prompt if guest) */}
                     <button
@@ -697,12 +683,12 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                             filtersRef.current.status = val;
                             filtersRef.current.page = 1;
                             setCurrentPage(1);
-                            loadData(1, searchQuery, selectedCategory, val, selectedCertifier, selectedDistrict);
+                            loadData(1, searchQuery, selectedCategory, val, selectedCertifier);
                         }}
                         aria-label="Filter by halal status"
                         className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500"
                     >
-                        {STATUS_FILTER_OPTIONS.map((opt) => (
+                        {STATUS_FILTER_OPTIONS.filter((opt) => isAdmin || opt.value !== 'Expired').map((opt) => (
                             <option key={opt.value} value={opt.value}>
                                 {opt.label}
                             </option>
@@ -718,7 +704,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                             filtersRef.current.certifier = val;
                             filtersRef.current.page = 1;
                             setCurrentPage(1);
-                            loadData(1, searchQuery, selectedCategory, selectedStatus, val, selectedDistrict);
+                            loadData(1, searchQuery, selectedCategory, selectedStatus, val);
                         }}
                         aria-label="Filter by certifier"
                         className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500 max-w-[210px] truncate"

@@ -4,6 +4,43 @@
 
 const SAFE_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:']);
 
+const HTML_ESCAPE_MAP = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+  '`': '&#96;',
+};
+
+/**
+ * Escapes arbitrary strings before interpolating into HTML template sinks (e.g. Leaflet divIcon/tooltip).
+ *
+ * @param {unknown} rawText
+ * @returns {string}
+ */
+export function escapeHtml(rawText) {
+  if (rawText === null || rawText === undefined) return '';
+  return String(rawText).replace(/[&<>"'`]/g, (ch) => HTML_ESCAPE_MAP[ch]);
+}
+
+/**
+ * Builds a user-scoped Supabase Storage key with sanitized extension and collision-resistant suffix.
+ *
+ * @param {string|null|undefined} userId
+ * @param {string} folder
+ * @param {string} filename
+ * @returns {string}
+ */
+export function buildScopedUploadPath(userId, folder, filename = 'upload.jpg') {
+  const safeUser = (userId ? String(userId) : 'anonymous').replace(/[^a-zA-Z0-9_-]/g, '');
+  const safeFolder = String(folder || 'files').replace(/[^a-zA-Z0-9_-]/g, '');
+  const rawExt = String(filename).split('.').pop() || 'jpg';
+  const safeExt = rawExt.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'jpg';
+  const rand = Math.random().toString(36).slice(2, 10);
+  return `${safeFolder}/${safeUser}/${Date.now()}_${rand}.${safeExt}`;
+}
+
 /**
  * Validates a dynamic external link and returns a safe URL.
  * Disallows javascript:, data:, vbscript: and malformed URIs to prevent link-injection XSS.

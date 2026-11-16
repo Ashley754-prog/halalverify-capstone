@@ -7,31 +7,37 @@ export const AUTH_VIEWS = new Set([
     'reset-password',
 ]);
 
-export async function fetchUserRole(userId) {
-    if (!userId) return null;
-    return await ensureUserProfile({ id: userId });
+export async function fetchUserRole(userOrId) {
+    if (!userOrId) return null;
+    const userObj = typeof userOrId === 'object' ? userOrId : { id: userOrId };
+    return await ensureUserProfile(userObj);
 }
 
 export async function ensureUserProfile(user) {
     if (!user) return null;
-    const userId = user.id || user;
+    const userId = typeof user === 'object' ? user.id : user;
+    if (!userId) return null;
 
     try {
-        const { data } = await supabase
+        const { data, error } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', userId)
-            .single();
+            .maybeSingle();
+
+        if (error) {
+            console.warn('Profile role lookup failed:', error.message);
+            return null;
+        }
 
         if (data?.role) {
             return data.role;
         }
 
-        // Auto-provision profile record for first-time Google / Facebook OAuth sign-in
-        const email = user.email || null;
+        // Auto-provision profile record for first-time OAuth or new sign-up users
+        const email = (typeof user === 'object' ? user.email : null) || null;
         const fullName =
-            user.user_metadata?.full_name ||
-            user.user_metadata?.name ||
+            (typeof user === 'object' ? (user.user_metadata?.full_name || user.user_metadata?.name) : null) ||
             (email ? email.split('@')[0] : 'Community User');
 
         const { data: newProfile, error: upsertError } = await supabase
@@ -45,14 +51,29 @@ export async function ensureUserProfile(user) {
             .select('role')
             .maybeSingle();
 
-        if (!upsertError && newProfile?.role) {
+        if (upsertError) {
+            console.warn('Profile provisioning failed:', upsertError.message);
+            return null;
+        }
+
+        if (newProfile?.role) {
             return newProfile.role;
         }
 
-        return 'user';
+        const { data: fallbackProfile, error: fallbackError } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', userId)
+            .maybeSingle();
+
+        if (fallbackError || !fallbackProfile?.role) {
+            return null;
+        }
+
+        return fallbackProfile.role;
     } catch (err) {
-        console.warn('Profile sync fallback:', err);
-        return 'user';
+        console.warn('Profile sync failed:', err);
+        return null;
     }
 }
 
@@ -91,6 +112,9 @@ export async function signInWithProvider(provider) {
     return data;
 }
 
-export function getAuthRedirectUrl() {
-    return window.location.origin;
+export function getAuthRedirectUrl(path = '') {
+    if (typeof window === 'undefined') return '';
+    if (!path) return window.location.origin;
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    return `${window.location.origin}${normalizedPath}`;
 }

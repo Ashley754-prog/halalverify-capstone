@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import {
   ESTABLISHMENT_HALAL_TIERS,
-  SUBMITTER_ROLES,
   findZamboangaBarangay,
   parseZamboangaAddress,
   isValidPhPhone,

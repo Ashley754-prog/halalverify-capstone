@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict, Optional
 from pydantic import BaseModel
 
-from app.auth import get_current_user, get_optional_current_user
+from app.auth import extract_user_id, get_current_user, is_admin_user
 from app.scan_service import VERDICT_TO_STATUS
 from app.supabase_client import supabase
 from fastapi import APIRouter, Depends, HTTPException
@@ -17,19 +17,27 @@ class ScanFusionRequest(BaseModel):
     merged_result: Dict[str, Any]
 
 
+def _assert_scan_ownership(scan_id: str, user_id: str, is_admin: bool) -> None:
+    """Ensure a scan_history row exists and belongs to the authenticated user (or an admin)."""
+    res = (
+        supabase.table("scan_history")
+        .select("id, user_id")
+        .eq("id", scan_id)
+        .maybe_single()
+        .execute()
+    )
+    row = res.data if res is not None else None
+    if not row:
+        raise HTTPException(status_code=404, detail="Scan history record not found")
+    if not is_admin and str(row.get("user_id") or "") != str(user_id):
+        raise HTTPException(status_code=403, detail="Not authorized to modify this scan record")
+
+
 @router.get("/scan-history")
 @router.get("/api/v1/scan-history")
 def get_scan_history(user: dict = Depends(get_current_user)):
-    user_id = getattr(user, "id", None) or (user.get("id") if isinstance(user, dict) else None)
-
-    # Check if user has administrative privileges
-    is_admin = False
-    if user_id:
-        try:
-            profile_res = supabase.table("profiles").select("role").eq("id", user_id).single().execute()
-            is_admin = (profile_res.data or {}).get("role") == "admin"
-        except Exception as e:
-            logger.warning("Error checking admin status: %s", e)
+    user_id = extract_user_id(user)
+    is_admin = is_admin_user(user_id)
 
     # Non-admins must have a valid user_id and can only view their own scan history
     if not is_admin:
@@ -65,19 +73,28 @@ def get_scan_history(user: dict = Depends(get_current_user)):
 @router.post("/api/v1/scan-history/fusion")
 def consolidate_fusion_scan(
     request: ScanFusionRequest,
-    user=Depends(get_optional_current_user),
+    user=Depends(get_current_user),
 ):
     """
     Consolidates multi-panel packaging captures (e.g. Front seal + Rear ingredients panel)
     into a single unified scan record in scan_history.
     Overwrites the primary scan record with the fused verdict and removes the redundant secondary record.
     """
+    user_id = extract_user_id(user)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Valid user credentials required")
+
     primary_id = request.primary_scan_id
     secondary_id = request.secondary_scan_id
     merged = request.merged_result
 
     if not primary_id or not merged:
         raise HTTPException(status_code=400, detail="primary_scan_id and merged_result are required")
+
+    is_admin = is_admin_user(user_id)
+    _assert_scan_ownership(primary_id, user_id, is_admin)
+    if secondary_id:
+        _assert_scan_ownership(secondary_id, user_id, is_admin)
 
     try:
         verdict = VERDICT_TO_STATUS.get(merged.get("verdict"), "Unknown")

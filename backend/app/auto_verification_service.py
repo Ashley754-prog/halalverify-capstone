@@ -6,7 +6,7 @@ import logging
 import re
 import socket
 from typing import Any, Dict, Optional, Tuple
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import httpx
 from app.certificate_service import (
@@ -115,6 +115,60 @@ def is_safe_public_url(url_str: str) -> bool:
         return False
 
 
+MAX_IMAGE_FETCH_BYTES = 10 * 1024 * 1024  # 10 MB upper cap per remote asset
+SAFE_RASTER_DATA_URI_PREFIX = re.compile(
+    r"^data:image/(?:jpeg|jpg|png|webp|gif|bmp);base64,",
+    re.IGNORECASE,
+)
+
+
+def _safe_http_fetch(
+    url: str,
+    *,
+    method: str = "GET",
+    timeout: float = 6.0,
+    max_redirects: int = 3,
+    max_bytes: int = MAX_IMAGE_FETCH_BYTES,
+    read_body: bool = True,
+) -> Tuple[int, Optional[bytes]]:
+    """
+    Execute an HTTP/HTTPS request without automatic redirects so every redirect hop
+    is re-validated against SSRF rules, and stream response bodies within max_bytes.
+    """
+    current_url = url.strip()
+    headers = {"User-Agent": "HalalVerify/1.0"}
+    with httpx.Client(timeout=timeout, follow_redirects=False, headers=headers) as client:
+        for _ in range(max_redirects + 1):
+            if not is_safe_public_url(current_url):
+                raise ValueError("Blocked unsafe URL or redirect target")
+            if read_body and method == "GET":
+                with client.stream(method, current_url) as resp:
+                    if resp.status_code in (301, 302, 303, 307, 308):
+                        location = resp.headers.get("location")
+                        if not location:
+                            return resp.status_code, None
+                        current_url = urljoin(current_url, location)
+                        continue
+                    cl_header = resp.headers.get("content-length")
+                    if cl_header and cl_header.isdigit() and int(cl_header) > max_bytes:
+                        raise ValueError("Remote asset exceeds maximum allowed size")
+                    buf = bytearray()
+                    for chunk in resp.iter_bytes():
+                        buf.extend(chunk)
+                        if len(buf) > max_bytes:
+                            raise ValueError("Remote asset exceeded maximum allowed size")
+                    return resp.status_code, bytes(buf)
+            resp = client.request(method, current_url)
+            if resp.status_code in (301, 302, 303, 307, 308):
+                location = resp.headers.get("location")
+                if not location:
+                    return resp.status_code, None
+                current_url = urljoin(current_url, location)
+                continue
+            return resp.status_code, None
+    raise ValueError("Too many redirects")
+
+
 def fetch_image_base64_from_url(url: str, timeout: float = 6.0) -> Optional[str]:
     """
     Safely retrieves an image from a URL or parses Data URI, returning clean base64 string.
@@ -124,7 +178,10 @@ def fetch_image_base64_from_url(url: str, timeout: float = 6.0) -> Optional[str]
 
     trimmed = url.strip()
 
-    if trimmed.startswith("data:image"):
+    if trimmed.lower().startswith("data:image"):
+        if not SAFE_RASTER_DATA_URI_PREFIX.match(trimmed):
+            logger.warning("[AutoVerify] Rejected unsafe or unsupported image Data URI MIME type")
+            return None
         parts = trimmed.split(",", 1)
         if len(parts) == 2:
             return parts[1]
@@ -132,10 +189,15 @@ def fetch_image_base64_from_url(url: str, timeout: float = 6.0) -> Optional[str]
 
     if (trimmed.startswith("http://") or trimmed.startswith("https://")) and is_safe_public_url(trimmed):
         try:
-            with httpx.Client(timeout=timeout, follow_redirects=True) as client:
-                resp = client.get(trimmed)
-                if resp.status_code == 200 and resp.content:
-                    return base64.b64encode(resp.content).decode("utf-8")
+            status_code, content = _safe_http_fetch(
+                trimmed,
+                method="GET",
+                timeout=timeout,
+                max_bytes=MAX_IMAGE_FETCH_BYTES,
+                read_body=True,
+            )
+            if status_code == 200 and content:
+                return base64.b64encode(content).decode("utf-8")
         except Exception as err:
             logger.warning("[AutoVerify] Could not fetch image from %s...: %s", trimmed[:60], err)
             return None
@@ -184,24 +246,33 @@ def verify_url_liveness(url: str, timeout: float = 2.5) -> Tuple[bool, str]:
         return False, "Restricted or unreachable URL host"
 
     try:
-        with httpx.Client(timeout=timeout, follow_redirects=True, headers={"User-Agent": "HalalVerify/1.0"}) as client:
-            try:
-                resp = client.head(trimmed)
-            except Exception:
-                resp = client.get(trimmed)
+        try:
+            status_code, _ = _safe_http_fetch(
+                trimmed,
+                method="HEAD",
+                timeout=timeout,
+                read_body=False,
+            )
+        except Exception:
+            status_code, _ = _safe_http_fetch(
+                trimmed,
+                method="GET",
+                timeout=timeout,
+                read_body=False,
+            )
 
-            if resp.status_code in [200, 301, 302, 307, 308]:
-                return True, f"Link active (HTTP {resp.status_code})"
-            elif resp.status_code in [401, 403]:
-                domain_match = re.findall(r"https?://(?:www\.)?([^/]+)", trimmed)
-                dom = domain_match[0].lower() if domain_match else ""
-                if any(k in dom for k in ["facebook.com", "instagram.com", "google.com", "maps.app.goo.gl"]):
-                    return True, f"Platform endpoint reachable ({dom})"
-                return False, f"Server denied access (HTTP {resp.status_code})"
-            elif resp.status_code in [404, 410]:
-                return False, f"Dead link detected (HTTP {resp.status_code} Not Found)"
-            else:
-                return False, f"Unreachable endpoint (HTTP {resp.status_code})"
+        if status_code in [200, 301, 302, 307, 308]:
+            return True, f"Link active (HTTP {status_code})"
+        elif status_code in [401, 403]:
+            domain_match = re.findall(r"https?://(?:www\.)?([^/]+)", trimmed)
+            dom = domain_match[0].lower() if domain_match else ""
+            if any(k in dom for k in ["facebook.com", "instagram.com", "google.com", "maps.app.goo.gl"]):
+                return True, f"Platform endpoint reachable ({dom})"
+            return False, f"Server denied access (HTTP {status_code})"
+        elif status_code in [404, 410]:
+            return False, f"Dead link detected (HTTP {status_code} Not Found)"
+        else:
+            return False, f"Unreachable endpoint (HTTP {status_code})"
     except httpx.ConnectError:
         return False, "Domain does not exist or network connection failed"
     except httpx.TimeoutException:
@@ -898,7 +969,7 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
             and (visual_logo_detected or (bool(cert_no) and bool(parsed_expiry and parsed_expiry >= today)))
         ):
             is_auto_approved = True
-            final_status = "VERIFIED"
+            final_status = "Halal"
             summary_note = (
                 f"AI VERIFIED & PUBLISHED: Formally Halal Certified product authenticated (Confidence: {score}%). "
                 f"Accredited HCB: {hcb_name}. Zero prohibited additives detected."
