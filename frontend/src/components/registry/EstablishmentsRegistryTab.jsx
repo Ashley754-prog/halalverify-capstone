@@ -223,11 +223,11 @@ export default function EstablishmentsRegistryTab({
                     >
                         <option value="all_active">Operational / Published</option>
                         <option value="for_renewal">For Renewal</option>
-                        <option value="expired">Expired Certificate</option>
-                        <option value="permanently_closed">Permanently Closed</option>
                         {isAdmin && (
                             <>
                                 <option value="all">All Records (Admin)</option>
+                                <option value="expired">Expired Certificate (Admin)</option>
+                                <option value="permanently_closed">Permanently Closed (Admin)</option>
                                 <option value="needs_review">Needs Review (Admin)</option>
                                 <option value="suspended">Suspended (Admin)</option>
                                 <option value="flagged">Flagged (Admin)</option>

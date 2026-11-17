@@ -207,8 +207,8 @@ def extract_text_with_gemini(image_base64: str) -> str:
         pil_img.save(buf, format="JPEG", quality=85)
         raw_b64 = base64.b64encode(buf.getvalue()).decode()
 
-        # Try gemini-flash-lite-latest first, fallback to gemini-2.5-flash and gemini-flash-latest
-        for model_name in ["gemini-flash-lite-latest", "gemini-2.5-flash", "gemini-flash-latest"]:
+        # Try fast current Flash-Lite models first, fallback to current Flash models
+        for model_name in ["gemini-flash-lite-latest", "gemini-3.1-flash-lite", "gemini-3.6-flash", "gemini-flash-latest"]:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
             payload = json.dumps({
                 "contents": [{

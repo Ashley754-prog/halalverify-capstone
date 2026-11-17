@@ -6,12 +6,40 @@ from app.ocr_service import extract_text_from_image, normalize_text
 from app.supabase_client import supabase
 
 CERTIFYING_BODIES = {
+    "BUSC": "Basilan Ulama Supreme Council Foundation Inc. (BUSC)",
+    "UCZP": "Ulama Council of Zamboanga Peninsula (UCZP)",
+    "BPCC": "Bangsamoro Provincial Consultative Council, Inc. (BPCC)",
+    "MMHCB": "Muslim Mindanao Halal Certification Board, Inc. (MMHCB)",
     "HDIP": "Halal Development Institute of the Philippines (HDIP)",
     "IDCP": "Islamic Da'wah Council of the Philippines (IDCP)",
+    "AHIP": "Alliances for Halal Integrity of the Philippines, Inc. (AHIP)",
+    "FIQHI": "Fiqhi and Halal Council of the Philippines, Inc. (FIQHI)",
+    "HICCIP": "Halal International Chamber of Commerce and Industries of the Philippines Inc. (HICCIP)",
+    "MASLAHA": "Maslaha Halal Certification Board, Inc. (MASLAHA)",
+    "PRIME": "Prime Certification and Inspection Asia Pacific, Inc. (PRIME)",
+    "PUCOI": "Philippine Ulama Congress Organization, Inc. (PUCOI)",
+    "MINHA": "Mindanao Halal Authority, Inc. (MinHA)",
+    "PHILCOSED": "Philippine Ligawasan Marsh Conservation and Socio-Economic Development, Inc. (Philcosed)",
+    "NCMF": "National Commission on Muslim Filipinos (NCMF)",
+    "MUIS": "Majlis Ugama Islam Singapura (MUIS)",
+    "JAKIM": "Department of Islamic Development Malaysia (JAKIM)",
     "HALAL": "Halal Certification Body",
 }
 
-CERTIFICATE_PREFIXES = ("HDIP", "IDCP", "HAL", "HALAL", "MUIS", "JAKIM")
+CERTIFICATE_PREFIXES = (
+    "HC",
+    "BUSC",
+    "UCZP",
+    "BPCC",
+    "MMHCB",
+    "HDIP",
+    "IDCP",
+    "NCMF",
+    "HAL",
+    "HALAL",
+    "MUIS",
+    "JAKIM",
+)
 
 OCR_CERT_CHAR_FIXES = {
     "O": "0",
@@ -68,8 +96,10 @@ def extract_certificate_fields(extracted_text: str, establishments=None) -> dict
         elif fuzzy_match_score(establishment_name, registry_name) < 0.6:
             establishment_name = registry_name
 
-    if registry_match and not certificate_number:
-        certificate_number = registry_match.get("certificate_number")
+    if registry_match and registry_match.get("certificate_number"):
+        reg_cert = registry_match.get("certificate_number")
+        if not certificate_number or any(certificate_numbers_match(c, reg_cert) for c in (cert_candidates or [])):
+            certificate_number = reg_cert
 
     layout_confidence = calculate_layout_confidence(
         extracted_text,
@@ -103,9 +133,9 @@ def extract_certificate_number(text: str):
     candidates = []
 
     patterns = [
-        r"\b(?:CERT(?:IFICATE)?(?:\s+NO|\s+NUMBER|\s+#|\.?\s*NO\.?)?)\s*[:\.\-]?\s*([A-Z0-9][A-Z0-9\-\/\.]{5,})\b",
-        r"\b(HDIP|IDCP|HAL|HALAL|MUIS|JAKIM)\s*[-\/\.]?\s*(\d{4})\s*[-\/\.]?\s*(\d{3,8})\b",
-        r"\b(HDIP|IDCP|HAL|HALAL|MUIS|JAKIM)[-\s]?(\d{4})[-\s]?(\d{3,8})\b",
+        r"\b(?:CERT(?:IFICATE)?(?:\s+NO\.?|\s+NUMBER|\s*#)|SERIAL(?:\s+NO\.?|\s+KEY)?|NO\.?)\s*[:\.\-]?\s*([A-Z0-9][A-Z0-9\-\/\.]{3,})\b",
+        r"\b(HC|BUSC|UCZP|BPCC|MMHCB)[-\/\.]?(\d{2,6})\b",
+        r"\b(HDIP|IDCP|NCMF|HAL|HALAL|MUIS|JAKIM)\s*[-\/\.]?\s*(\d{3,8})(?:\s*[-\/\.]?\s*([A-Z0-9]{1,8}))?\b",
         r"\b[A-Z]{2,8}[-\s\/\.]?\d{4}[-\s\/\.]?\d{3,8}\b",
         r"\bHAL[-\s\/\.]?\d{4}[-\s\/\.]?\d{3,8}\b",
         r"\b\d{4}[-\s\/\.]\d{5,8}\b",
@@ -113,19 +143,23 @@ def extract_certificate_number(text: str):
 
     for pattern in patterns:
         for match in re.finditer(pattern, compact_text, flags=re.IGNORECASE):
-            if match.lastindex and match.lastindex >= 3:
+            if match.lastindex and match.lastindex >= 3 and match.group(3):
                 value = f"{match.group(1)}-{match.group(2)}-{match.group(3)}"
+            elif match.lastindex and match.lastindex >= 2 and match.group(2):
+                value = f"{match.group(1)}-{match.group(2)}"
             elif match.lastindex == 1:
                 value = match.group(1)
             else:
                 value = match.group(0)
 
             normalized = normalize_certificate_number(value)
-            if normalized and normalized not in candidates:
+            if not normalized or not any(ch.isdigit() for ch in normalized):
+                continue
+            if normalized not in candidates:
                 candidates.append(normalized)
 
             ocr_fixed = normalize_certificate_number(fix_ocr_certificate_number(value))
-            if ocr_fixed and ocr_fixed not in candidates:
+            if ocr_fixed and any(ch.isdigit() for ch in ocr_fixed) and ocr_fixed not in candidates:
                 candidates.append(ocr_fixed)
 
     if not candidates:
@@ -175,8 +209,8 @@ def fix_ocr_certificate_number(value: str) -> str:
 
 def extract_establishment_name(text: str):
     labeled_patterns = [
-        r"(?:issued?\s+to|establishment(?:\s+name)?|company\s+name|name\s+of\s+(?:establishment|company|business|holder))\s*[:\.\-]?\s*([A-Za-z0-9][A-Za-z0-9\s&\.,'\-]{2,80})",
-        r"(?:this\s+certificate\s+is\s+(?:issued|awarded)\s+to)\s*[:\.\-]?\s*([A-Za-z0-9][A-Za-z0-9\s&\.,'\-]{2,80})",
+        r"(?:issued?\s+to|establishment(?:\s+name)?|company\s+name|name\s+of\s+(?:establishment|company|business|holder))\s*[:\.\-]?\s*([A-Za-z0-9][A-Za-z0-9 \t&\.,'\-\(\)]{2,100})",
+        r"(?:this\s+certificate\s+is\s+(?:issued|awarded)\s+to)\s*[:\.\-]?\s*([A-Za-z0-9][A-Za-z0-9 \t&\.,'\-\(\)]{2,100})",
     ]
 
     for pattern in labeled_patterns:
@@ -276,7 +310,8 @@ def extract_certifying_body(text: str):
     upper_text = text.upper()
 
     for acronym, full_name in CERTIFYING_BODIES.items():
-        if acronym in upper_text or full_name.upper() in upper_text:
+        base_name = re.sub(r"\s*\([^)]*\)\s*$", "", full_name).upper().strip()
+        if (base_name and base_name in upper_text) or re.search(rf"\b{re.escape(acronym)}\b", upper_text):
             return full_name
 
     return "Not detected"
@@ -293,7 +328,11 @@ def fuzzy_match_score(left: str, right: str) -> float:
 
 
 def names_are_similar(left: str, right: str, threshold: float = 0.82) -> bool:
-    return fuzzy_match_score(left, right) >= threshold
+    if fuzzy_match_score(left, right) >= threshold:
+        return True
+    left_base = normalize_text(re.sub(r"\s*\([^)]*\)", "", left or ""))
+    right_base = normalize_text(re.sub(r"\s*\([^)]*\)", "", right or ""))
+    return bool(left_base and right_base and (left_base == right_base or fuzzy_match_score(left_base, right_base) >= threshold))
 
 
 def certificate_numbers_match(left: str, right: str) -> bool:
@@ -498,12 +537,30 @@ def validate_certificate_result(extracted_certificate: dict, establishments=None
         or names_are_similar(extracted_name, expected_name)
     )
 
+    est_status = (establishment.get("halal_status") or "").strip().lower()
+
     if not name_matches:
         status = "Suspicious"
         note = (
             f"Certificate number matches the registry, but the establishment name "
             f"looks different (similarity {int(name_score * 100)}%)."
         )
+    elif est_status in ("rejected", "haram"):
+        status = "Invalid"
+        note = "This establishment's certification record is rejected or invalid in the HalalVerify registry."
+    elif est_status in ("suspended", "flagged", "permanently_closed", "closed", "demolished", "relocated"):
+        status = "Suspended"
+        note = f"This establishment is currently marked as '{est_status.replace('_', ' ')}' in the HalalVerify registry."
+    elif est_status == "expired" or _is_past_date(expiry_date):
+        status = "Expired"
+        note = (
+            f"Certificate matched the HalalVerify registry, but expired on {expiry_date}."
+            if expiry_date
+            else "Certificate matched the HalalVerify registry, but its certification status is expired."
+        )
+    elif est_status in ("needs_review", "pending_review", "pending_verification", "pending"):
+        status = "Suspicious"
+        note = "This establishment's certification record is currently pending administrative review."
     elif match_confidence and match_confidence < 0.85:
         status = "Valid"
         note = (
@@ -515,6 +572,8 @@ def validate_certificate_result(extracted_certificate: dict, establishments=None
         note = (
             "Certificate number and establishment name match the HalalVerify registry record."
         )
+        if est_status == "for_renewal":
+            note += " Notice: Establishment certification is currently flagged for renewal."
 
     if low_confidence_note:
         note += low_confidence_note
