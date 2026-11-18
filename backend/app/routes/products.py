@@ -29,6 +29,8 @@ router = APIRouter(tags=["products"])
 PUBLIC_PRODUCT_STATUSES = {
     "halal",
     "verified",
+    "for renewal",
+    "for_renewal",
     "pork-free declared",
     "vegetarian / vegan",
     "community_listed",
@@ -50,7 +52,22 @@ EXCLUDED_UNVERIFIED_STATUSES = [
 ]
 
 EXCLUDED_UNVERIFIED_STATUSES_LOWER = {s.lower() for s in EXCLUDED_UNVERIFIED_STATUSES}
-APPROVED_PRODUCT_STATUSES_LOWER = {"halal", "verified", "pork-free declared", "vegetarian / vegan", "community_listed"}
+APPROVED_PRODUCT_STATUSES_LOWER = {"halal", "verified", "for renewal", "for_renewal", "pork-free declared", "vegetarian / vegan", "community_listed"}
+CERTIFIED_PRODUCT_STATUSES_LOWER = {"halal", "verified", "approved", "for renewal", "for_renewal"}
+
+
+def _manila_today() -> datetime.date:
+    manila_tz = datetime.timezone(datetime.timedelta(hours=8))
+    return datetime.datetime.now(manila_tz).date()
+
+
+def _is_past_manila_date(value) -> bool:
+    if not value:
+        return False
+    try:
+        return datetime.date.fromisoformat(str(value).strip()[:10]) < _manila_today()
+    except ValueError:
+        return False
 
 
 # ---------------------------------------------------------------------------
@@ -88,13 +105,23 @@ def get_products(
         builder = builder.eq("category", category)
 
     if status and status != "all":
-        if not is_admin and status.strip().lower() not in PUBLIC_PRODUCT_STATUSES:
+        status_lower = status.strip().lower()
+        if not is_admin and status_lower not in PUBLIC_PRODUCT_STATUSES:
             raise HTTPException(status_code=400, detail="Invalid public status filter")
-        # Case-insensitive match: stored statuses use display casing (e.g. "Halal").
-        builder = builder.ilike("status", status.strip())
+        if status_lower in {"for renewal", "for_renewal"}:
+            builder = builder.in_("status", ["For Renewal", "for_renewal", "for renewal", "FOR_RENEWAL"])
+        elif status_lower in {"halal", "verified"}:
+            builder = builder.in_("status", ["Halal", "halal", "HALAL", "Verified", "verified", "VERIFIED", "For Renewal", "for_renewal"])
+        else:
+            # Case-insensitive match: stored statuses use display casing (e.g. "Halal").
+            builder = builder.ilike("status", status.strip())
     elif not is_admin:
         # By default, exclude rejected, pending, flagged, suspended, and expired items from public listings
         builder = builder.not_.in_("status", EXCLUDED_UNVERIFIED_STATUSES)
+
+    if not is_admin:
+        today_iso = _manila_today().isoformat()
+        builder = builder.or_(f"expiry_date.is.null,expiry_date.gte.{today_iso}")
 
     if manufacturer_id:
         builder = builder.eq("manufacturer_id", manufacturer_id)
@@ -132,7 +159,11 @@ def get_product(product_id: str, user: Optional[dict] = Depends(get_optional_cur
         raise HTTPException(status_code=404, detail="Product not found")
 
     row = response.data[0]
-    if not is_admin and (row.get("status") or "").strip().lower() in EXCLUDED_UNVERIFIED_STATUSES_LOWER:
+    row_status_lower = (row.get("status") or "").strip().lower()
+    if not is_admin and (
+        row_status_lower in EXCLUDED_UNVERIFIED_STATUSES_LOWER
+        or (row_status_lower in CERTIFIED_PRODUCT_STATUSES_LOWER and _is_past_manila_date(row.get("expiry_date")))
+    ):
         # Do not disclose unapproved, expired, flagged, or suspended products through the public detail endpoint.
         raise HTTPException(status_code=404, detail="Product not found")
 

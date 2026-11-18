@@ -72,7 +72,7 @@ const emptyHcbForm = {
     accreditation_details: '',
 };
 
-export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) => {
+export const Registry = ({ userRole, onViewChange, initialMode = 'additives', initialStatusFilter = '' }) => {
     const [registryMode, setRegistryMode] = useState(initialMode || 'additives');
 
     useEffect(() => {
@@ -916,6 +916,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
 
     const activeEstablishmentsCount = establishments.filter((shop) => {
         const sLower = (shop.halal_status || '').toLowerCase().trim();
+        const cfgKey = getStatusConfig(shop).key;
         return !(
             sLower === 'rejected' ||
             sLower.includes('reject') ||
@@ -925,7 +926,8 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
             sLower === 'needs_review' ||
             sLower === 'pending' ||
             sLower.includes('pending') ||
-            sLower.includes('needs_review')
+            sLower.includes('needs_review') ||
+            cfgKey === 'expired'
         );
     }).length;
 
@@ -1113,6 +1115,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives' }) 
                     localSearch={localSearch}
                     setLocalSearch={setLocalSearch}
                     isAdmin={isAdmin}
+                    initialStatusFilter={initialStatusFilter}
                     onOpenModal={openModal}
                     onDeleteEstablishment={handleDeleteEstablishment}
                     onReportEstablishment={handleReportEstablishment}

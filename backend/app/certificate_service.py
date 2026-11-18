@@ -1,5 +1,5 @@
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from difflib import SequenceMatcher
 
 from app.ocr_service import extract_text_from_image, normalize_text
@@ -609,6 +609,7 @@ def _is_past_date(value):
         return False
 
     try:
-        return date.fromisoformat(str(value)) < date.today()
+        manila_today = datetime.now(timezone(timedelta(hours=8))).date()
+        return date.fromisoformat(str(value).strip()[:10]) < manila_today
     except ValueError:
         return False

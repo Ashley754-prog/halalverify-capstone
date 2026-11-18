@@ -398,9 +398,39 @@ export default function AnalyticsSurveillanceSections({
                             </div>
                         </div>
 
-                        <div className="mt-3 p-2.5 rounded bg-slate-50 border border-slate-200/70 flex items-center justify-between text-xs text-slate-600">
-                            <span>Total Monitored Establishments</span>
-                            <span className="font-mono font-bold text-slate-900">{totalMonitoredEsts} venues</span>
+                        <div className="mt-3 p-2.5 rounded bg-slate-50 border border-slate-200/70 space-y-1.5 text-xs text-slate-600">
+                            <div className="flex items-center justify-between">
+                                <span>Total Monitored Establishments</span>
+                                <span className="font-mono font-bold text-slate-900">{totalMonitoredEsts} venues</span>
+                            </div>
+                            {((estBreakdown.for_renewal || 0) > 0 || (estBreakdown.expired || 0) > 0) && (
+                                <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-200/60 text-[11px]">
+                                    <span className="text-slate-500">Certificate lifecycle breakdown</span>
+                                    <div className="flex items-center gap-2 font-semibold">
+                                        {(estBreakdown.for_renewal || 0) > 0 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => onViewChange?.('registry', { registryMode: 'establishments', statusFilter: 'for_renewal' })}
+                                                className="text-amber-700 hover:underline cursor-pointer"
+                                            >
+                                                {estBreakdown.for_renewal} For Renewal
+                                            </button>
+                                        )}
+                                        {(estBreakdown.for_renewal || 0) > 0 && (estBreakdown.expired || 0) > 0 && (
+                                            <span className="text-slate-300">&bull;</span>
+                                        )}
+                                        {(estBreakdown.expired || 0) > 0 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => onViewChange?.('registry', { registryMode: 'establishments', statusFilter: 'expired' })}
+                                                className="text-rose-700 hover:underline cursor-pointer"
+                                            >
+                                                {estBreakdown.expired} Expired
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 

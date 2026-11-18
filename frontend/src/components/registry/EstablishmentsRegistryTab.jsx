@@ -8,6 +8,8 @@ import {
     ShieldCheck,
     Store,
     ExternalLink,
+    Clock,
+    AlertCircle,
 } from 'lucide-react';
 import { getStatusConfig, ZAMBOANGA_DISTRICTS, resolveZamboangaDistrict, getEstablishmentPhoto, cleanAmenities, getAmenityShortLabel } from '../../data/constants';
 import { getSafeUrl } from '../../utils/security';
@@ -21,6 +23,7 @@ export default function EstablishmentsRegistryTab({
     localSearch,
     setLocalSearch,
     isAdmin,
+    initialStatusFilter = '',
     onOpenModal,
     onDeleteEstablishment,
     onReportEstablishment,
@@ -32,8 +35,19 @@ export default function EstablishmentsRegistryTab({
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(8);
 
+    useEffect(() => {
+        if (!initialStatusFilter) return;
+        const adminAllowed = ['all', 'all_active', 'for_renewal', 'expired', 'permanently_closed', 'needs_review', 'suspended', 'flagged', 'rejected'];
+        const publicAllowed = ['all_active', 'for_renewal'];
+        const allowed = isAdmin ? adminAllowed : publicAllowed;
+        if (allowed.includes(initialStatusFilter)) {
+            setStatusFilter(initialStatusFilter);
+        }
+    }, [initialStatusFilter, isAdmin]);
+
     const activeEstablishmentsCount = establishments.filter((shop) => {
         const s = (shop.halal_status || shop.status || '').toLowerCase().trim();
+        const cfgKey = getStatusConfig(shop).key;
         return !(
             s === 'rejected' ||
             s.includes('reject') ||
@@ -45,8 +59,21 @@ export default function EstablishmentsRegistryTab({
             s.includes('pending') ||
             s === 'permanently_closed' ||
             s === 'demolished' ||
-            s === 'relocated'
+            s === 'relocated' ||
+            cfgKey === 'expired'
         );
+    }).length;
+
+    const forRenewalCount = establishments.filter((shop) => {
+        const cfg = getStatusConfig(shop);
+        const s = (shop.halal_status || shop.status || '').toLowerCase().trim();
+        return cfg.key === 'for_renewal' || s === 'for_renewal';
+    }).length;
+
+    const expiredCount = establishments.filter((shop) => {
+        const cfg = getStatusConfig(shop);
+        const s = (shop.halal_status || shop.status || '').toLowerCase().trim();
+        return cfg.key === 'expired' || s === 'expired';
     }).length;
 
     const filteredEstablishments = establishments.filter((shop) => {
@@ -237,6 +264,49 @@ export default function EstablishmentsRegistryTab({
                     </select>
                 </div>
             </div>
+
+            {isAdmin && (forRenewalCount > 0 || expiredCount > 0) && (
+                <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-amber-200/80 bg-amber-50/60 px-3 py-2 text-xs">
+                    <span className="font-semibold text-amber-900 mr-1">Certificate Expiry Tracker:</span>
+                    {forRenewalCount > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => setStatusFilter(statusFilter === 'for_renewal' ? 'all_active' : 'for_renewal')}
+                            className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 font-bold border transition cursor-pointer ${
+                                statusFilter === 'for_renewal'
+                                    ? 'bg-amber-600 text-white border-amber-700'
+                                    : 'bg-white text-amber-800 border-amber-200 hover:bg-amber-100/70'
+                            }`}
+                        >
+                            <Clock size={12} />
+                            <span>For Renewal ({forRenewalCount})</span>
+                        </button>
+                    )}
+                    {expiredCount > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => setStatusFilter(statusFilter === 'expired' ? 'all_active' : 'expired')}
+                            className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 font-bold border transition cursor-pointer ${
+                                statusFilter === 'expired'
+                                    ? 'bg-rose-600 text-white border-rose-700'
+                                    : 'bg-white text-rose-700 border-rose-200 hover:bg-rose-50'
+                            }`}
+                        >
+                            <AlertCircle size={12} />
+                            <span>Expired ({expiredCount})</span>
+                        </button>
+                    )}
+                    {(statusFilter === 'for_renewal' || statusFilter === 'expired') && (
+                        <button
+                            type="button"
+                            onClick={() => setStatusFilter('all_active')}
+                            className="ml-auto text-[11px] font-semibold text-slate-600 hover:text-slate-900 underline cursor-pointer"
+                        >
+                            Show Operational
+                        </button>
+                    )}
+                </div>
+            )}
 
             {/* Establishments Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 pb-2">

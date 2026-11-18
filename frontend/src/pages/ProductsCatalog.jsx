@@ -114,7 +114,7 @@ const emptyProductForm = {
     image_url: '',
 };
 
-export default function ProductsCatalog({ userRole, onViewChange, initialSearchQuery = '' }) {
+export default function ProductsCatalog({ userRole, onViewChange, initialSearchQuery = '', initialStatusFilter = '' }) {
     const [products, setProducts] = useState([]);
     const [manufacturers, setManufacturers] = useState([]);
     const [certifyingBodies, setCertifyingBodies] = useState([]);
@@ -231,7 +231,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
 
             let loadedProducts = null;
             const estMap = establishmentsMapRef.current || {};
-            const excludedStatuses = '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft,Flagged,flagged,Suspended,suspended,HARAM,haram)';
+            const excludedStatuses = '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft,Flagged,flagged,Suspended,suspended,Expired,expired,EXPIRED,HARAM,haram)';
 
             // Direct Supabase Query with true count & range (Instant ~120ms response)
             try {
@@ -254,12 +254,12 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                 if (st && st !== 'All Statuses') {
                     if (st === 'Halal') {
                         pBuilder = pBuilder
-                            .in('status', ['Halal', 'VERIFIED', 'Verified'])
+                            .in('status', ['Halal', 'VERIFIED', 'Verified', 'For Renewal', 'for_renewal'])
                             .or(`expiry_date.is.null,expiry_date.gte.${todayIso}`);
                     } else if (st === 'Expired') {
                         pBuilder = pBuilder
                             .or(`status.eq.Expired,and(status.in.(Halal,Verified,VERIFIED,For Renewal,for_renewal),expiry_date.lt.${todayIso})`)
-                            .not('status', 'in', excludedStatuses);
+                            .not('status', 'in', '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft,Flagged,flagged,Suspended,suspended,HARAM,haram)');
                     } else if (st === 'For Renewal') {
                         pBuilder = pBuilder
                             .in('status', ['For Renewal', 'for_renewal'])
@@ -277,7 +277,9 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                             .not('status', 'in', excludedStatuses);
                     }
                 } else {
-                    pBuilder = pBuilder.not('status', 'in', excludedStatuses);
+                    pBuilder = pBuilder
+                        .not('status', 'in', excludedStatuses)
+                        .or(`expiry_date.is.null,expiry_date.gte.${todayIso}`);
                 }
 
                 if (cert && cert !== 'ALL' && cert !== 'All Certifiers / Origins') {
@@ -323,7 +325,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                     });
                     if (q) params.set('query', q);
                     if (cat && cat !== 'All Categories') params.set('category', cat);
-                    if (st && st !== 'All Statuses' && st !== 'Expired' && st !== 'For Renewal') {
+                    if (st && st !== 'All Statuses' && (isAdmin || st !== 'Expired')) {
                         params.set('status', st);
                     }
                     if (cert && CB_UUID_MAP[cert]) {
@@ -361,15 +363,25 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
         } finally {
             setLoading(false);
         }
-    }, [itemsPerPage]);
+    }, [itemsPerPage, isAdmin]);
 
-    // Synchronize initialSearchQuery if passed dynamically, or load initial catalog items
+    // Synchronize initialSearchQuery and initialStatusFilter if passed dynamically, or load initial catalog items
     useEffect(() => {
         const q = initialSearchQuery || '';
+        const allowedStatuses = STATUS_FILTER_OPTIONS
+            .filter((opt) => isAdmin || opt.value !== 'Expired')
+            .map((opt) => opt.value);
+        const st = initialStatusFilter && allowedStatuses.includes(initialStatusFilter)
+            ? initialStatusFilter
+            : 'All Statuses';
         setSearchQuery(q);
+        setSelectedStatus(st);
         filtersRef.current.searchQuery = q;
-        loadData(1, q);
-    }, [initialSearchQuery, loadData]);
+        filtersRef.current.status = st;
+        filtersRef.current.page = 1;
+        setCurrentPage(1);
+        loadData(1, q, filtersRef.current.category, st, filtersRef.current.certifier);
+    }, [initialSearchQuery, initialStatusFilter, isAdmin, loadData]);
 
     const handleSearchChange = (val) => {
         setSearchQuery(val);

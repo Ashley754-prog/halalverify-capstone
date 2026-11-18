@@ -16,7 +16,7 @@ import AuthPromptModal from '../components/submissions/AuthPromptModal';
 import ReportIssueModal from '../components/reports/ReportIssueModal';
 import EstablishmentDetailModal from '../components/map/EstablishmentDetailModal';
 import SearchBar from '../components/ui/SearchBar';
-import { getStatusConfig, ZAMBOANGA_DISTRICTS, resolveZamboangaDistrict, resolveEstablishmentCoordinates, cleanAmenities } from '../data/constants';
+import { getStatusConfig, ZAMBOANGA_DISTRICTS, resolveZamboangaDistrict, resolveEstablishmentCoordinates, cleanAmenities, isDateExpired } from '../data/constants';
 import EstablishmentsSidebarList from '../components/map/EstablishmentsSidebarList';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
@@ -146,7 +146,7 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                     return key === 'needs_review' || key === 'pending_review';
                 }
                 if (selectedStatus === 'verified' || selectedStatus === 'halal_certified') {
-                    return key === 'verified';
+                    return key === 'verified' || key === 'for_renewal';
                 }
                 if (selectedStatus === 'muslim_owned') {
                     return key === 'muslim_owned' || key === 'community';
@@ -207,7 +207,7 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                 ]);
                 let query = supabase
                     .from('establishments')
-                    .select('*, certifying_bodies(*), products(id, name, category, status, brand, certificate_no)')
+                    .select('*, certifying_bodies(*), products(id, name, category, status, brand, certificate_no, expiry_date)')
                     .order('name');
                 const { data: sbData, error: sbErr } = await query;
                 if (!sbErr && sbData && sbData.length > 0) {
@@ -218,7 +218,9 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                                 ? e.products.filter((p) => {
                                     if (!p || !p.name) return false;
                                     if (isAdminUser) return true;
-                                    return !excludedProdStatuses.has((p.status || '').trim().toLowerCase());
+                                    const pStatus = (p.status || '').trim().toLowerCase();
+                                    if (excludedProdStatuses.has(pStatus)) return false;
+                                    return !isDateExpired(p.expiry_date);
                                 })
                                 : [];
                             return {
@@ -271,7 +273,7 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                         withCoords = withCoords.filter((e) => {
                             const cfg = getStatusConfig(e);
                             if (selectedStatus === 'verified' || selectedStatus === 'halal_certified') {
-                                return cfg.key === 'verified';
+                                return cfg.key === 'verified' || cfg.key === 'for_renewal';
                             }
                             if (selectedStatus === 'for_renewal') {
                                 return cfg.key === 'for_renewal';

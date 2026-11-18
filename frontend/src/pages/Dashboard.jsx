@@ -14,6 +14,7 @@ import {
     ChevronUp,
 } from 'lucide-react';
 import KpiCard from '../components/ui/KpiCard';
+import { getTodayIsoDate } from '../data/constants';
 import { API_BASE_URL, authFetch } from '../utils/api';
 import { supabase } from '../lib/supabaseClient';
 
@@ -36,16 +37,21 @@ export const Dashboard = ({ userRole, onViewChange }) => {
                 let estQuery = supabase.from('establishments').select('*', { count: 'exact', head: true });
 
                 if (!isAdmin) {
-                    prodQuery = prodQuery.not(
-                        'status',
-                        'in',
-                        '("REJECTED","PENDING","PENDING_VERIFICATION","needs_review","pending_review","draft","inactive","Expired","Flagged","Suspended","HARAM")'
-                    );
-                    estQuery = estQuery.not(
-                        'halal_status',
-                        'in',
-                        '("pending","pending_review","pending_verification","needs_review","rejected","flagged","suspended","relocated","permanently_closed","demolished","closed","haram","expired","REJECTED","PENDING_VERIFICATION","FLAGGED","SUSPENDED")'
-                    );
+                    const today = getTodayIsoDate();
+                    prodQuery = prodQuery
+                        .not(
+                            'status',
+                            'in',
+                            '("REJECTED","PENDING","PENDING_VERIFICATION","needs_review","pending_review","draft","inactive","Expired","Flagged","Suspended","HARAM")'
+                        )
+                        .or(`expiry_date.is.null,expiry_date.gte.${today}`);
+                    estQuery = estQuery
+                        .not(
+                            'halal_status',
+                            'in',
+                            '("pending","pending_review","pending_verification","needs_review","rejected","flagged","suspended","relocated","permanently_closed","demolished","closed","haram","expired","REJECTED","PENDING_VERIFICATION","FLAGGED","SUSPENDED")'
+                        )
+                        .or(`expiry_date.is.null,expiry_date.gte.${today}`);
                 }
 
                 const queries = [
@@ -119,21 +125,21 @@ export const Dashboard = ({ userRole, onViewChange }) => {
         const loadRecentlyVerified = async () => {
             setRecentLoading(true);
             setRecentError(false);
-            const today = new Date().toISOString().slice(0, 10);
+            const today = getTodayIsoDate();
 
             try {
                 const [productsResult, establishmentsResult] = await Promise.all([
                     supabase
                         .from('products')
                         .select('id, name, brand, category, status, created_at')
-                        .in('status', ['Halal', 'halal', 'HALAL', 'Verified', 'verified', 'VERIFIED'])
+                        .in('status', ['Halal', 'halal', 'HALAL', 'Verified', 'verified', 'VERIFIED', 'For Renewal', 'for_renewal'])
                         .or(`expiry_date.is.null,expiry_date.gte.${today}`)
                         .order('created_at', { ascending: false })
                         .limit(3),
                     supabase
                         .from('establishments')
                         .select('id, name, type, address, halal_status, created_at')
-                        .in('halal_status', ['verified', 'VERIFIED', 'halal_certified', 'Halal Certified'])
+                        .in('halal_status', ['verified', 'VERIFIED', 'halal_certified', 'Halal Certified', 'for_renewal', 'For Renewal'])
                         .or(`expiry_date.is.null,expiry_date.gte.${today}`)
                         .order('created_at', { ascending: false })
                         .limit(3),

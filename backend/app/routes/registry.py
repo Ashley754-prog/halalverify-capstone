@@ -96,8 +96,22 @@ def _is_admin_user(user: Optional[dict]) -> bool:
     return is_admin_user(user)
 
 
+def _manila_today() -> datetime.date:
+    manila_tz = datetime.timezone(datetime.timedelta(hours=8))
+    return datetime.datetime.now(manila_tz).date()
+
+
+def _is_past_manila_date(value) -> bool:
+    if not value:
+        return False
+    try:
+        return datetime.date.fromisoformat(str(value).strip()[:10]) < _manila_today()
+    except ValueError:
+        return False
+
+
 def _attach_establishment_products(rows: list, *, is_admin: bool) -> list:
-    """Attach related products to establishments, hiding unapproved products from non-admins."""
+    """Attach related products to establishments, hiding unapproved or expired products from non-admins."""
     if not rows:
         return rows
     est_ids = [d["id"] for d in rows if isinstance(d, dict) and d.get("id")]
@@ -106,14 +120,17 @@ def _attach_establishment_products(rows: list, *, is_admin: bool) -> list:
     try:
         p_res = (
             supabase.table("products")
-            .select("id, name, category, status, establishment_id")
+            .select("id, name, category, status, brand, certificate_no, expiry_date, establishment_id")
             .in_("establishment_id", est_ids)
             .execute()
         )
         products_by_est = {}
         for p in (p_res.data or []):
             p_status = (p.get("status") or "").strip().lower()
-            if not is_admin and p_status in EXCLUDED_PUBLIC_PRODUCT_STATUSES:
+            if not is_admin and (
+                p_status in EXCLUDED_PUBLIC_PRODUCT_STATUSES
+                or (p_status in {"halal", "verified", "approved", "for renewal", "for_renewal"} and _is_past_manila_date(p.get("expiry_date")))
+            ):
                 continue
             eid = p.get("establishment_id")
             if eid:
@@ -144,7 +161,8 @@ def _filter_establishment_rows(
         if not isinstance(d, dict):
             continue
         est_status = (d.get("halal_status") or "").strip().lower()
-        if not is_admin and est_status in EXCLUDED_UNVERIFIED_ESTABLISHMENT_STATUSES:
+        is_date_expired = _is_past_manila_date(d.get("expiry_date"))
+        if not is_admin and (est_status in EXCLUDED_UNVERIFIED_ESTABLISHMENT_STATUSES or is_date_expired):
             continue
 
         tier = derive_establishment_tier(d)
@@ -153,10 +171,13 @@ def _filter_establishment_rows(
                 target_tier = TIER_STATUS_FILTER_MAP[requested_status]
                 if tier != target_tier:
                     continue
-                if requested_status == "verified" and est_status != "verified":
+                if requested_status == "verified" and (est_status not in {"verified", "for_renewal"} or is_date_expired):
                     continue
             elif requested_status == "for_renewal":
-                if est_status != "for_renewal":
+                if est_status != "for_renewal" or is_date_expired:
+                    continue
+            elif requested_status == "expired":
+                if est_status != "expired" and not (est_status in {"verified", "for_renewal", "halal_certified", "halal"} and is_date_expired):
                     continue
             elif requested_status not in est_status.replace("-", "_").replace(" ", "_"):
                 continue

@@ -381,6 +381,7 @@ export default function App() {
             userRole={userRole}
             onViewChange={handleViewChange}
             initialSearchQuery={viewParams.searchQuery || ''}
+            initialStatusFilter={viewParams.statusFilter || ''}
           />
         );
       case 'map':
@@ -397,6 +398,7 @@ export default function App() {
             userRole={userRole}
             onViewChange={handleViewChange}
             initialMode={viewParams.registryMode || 'additives'}
+            initialStatusFilter={viewParams.statusFilter || ''}
           />
         );
       case 'scan-history':

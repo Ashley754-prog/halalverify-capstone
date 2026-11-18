@@ -590,7 +590,7 @@ def get_analytics_trends(
         scans_res = supabase.table("scan_history").select("*").order("created_at", desc=True).limit(500).execute()
         scans = scans_res.data or []
 
-        est_res = supabase.table("establishments").select("id, name, city, halal_status, created_at").execute()
+        est_res = supabase.table("establishments").select("id, name, city, halal_status, expiry_date, created_at").execute()
         establishments = est_res.data or []
 
         additives_res = supabase.table("additives").select("code, name, status, source_description").execute()
@@ -639,15 +639,44 @@ def get_analytics_trends(
                 "detection_count": count,
             })
 
-        est_breakdown = {"verified": 0, "pending_review": 0, "flagged": 0, "rejected": 0}
+        manila_today = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).date()
+        warning_cutoff = manila_today + datetime.timedelta(days=30)
+        est_breakdown = {
+            "verified": 0,
+            "for_renewal": 0,
+            "expired": 0,
+            "pending_review": 0,
+            "flagged": 0,
+            "rejected": 0,
+        }
         for e in establishments:
             hs = (e.get("halal_status") or "").strip().lower()
-            if hs in {"verified", "for_renewal"}:
-                est_breakdown["verified"] += 1
-            elif hs in {"flagged", "suspended", "expired"}:
-                est_breakdown["flagged"] += 1
-            elif hs in {"rejected", "relocated", "permanently_closed", "demolished", "closed"}:
+            raw_exp = e.get("expiry_date")
+            exp_date = None
+            if raw_exp:
+                try:
+                    exp_date = datetime.date.fromisoformat(str(raw_exp).strip()[:10])
+                except ValueError:
+                    exp_date = None
+
+            is_past_exp = bool(exp_date is not None and exp_date < manila_today)
+            is_expiring_soon = bool(exp_date is not None and manila_today <= exp_date <= warning_cutoff)
+
+            if hs in {"rejected", "relocated", "permanently_closed", "demolished", "closed"}:
                 est_breakdown["rejected"] += 1
+            elif hs in {"flagged", "suspended", "expired"} or (
+                hs in {"verified", "halal_certified", "halal", "for_renewal", "renewal"} and is_past_exp
+            ):
+                est_breakdown["flagged"] += 1
+                if hs == "expired" or is_past_exp:
+                    est_breakdown["expired"] += 1
+            elif hs == "for_renewal":
+                est_breakdown["verified"] += 1
+                est_breakdown["for_renewal"] += 1
+            elif hs in {"verified", "halal_certified", "halal"}:
+                est_breakdown["verified"] += 1
+                if is_expiring_soon:
+                    est_breakdown["for_renewal"] += 1
             else:
                 est_breakdown["pending_review"] += 1
 
@@ -1213,3 +1242,24 @@ def auto_verify_all_pending(
             "products_approved": approved_prod_count,
         },
     }
+
+
+@router.post("/sync-expirations")
+def sync_certificate_expirations(
+    warning_days: int = Query(30, ge=1, le=90),
+    user: dict = Depends(require_admin),
+):
+    """Run an immediate certificate expiration & renewal check and return updated counts."""
+    try:
+        res = supabase.rpc(
+            "admin_sync_certificate_expirations",
+            {"p_warning_days": warning_days},
+        ).execute()
+        summary = res.data if isinstance(res.data, dict) else {}
+        return {
+            "success": True,
+            "summary": summary,
+        }
+    except Exception as exc:
+        logger.error("Failed to sync certificate expirations: %s", exc)
+        raise HTTPException(status_code=500, detail="Could not run expiration sync")

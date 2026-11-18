@@ -545,8 +545,9 @@ export default function LandingPage({ onViewChange, userRole }) {
         const [prodRes, estRes, recentProductsRes, featuredImageProductsRes, recentEstablishmentsRes] = await Promise.all([
           supabase
             .from('products')
-            .select('id, name, brand, category, status')
-            .not('status', 'in', '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft,Flagged,flagged,Suspended,suspended,Expired,expired,HARAM,haram)')
+            .select('id, name, brand, category, status, expiry_date')
+            .not('status', 'in', '(REJECTED,rejected,PENDING_VERIFICATION,pending,needs_review,draft,Flagged,flagged,Suspended,suspended,Expired,expired,EXPIRED,HARAM,haram)')
+            .or(`expiry_date.is.null,expiry_date.gte.${todayIso}`)
             .limit(500),
           supabase
             .from('establishments')
@@ -557,7 +558,7 @@ export default function LandingPage({ onViewChange, userRole }) {
           supabase
             .from('products')
             .select('id, name, brand, category, status, image_url, created_at, expiry_date, certificate_no, certifying_body_id, source, source_url, admin_notes, manufacturers(name, address, contact_phone, contact_email, contact_person), certifying_bodies(name, code)')
-            .in('status', ['Halal', 'halal', 'HALAL', 'Verified', 'verified', 'VERIFIED'])
+            .in('status', ['Halal', 'halal', 'HALAL', 'Verified', 'verified', 'VERIFIED', 'For Renewal', 'for_renewal'])
             .or(`and(certifying_body_id.not.is.null,expiry_date.is.null),and(certifying_body_id.not.is.null,expiry_date.gte.${todayIso}),and(certificate_no.not.is.null,expiry_date.is.null),and(certificate_no.not.is.null,expiry_date.gte.${todayIso})`)
             .order('created_at', { ascending: false })
             .limit(500),
@@ -565,12 +566,12 @@ export default function LandingPage({ onViewChange, userRole }) {
             .from('products')
             .select('id, name, brand, category, status, image_url, created_at, expiry_date, certificate_no, certifying_body_id, source, source_url, admin_notes, manufacturers(name, address, contact_phone, contact_email, contact_person), certifying_bodies(name, code)')
             .in('name', CURATED_PRODUCT_NAMES)
-            .in('status', ['Halal', 'halal', 'HALAL', 'Verified', 'verified', 'VERIFIED'])
+            .in('status', ['Halal', 'halal', 'HALAL', 'Verified', 'verified', 'VERIFIED', 'For Renewal', 'for_renewal'])
             .or(`and(certifying_body_id.not.is.null,expiry_date.is.null),and(certifying_body_id.not.is.null,expiry_date.gte.${todayIso}),and(certificate_no.not.is.null,expiry_date.is.null),and(certificate_no.not.is.null,expiry_date.gte.${todayIso})`),
           supabase
             .from('establishments')
             .select('id, name, type, address, city, halal_status, halal_tier, expiry_date, certificate_number, logo_url, certificate_url, description, admin_notes, created_at, facebook_url, website_url, certifying_bodies(name, code)')
-            .in('halal_status', ['verified', 'VERIFIED', 'halal_certified', 'Halal Certified'])
+            .in('halal_status', ['verified', 'VERIFIED', 'halal_certified', 'Halal Certified', 'for_renewal', 'For Renewal'])
             .or(`expiry_date.is.null,expiry_date.gte.${todayIso}`)
             .order('created_at', { ascending: false })
             .limit(100),

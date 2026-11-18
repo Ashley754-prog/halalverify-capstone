@@ -367,8 +367,8 @@ export const HCB_DIRECTORY = {
             'The Ulama Council of Zamboanga Peninsula (UCZP) conducts local Halal audits and issues 1-year and 2-year local certificates for restaurants, beverage kiosks, and MSMEs operating inside Zamboanga City.',
         consumerAssurance:
             'Verify whether a venue or product holds an active, For Renewal, or Expired UCZP entry in the HalalVerify Registry before relying on third-party Halal signage.',
-        website: null,
-        registryUrl: null,
+        website: 'https://www.facebook.com/UZCPHCB/',
+        registryUrl: 'https://www.facebook.com/UZCPHCB/',
         phone: null,
         email: null,
         address: 'Zamboanga City, Region IX, Philippines',
