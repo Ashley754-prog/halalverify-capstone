@@ -14,6 +14,22 @@ import ProductQueueRow from './ProductQueueRow';
 import ReportQueueCard from './ReportQueueCard';
 import { EstablishmentSkeletons, ProductSkeletons } from './QueueSkeletons';
 
+function QueueHeaderCountBadge({ loading, refreshing, totalCount, filteredCount, search }) {
+    const label =
+        loading && totalCount === 0
+            ? '...'
+            : search
+            ? `${filteredCount} of ${totalCount}`
+            : totalCount;
+
+    return (
+        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 inline-flex items-center gap-1">
+            {refreshing && <RefreshCw size={11} className="animate-spin text-emerald-600" />}
+            <span>{label}</span>
+        </span>
+    );
+}
+
 export default function VerificationQueueTabs({
     activeTab,
     establishments = [],
@@ -101,10 +117,13 @@ export default function VerificationQueueTabs({
                     <div>
                         <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
                             <span>Pending Establishment Registrations</span>
-                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 inline-flex items-center gap-1">
-                                {refreshing && <RefreshCw size={11} className="animate-spin text-emerald-600" />}
-                                <span>{search ? `${filtered.length} of ${establishments.length}` : establishments.length}</span>
-                            </span>
+                            <QueueHeaderCountBadge
+                                loading={loading}
+                                refreshing={refreshing}
+                                totalCount={establishments.length}
+                                filteredCount={filtered.length}
+                                search={search}
+                            />
                         </h3>
                         <p className="text-xs text-slate-500 mt-0.5">
                             Verify physical certificates against accredited certifying body ledgers before publishing to public search.
@@ -197,10 +216,13 @@ export default function VerificationQueueTabs({
                     <div>
                         <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
                             <span>User-Submitted Food Products</span>
-                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 inline-flex items-center gap-1">
-                                {refreshing && <RefreshCw size={11} className="animate-spin text-emerald-600" />}
-                                <span>{search ? `${filtered.length} of ${products.length}` : products.length}</span>
-                            </span>
+                            <QueueHeaderCountBadge
+                                loading={loading}
+                                refreshing={refreshing}
+                                totalCount={products.length}
+                                filteredCount={filtered.length}
+                                search={search}
+                            />
                         </h3>
                         <p className="text-xs text-slate-500 mt-0.5">
                             Audit community product submissions and itemized menu dishes before indexing them in the public database.
@@ -294,9 +316,13 @@ export default function VerificationQueueTabs({
                     <div>
                         <h3 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
                             <span>Open User Issue Reports & Flags</span>
-                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                                {search ? `${filtered.length} of ${reports.length}` : reports.length}
-                            </span>
+                            <QueueHeaderCountBadge
+                                loading={loading}
+                                refreshing={refreshing}
+                                totalCount={reports.length}
+                                filteredCount={filtered.length}
+                                search={search}
+                            />
                         </h3>
                         <p className="text-xs text-slate-500 mt-0.5">
                             Authenticated reports flagged by community users regarding expired certificates or questionable ingredients.

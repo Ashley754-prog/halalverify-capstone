@@ -83,32 +83,67 @@ export default function VerificationQueue({ onViewChange, initialTab = 'establis
             supabase
                 .from('issue_reports')
                 .select('*, products(id, name), establishments(id, name, city)')
-                .or('status.eq.open,status.eq.reviewing')
+                .in('status', ['open', 'reviewing', 'pending'])
                 .order('created_at', { ascending: false }),
         ]);
 
-        if (estRes.error && prodRes.error && repRes.error) {
-            throw new Error('Supabase direct query failed across all tables');
+        if (estRes.error || prodRes.error || repRes.error) {
+            throw estRes.error || prodRes.error || repRes.error;
         }
 
-        if (!estRes.error) {
-            const enriched = (estRes.data || []).map((e) => {
-                const dishes = extractMenuHighlights(e);
-                return {
-                    ...e,
-                    menu_highlights: dishes,
-                    associated_products: dishes.map((name, idx) => ({
-                        id: `dish-${idx}`,
-                        name,
-                        category: 'Food Item',
-                        status: 'PENDING_VERIFICATION',
-                    })),
-                };
-            });
-            setEstablishments(enriched);
+        const rawEstablishments = estRes.data || [];
+        const prodMap = {};
+        if (rawEstablishments.length > 0) {
+            const estIds = rawEstablishments.map((e) => e.id).filter(Boolean);
+            if (estIds.length > 0) {
+                try {
+                    const { data: linkedProds } = await supabase
+                        .from('products')
+                        .select('id, name, category, status, establishment_id')
+                        .in('establishment_id', estIds);
+                    for (const prod of linkedProds || []) {
+                        if (prod.establishment_id) {
+                            if (!prodMap[prod.establishment_id]) {
+                                prodMap[prod.establishment_id] = [];
+                            }
+                            prodMap[prod.establishment_id].push(prod);
+                        }
+                    }
+                } catch (pErr) {
+                    console.warn('Attaching products to pending establishments failed:', pErr);
+                }
+            }
         }
-        if (!prodRes.error) setProducts(prodRes.data || []);
-        if (!repRes.error) setReports(repRes.data || []);
+
+        const enrichedEstablishments = rawEstablishments.map((e) => {
+            const tier = deriveEstablishmentTier(e);
+            const existing = prodMap[e.id] || [];
+            const dishes = extractMenuHighlights(e);
+            return {
+                ...e,
+                halal_tier: tier,
+                verification_tier: tier,
+                menu_highlights: dishes,
+                associated_products:
+                    existing.length > 0
+                        ? existing
+                        : dishes.map((name, idx) => ({
+                              id: `dish-${idx}`,
+                              name,
+                              category: 'Food & Beverage',
+                              status: 'PENDING_VERIFICATION',
+                          })),
+            };
+        });
+
+        // Exclude dish-only rows attached to establishments, matching backend admin.py
+        const pendingProducts = (prodRes.data || []).filter(
+            (p) => !(p.establishment_id && !p.brand && !p.barcode && !p.ingredients_summary)
+        );
+
+        setEstablishments(enrichedEstablishments);
+        setProducts(pendingProducts);
+        setReports(repRes.data || []);
     }, []);
 
     const fetchQueueData = useCallback(async ({ background = false } = {}) => {
@@ -119,23 +154,30 @@ export default function VerificationQueue({ onViewChange, initialTab = 'establis
                 setLoading(true);
             }
             setError(null);
-            const res = await authFetch(`${API_BASE_URL}/api/v1/admin/pending-approvals`);
+
+            // Primary fast path: direct Supabase query (avoids backend cold-start delays)
+            try {
+                await fetchSupabaseDirect();
+                return;
+            } catch (sbErr) {
+                console.warn('Direct Supabase pending approvals fetch failed, falling back to backend:', sbErr);
+            }
+
+            // Fallback to FastAPI backend with a bounded timeout
+            const res = await authFetch(`${API_BASE_URL}/api/v1/admin/pending-approvals`, {
+                timeout: 8000,
+            });
             if (res.ok) {
                 const json = await res.json();
                 setEstablishments(json.data?.establishments || []);
                 setProducts(json.data?.products || []);
                 setReports(json.data?.reports || []);
-            } else {
-                await fetchSupabaseDirect();
+                return;
             }
+            throw new Error(`Pending approvals request failed (${res.status})`);
         } catch (err) {
-            console.warn('Backend pending approvals error, fallback to Supabase:', err);
-            try {
-                await fetchSupabaseDirect();
-            } catch (sbErr) {
-                console.error('Direct Supabase fetch failed:', sbErr);
-                setError('Failed to fetch verification queue data. Please try again.');
-            }
+            console.error('Failed to fetch verification queue data:', err);
+            setError('Failed to fetch verification queue data. Please try again.');
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -791,7 +833,11 @@ export default function VerificationQueue({ onViewChange, initialTab = 'establis
 
                         <button
                             type="button"
-                            onClick={() => fetchQueueData()}
+                            onClick={() =>
+                                fetchQueueData({
+                                    background: establishments.length > 0 || products.length > 0 || reports.length > 0,
+                                })
+                            }
                             disabled={loading || refreshing}
                             className="p-1.5 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200/80 transition flex items-center justify-center text-xs focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:outline-none"
                             title="Refresh Queue"
@@ -914,7 +960,11 @@ export default function VerificationQueue({ onViewChange, initialTab = 'establis
 
                     <button
                         type="button"
-                        onClick={() => fetchQueueData()}
+                        onClick={() =>
+                            fetchQueueData({
+                                background: establishments.length > 0 || products.length > 0 || reports.length > 0,
+                            })
+                        }
                         disabled={loading || refreshing}
                         className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition flex items-center gap-1.5 text-xs font-semibold focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:outline-none cursor-pointer"
                         title="Refresh Queue"

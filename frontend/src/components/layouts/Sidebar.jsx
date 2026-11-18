@@ -21,7 +21,7 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
                         .or('halal_status.ilike.%pending%,halal_status.ilike.%needs_review%,halal_status.ilike.%review%'),
                     supabase
                         .from('products')
-                        .select('id', { count: 'exact', head: true })
+                        .select('id, establishment_id, brand, barcode, ingredients_summary')
                         .ilike('status', '%pending%'),
                     supabase
                         .from('issue_reports')
@@ -31,7 +31,11 @@ export const Sidebar = ({ children, currentView, onViewChange, userRole, onSignO
 
                 if (isMounted) {
                     const estCount = typeof estRes.count === 'number' ? estRes.count : 0;
-                    const prodCount = typeof prodRes.count === 'number' ? prodRes.count : 0;
+                    const prodCount = Array.isArray(prodRes.data)
+                        ? prodRes.data.filter(
+                              (p) => !(p.establishment_id && !p.brand && !p.barcode && !p.ingredients_summary)
+                          ).length
+                        : 0;
                     const repCount = typeof repRes.count === 'number' ? repRes.count : 0;
                     setPendingCount(estCount + prodCount + repCount);
                 }
