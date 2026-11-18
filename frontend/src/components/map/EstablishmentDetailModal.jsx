@@ -11,6 +11,7 @@ import {
     Store,
     HeartHandshake,
     Camera,
+    Package,
 } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { getSafeUrl } from '../../utils/security';
@@ -404,6 +405,43 @@ export default function EstablishmentDetailModal({
                         </div>
                     </div>
                 )}
+
+                {/* Certified Packaged Products Linked to This Establishment */}
+                {(() => {
+                    const linkedProducts = Array.isArray(establishment.products)
+                        ? establishment.products.filter((p) => p && p.name)
+                        : [];
+                    if (linkedProducts.length === 0) return null;
+
+                    return (
+                        <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/40 p-3 text-xs space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                                    <Package size={12} className="text-emerald-700" />
+                                    Certified Products ({linkedProducts.length})
+                                </span>
+                                <span className="text-[10px] text-emerald-800/80 font-medium">
+                                    Sold / Made Here
+                                </span>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5 text-[11px]">
+                                {linkedProducts.map((prod) => (
+                                    <span
+                                        key={prod.id || prod.name}
+                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white text-slate-800 border border-emerald-200 font-semibold shadow-2xs"
+                                    >
+                                        <span>{prod.name}</span>
+                                        {prod.category && (
+                                            <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded">
+                                                {prod.category}
+                                            </span>
+                                        )}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                })()}
 
                 {/* Menu */}
                 {(() => {

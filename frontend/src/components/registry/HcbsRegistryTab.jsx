@@ -18,6 +18,7 @@ const HCB_LOGO_LOOKUP = {
     AHIP: '/logos/AHIP.png',
     BPCC: '/logos/BPCC.png',
     BUSC: '/logos/BUSC.png',
+    UCZP: '/logos/UCZP.png',
     FIQHI: '/logos/FIQHI.png',
     MASLAHA: '/logos/MASLAHA.png',
     MMHCB: '/logos/MMHCB.png',
@@ -31,9 +32,10 @@ const HCB_LOGO_LOOKUP = {
 
 function resolveHcbLogo(body) {
     if (!body) return null;
-    if (body.logo_url) return body.logo_url;
     const rawCode = (body.code || body.acronym || '').toUpperCase().trim();
     if (HCB_LOGO_LOOKUP[rawCode]) return HCB_LOGO_LOOKUP[rawCode];
+    const safeDbUrl = getSafeUrl(body.seal_url || body.logo_url);
+    if (safeDbUrl) return safeDbUrl;
     const combined = `${rawCode} ${(body.name || '').toUpperCase()}`;
     for (const [key, src] of Object.entries(HCB_LOGO_LOOKUP)) {
         if (combined.includes(key)) return src;
@@ -299,9 +301,9 @@ export default function HcbsRegistryTab({
                         compactOnMobile
                         footer={
                             <div className="flex items-center justify-between w-full">
-                                {previewHcb.website ? (
+                                {getSafeUrl(previewHcb.website) ? (
                                     <a
-                                        href={previewHcb.website}
+                                        href={getSafeUrl(previewHcb.website)}
                                         target="_blank"
                                         rel="noreferrer"
                                         className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:underline"

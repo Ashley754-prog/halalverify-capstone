@@ -191,14 +191,39 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
 
             // 1. Query Supabase directly first for instant ~150ms response (zero cold start)
             try {
-                let query = supabase.from('establishments').select('*, certifying_bodies(*)').order('name');
+                const isAdminUser = userRole === 'admin';
+                const excludedProdStatuses = new Set([
+                    'rejected',
+                    'pending_verification',
+                    'pending_review',
+                    'pending',
+                    'needs_review',
+                    'draft',
+                    'expired',
+                    'flagged',
+                    'suspended',
+                    'haram',
+                    'inactive',
+                ]);
+                let query = supabase
+                    .from('establishments')
+                    .select('*, certifying_bodies(*), products(id, name, category, status, brand, certificate_no)')
+                    .order('name');
                 const { data: sbData, error: sbErr } = await query;
                 if (!sbErr && sbData && sbData.length > 0) {
                     let withCoords = sbData
                         .map((e) => {
                             const coords = resolveEstablishmentCoordinates(e);
+                            const linkedProducts = Array.isArray(e.products)
+                                ? e.products.filter((p) => {
+                                    if (!p || !p.name) return false;
+                                    if (isAdminUser) return true;
+                                    return !excludedProdStatuses.has((p.status || '').trim().toLowerCase());
+                                })
+                                : [];
                             return {
                                 ...e,
+                                products: linkedProducts,
                                 latitude: coords.latitude,
                                 longitude: coords.longitude,
                             };
@@ -326,7 +351,7 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
         } finally {
             setLoading(false);
         }
-    }, [userLocation, selectedStatus, applySeedFallback]);
+    }, [userRole, userLocation, selectedStatus, applySeedFallback]);
 
     useEffect(() => {
         fetchEstablishments();

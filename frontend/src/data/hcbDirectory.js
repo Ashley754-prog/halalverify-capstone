@@ -342,7 +342,7 @@ export const HCB_DIRECTORY = {
         code: 'UCZP',
         name: 'Ulama Council of Zamboanga Peninsula',
         shortName: 'UCZP Halal',
-        logoSrc: null,
+        logoSrc: '/logos/UCZP.png',
         category: 'Local & Regional HCB',
         country: 'Philippines',
         flag: '🇵🇭',

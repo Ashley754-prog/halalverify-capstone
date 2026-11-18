@@ -92,6 +92,9 @@ export default function ProductCardDetail({ product, onClose }) {
   const manufacturer = Array.isArray(product.manufacturers)
     ? product.manufacturers[0]
     : product.manufacturers;
+  const linkedEstablishment = Array.isArray(product.establishments)
+    ? product.establishments[0]
+    : product.establishments;
   const certifier = Array.isArray(product.certifying_bodies)
     ? product.certifying_bodies[0]
     : product.certifying_bodies;
@@ -182,6 +185,17 @@ export default function ProductCardDetail({ product, onClose }) {
                     </dd>
                   </div>
                 )}
+                {linkedEstablishment?.name && (
+                  <div className="py-2.5">
+                    <dt className="flex items-center gap-1.5 text-[11px] font-semibold text-[#52645B]">
+                      <MapPin size={13} aria-hidden="true" /> Registered establishment
+                    </dt>
+                    <dd className="mt-0.5 break-words text-xs font-medium text-emerald-800 sm:text-sm">
+                      {linkedEstablishment.name}
+                      {linkedEstablishment.city ? ` · ${linkedEstablishment.city}` : ''}
+                    </dd>
+                  </div>
+                )}
               </>
             )}
           </dl>
@@ -190,6 +204,17 @@ export default function ProductCardDetail({ product, onClose }) {
         <dl className="grid min-w-0 grid-cols-1 border-t border-[#DCE7E0] sm:col-span-2 sm:grid-cols-2 sm:gap-x-6">
           {isDtiDirectory ? (
             <>
+              {linkedEstablishment?.name && (
+                <div className="border-b border-[#DCE7E0] py-2.5 sm:col-span-2">
+                  <dt className="flex items-center gap-1.5 text-[11px] font-semibold text-[#52645B]">
+                    <MapPin size={13} aria-hidden="true" /> Registered establishment
+                  </dt>
+                  <dd className="mt-0.5 break-words text-xs font-medium text-emerald-800 sm:text-sm">
+                    {linkedEstablishment.name}
+                    {linkedEstablishment.city ? ` · ${linkedEstablishment.city}` : ''}
+                  </dd>
+                </div>
+              )}
               <div className="border-b border-[#DCE7E0] py-2.5 sm:col-span-2">
                 <dt className="flex items-center gap-1.5 text-[11px] font-semibold text-[#52645B]">
                   <MapPin size={13} aria-hidden="true" /> Company address
