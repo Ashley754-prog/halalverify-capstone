@@ -45,7 +45,7 @@ const AMENITY_PILLS = [
     { key: 'prayer_space', label: 'Prayer Area', icon: Compass },
 ];
 
-const FILTER_PILL_BASE = 'shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40';
+const FILTER_PILL_BASE = 'shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40';
 const FILTER_PILL_ACTIVE = 'bg-emerald-600 text-white shadow-xs';
 const FILTER_PILL_ACTIVE_MODERATION = 'bg-amber-100 text-amber-800 border border-amber-300 shadow-xs';
 const FILTER_PILL_IDLE = 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200';
@@ -892,6 +892,32 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                             <span>Pins ({filteredList.length})</span>
                         </label>
                     </div>
+
+                    {/* Compact Bottom-Left Map Pin Legend (hidden on mobile when preview card is docked) */}
+                    {showMarkers && (
+                        <div
+                            className={`${
+                                activePreviewEst ? 'hidden sm:flex' : 'flex'
+                            } absolute bottom-2.5 left-2.5 sm:bottom-3 sm:left-3 z-[999] bg-white/95 backdrop-blur-sm rounded-xl border border-slate-200 px-2.5 py-1.5 shadow-md flex-wrap items-center gap-x-3 gap-y-1 text-[10px] sm:text-[11px] font-semibold text-slate-700 pointer-events-none`}
+                        >
+                            <span className="inline-flex items-center gap-1">
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#10b981] shrink-0" />
+                                Certified
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#0284c7] shrink-0" />
+                                Muslim-Owned
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#6366f1] shrink-0" />
+                                Muslim-Friendly
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#d97706] shrink-0" />
+                                Renewal
+                            </span>
+                        </div>
+                    )}
 
                     {/* Docked Establishment Preview Card */}
                     {activePreviewEst && (

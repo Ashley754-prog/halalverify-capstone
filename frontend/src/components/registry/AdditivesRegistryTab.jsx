@@ -28,6 +28,7 @@ export default function AdditivesRegistryTab({
     onDeleteAdditive,
 }) {
     const [currentPage, setCurrentPage] = useState(1);
+    const [expandedKey, setExpandedKey] = useState(null);
     const [itemsPerPage, setItemsPerPage] = useState(16);
 
     const filteredAdditives = additives.filter((item) => {
@@ -123,10 +124,20 @@ export default function AdditivesRegistryTab({
                         onReset={handleResetFilters}
                     />
                 ) : (
-                    paginatedAdditives.map((item) => (
+                    paginatedAdditives.map((item) => {
+                        const cardKey = item.id || item.code;
+                        const isExpanded = expandedKey === cardKey;
+                        const hasLongText =
+                            (item.source_description || '').length > 75 || (item.reason || '').length > 75;
+                        return (
                         <div
-                            key={item.id || item.code}
-                            className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 sm:p-4 flex flex-col justify-between h-full gap-2.5 sm:gap-3 hover:border-slate-300 transition shadow-xs"
+                            key={cardKey}
+                            onClick={() => hasLongText && setExpandedKey(isExpanded ? null : cardKey)}
+                            className={`bg-slate-50 border rounded-xl p-3.5 sm:p-4 flex flex-col justify-between h-full gap-2.5 sm:gap-3 transition shadow-xs ${
+                                isExpanded
+                                    ? 'border-emerald-300 bg-emerald-50/20'
+                                    : 'border-slate-100 hover:border-slate-300'
+                            } ${hasLongText ? 'cursor-pointer' : ''}`}
                         >
                             <div className="flex justify-between items-start">
                                 <span className="text-xs font-mono font-bold bg-slate-200 text-slate-800 px-2.5 py-0.5 rounded-md border border-slate-300">
@@ -154,13 +165,25 @@ export default function AdditivesRegistryTab({
 
                             <div>
                                 <h4 className="text-sm font-bold text-slate-800 leading-tight">{item.name}</h4>
-                                <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                                <p className={`text-xs text-slate-600 mt-1 ${isExpanded ? '' : 'line-clamp-2'}`}>
                                     Source: <span className="italic">{item.source_description || 'Unspecified origin.'}</span>
                                 </p>
                                 {item.reason && (
-                                    <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">
+                                    <p className={`text-xs text-slate-600 mt-0.5 ${isExpanded ? '' : 'line-clamp-2'}`}>
                                         Ruling: <span className="italic">{item.reason}</span>
                                     </p>
+                                )}
+                                {hasLongText && (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setExpandedKey(isExpanded ? null : cardKey);
+                                        }}
+                                        className="mt-1.5 text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
+                                    >
+                                        {isExpanded ? 'Show less' : 'Read full ruling'}
+                                    </button>
                                 )}
                             </div>
 
@@ -173,6 +196,7 @@ export default function AdditivesRegistryTab({
                                             href={auth.url}
                                             target="_blank"
                                             rel="noopener noreferrer"
+                                            onClick={(e) => e.stopPropagation()}
                                             className="inline-flex items-center gap-1 font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
                                         >
                                             <span>{auth.label}</span>
@@ -183,7 +207,7 @@ export default function AdditivesRegistryTab({
                             })()}
 
                             {isAdmin && (
-                                <div className="flex gap-2 pt-2 border-t border-slate-200">
+                                <div className="flex gap-2 pt-2 border-t border-slate-200" onClick={(e) => e.stopPropagation()}>
                                     <button
                                         onClick={() => onOpenModal('edit-additive', item)}
                                         className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 py-1.5 rounded-lg transition-colors cursor-pointer"
@@ -199,7 +223,8 @@ export default function AdditivesRegistryTab({
                                 </div>
                             )}
                         </div>
-                    ))
+                        );
+                    })
                 )}
             </div>
 

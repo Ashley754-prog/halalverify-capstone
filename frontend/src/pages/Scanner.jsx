@@ -63,6 +63,7 @@ export const Scanner = ({ isOnline, onViewChange }) => {
         applyZoom,
         handleTapToFocus,
         captureFrame,
+        cameraError,
     } = useCameraStream(setToast);
 
     /**
@@ -326,6 +327,7 @@ export const Scanner = ({ isOnline, onViewChange }) => {
                         scannerMode={scannerMode}
                         setScannerMode={setScannerMode}
                         isCapturing={isCapturing}
+                        cameraError={cameraError}
                         videoRef={videoRef}
                         canvasRef={canvasRef}
                         selectedImage={selectedImage}

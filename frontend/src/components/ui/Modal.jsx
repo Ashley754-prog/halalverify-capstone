@@ -71,7 +71,7 @@ export default function Modal({
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="rounded-full p-1.5 sm:p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 shrink-0"
+                                className="w-10 h-10 -mr-1.5 -mt-1 rounded-full flex items-center justify-center text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 shrink-0 cursor-pointer"
                                 aria-label="Close modal"
                             >
                                 <X size={18} />

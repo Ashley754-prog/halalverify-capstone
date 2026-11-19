@@ -1033,7 +1033,10 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives', in
                     }`}
                 >
                     <MapPin size={14} className={`shrink-0 ${registryMode === 'establishments' ? 'text-emerald-600' : 'text-slate-400'}`} />
-                    <span className="truncate"><span className="hidden sm:inline">Regulatory </span>Audits (Venues)</span>
+                    <span className="truncate">
+                        <span className="sm:hidden">Venues</span>
+                        <span className="hidden sm:inline">Regulatory Audits (Venues)</span>
+                    </span>
                     <span className={`text-[9px] sm:text-[10px] font-mono px-1 sm:px-1.5 py-0.2 rounded-full shrink-0 ${
                         registryMode === 'establishments' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200/80 text-slate-600'
                     }`}>
