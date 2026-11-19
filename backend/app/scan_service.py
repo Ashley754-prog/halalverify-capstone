@@ -167,6 +167,7 @@ HCB_METADATA_BY_CODE = {
     "MUI": ("Indonesia_BPJPH", 17, "Indonesia Halal - BPJPH / MUI (Recognized Foreign Certifier)", 95.0),
     "SINGAPORE_MUIS": ("Singapore_MUIS", -1, "Singapore Halal - MUIS (Recognized Foreign Certifier)", 95.0),
     "MUIS": ("Singapore_MUIS", -1, "Singapore Halal - MUIS (Recognized Foreign Certifier)", 95.0),
+    "UCZP": ("UCZP", -1, "UCZP (Ulama Council of Zamboanga Peninsula)", 95.0),
 }
 
 # Distinctive keywords that help corroborate YOLOv8's visual candidate when read on the seal rim or label
@@ -754,7 +755,8 @@ def _match_explicit_hcb_in_text(
     if not text or len(text.strip()) < 2:
         return None
 
-    upper_text = text.upper()
+    # Normalize newlines/multiple spaces so multiline curved rim text (e.g. "MINDANAO HALAL\nAUTHORITY") matches cleanly
+    upper_text = re.sub(r"\s+", " ", text.upper()).strip()
 
     if (
         re.search(r"\bIDCP\b", upper_text)
@@ -770,7 +772,11 @@ def _match_explicit_hcb_in_text(
     if re.search(r"\bHICCIP\b", upper_text) or "HALAL INTERNATIONAL CHAMBER" in upper_text:
         return HCB_METADATA_BY_CODE["HICCIP"]
 
-    if re.search(r"\bMMHCB\b", upper_text) or "MINDANAO MUSLIM HALAL" in upper_text:
+    if (
+        re.search(r"\bMMHCB\b", upper_text)
+        or "MINDANAO MUSLIM HALAL" in upper_text
+        or "MUSLIM MINDANAO HALAL" in upper_text
+    ):
         return HCB_METADATA_BY_CODE["MMHCB"]
 
     if re.search(r"\bMASLAHA\b", upper_text) or "ADVOCACY FOR MUSLIM AFFAIRS" in upper_text or "MUSLIM ADVOCACY" in upper_text:
@@ -793,7 +799,13 @@ def _match_explicit_hcb_in_text(
     ):
         return HCB_METADATA_BY_CODE["PRIME"]
 
-    if re.search(r"\bFIQHI\b", upper_text) or "FIQHI ISLAMIC" in upper_text:
+    if (
+        re.search(r"\bFIQHI\b", upper_text)
+        or re.search(r"\bFHCPI\b", upper_text)
+        or "FIQHI ISLAMIC" in upper_text
+        or "FIQH AND HALAL" in upper_text
+        or "HALAL COUNCIL OF THE PHILIPPINES" in upper_text
+    ):
         return HCB_METADATA_BY_CODE["FIQHI"]
 
     if (
@@ -814,16 +826,33 @@ def _match_explicit_hcb_in_text(
     ):
         return HCB_METADATA_BY_CODE["NATIONAL_HALAL_LOGO"]
 
-    if re.search(r"\bBUSC\b", upper_text) or "BANGSAMORO UNITY" in upper_text or "BASILAN ULAMA" in upper_text:
+    if (
+        re.search(r"\bBUSC\b", upper_text)
+        or "BANGSAMORO UNITY" in upper_text
+        or "BASILAN ULAMA" in upper_text
+        or "ULAMA SUPREME COUNCIL" in upper_text
+        or "باسيلان" in text
+    ):
         return HCB_METADATA_BY_CODE["BUSC"]
 
-    if re.search(r"\bBPCC\b", upper_text) or "BANGSAMORO PROFESSIONAL" in upper_text or "BANGSAMORO CONSULTATIVE" in upper_text:
+    if re.search(r"\bUCZP\b", upper_text) or "ULAMA COUNCIL OF ZAMBOANGA" in upper_text:
+        return HCB_METADATA_BY_CODE["UCZP"]
+
+    if (
+        re.search(r"\bBPCC\b", upper_text)
+        or "BANGSAMORO PROFESSIONAL" in upper_text
+        or "BANGSAMORO CONSULTATIVE" in upper_text
+        or "BANGSAMORO PROVINCIAL" in upper_text
+        or "PROVINCIAL CONSULTATIVE COUNCIL" in upper_text
+    ):
         return HCB_METADATA_BY_CODE["BPCC"]
 
     if (
         re.search(r"\bJAKIM\b", upper_text)
         or "KEMAJUAN ISLAM MALAYSIA" in upper_text
         or "HALAL MALAYSIA" in upper_text
+        or "MALAYSIA HALAL" in upper_text
+        or "حلال ماليزيا" in text
         or re.search(r"\bMS\s*1500\b", upper_text)
         or (
             allow_country_origin

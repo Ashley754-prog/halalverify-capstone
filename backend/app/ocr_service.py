@@ -201,7 +201,13 @@ def extract_seal_crop_with_gemini(crop_image: Image.Image) -> str:
         return ""
 
     try:
-        crop_rgb = crop_image.convert("RGB")
+        if crop_image.mode in ("RGBA", "LA") or (crop_image.mode == "P" and "transparency" in crop_image.info):
+            rgba = crop_image.convert("RGBA")
+            bg = Image.new("RGB", rgba.size, (255, 255, 255))
+            bg.paste(rgba, mask=rgba.split()[3])
+            crop_rgb = bg
+        else:
+            crop_rgb = crop_image.convert("RGB")
         w, h = crop_rgb.size
         if min(w, h) < 12:
             return ""
