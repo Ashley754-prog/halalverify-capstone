@@ -653,7 +653,7 @@ def evaluate_establishment_submission(payload: Dict[str, Any]) -> Dict[str, Any]
         final_status = "needs_review"
         summary_note = (
             f"AI AUDITED: Community Listed - {tier_label} queued for manual review (Confidence: {score}%). "
-            f"Issues: {'; '.join(reasons) if reasons else 'No blocking issues detected; human confirmation is required for self-declared tiers.'}"
+            f"Issues: {'; '.join(reasons) if reasons else 'No blocking issues detected — awaiting human confirmation for self-declared tier.'}"
         )
 
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -1033,7 +1033,7 @@ def evaluate_product_submission(payload: Dict[str, Any]) -> Dict[str, Any]:
             final_status = "PENDING_VERIFICATION"
             summary_note = (
                 f"AI AUDITED: Community Listed - {tier_label} queued for manual review (Confidence: {score}%). "
-                f"Issues: {'; '.join(reasons) if reasons else 'No blocking issues detected; human confirmation is required for self-declared tiers.'}"
+                f"Issues: {'; '.join(reasons) if reasons else 'No blocking issues detected — awaiting human confirmation for self-declared tier.'}"
             )
 
     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()

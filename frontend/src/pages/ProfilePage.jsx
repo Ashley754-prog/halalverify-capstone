@@ -231,7 +231,7 @@ const ProfilePage = ({ onViewChange, initialFilter = 'all' }) => {
                 kind: 'establishment',
                 kindLabel: 'Establishment',
                 title: est.name || 'Unnamed Establishment',
-                subtitle: `${est.type || 'Restaurant'} • ${est.address || 'Zamboanga City'}`,
+                subtitle: `${est.type || 'Restaurant'} · ${est.address || 'Zamboanga City'}`,
                 badgeType,
                 badgeLabel,
                 createdAt: est.created_at,
@@ -264,7 +264,7 @@ const ProfilePage = ({ onViewChange, initialFilter = 'all' }) => {
                 kind: 'product',
                 kindLabel: 'Product',
                 title: prod.name || 'Unnamed Product',
-                subtitle: `${prod.brand ? `${prod.brand} • ` : ''}${prod.category || 'Food & Beverage'}`,
+                subtitle: `${prod.brand ? `${prod.brand} · ` : ''}${prod.category || 'Food & Beverage'}`,
                 badgeType,
                 badgeLabel,
                 createdAt: prod.created_at,
@@ -309,8 +309,8 @@ const ProfilePage = ({ onViewChange, initialFilter = 'all' }) => {
 
     const formatCleanNote = (note) => {
         if (!note) return '';
-        // Strip internal pipe-separated AI audit tags if present, showing only human-friendly summary
-        const parts = note
+        // Strip internal pipe-separated AI/system audit tags so everyday users only see helpful remarks
+        const rawParts = note
             .split('|')
             .map((s) => s.trim())
             .filter(
@@ -322,7 +322,24 @@ const ProfilePage = ({ onViewChange, initialFilter = 'all' }) => {
                     !s.startsWith('Consumer Contribution:') &&
                     !s.startsWith('Brand Declaration:')
             );
-        return parts.slice(0, 2).join(' • ');
+
+        const friendlyParts = [];
+        for (const seg of rawParts) {
+            if (/^(?:AI\s+(?:AUDITED|VERIFIED|TRIAGED|AUTO-APPROVED)|FATAL INVARIANT)/i.test(seg)) {
+                if (/no blocking issues detected/i.test(seg)) {
+                    friendlyParts.push('Passed initial automated check — awaiting moderator confirmation.');
+                } else if (/issues:\s*/i.test(seg)) {
+                    const reasonText = seg.split(/issues:\s*/i)[1]?.replace(/\.$/, '').trim();
+                    if (reasonText) {
+                        friendlyParts.push(reasonText.replace(/;\s*/g, ' — '));
+                    }
+                }
+                continue;
+            }
+            friendlyParts.push(seg.replace(/;\s*/g, ' — '));
+        }
+
+        return friendlyParts.slice(0, 2).join(' · ');
     };
 
     const avatarInitial = name?.trim()

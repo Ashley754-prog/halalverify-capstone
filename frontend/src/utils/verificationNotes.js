@@ -99,7 +99,7 @@ export function formatSystemNotice(rawNote) {
     if (!triage) return null;
 
     if (triage.reasons && triage.reasons.length > 0) {
-        return triage.reasons.join('; ');
+        return triage.reasons.map((r) => r.replace(/;\s*/g, ' — ')).join(' · ');
     }
 
     if (triage.kind === 'blocked') {

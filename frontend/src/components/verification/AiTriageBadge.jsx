@@ -15,7 +15,7 @@ export default function AiTriageBadge({ adminNotes, className = '', compact = fa
                 className={`rounded-lg bg-rose-50 border border-rose-200 text-rose-800 ${
                     compact ? 'p-1.5 text-[10px]' : 'p-2 text-[11px]'
                 } font-bold flex items-center justify-between gap-1.5 ${className}`}
-                title={triage.reasons?.length ? triage.reasons.join('; ') : 'Critical invariant failure detected during AI screening'}
+                title={triage.reasons?.length ? triage.reasons.join(' · ') : 'Critical invariant failure detected during AI screening'}
             >
                 <span className="flex items-center gap-1.5 truncate">
                     <AlertOctagon size={compact ? 12 : 13} className="text-rose-600 shrink-0" />
@@ -34,7 +34,7 @@ export default function AiTriageBadge({ adminNotes, className = '', compact = fa
                 className={`rounded-lg bg-amber-50 border border-amber-200 text-amber-900 ${
                     compact ? 'p-1.5 text-[10px]' : 'p-2 text-[11px]'
                 } font-bold flex items-center justify-between gap-1.5 ${className}`}
-                title={triage.reasons?.length ? triage.reasons.join('; ') : 'AI screened submission, manual administrative review recommended'}
+                title={triage.reasons?.length ? triage.reasons.join(' · ') : 'AI screened submission, manual administrative review recommended'}
             >
                 <span className="flex items-center gap-1.5 truncate">
                     <AlertTriangle size={compact ? 12 : 13} className="text-amber-600 shrink-0" />

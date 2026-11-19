@@ -145,7 +145,7 @@ export default function VerificationInspectionModal({
                             {inspectingType === 'product' ? (inspectingItem.category || 'Food & Beverage') : (inspectingItem.type || 'Restaurant')}
                         </span>
                     </span>
-                    <span className="text-slate-300 shrink-0">•</span>
+                    <span className="text-slate-300 shrink-0">&middot;</span>
 
                     {inspectingType === 'product' ? (
                         <span className="inline-flex items-center gap-1 text-slate-600 font-medium truncate">
@@ -167,7 +167,7 @@ export default function VerificationInspectionModal({
 
                     {inspectingItem.created_at && (
                         <>
-                            <span className="hidden sm:inline text-slate-300">•</span>
+                            <span className="hidden sm:inline text-slate-300">&middot;</span>
                             <span className="hidden sm:inline text-slate-500 shrink-0">
                                 Submitted: {formatShortDate(inspectingItem.created_at)}
                             </span>
