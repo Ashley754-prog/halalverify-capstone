@@ -317,6 +317,8 @@ const ProfilePage = ({ onViewChange, initialFilter = 'all' }) => {
                 (s) =>
                     s &&
                     !s.startsWith('[AI ') &&
+                    !s.startsWith('[Variants:') &&
+                    !s.startsWith('[Product Lines:') &&
                     !s.startsWith('Classification Tier:') &&
                     !s.startsWith('Ownership Declaration:') &&
                     !s.startsWith('Consumer Contribution:') &&
@@ -324,7 +326,11 @@ const ProfilePage = ({ onViewChange, initialFilter = 'all' }) => {
             );
 
         const friendlyParts = [];
-        for (const seg of rawParts) {
+        for (let seg of rawParts) {
+            // Strip internal [Tier: ...] database markers (e.g., "[Tier: muslim_friendly]")
+            seg = seg.replace(/\[Tier:\s*[^\]]+\]\s*/gi, '').trim();
+            if (!seg) continue;
+
             if (/^(?:AI\s+(?:AUDITED|VERIFIED|TRIAGED|AUTO-APPROVED)|FATAL INVARIANT)/i.test(seg)) {
                 if (/no blocking issues detected/i.test(seg)) {
                     friendlyParts.push('Passed initial automated check — awaiting moderator confirmation.');
@@ -336,6 +342,20 @@ const ProfilePage = ({ onViewChange, initialFilter = 'all' }) => {
                 }
                 continue;
             }
+
+            // Convert "Community Listed - Muslim-Friendly. Nice one" -> "Muslim-Friendly · Nice one"
+            const tierMatch = seg.match(/^Community Listed\s*-\s*([^.]+)\.?\s*(.*)$/i);
+            if (tierMatch) {
+                const tierName = tierMatch[1].trim();
+                const humanRemark = (tierMatch[2] || '').trim();
+                if (humanRemark) {
+                    friendlyParts.push(`${tierName} · Moderator note: ${humanRemark}`);
+                } else {
+                    friendlyParts.push(`Listed under ${tierName} tier.`);
+                }
+                continue;
+            }
+
             friendlyParts.push(seg.replace(/;\s*/g, ' — '));
         }
 
