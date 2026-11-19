@@ -237,11 +237,11 @@ export const ScanDetailModal = ({ scan, onClose }) => {
                 {hasLogo ? (
                     <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 flex items-center gap-3">
                         {certLogoSrc ? (
-                            <div className="w-12 h-12 rounded-full overflow-hidden border border-slate-200 bg-white shadow-xs shrink-0 flex items-center justify-center">
+                            <div className="w-12 h-12 rounded-full overflow-hidden border border-slate-200 bg-white p-1 shadow-xs shrink-0 flex items-center justify-center">
                                 <img
                                     src={certLogoSrc}
                                     alt={scan.detected_logo}
-                                    className="w-full h-full object-cover scale-110"
+                                    className="w-full h-full object-contain"
                                 />
                             </div>
                         ) : (

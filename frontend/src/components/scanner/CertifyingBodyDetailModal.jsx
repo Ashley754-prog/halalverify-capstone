@@ -81,11 +81,11 @@ export const CertifyingBodyDetailModal = ({ profile, onClose }) => {
                                 }`}
                             >
                                 {profile.logoSrc ? (
-                                    <div className="w-full h-full rounded-full overflow-hidden bg-slate-900 flex items-center justify-center">
+                                    <div className="w-full h-full rounded-full overflow-hidden bg-white p-1 flex items-center justify-center">
                                         <img
                                             src={profile.logoSrc}
                                             alt={profile.name}
-                                            className="w-full h-full object-cover scale-110"
+                                            className="w-full h-full object-contain"
                                         />
                                     </div>
                                 ) : (
