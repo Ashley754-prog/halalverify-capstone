@@ -413,11 +413,12 @@ def parse_label_sections(raw_text: str) -> dict:
     if allergen_match:
         allergen_section = ingredients_block[allergen_match.start():]
 
-    norm_ing = normalize_text(ingredients_block)
+    screening_block = _strip_nutrition_facts(ingredients_block)
+    norm_ing = normalize_text(screening_block)
     words = set(norm_ing.split())
     food_token_hits = len(words.intersection(COMMON_INGREDIENT_TOKENS))
-    e_code_hits = len(find_e_numbers(ingredients_block))
-    comma_items = [seg.strip() for seg in re.split(r"[,;•]", ingredients_block) if len(seg.strip()) >= 3]
+    e_code_hits = len(find_e_numbers(screening_block))
+    comma_items = [seg.strip() for seg in re.split(r"[,;•]", screening_block) if len(seg.strip()) >= 3]
 
     effective_token_count = food_token_hits + e_code_hits + (len(comma_items) if has_explicit_header else 0)
     is_readable_panel = bool(
@@ -991,14 +992,14 @@ def fuse_logo_and_ocr_evidence(logo_result: dict, extracted_text: str) -> dict:
 
     # Moderate/Visual YOLOv8 seal -> Corroborate using Visual Class, Crop OCR, Label OCR, or Catalog
     vis_code = (logo_result.get("visualCandidateCode") or "").strip().upper()
-    if vis_code in HCB_METADATA_BY_CODE and visual_conf >= 35.0:
+    if vis_code in HCB_METADATA_BY_CODE and visual_conf >= 35.0 and best_text_match:
         c_name, c_id, c_label, _ = HCB_METADATA_BY_CODE[vis_code]
-        fused_conf = round(min(96.0, visual_conf + (15.0 if best_text_match else 0.0)), 1)
+        fused_conf = round(min(96.0, visual_conf + 15.0), 1)
         logo_result["logoConfidence"] = fused_conf
         logo_result["logoBody"] = c_label
         logo_result["isAmbiguousHcb"] = False
         logo_result["sealStatus"] = "VERIFIED_HCB_SEAL"
-        logo_result["evidenceSource"] = evidence_channel if best_text_match else "yolo_visual_candidate"
+        logo_result["evidenceSource"] = evidence_channel
         logo_result["detectedLogos"] = [
             {
                 "label": c_label,
@@ -1045,6 +1046,28 @@ def fuse_logo_and_ocr_evidence(logo_result: dict, extracted_text: str) -> dict:
                 "is_invalid": False,
                 "class_name": "Halal_Seal",
                 "class_id": 0,
+                "box": base_box,
+                "norm_box": base_norm,
+                "crop_ocr_text": crop_ocr_text,
+            }
+        ]
+    elif vis_code in HCB_METADATA_BY_CODE and visual_conf >= 50.0:
+        _, _, c_label, _ = HCB_METADATA_BY_CODE[vis_code]
+        logo_result["logoDetected"] = True
+        logo_result["logoConfidence"] = round(visual_conf, 1)
+        logo_result["logoBody"] = "Recognized Halal Certification Seal"
+        logo_result["isAmbiguousHcb"] = True
+        logo_result["sealStatus"] = "AMBIGUOUS_HCB_SEAL"
+        logo_result["evidenceSource"] = "yolo_visual_uncorroborated"
+        logo_result["detectedLogos"] = [
+            {
+                "label": "Recognized Halal Certification Seal",
+                "visual_candidate": c_label,
+                "visual_candidate_code": vis_code,
+                "confidence": round(visual_conf, 1),
+                "is_invalid": False,
+                "class_name": "Generic_Halal_Seal",
+                "class_id": -1,
                 "box": base_box,
                 "norm_box": base_norm,
                 "crop_ocr_text": crop_ocr_text,
@@ -1126,7 +1149,16 @@ def explain_label_verdict(
         }
 
     # 3. Non-Product Guard: If no logo is detected and text lacks food label indicators
-    if not is_food_label_content(extracted_text, flagged_items, logo_detected):
+    # or lacks a non-empty ingredient panel / explicit halal text claim (e.g. Nutrition Facts alone)
+    if (
+        not is_food_label_content(extracted_text, flagged_items, logo_detected)
+        or (
+            not logo_detected
+            and not flagged_items
+            and ingredient_status != "READABLE_PANEL"
+            and not text_halal_claim
+        )
+    ):
         return {
             "verdict": "Yellow",
             "riskLevel": "No Product Detected",
