@@ -920,13 +920,43 @@ def _enrich_seal_crop_with_gemini(image_base64: str, logo_result: dict, extracte
     seals such as PRIME, PUCOI, HDIP, BUSC, FIQHI, MASLAHA), crops the exact bounding box at
     full source resolution and runs a focused zero-hallucination Gemini seal-crop read.
     """
-    if not logo_result or not logo_result.get("logoDetected") or logo_result.get("isInvalidLogo"):
+    if not logo_result or logo_result.get("isInvalidLogo"):
         return
 
     existing_crop = str(logo_result.get("cropOcrText") or "").strip()
     if _match_explicit_hcb_in_text(existing_crop, allow_country_origin=False, has_visual_seal=True, is_seal_crop=True):
         return
     if _match_explicit_hcb_in_text(extracted_text, allow_country_origin=False, has_visual_seal=True, is_seal_crop=False):
+        return
+
+    # Case B: YOLOv8 missed a small, monochrome, or translucent-plastic seal (e.g. brown-ink HDIP
+    # over crackers), while full-label OCR saw 'HALAL' or Arabic 'حلال' -> run focused Gemini seal check
+    if not logo_result.get("logoDetected"):
+        upper_ext = (extracted_text or "").upper()
+        has_halal_hint = bool(
+            any(w in upper_ext for w in ("HALAL", "SALAL", "AALAL"))
+            or "حلال" in (extracted_text or "")
+            or "حاال" in (extracted_text or "")
+        )
+        if not has_halal_hint:
+            return
+        try:
+            from app.ocr_service import detect_seal_hcb_with_gemini
+
+            seal_probe = detect_seal_hcb_with_gemini(image_base64)
+            if seal_probe.get("has_visual_seal"):
+                seal_txt = str(seal_probe.get("seal_text") or "").strip()
+                if seal_txt:
+                    logo_result["cropOcrText"] = f"{existing_crop} {seal_txt}".strip() if existing_crop else seal_txt
+                else:
+                    # Confirmed visual Halal emblem exists, but certifier letters are unreadable ->
+                    # mark as generic Halal Certification Seal (never hallucinate a specific HCB)
+                    logo_result["logoDetected"] = True
+                    logo_result["logoConfidence"] = 76.0
+                    logo_result["logoBody"] = "Halal Certification Seal"
+                    logo_result["isAmbiguousHcb"] = True
+        except Exception as err:
+            logger.debug(f"Gemini visual seal fallback skipped: {err}")
         return
 
     detected_logos = logo_result.get("detectedLogos") or []

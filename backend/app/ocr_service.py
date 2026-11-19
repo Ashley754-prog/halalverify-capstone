@@ -284,6 +284,93 @@ def extract_seal_crop_with_gemini(crop_image: Image.Image) -> str:
     return ""
 
 
+def detect_seal_hcb_with_gemini(image_base64: str) -> dict:
+    """
+    Focused visual fallback when YOLOv8 misses a small, low-contrast, translucent, or monochrome
+    Halal seal (e.g., brown-ink HDIP printed on clear plastic over crackers) while full-label OCR
+    detected the word 'HALAL' or Arabic 'حلال'. Returns:
+      {"has_visual_seal": bool, "seal_text": str}
+    Never guesses an HCB acronym that is not visibly printed.
+    """
+    import json
+    import os
+    import urllib.request
+    from io import BytesIO
+
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not api_key or not image_base64:
+        return {"has_visual_seal": False, "seal_text": ""}
+
+    try:
+        pil_img = safe_load_pil_image(image_base64)
+        w, h = pil_img.size
+        longest = max(w, h)
+        if longest > 1280:
+            scale = 1280 / float(longest)
+            pil_img = pil_img.resize((int(w * scale), int(h * scale)), Image.Resampling.BILINEAR)
+
+        buf = BytesIO()
+        pil_img.save(buf, format="JPEG", quality=92)
+        raw_b64 = base64.b64encode(buf.getvalue()).decode()
+
+        for model_name in ["gemini-flash-lite-latest", "gemini-3.1-flash-lite", "gemini-flash-latest"]:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+            payload = json.dumps({
+                "contents": [{
+                    "parts": [
+                        {
+                            "text": (
+                                "Inspect this product packaging specifically for a printed Halal certification "
+                                "emblem, stamp, or circular seal (even if small, monochrome, or printed on clear plastic). "
+                                "1) If there is NO visual Halal logo/emblem (only plain text or no logo), reply exactly: NO_SEAL\n"
+                                "2) If there IS a visual Halal logo/emblem, transcribe ONLY the exact letters, acronym, "
+                                "or organization name visibly printed inside, around the rim, or on the ribbon of that seal. "
+                                "Do NOT guess or invent an acronym if unreadable; if it is clearly a visual Halal emblem "
+                                "but the certifier letters are unreadable, reply exactly: GENERIC_HALAL_SEAL"
+                            )
+                        },
+                        {"inline_data": {"mime_type": "image/jpeg", "data": raw_b64}}
+                    ]
+                }],
+                "generationConfig": {
+                    "temperature": 0.0,
+                    "maxOutputTokens": 120
+                }
+            }).encode()
+
+            req = urllib.request.Request(
+                url,
+                data=payload,
+                headers={
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": api_key,
+                },
+                method="POST"
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=8) as resp:
+                    data = json.loads(resp.read().decode())
+                    candidates = data.get("candidates", [])
+                    if candidates:
+                        parts = candidates[0].get("content", {}).get("parts", [])
+                        if parts:
+                            ans = parts[0].get("text", "").strip()
+                            up = ans.upper().strip(" .!?:;\"'")
+                            if not ans or up == "NO_SEAL" or up.startswith("NO_SEAL"):
+                                return {"has_visual_seal": False, "seal_text": ""}
+                            if up == "GENERIC_HALAL_SEAL" or up.startswith("GENERIC_HALAL_SEAL"):
+                                return {"has_visual_seal": True, "seal_text": ""}
+                            logger.info(f"Gemini visual seal fallback succeeded with {model_name}: {ans[:80]}")
+                            return {"has_visual_seal": True, "seal_text": sanitize_ocr_text(ans)}
+            except Exception as model_err:
+                logger.debug(f"Gemini visual seal fallback with {model_name} failed: {model_err}")
+                continue
+    except Exception as err:
+        logger.debug(f"Gemini visual seal fallback general error: {err}")
+
+    return {"has_visual_seal": False, "seal_text": ""}
+
+
 def extract_text_with_gemini(image_base64: str) -> str:
     import json
     import os
