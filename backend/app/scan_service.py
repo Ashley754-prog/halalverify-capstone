@@ -741,7 +741,12 @@ def is_food_label_content(text: str, flagged_items: list, logo_detected: bool) -
 
 # --- Stage 3: Multi-Channel OCR-YOLO Evidence Fusion (Deliverable 5) ---
 
-def _match_explicit_hcb_in_text(text: str, allow_country_origin: bool = False, has_visual_seal: bool = False):
+def _match_explicit_hcb_in_text(
+    text: str,
+    allow_country_origin: bool = False,
+    has_visual_seal: bool = False,
+    is_seal_crop: bool = False,
+):
     """
     Matches explicit certifying body acronyms or organization titles inside text
     (either from high-res logo crop OCR or full-label OCR).
@@ -780,7 +785,12 @@ def _match_explicit_hcb_in_text(text: str, allow_country_origin: bool = False, h
     if re.search(r"\bAHIP\b", upper_text) or "ALLIANCE FOR HALAL INTEGRITY" in upper_text:
         return HCB_METADATA_BY_CODE["AHIP"]
 
-    if re.search(r"\bPRIME\b", upper_text) and ("HALAL" in upper_text or "CERTIF" in upper_text or has_visual_seal):
+    if (
+        "PRIME CERTIFICATION" in upper_text
+        or "PRIME ASIA" in upper_text
+        or re.search(r"\bPRIME\b.{0,24}\bHALAL\b|\bHALAL\b.{0,24}\bPRIME\b", upper_text, flags=re.DOTALL)
+        or (is_seal_crop and re.search(r"\bPRIME\b", upper_text))
+    ):
         return HCB_METADATA_BY_CODE["PRIME"]
 
     if re.search(r"\bFIQHI\b", upper_text):
@@ -862,6 +872,57 @@ def _match_explicit_hcb_in_text(text: str, allow_country_origin: bool = False, h
     return None
 
 
+def _enrich_seal_crop_with_gemini(image_base64: str, logo_result: dict, extracted_text: str) -> None:
+    """
+    When YOLOv8 visually localizes a Halal seal on full packaging, but neither local RapidOCR
+    nor full-label Gemini OCR captured an explicit HCB acronym (common for small 1 cm regional
+    seals such as PRIME, PUCOI, HDIP, BUSC, FIQHI, MASLAHA), crops the exact bounding box at
+    full source resolution and runs a focused zero-hallucination Gemini seal-crop read.
+    """
+    if not logo_result or not logo_result.get("logoDetected") or logo_result.get("isInvalidLogo"):
+        return
+
+    existing_crop = str(logo_result.get("cropOcrText") or "").strip()
+    if _match_explicit_hcb_in_text(existing_crop, allow_country_origin=False, has_visual_seal=True, is_seal_crop=True):
+        return
+    if _match_explicit_hcb_in_text(extracted_text, allow_country_origin=False, has_visual_seal=True, is_seal_crop=False):
+        return
+
+    detected_logos = logo_result.get("detectedLogos") or []
+    if not detected_logos:
+        return
+    box = detected_logos[0].get("box")
+    if not box or len(box) != 4 or (box[2] - box[0]) < 12 or (box[3] - box[1]) < 12:
+        return
+
+    try:
+        from app.ocr_service import safe_load_pil_image, extract_seal_crop_with_gemini
+
+        img = safe_load_pil_image(image_base64)
+        orig_w, orig_h = img.size
+        bx1, by1, bx2, by2 = [float(v) for v in box]
+        bw = max(1.0, bx2 - bx1)
+        bh = max(1.0, by2 - by1)
+        pad_x = bw * 0.25
+        pad_y = bh * 0.25
+
+        cx1 = max(0, int(round(bx1 - pad_x)))
+        cy1 = max(0, int(round(by1 - pad_y)))
+        cx2 = min(orig_w, int(round(bx2 + pad_x)))
+        cy2 = min(orig_h, int(round(by2 + pad_y)))
+        if (cx2 - cx1) < 12 or (cy2 - cy1) < 12:
+            return
+
+        roi_crop = img.crop((cx1, cy1, cx2, cy2))
+        gemini_crop_text = extract_seal_crop_with_gemini(roi_crop)
+        if gemini_crop_text:
+            merged_crop = f"{existing_crop} {gemini_crop_text}".strip() if existing_crop else gemini_crop_text
+            logo_result["cropOcrText"] = merged_crop
+            detected_logos[0]["crop_ocr_text"] = merged_crop
+    except Exception as err:
+        logger.debug(f"Gemini seal-crop enrichment skipped: {err}")
+
+
 def fuse_logo_and_ocr_evidence(logo_result: dict, extracted_text: str) -> dict:
     """
     Implements the Deliverable 5 Multi-Channel OCR-YOLO Evidence-Fusion Matrix:
@@ -900,9 +961,15 @@ def fuse_logo_and_ocr_evidence(logo_result: dict, extracted_text: str) -> dict:
         return logo_result
 
     # 2. Match HCB evidence from Crop OCR (Channel 2), Full-Label OCR (Channel 3), and Catalog (Channel 4)
-    crop_hcb_match = _match_explicit_hcb_in_text(crop_ocr_text, allow_country_origin=False, has_visual_seal=visual_detected)
-    explicit_label_hcb_match = _match_explicit_hcb_in_text(extracted_text, allow_country_origin=False, has_visual_seal=True)
-    label_hcb_match = _match_explicit_hcb_in_text(extracted_text, allow_country_origin=True, has_visual_seal=visual_detected)
+    crop_hcb_match = _match_explicit_hcb_in_text(
+        crop_ocr_text, allow_country_origin=False, has_visual_seal=visual_detected, is_seal_crop=True
+    )
+    explicit_label_hcb_match = _match_explicit_hcb_in_text(
+        extracted_text, allow_country_origin=False, has_visual_seal=True, is_seal_crop=False
+    )
+    label_hcb_match = _match_explicit_hcb_in_text(
+        extracted_text, allow_country_origin=True, has_visual_seal=visual_detected, is_seal_crop=False
+    )
 
     # Rim-keyword corroboration for YOLOv8's visual candidate when a seal is visually localized
     rim_corroborated_match = None
@@ -976,13 +1043,27 @@ def fuse_logo_and_ocr_evidence(logo_result: dict, extracted_text: str) -> dict:
     if not is_ambiguous_hcb:
         # High-confidence YOLOv8 prediction (>= 78%)
         vis_code = (logo_result.get("visualCandidateCode") or "").strip().upper()
-        if crop_hcb_match and crop_hcb_match[0].upper() != vis_code:
-            # Explicit acronym read inside the high-res seal crop itself takes precedence
-            c_name, c_id, c_label, c_conf = crop_hcb_match
+        if explicit_hcb_match and explicit_hcb_match[0].upper() != vis_code:
+            # Explicit HCB acronym/name read inside the seal crop or full-label Vision OCR
+            # takes precedence over a visually similar seal shape guess (e.g., PRIME vs IDCP)
+            c_name, c_id, c_label, c_conf = explicit_hcb_match
+            fused_conf = round(max(visual_conf, min(94.0, c_conf)), 1)
             logo_result["logoBody"] = c_label
-            logo_result["logoConfidence"] = round(max(visual_conf, min(94.0, c_conf)), 1)
+            logo_result["logoConfidence"] = fused_conf
             logo_result["sealStatus"] = "OCR_DISAMBIGUATED_SEAL"
-            logo_result["evidenceSource"] = "crop_ocr_override"
+            logo_result["evidenceSource"] = "crop_ocr_override" if crop_hcb_match else "label_ocr_override"
+            logo_result["detectedLogos"] = [
+                {
+                    "label": c_label,
+                    "confidence": fused_conf,
+                    "is_invalid": False,
+                    "class_name": c_name,
+                    "class_id": c_id,
+                    "box": base_box,
+                    "norm_box": base_norm,
+                    "crop_ocr_text": crop_ocr_text,
+                }
+            ]
         else:
             logo_result["sealStatus"] = "VERIFIED_HCB_SEAL"
             logo_result["evidenceSource"] = (
@@ -992,7 +1073,33 @@ def fuse_logo_and_ocr_evidence(logo_result: dict, extracted_text: str) -> dict:
 
     # Moderate/Visual YOLOv8 seal -> Corroborate using Visual Class, Crop OCR, Label OCR, or Catalog
     vis_code = (logo_result.get("visualCandidateCode") or "").strip().upper()
-    if vis_code in HCB_METADATA_BY_CODE and visual_conf >= 35.0 and best_text_match:
+    if explicit_hcb_match and explicit_hcb_match[0].upper() != vis_code:
+        # Explicit HCB text disagrees with moderate-conf visual guess -> trust explicit text
+        c_name, c_id, c_label, c_conf = explicit_hcb_match
+        fused_conf = round(min(95.0, max(visual_conf + 18.0, min(92.0, c_conf))), 1)
+        logo_result["logoConfidence"] = fused_conf
+        logo_result["logoBody"] = c_label
+        logo_result["isAmbiguousHcb"] = False
+        logo_result["sealStatus"] = "OCR_DISAMBIGUATED_SEAL"
+        logo_result["evidenceSource"] = "crop_ocr_override" if crop_hcb_match else "label_ocr_override"
+        logo_result["detectedLogos"] = [
+            {
+                "label": c_label,
+                "confidence": fused_conf,
+                "is_invalid": False,
+                "class_name": c_name,
+                "class_id": c_id,
+                "box": base_box,
+                "norm_box": base_norm,
+                "crop_ocr_text": crop_ocr_text,
+            }
+        ]
+    elif (
+        vis_code in HCB_METADATA_BY_CODE
+        and visual_conf >= 35.0
+        and best_text_match
+        and best_text_match[0].upper() == vis_code
+    ):
         c_name, c_id, c_label, _ = HCB_METADATA_BY_CODE[vis_code]
         fused_conf = round(min(96.0, visual_conf + 15.0), 1)
         logo_result["logoConfidence"] = fused_conf
@@ -1309,7 +1416,10 @@ def analyze_label_image(image_base64: str) -> dict:
 
     gc.collect()
 
-    # Stage 3B: Multi-Channel OCR-YOLO Evidence Fusion
+    # Stage 3B: High-Res Gemini Seal-Crop Verification (fires only when a visual seal lacks explicit HCB text)
+    _enrich_seal_crop_with_gemini(image_base64, logo_result, extracted_text)
+
+    # Stage 3C: Multi-Channel OCR-YOLO Evidence Fusion
     logo_result = fuse_logo_and_ocr_evidence(logo_result, extracted_text)
 
     # Stage 4: Structural Ingredient Section Parsing + Multilingual & Fuzzy Additive Screening

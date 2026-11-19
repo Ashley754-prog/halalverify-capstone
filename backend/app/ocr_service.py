@@ -185,6 +185,99 @@ def upscale_small_image(image: Image.Image) -> Image.Image:
     return normalize_ocr_image(image)
 
 
+def extract_seal_crop_with_gemini(crop_image: Image.Image) -> str:
+    """
+    Runs a focused, zero-hallucination Gemini Vision transcription pass on a zoomed-in
+    high-resolution Halal seal bounding-box crop to accurately read small or curved HCB text
+    (e.g., PRIME, PUCOI, HDIP, BUSC, BPCC, MMHCB, FIQHI, MASLAHA, Philcosed, IDCP, JAKIM, BPJPH).
+    """
+    import json
+    import os
+    import urllib.request
+    from io import BytesIO
+
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not api_key or crop_image is None:
+        return ""
+
+    try:
+        crop_rgb = crop_image.convert("RGB")
+        w, h = crop_rgb.size
+        if min(w, h) < 12:
+            return ""
+
+        longest = max(w, h)
+        target_side = 512
+        if longest < target_side:
+            scale = target_side / float(longest)
+            crop_rgb = crop_rgb.resize(
+                (max(1, int(round(w * scale))), max(1, int(round(h * scale)))),
+                Image.Resampling.LANCZOS,
+            )
+        elif longest > 768:
+            scale = 768 / float(longest)
+            crop_rgb = crop_rgb.resize(
+                (max(1, int(round(w * scale))), max(1, int(round(h * scale)))),
+                Image.Resampling.BILINEAR,
+            )
+
+        buf = BytesIO()
+        crop_rgb.save(buf, format="JPEG", quality=92)
+        raw_b64 = base64.b64encode(buf.getvalue()).decode()
+
+        for model_name in ["gemini-flash-lite-latest", "gemini-3.1-flash-lite", "gemini-flash-latest"]:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+            payload = json.dumps({
+                "contents": [{
+                    "parts": [
+                        {
+                            "text": (
+                                "Transcribe ONLY the exact letters, words, acronyms, or numbers clearly printed "
+                                "inside this cropped certification mark or seal (including curved rim text). "
+                                "Do NOT guess, infer, or invent any certifying body name if the letters are "
+                                "blurry or not visibly printed. If no text is legible, reply exactly: NONE"
+                            )
+                        },
+                        {"inline_data": {"mime_type": "image/jpeg", "data": raw_b64}}
+                    ]
+                }],
+                "generationConfig": {
+                    "temperature": 0.0,
+                    "maxOutputTokens": 120
+                }
+            }).encode()
+
+            req = urllib.request.Request(
+                url,
+                data=payload,
+                headers={
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": api_key,
+                },
+                method="POST"
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=8) as resp:
+                    data = json.loads(resp.read().decode())
+                    candidates = data.get("candidates", [])
+                    if candidates:
+                        parts = candidates[0].get("content", {}).get("parts", [])
+                        if parts:
+                            extracted = parts[0].get("text", "").strip()
+                            low = extracted.lower().strip(" .!?:;\"'")
+                            if not extracted or low in ("none", "n/a", "no text", "no readable text") or low.startswith("no text") or low.startswith("no readable text"):
+                                return ""
+                            logger.info(f"Gemini seal-crop OCR succeeded with {model_name}: {extracted[:80]}")
+                            return sanitize_ocr_text(extracted)
+            except Exception as model_err:
+                logger.debug(f"Gemini seal-crop OCR attempt with {model_name} failed: {model_err}")
+                continue
+    except Exception as err:
+        logger.debug(f"Gemini seal-crop OCR general error: {err}")
+
+    return ""
+
+
 def extract_text_with_gemini(image_base64: str) -> str:
     import json
     import os
@@ -199,12 +292,12 @@ def extract_text_with_gemini(image_base64: str) -> str:
         pil_img = safe_load_pil_image(image_base64)
         w, h = pil_img.size
         longest = max(w, h)
-        if longest > 800:
-            scale = 800 / longest
+        if longest > 1280:
+            scale = 1280 / longest
             pil_img = pil_img.resize((int(w * scale), int(h * scale)), Image.Resampling.BILINEAR)
 
         buf = BytesIO()
-        pil_img.save(buf, format="JPEG", quality=85)
+        pil_img.save(buf, format="JPEG", quality=88)
         raw_b64 = base64.b64encode(buf.getvalue()).decode()
 
         # Try fast current Flash-Lite models first, fallback to current Flash models
@@ -217,9 +310,9 @@ def extract_text_with_gemini(image_base64: str) -> str:
                             "text": (
                                 "Extract all readable text printed on this packaging or label verbatim. "
                                 "Include brand name, ingredients, food additives, chemical E-numbers, "
-                                "and text inside certification marks or logos. "
-                                "Do NOT invent, assume, or hallucinate text not clearly visible on the image. "
-                                "Output ONLY the exact visible text."
+                                "and any small or curved text/acronyms visibly printed inside certification marks "
+                                "or Halal logos. Do NOT invent, assume, or hallucinate text not clearly visible "
+                                "on the image. Output ONLY the exact visible text."
                             )
                         },
                         {"inline_data": {"mime_type": "image/jpeg", "data": raw_b64}}
