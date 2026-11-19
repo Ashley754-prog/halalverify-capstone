@@ -773,7 +773,7 @@ def _match_explicit_hcb_in_text(
     if re.search(r"\bMMHCB\b", upper_text) or "MINDANAO MUSLIM HALAL" in upper_text:
         return HCB_METADATA_BY_CODE["MMHCB"]
 
-    if re.search(r"\bMASLAHA\b", upper_text) or "ADVOCACY FOR MUSLIM AFFAIRS" in upper_text:
+    if re.search(r"\bMASLAHA\b", upper_text) or "ADVOCACY FOR MUSLIM AFFAIRS" in upper_text or "MUSLIM ADVOCACY" in upper_text:
         return HCB_METADATA_BY_CODE["MASLAHA"]
 
     if re.search(r"\bMINHA\b", upper_text) or "MINDANAO HALAL AUTHORITY" in upper_text:
@@ -793,14 +793,26 @@ def _match_explicit_hcb_in_text(
     ):
         return HCB_METADATA_BY_CODE["PRIME"]
 
-    if re.search(r"\bFIQHI\b", upper_text):
+    if re.search(r"\bFIQHI\b", upper_text) or "FIQHI ISLAMIC" in upper_text:
         return HCB_METADATA_BY_CODE["FIQHI"]
 
-    if re.search(r"\bPHILCOSED\b", upper_text):
+    if (
+        re.search(r"\bPHILCOSED\b", upper_text)
+        or "SOCIO-ECONOMIC DEVELOPMENT" in upper_text
+        or "SOCIO ECONOMIC DEVELOPMENT" in upper_text
+    ):
         return HCB_METADATA_BY_CODE["PHILCOSED"]
 
     if re.search(r"\bNCMF\b", upper_text) or "NATIONAL COMMISSION ON MUSLIM FILIPINOS" in upper_text:
         return HCB_METADATA_BY_CODE["NCMF_GENERAL"]
+
+    if (
+        "HALAL PHILIPPINES" in upper_text
+        or "PHILIPPINE NATIONAL HALAL" in upper_text
+        or "NATIONAL HALAL SEAL" in upper_text
+        or re.search(r"\bPHILHALAL\b", upper_text)
+    ):
+        return HCB_METADATA_BY_CODE["NATIONAL_HALAL_LOGO"]
 
     if re.search(r"\bBUSC\b", upper_text) or "BANGSAMORO UNITY" in upper_text or "BASILAN ULAMA" in upper_text:
         return HCB_METADATA_BY_CODE["BUSC"]
