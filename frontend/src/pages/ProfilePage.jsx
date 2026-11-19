@@ -496,46 +496,39 @@ const ProfilePage = ({ onViewChange, initialFilter = 'all' }) => {
                                         <span>Change Password</span>
                                     </button>
                                 </div>
+
+                                {/* Compact Save Changes Row tucked cleanly inside Personal Information */}
+                                <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                                    <div className="min-h-[20px] flex items-center">
+                                        {savedSuccess && (
+                                            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
+                                                <CheckCircle2 size={15} />
+                                                Profile Updated!
+                                            </span>
+                                        )}
+                                        {errorMessage && !savedSuccess && (
+                                            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600">
+                                                <AlertCircle size={15} />
+                                                Not saved
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        disabled={saving}
+                                        className="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-bold shadow-sm shadow-emerald-600/20 transition-all active:scale-[0.98] cursor-pointer ml-auto"
+                                    >
+                                        {saving ? (
+                                            <Loader2 size={15} className="animate-spin" />
+                                        ) : (
+                                            <Save size={15} />
+                                        )}
+                                        {saving ? 'Saving...' : 'Save Changes'}
+                                    </button>
+                                </div>
                             </div>
 
-                        </div>
-
-                        {/* Actions Footer Bar (Side-by-Side buttons for all viewport sizes) */}
-                        <div className="flex items-center justify-between gap-3 bg-white rounded-2xl border border-slate-200 p-3.5 sm:p-4 shadow-sm">
-                            {savedSuccess && (
-                                <span className="text-xs font-semibold text-emerald-600 items-center gap-1 hidden sm:inline-flex">
-                                    <CheckCircle2 size={15} />
-                                    Profile Updated!
-                                </span>
-                            )}
-
-                            {errorMessage && !savedSuccess && (
-                                <span className="text-xs font-semibold text-red-600 items-center gap-1 hidden sm:inline-flex">
-                                    <AlertCircle size={15} />
-                                    Not saved
-                                </span>
-                            )}
-
-                            <button
-                                type="submit"
-                                disabled={saving}
-                                className="flex flex-[1.2] items-center justify-center gap-2 px-5 sm:flex-none sm:px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-[0.98] cursor-pointer"
-                            >
-                                {saving ? (
-                                    <Loader2 size={16} className="animate-spin" />
-                                ) : (
-                                    <Save size={16} />
-                                )}
-                                {saving ? 'Saving...' : 'Save Profile'}
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={() => onViewChange?.('back')}
-                                className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer"
-                            >
-                                Cancel
-                            </button>
                         </div>
                     </form>
 
