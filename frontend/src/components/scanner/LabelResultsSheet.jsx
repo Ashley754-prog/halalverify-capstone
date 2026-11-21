@@ -375,10 +375,10 @@ export const LabelResultsSheet = ({
                                                 scanResult.verdict === 'Green'
                                                     ? 'No Prohibited Additives Found'
                                                     : scanResult.verdict === 'Red'
-                                                    ? 'Not Halal · Prohibited Ingredient'
+                                                    ? 'Haram'
                                                     : scanResult.verdict === 'Yellow'
                                                     ? 'Doubtful Ingredient Found'
-                                                    : 'Unverified · Incomplete Scan'
+                                                    : 'Unverified'
                                             )
                                         )}
                                     </p>

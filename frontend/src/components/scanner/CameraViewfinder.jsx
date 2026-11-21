@@ -97,7 +97,7 @@ export const CameraViewfinder = ({
 
             if (isHaram) {
                 return {
-                    statusLabel: 'Not Halal',
+                    statusLabel: 'Haram',
                     themeClasses: 'bg-red-600/90 hover:bg-red-600 text-white border-red-400/50 shadow-red-950/40',
                     icon: <ShieldAlert size={14} className="text-red-200 shrink-0" />,
                 };

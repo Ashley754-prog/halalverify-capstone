@@ -131,7 +131,7 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
 
     if (haramCount > 0) {
         verdict = "Red";
-        riskLevel = "Not Halal · Prohibited Ingredient";
+        riskLevel = "Haram";
         const itemLabel = haramCount === 1 ? "1 prohibited ingredient" : `${haramCount} prohibited ingredients`;
         analysisSummary = `Found ${itemLabel} on this label. Do not consume.`;
         if (logoDetected && !isInvalidLogo) {
@@ -168,7 +168,7 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
         ];
     } else {
         verdict = "Neutral";
-        riskLevel = "Unverified · Incomplete Scan";
+        riskLevel = "Unverified";
         if (isInvalidLogo) {
             analysisSummary = hasReadableIngredients
                 ? `No prohibited or doubtful ingredients were found across ${totalPanels} panels, but no recognized Halal logo was found. Scan the official Halal logo or check the Product Catalog.`

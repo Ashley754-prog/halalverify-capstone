@@ -1306,7 +1306,7 @@ def explain_label_verdict(
 
         return {
             "verdict": "Red",
-            "riskLevel": "Not Halal · Prohibited Ingredient",
+            "riskLevel": "Haram",
             "analysisSummary": summary_msg,
             "recommendations": [
                 "Avoid consuming this product.",
@@ -1383,7 +1383,7 @@ def explain_label_verdict(
             )
         return {
             "verdict": "Neutral",
-            "riskLevel": "Unverified · Incomplete Scan",
+            "riskLevel": "Unverified",
             "analysisSummary": summary_msg,
             "recommendations": [
                 "Tap '+ Scan Seal' to capture the official Halal logo on the packaging.",
@@ -1394,7 +1394,7 @@ def explain_label_verdict(
     if logo_detected and ingredient_status != "READABLE_PANEL":
         return {
             "verdict": "Neutral",
-            "riskLevel": "Unverified · Incomplete Scan",
+            "riskLevel": "Unverified",
             "analysisSummary": (
                 f"Found {logo_body} ({logo_confidence}% match), but no readable ingredient list was found in this photo. "
                 "Scan the ingredients on the back to finish."
@@ -1408,7 +1408,7 @@ def explain_label_verdict(
     if logo_detected and is_ambiguous_hcb:
         return {
             "verdict": "Neutral",
-            "riskLevel": "Unverified · Incomplete Scan",
+            "riskLevel": "Unverified",
             "analysisSummary": (
                 "No clear Halal logo could be confirmed because the certifier name was too blurry. "
                 "Move closer and retake the logo photo."
@@ -1422,7 +1422,7 @@ def explain_label_verdict(
         claimed_note = f" ({text_claimed_body})" if text_claimed_body else ""
         return {
             "verdict": "Neutral",
-            "riskLevel": "Unverified · Incomplete Scan",
+            "riskLevel": "Unverified",
             "analysisSummary": (
                 f"The label mentions Halal{claimed_note}, but no official Halal logo was found in this photo. "
                 "Scan the side showing the Halal logo."
@@ -1435,7 +1435,7 @@ def explain_label_verdict(
 
     return {
         "verdict": "Neutral",
-        "riskLevel": "Unverified · Incomplete Scan",
+        "riskLevel": "Unverified",
         "analysisSummary": (
             "No prohibited or doubtful ingredients were found in the ingredient list, but no Halal logo was found in this photo. "
             "Scan the Halal logo on the package or check the Product Catalog."
