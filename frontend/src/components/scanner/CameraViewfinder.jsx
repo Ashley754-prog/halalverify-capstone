@@ -44,12 +44,22 @@ export const CameraViewfinder = ({
     const containerRef = useRef(null);
     const galleryInputRef = useRef(null);
     const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+    const [cameraSlowStart, setCameraSlowStart] = useState(false);
 
     useEffect(() => {
         if (!isCapturing) {
             setIsVideoPlaying(false);
         }
     }, [isCapturing]);
+
+    useEffect(() => {
+        if (!isCapturing || isVideoPlaying || cameraError || selectedImage) {
+            setCameraSlowStart(false);
+            return;
+        }
+        const timer = window.setTimeout(() => setCameraSlowStart(true), 3000);
+        return () => window.clearTimeout(timer);
+    }, [isCapturing, isVideoPlaying, cameraError, selectedImage]);
 
     const getResultBadgeData = () => {
         if (showResultsSheet || fusionState?.active) return null;
@@ -170,9 +180,14 @@ export const CameraViewfinder = ({
                         playsInline
                         muted
                         autoPlay
-                        onPlaying={() => setIsVideoPlaying(true)}
+                        onPlaying={() => {
+                            setIsVideoPlaying(true);
+                            setCameraSlowStart(false);
+                        }}
                         onEmptied={() => setIsVideoPlaying(false)}
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-200"
+                        className={`absolute inset-0 w-full h-full object-cover transition-all duration-200 ${
+                            isVideoPlaying ? 'opacity-100' : 'opacity-0'
+                        }`}
                         style={{
                             transform: `${isMirrored ? 'scaleX(-1)' : 'scaleX(1)'} ${
                                 !zoomCapabilities && zoom > 1 ? `scale(${zoom})` : ''
@@ -192,8 +207,22 @@ export const CameraViewfinder = ({
                     </div>
                 )}
 
-                {/* 3. Friendly Fallback View when Camera is Paused, Unavailable/Denied, or Initializing */}
-                {!selectedImage && (!isCapturing || Boolean(cameraError) || !isVideoPlaying) && (
+                {/* 3A. Calm Warmup State while WebRTC camera starts (first 3s) */}
+                {!selectedImage && isCapturing && !cameraError && !isVideoPlaying && !cameraSlowStart && (
+                    <div
+                        className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10 bg-slate-950"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="relative w-14 h-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-emerald-400 mb-3 shadow-lg">
+                            <span className="absolute inset-0 rounded-2xl border-2 border-emerald-500/20 border-t-emerald-400 animate-spin" />
+                            <Camera size={24} />
+                        </div>
+                        <p className="text-xs font-medium text-slate-400">Opening camera...</p>
+                    </div>
+                )}
+
+                {/* 3B. Friendly Fallback View when Camera is Paused, Unavailable/Denied, or Timed Out (>3s) */}
+                {!selectedImage && (Boolean(cameraError) || !isCapturing || cameraSlowStart) && (
                     <div
                         className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10 bg-slate-950/90"
                         onClick={(e) => e.stopPropagation()}
@@ -204,14 +233,14 @@ export const CameraViewfinder = ({
                         <h3 className="text-base font-bold text-white mb-1">
                             {cameraError
                                 ? 'Camera Access Unavailable'
-                                : isCapturing
-                                ? 'Starting Camera…'
+                                : cameraSlowStart
+                                ? 'Still Waiting for Camera'
                                 : 'Camera Paused'}
                         </h3>
                         <p className="text-xs text-slate-300 max-w-xs mb-5 leading-relaxed">
                             {cameraError
                                 ? 'Allow camera permission in your browser settings, or upload a clear photo of the product label from your gallery.'
-                                : isCapturing
+                                : cameraSlowStart
                                 ? 'Waiting for camera permission or video feed. You can also upload a product photo directly from your gallery.'
                                 : 'Tap below to resume the live camera or pick a product photo from your gallery.'}
                         </p>

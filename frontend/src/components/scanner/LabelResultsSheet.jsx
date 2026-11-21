@@ -5,7 +5,6 @@ import {
     AlertTriangle,
     CheckCircle2,
     RefreshCw,
-    Flag,
     ChevronDown,
     Layers,
     PlusCircle,
@@ -595,51 +594,14 @@ export const LabelResultsSheet = ({
                             </div>
 
                             {/* 6. Footer Actions */}
-                            <div className="pt-1 flex flex-wrap gap-2">
+                            <div className="pt-1">
                                 <button
                                     type="button"
                                     onClick={onReset}
-                                    className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg active:scale-95 transition cursor-pointer"
+                                    className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg active:scale-95 transition cursor-pointer"
                                 >
                                     <RefreshCw size={14} />
                                     <span>Scan Next Product</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        const nonHalalFlags = (scanResult.flaggedIngredients || []).filter((f) => {
-                                            const st = (f.status || '').toLowerCase().trim();
-                                            return !['halal', 'safe', 'compliant', 'verified', 'approved'].includes(st);
-                                        });
-                                        const issueType = scanResult.isInvalidLogo
-                                            ? 'Suspicious / Counterfeit Logo'
-                                            : scanResult.riskLevel === 'No Food Label Found' || scanResult.riskLevel === 'No Product Detected'
-                                            ? 'Wrong Verdict (Scanner Error)'
-                                            : nonHalalFlags.length > 0
-                                            ? 'Ingredient Incorrectly Flagged'
-                                            : 'Wrong Verdict (Scanner Error)';
-
-                                        const descLines = [
-                                            `Result: ${scanResult.riskLevel || scanResult.verdict}`,
-                                            scanResult.analysisSummary ? `Details: ${scanResult.analysisSummary}` : '',
-                                            scanResult.logoDetected ? `Logo: ${scanResult.logoBody} (${scanResult.logoConfidence}% match)` : 'Logo: None detected',
-                                        ];
-                                        if (nonHalalFlags.length > 0) {
-                                            descLines.push(`Flagged: ${nonHalalFlags.map(f => f.ingredient).join(', ')}`);
-                                        }
-
-                                        onViewChange?.('report-issue', {
-                                            relatedTo: 'product',
-                                            subjectName: scanResult.logoDetected ? `${scanResult.logoBody} Product` : 'Scanned Food Packaging',
-                                            issueType,
-                                            description: descLines.join('\n'),
-                                            evidenceUrl: scanResult.images?.[0] || ''
-                                        });
-                                    }}
-                                    className="py-2.5 px-3.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold text-xs border border-slate-700 flex items-center justify-center gap-1.5 active:scale-95 transition cursor-pointer"
-                                >
-                                    <Flag size={13} />
-                                    <span>Report</span>
                                 </button>
                             </div>
                         </div>

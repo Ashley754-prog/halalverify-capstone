@@ -11,7 +11,7 @@ export const useCameraStream = (onToast) => {
     const isStartingRef = useRef(false);
     const targetFacingRef = useRef('environment');
 
-    const [isCapturing, setIsCapturing] = useState(false);
+    const [isCapturing, setIsCapturing] = useState(true);
     const [actualFacing, setActualFacing] = useState('environment');
     const [videoDevices, setVideoDevices] = useState([]);
     const [activeDeviceId, setActiveDeviceId] = useState(null);
