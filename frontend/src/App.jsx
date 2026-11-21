@@ -4,6 +4,7 @@ import Login from "./auth/Login.jsx";
 import CreateAccount from "./auth/CreateAccount.jsx";
 import ForgotPassword from "./auth/ForgotPassword.jsx";
 import ResetPassword from "./auth/ResetPassword.jsx";
+import MfaChallengeScreen from "./auth/MfaChallengeScreen.jsx";
 import Sidebar from './components/layouts/Sidebar.jsx';
 import { AppTopbar } from './components/layouts/Topbar.jsx';
 import Dashboard from './pages/Dashboard.jsx';
@@ -19,7 +20,7 @@ import EstablishmentsMap from './pages/EstablishmentsMap.jsx';
 import VerificationQueue from './pages/VerificationQueue.jsx';
 import LandingPage from './pages/LandingPage.jsx';
 import { supabase } from './lib/supabaseClient';
-import { AUTH_VIEWS, ensureUserProfile, signOut } from './lib/auth';
+import { AUTH_VIEWS, ensureUserProfile, getMfaStatus, signOut } from './lib/auth';
 import { API_BASE_URL } from './utils/api';
 
 const VALID_VIEWS = new Set([
@@ -84,6 +85,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [authLoading, setAuthLoading] = useState(true);
+  const [mfaRequired, setMfaRequired] = useState(false);
   const [isRecoveryFlow, setIsRecoveryFlow] = useState(() => {
     if (typeof window === 'undefined') return false;
     return (
@@ -199,6 +201,22 @@ export default function App() {
 
   const restoreAuthenticatedUser = useCallback(async (userOrId) => {
     const userObj = typeof userOrId === 'object' ? userOrId : { id: userOrId };
+
+    try {
+      const mfaStatus = await getMfaStatus();
+      if (mfaStatus.needsChallenge) {
+        setMfaRequired(true);
+        setUserRole(null);
+        setCurrentUser(null);
+        setCurrentView((prev) => (prev === 'login' ? 'dashboard' : prev));
+        return false;
+      }
+    } catch {
+      // Proceed normally if MFA check cannot run
+    }
+
+    setMfaRequired(false);
+
     const role = await ensureUserProfile(userObj);
     if (!role) {
       await supabase.auth.signOut().catch(() => {});
@@ -303,13 +321,14 @@ export default function App() {
       }
 
       if (event === 'SIGNED_OUT') {
+        setMfaRequired(false);
         setUserRole(null);
         setCurrentUser(null);
         handleViewChange('landing', {}, true);
         return;
       }
 
-      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'MFA_CHALLENGE_VERIFIED') && session?.user) {
         await restoreAuthenticatedUser(session.user);
       }
     });
@@ -341,10 +360,26 @@ export default function App() {
   }, [authLoading, currentView, userRole]);
 
   const handleLogin = (view, role) => {
+    if (view === 'mfa-challenge') {
+      setMfaRequired(true);
+      setUserRole(null);
+      setCurrentUser(null);
+      return;
+    }
     if (role !== null) {
       setUserRole(role);
     }
     handleViewChange(view, {}, true);
+  };
+
+  const handleMfaVerified = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      const ok = await restoreAuthenticatedUser(session.user);
+      if (ok) {
+        handleViewChange('dashboard', {}, true);
+      }
+    }
   };
 
   const handleSignOut = async () => {
@@ -353,6 +388,7 @@ export default function App() {
     } catch {
       // Clear local state even if the remote sign-out request fails.
     } finally {
+      setMfaRequired(false);
       setUserRole(null);
       setCurrentUser(null);
       handleViewChange('landing', {}, true);
@@ -442,6 +478,10 @@ export default function App() {
 
   if (currentView === 'landing') {
     return <LandingPage onViewChange={handleViewChange} userRole={userRole} />;
+  }
+
+  if (mfaRequired && currentView !== 'reset-password') {
+    return <MfaChallengeScreen onVerified={handleMfaVerified} onSignOut={handleSignOut} />;
   }
 
   if (currentView === 'login') {

@@ -20,6 +20,7 @@ import { supabase } from '../lib/supabaseClient';
 import { API_BASE_URL } from '../utils/api';
 import EmptyState from '../components/ui/EmptyState';
 import Pagination from '../components/ui/Pagination';
+import TwoFactorSettingsCard from '../components/profile/TwoFactorSettingsCard';
 
 const ProfilePage = ({ onViewChange, initialFilter = 'all' }) => {
     const [loading, setLoading] = useState(true);
@@ -531,6 +532,9 @@ const ProfilePage = ({ onViewChange, initialFilter = 'all' }) => {
 
                         </div>
                     </form>
+
+                    {/* Two-Factor Authentication Security Settings */}
+                    <TwoFactorSettingsCard role={role} />
 
                     {/* My Contributions & Reports Tracker */}
                     <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-4">

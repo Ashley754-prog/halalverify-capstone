@@ -118,3 +118,53 @@ export function getAuthRedirectUrl(path = '') {
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
     return `${window.location.origin}${normalizedPath}`;
 }
+
+export async function getMfaStatus() {
+    const [{ data: aalData, error: aalError }, { data: factorsData, error: factorsError }] = await Promise.all([
+        supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+        supabase.auth.mfa.listFactors(),
+    ]);
+
+    if (aalError) throw aalError;
+    if (factorsError) throw factorsError;
+
+    const totpFactors = factorsData?.totp || [];
+    const verifiedFactors = totpFactors.filter((factor) => factor.status === 'verified');
+    const unverifiedFactors = totpFactors.filter((factor) => factor.status !== 'verified');
+    const currentLevel = aalData?.currentLevel || 'aal1';
+    const nextLevel = aalData?.nextLevel || 'aal1';
+    const needsChallenge =
+        verifiedFactors.length > 0 &&
+        nextLevel === 'aal2' &&
+        currentLevel !== 'aal2';
+
+    return {
+        currentLevel,
+        nextLevel,
+        verifiedFactors,
+        unverifiedFactors,
+        hasVerifiedTotp: verifiedFactors.length > 0,
+        needsChallenge,
+    };
+}
+
+export async function verifyTotpCode(factorId, rawCode) {
+    const code = String(rawCode || '').replace(/\s+/g, '');
+    if (!/^\d{6}$/.test(code)) {
+        throw new Error('Enter the 6-digit code from your authenticator app.');
+    }
+
+    const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+        factorId,
+    });
+    if (challengeError) throw challengeError;
+
+    const { data: verifyData, error: verifyError } = await supabase.auth.mfa.verify({
+        factorId,
+        challengeId: challengeData.id,
+        code,
+    });
+    if (verifyError) throw verifyError;
+
+    return verifyData;
+}

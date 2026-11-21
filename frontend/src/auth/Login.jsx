@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Eye, EyeOff, Compass, ChevronRight, X } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
-import { fetchUserRole, signInWithProvider } from '../lib/auth';
+import { fetchUserRole, getMfaStatus, signInWithProvider } from '../lib/auth';
 
 export const Login = ({ onLogin, onViewChange, layout = 'login' }) => {
     const [email, setEmail] = useState('');
@@ -71,6 +71,17 @@ export const Login = ({ onLogin, onViewChange, layout = 'login' }) => {
             setErrorMessage('Unable to verify your account profile. Please try again or contact support.');
             setIsLoading(false);
             return;
+        }
+
+        try {
+            const mfaStatus = await getMfaStatus();
+            if (mfaStatus.needsChallenge) {
+                onLogin('mfa-challenge', null);
+                setIsLoading(false);
+                return;
+            }
+        } catch {
+            // Fall through cleanly if MFA check is unavailable
         }
 
         onLogin('dashboard', role);
