@@ -279,13 +279,14 @@ export const SEED_ESTABLISHMENTS = [
         "city": "Zamboanga City",
         "latitude": 6.916325,
         "longitude": 122.059571,
-        "halal_status": "needs_review",
-        "certificate_number": null,
+        "halal_status": "verified",
+        "certificate_number": "2026-116",
+        "expiry_date": "2027-07-02",
         "phone": "0966 713 3705",
         "email": "admin@denniscoffeegarden.com",
         "description": "Muslim-owned halal coffee garden rooted in Tausug heritage, serving coffee drinks, traditional cuisine, and refreshments since 1962.",
         "source_url": "https://musliminmanila.com",
-        "certifying_bodies": null,
+        "certifying_bodies": { "code": "MMHCB", "name": "Muslim Mindanao Halal Certification Board, Inc." },
         "products": [
             {
                 "id": "2c894632-41b9-4d5c-afe4-8e8ef49156f4",

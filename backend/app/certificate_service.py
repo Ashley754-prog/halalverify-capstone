@@ -98,7 +98,14 @@ def extract_certificate_fields(extracted_text: str, establishments=None) -> dict
 
     if registry_match and registry_match.get("certificate_number"):
         reg_cert = registry_match.get("certificate_number")
-        if not certificate_number or any(certificate_numbers_match(c, reg_cert) for c in (cert_candidates or [])):
+        if (
+            not certificate_number
+            or any(certificate_numbers_match(c, reg_cert) for c in (cert_candidates or []))
+            or (
+                establishment_name
+                and names_are_similar(establishment_name, registry_match.get("name") or "", threshold=0.88)
+            )
+        ):
             certificate_number = reg_cert
 
     layout_confidence = calculate_layout_confidence(
@@ -130,19 +137,27 @@ def extract_certificate_fields(extracted_text: str, establishments=None) -> dict
 
 def extract_certificate_number(text: str):
     compact_text = re.sub(r"\s+", " ", text).upper()
+    # Ignore administrative header/footer numbers so only actual certificate/control numbers match
+    filtered_text = re.sub(
+        r"\b(?:REGISTRATION|REG\.?|TIN|NCMF(?:\s+ACC(?:\.|REDITATION)?)?|SEC|DTI|SERIES)\s*(?:NO\.?|NUMBER|#)?\s*[:\.\-]?\s*[A-Z0-9][A-Z0-9\-\/\.]*\b",
+        " ",
+        compact_text,
+        flags=re.IGNORECASE,
+    )
     candidates = []
 
     patterns = [
-        r"\b(?:CERT(?:IFICATE)?(?:\s+NO\.?|\s+NUMBER|\s*#)|SERIAL(?:\s+NO\.?|\s+KEY)?|NO\.?)\s*[:\.\-]?\s*([A-Z0-9][A-Z0-9\-\/\.]{3,})\b",
+        r"\bCERT(?:IFICATE|IFICATION)?(?:\s+NO\.?|\s+NUMBER|\s*#)\s*[:\.\-]?\s*([A-Z0-9][A-Z0-9\-\/\.]{3,})\b",
+        r"\b(?:CONTROL|SERIAL)(?:\s+NO\.?|\s+NUMBER|\s+KEY|\s*#)\s*[:\.\-]?\s*([A-Z0-9][A-Z0-9\-\/\.]{3,})\b",
         r"\b(HC|BUSC|UCZP|BPCC|MMHCB)[-\/\.]?(\d{2,6})\b",
         r"\b(HDIP|IDCP|NCMF|HAL|HALAL|MUIS|JAKIM)\s*[-\/\.]?\s*(\d{3,8})(?:\s*[-\/\.]?\s*([A-Z0-9]{1,8}))?\b",
         r"\b[A-Z]{2,8}[-\s\/\.]?\d{4}[-\s\/\.]?\d{3,8}\b",
         r"\bHAL[-\s\/\.]?\d{4}[-\s\/\.]?\d{3,8}\b",
-        r"\b\d{4}[-\s\/\.]\d{5,8}\b",
+        r"\b\d{4}[-\s\/\.]\d{3,8}\b",
     ]
 
     for pattern in patterns:
-        for match in re.finditer(pattern, compact_text, flags=re.IGNORECASE):
+        for match in re.finditer(pattern, filtered_text, flags=re.IGNORECASE):
             if match.lastindex and match.lastindex >= 3 and match.group(3):
                 value = f"{match.group(1)}-{match.group(2)}-{match.group(3)}"
             elif match.lastindex and match.lastindex >= 2 and match.group(2):
@@ -209,8 +224,11 @@ def fix_ocr_certificate_number(value: str) -> str:
 
 def extract_establishment_name(text: str):
     labeled_patterns = [
-        r"(?:issued?\s+to|establishment(?:\s+name)?|company\s+name|name\s+of\s+(?:establishment|company|business|holder))\s*[:\.\-]?\s*([A-Za-z0-9][A-Za-z0-9 \t&\.,'\-\(\)]{2,100})",
+        r"(?:this\s+board\s+)?hereby\s+certifies\s+that\s*[:\.\-]?\s*([A-Za-z0-9][A-Za-z0-9 \t&\.,'\-\(\)]{2,100})",
         r"(?:this\s+certificate\s+is\s+(?:issued|awarded)\s+to)\s*[:\.\-]?\s*([A-Za-z0-9][A-Za-z0-9 \t&\.,'\-\(\)]{2,100})",
+        r"\bcertifies\s+that\s*[:\.\-]?\s*([A-Za-z0-9][A-Za-z0-9 \t&\.,'\-\(\)]{2,100})",
+        r"(?:issued?\s+to|establishment\s+name|company\s+name|name\s+of\s+(?:establishment|company|business|holder))\s*[:\.\-]?\s*([A-Za-z0-9][A-Za-z0-9 \t&\.,'\-\(\)]{2,100})",
+        r"\bestablishment\s*:\s*([A-Za-z0-9][A-Za-z0-9 \t&\.,'\-\(\)]{2,100})",
     ]
 
     for pattern in labeled_patterns:
@@ -230,7 +248,7 @@ def extract_establishment_name(text: str):
 def clean_establishment_name(value: str) -> str:
     cleaned = re.sub(r"\s+", " ", value).strip(" .,-")
     cleaned = re.split(
-        r"\b(certificate number|cert(?:ificate)? no|valid until|expiry date|expires on)\b",
+        r"\b(with business address|with address|located at|situated at|complied with|has complied|certificate number|cert(?:ificate|ification)? no|valid until|expiry date|expires on)\b",
         cleaned,
         maxsplit=1,
         flags=re.IGNORECASE,
@@ -311,6 +329,7 @@ def extract_certifying_body(text: str):
 
     for acronym, full_name in CERTIFYING_BODIES.items():
         base_name = re.sub(r"\s*\([^)]*\)\s*$", "", full_name).upper().strip()
+        base_name = re.sub(r",?\s*(?:FOUNDATION\s+)?(?:INC\.?|INCORPORATED)$", "", base_name).strip()
         if (base_name and base_name in upper_text) or re.search(rf"\b{re.escape(acronym)}\b", upper_text):
             return full_name
 
