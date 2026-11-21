@@ -439,10 +439,16 @@ export const LabelResultsSheet = ({
 
                             {/* 3. Screened Additives & Ingredients */}
                             {(() => {
-                                const visibleFlagged = (scanResult.flaggedIngredients || []).filter((f) => {
-                                    const st = (f.status || '').toLowerCase().trim();
-                                    return !['halal', 'safe', 'compliant', 'verified', 'approved'].includes(st);
-                                });
+                                const isProhibitedFlag = (item) => {
+                                    const st = (item?.status || '').toLowerCase();
+                                    return st.includes('haram') || st.includes('prohibit');
+                                };
+                                const visibleFlagged = (scanResult.flaggedIngredients || [])
+                                    .filter((f) => {
+                                        const st = (f.status || '').toLowerCase().trim();
+                                        return !['halal', 'safe', 'compliant', 'verified', 'approved'].includes(st);
+                                    })
+                                    .sort((a, b) => Number(isProhibitedFlag(b)) - Number(isProhibitedFlag(a)));
                                 const hasReadableIngredients =
                                     scanResult.ingredientStatus === 'READABLE_PANEL' ||
                                     (scanResult.ingredientStatus === undefined && Boolean(scanResult.ocrText?.trim()));
@@ -464,7 +470,7 @@ export const LabelResultsSheet = ({
                                         {visibleFlagged.length > 0 ? (
                                             <div className="space-y-2 pt-1">
                                                 {visibleFlagged.map((flag, idx) => {
-                                                    const isHaram = (flag.status || '').toLowerCase().includes('haram') || (flag.status || '').toLowerCase().includes('prohibit');
+                                                    const isHaram = isProhibitedFlag(flag);
                                                     return (
                                                         <div
                                                             key={idx}
