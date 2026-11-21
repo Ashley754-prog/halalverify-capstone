@@ -373,7 +373,7 @@ export const LabelResultsSheet = ({
                                         {simplifyHalalText(
                                             scanResult.riskLevel || (
                                                 scanResult.verdict === 'Green'
-                                                    ? 'Halal Logo Found · Clean Ingredients'
+                                                    ? 'No Prohibited Additives Found'
                                                     : scanResult.verdict === 'Red'
                                                     ? 'Not Halal · Prohibited Ingredient'
                                                     : scanResult.verdict === 'Yellow'

@@ -1359,7 +1359,7 @@ def explain_label_verdict(
     if logo_detected and not has_invalid_mark and ingredient_status == "READABLE_PANEL" and not is_ambiguous_hcb:
         return {
             "verdict": "Green",
-            "riskLevel": "Halal Logo Found · Clean Ingredients",
+            "riskLevel": "No Prohibited Additives Found",
             "analysisSummary": (
                 f"Found {logo_body} ({logo_confidence}% match) and no prohibited or doubtful ingredients were found on the label."
             ),

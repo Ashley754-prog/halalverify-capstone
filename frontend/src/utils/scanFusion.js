@@ -160,7 +160,7 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
         ];
     } else if (logoDetected && !isInvalidLogo && hasReadableIngredients && !isAmbiguousHcb) {
         verdict = "Green";
-        riskLevel = "Halal Logo Found · Clean Ingredients";
+        riskLevel = "No Prohibited Additives Found";
         analysisSummary = `Found ${logoBody} (${logoConfidence}% match) and no prohibited or doubtful ingredients were found across ${totalPanels} scanned panels.`;
         recommendations = [
             "Screened packaging shows a recognized Halal logo and clean declared ingredients.",
