@@ -516,17 +516,17 @@ export const LabelResultsSheet = ({
                                 isMultiPart ? (
                                     <div className="bg-slate-800/70 border border-slate-700/80 rounded-xl p-3 space-y-2.5">
                                         <div className="flex items-center justify-between gap-2">
-                                            <span className="text-xs font-semibold text-emerald-300 flex items-center gap-1.5">
+                                            <span className="text-xs font-semibold text-emerald-300 flex items-center gap-1.5 min-w-0">
                                                 <Layers size={14} className="text-emerald-400 shrink-0" />
-                                                <span>Combined {totalImages} packaging sections</span>
+                                                <span className="truncate">{totalImages} Scanned Parts</span>
                                             </span>
                                             <button
                                                 type="button"
                                                 onClick={() => onScanSecondary('continue-ingredients')}
-                                                className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer"
+                                                className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 text-[11px] font-semibold inline-flex items-center gap-1 whitespace-nowrap shrink-0 active:scale-95 transition cursor-pointer"
                                             >
-                                                <PlusCircle size={12} />
-                                                <span>Scan Part {totalImages + 1}</span>
+                                                <PlusCircle size={12} className="shrink-0" />
+                                                <span>Add Part {totalImages + 1}</span>
                                             </button>
                                         </div>
 
