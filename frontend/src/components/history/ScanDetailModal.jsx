@@ -132,9 +132,10 @@ export const ScanDetailModal = ({ scan, onClose }) => {
 
     const simplified = simplifyStatus(scan.verdict);
     const confPct = getConfidencePct(scan.confidence);
+    const isCertScan = scan.mode === 'certificate';
     const isHalal = simplified === 'Halal' || simplified === 'Valid';
     const isDoubtful = simplified === 'Doubtful' || simplified === 'Suspicious';
-    const isProhibited = simplified === 'Prohibited' || simplified === 'Haram' || simplified === 'Expired';
+    const isProhibited = simplified === 'Prohibited' || simplified === 'Haram' || simplified === 'Expired' || simplified === 'Invalid';
     const isUnverified = simplified === 'Unverified' || simplified === 'Neutral';
 
     let bannerBg = 'bg-slate-50 border-slate-200 text-slate-800';
@@ -144,7 +145,9 @@ export const ScanDetailModal = ({ scan, onClose }) => {
     if (isHalal) {
         bannerBg = 'bg-emerald-50/80 border-emerald-200 text-emerald-950';
         bannerIcon = <CheckCircle2 size={24} className="text-emerald-600 shrink-0" />;
-        defaultBannerDesc = 'Zero prohibited or non-halal items detected. Verified compliant.';
+        defaultBannerDesc = isCertScan
+            ? 'Certificate matches the HalalVerify registry and is currently active.'
+            : 'Zero prohibited or non-halal items detected. Verified compliant.';
     } else if (isDoubtful) {
         bannerBg = 'bg-amber-50/80 border-amber-200 text-amber-950';
         bannerIcon = <AlertTriangle size={24} className="text-amber-600 shrink-0" />;
@@ -152,11 +155,17 @@ export const ScanDetailModal = ({ scan, onClose }) => {
     } else if (isProhibited) {
         bannerBg = 'bg-rose-50/80 border-rose-200 text-rose-950';
         bannerIcon = <XCircle size={24} className="text-rose-600 shrink-0" />;
-        defaultBannerDesc = 'Contains confirmed non-halal or prohibited ingredients.';
+        defaultBannerDesc = isCertScan
+            ? (simplified === 'Expired'
+                ? 'This establishment certificate has expired.'
+                : 'This certificate does not match an active HalalVerify registry record.')
+            : 'Contains confirmed non-halal or prohibited ingredients.';
     } else if (isUnverified) {
         bannerBg = 'bg-slate-50 border-slate-200 text-slate-800';
         bannerIcon = <Info size={24} className="text-slate-500 shrink-0" />;
-        defaultBannerDesc = 'Scan was incomplete or unverified. Capture both the Halal logo and the full ingredient list.';
+        defaultBannerDesc = isCertScan
+            ? 'Could not match this certificate against the local registry.'
+            : 'Scan was incomplete or unverified. Capture both the Halal logo and the full ingredient list.';
     }
 
     const flagged = getFlaggedItems(scan);

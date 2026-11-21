@@ -11,7 +11,9 @@ import {
     ScanSearch,
     FileText,
     Layers,
-    Zap
+    Zap,
+    Info,
+    XCircle
 } from 'lucide-react';
 
 export const CameraViewfinder = ({
@@ -65,15 +67,32 @@ export const CameraViewfinder = ({
         if (showResultsSheet || fusionState?.active) return null;
 
         if (scannerMode === 'cert' && certResult) {
-            const isCertValid = certResult.status === 'Valid';
+            const certStatus = String(certResult.status || '').trim().toLowerCase();
+            if (certStatus === 'valid') {
+                return {
+                    statusLabel: 'Certificate Valid',
+                    themeClasses: 'bg-emerald-600/90 hover:bg-emerald-600 text-white border-emerald-400/50 shadow-emerald-950/40',
+                    icon: <ShieldCheck size={14} className="text-emerald-200 shrink-0" />,
+                };
+            }
+            if (certStatus === 'expired') {
+                return {
+                    statusLabel: 'Certificate Expired',
+                    themeClasses: 'bg-rose-600/90 hover:bg-rose-600 text-white border-rose-400/50 shadow-rose-950/40',
+                    icon: <XCircle size={14} className="text-rose-200 shrink-0" />,
+                };
+            }
+            if (certStatus === 'invalid' || certStatus === 'suspended') {
+                return {
+                    statusLabel: 'Certificate Invalid',
+                    themeClasses: 'bg-rose-600/90 hover:bg-rose-600 text-white border-rose-400/50 shadow-rose-950/40',
+                    icon: <ShieldAlert size={14} className="text-rose-200 shrink-0" />,
+                };
+            }
             return {
-                statusLabel: isCertValid ? 'Certificate Valid' : 'Needs Review',
-                themeClasses: isCertValid
-                    ? 'bg-emerald-600/90 hover:bg-emerald-600 text-white border-emerald-400/50 shadow-emerald-950/40'
-                    : 'bg-amber-600/90 hover:bg-amber-600 text-white border-amber-400/50 shadow-amber-950/40',
-                icon: isCertValid
-                    ? <ShieldCheck size={14} className="text-emerald-200 shrink-0" />
-                    : <AlertTriangle size={14} className="text-amber-200 shrink-0" />,
+                statusLabel: 'Certificate Unverified',
+                themeClasses: 'bg-slate-800/95 hover:bg-slate-750 text-slate-200 border-slate-600 shadow-slate-950/60',
+                icon: <Info size={14} className="text-slate-300 shrink-0" />,
             };
         }
 

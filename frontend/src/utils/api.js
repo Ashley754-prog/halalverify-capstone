@@ -240,7 +240,7 @@ export function simulateFallback(mode) {
         expirationDate: null,
         layoutConfidence: 0,
         structuralZones: [],
-        status: 'Suspicious',
+        status: 'Unverified',
         authenticationNote:
             'The backend server is offline, so no certificate analysis was performed. This is placeholder data.',
     };

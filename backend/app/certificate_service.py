@@ -504,10 +504,9 @@ def validate_certificate_result(extracted_certificate: dict, establishments=None
         else:
             return {
                 **result,
-                "status": "Suspicious",
+                "status": "Unverified",
                 "authenticationNote": (
-                    "OCR could not detect a usable certificate number, so the "
-                    "certificate cannot be matched against the registry."
+                    "Could not read a certificate number clearly. Retake in brighter light with less glare."
                     + low_confidence_note
                 ),
                 "registryMatch": None,
@@ -530,11 +529,10 @@ def validate_certificate_result(extracted_certificate: dict, establishments=None
     if not establishment:
         return {
             **result,
-            "status": "Suspicious",
+            "status": "Unverified",
             "authenticationNote": (
-                "Certificate number was not found in the HalalVerify establishment "
-                "registry. This does not automatically prove it is fake, but it "
-                "requires manual verification."
+                "Certificate number was not found in HalalVerify's local registry. "
+                "Verify directly with the issuing Halal Certifying Body."
                 + low_confidence_note
             ),
             "registryMatch": None,
@@ -559,17 +557,17 @@ def validate_certificate_result(extracted_certificate: dict, establishments=None
     est_status = (establishment.get("halal_status") or "").strip().lower()
 
     if not name_matches:
-        status = "Suspicious"
+        status = "Invalid"
         note = (
-            f"Certificate number matches the registry, but the establishment name "
-            f"looks different (similarity {int(name_score * 100)}%)."
+            f"Certificate number belongs to {expected_name} in the registry, "
+            f"not {extracted_name} (similarity {int(name_score * 100)}%)."
         )
     elif est_status in ("rejected", "haram"):
         status = "Invalid"
-        note = "This establishment's certification record is rejected or invalid in the HalalVerify registry."
+        note = "This establishment's certification record has been rejected or revoked in the HalalVerify registry."
     elif est_status in ("suspended", "flagged", "permanently_closed", "closed", "demolished", "relocated"):
-        status = "Suspended"
-        note = f"This establishment is currently marked as '{est_status.replace('_', ' ')}' in the HalalVerify registry."
+        status = "Invalid"
+        note = f"This establishment is marked as '{est_status.replace('_', ' ')}' in the HalalVerify registry and is not actively valid."
     elif est_status == "expired" or _is_past_date(expiry_date):
         status = "Expired"
         note = (
@@ -578,21 +576,19 @@ def validate_certificate_result(extracted_certificate: dict, establishments=None
             else "Certificate matched the HalalVerify registry, but its certification status is expired."
         )
     elif est_status in ("needs_review", "pending_review", "pending_verification", "pending"):
-        status = "Suspicious"
-        note = "This establishment's certification record is currently pending administrative review."
+        status = "Unverified"
+        note = "This establishment's certification record is currently pending verification in the HalalVerify registry."
     elif match_confidence and match_confidence < 0.85:
         status = "Valid"
         note = (
-            "Certificate matched the registry using fuzzy OCR matching. "
-            "Manual review is still recommended."
+            "Certificate matched the registry via OCR. "
+            "Confirm physical details on the displayed certificate."
         )
     else:
         status = "Valid"
-        note = (
-            "Certificate number and establishment name match the HalalVerify registry record."
-        )
+        note = "Certificate matches the HalalVerify registry and is currently active."
         if est_status == "for_renewal":
-            note += " Notice: Establishment certification is currently flagged for renewal."
+            note += " Notice: Establishment certification is flagged for renewal."
 
     if low_confidence_note:
         note += low_confidence_note

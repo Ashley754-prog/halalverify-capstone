@@ -4,8 +4,58 @@ import {
     RefreshCw,
     Flag,
     ChevronDown,
-    MapPin
+    MapPin,
+    ShieldCheck,
+    ShieldAlert,
+    XCircle,
+    Info
 } from 'lucide-react';
+
+function getCertStatusMeta(status, authenticationNote) {
+    const normalized = String(status || '').trim().toLowerCase();
+
+    if (normalized === 'valid') {
+        return {
+            key: 'Valid',
+            title: 'Valid',
+            subtitle: authenticationNote || 'Certificate matches the HalalVerify registry and is currently active.',
+            bannerClass: 'bg-emerald-950/60 border-emerald-500/50 text-emerald-100',
+            iconBoxClass: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400',
+            Icon: ShieldCheck,
+        };
+    }
+
+    if (normalized === 'expired') {
+        return {
+            key: 'Expired',
+            title: 'Expired',
+            subtitle: authenticationNote || 'Certificate matched the registry, but its validity date has passed.',
+            bannerClass: 'bg-rose-950/60 border-rose-500/50 text-rose-100',
+            iconBoxClass: 'bg-rose-500/15 border-rose-500/30 text-rose-400',
+            Icon: XCircle,
+        };
+    }
+
+    if (normalized === 'invalid' || normalized === 'suspended') {
+        return {
+            key: 'Invalid',
+            title: 'Invalid',
+            subtitle: authenticationNote || 'Certificate does not match an active record in the HalalVerify registry.',
+            bannerClass: 'bg-rose-950/60 border-rose-500/50 text-rose-100',
+            iconBoxClass: 'bg-rose-500/15 border-rose-500/30 text-rose-400',
+            Icon: ShieldAlert,
+        };
+    }
+
+    return {
+        key: 'Unverified',
+        title: 'Unverified',
+        subtitle: authenticationNote || 'Could not match this certificate against the local registry.',
+        bannerClass: 'bg-slate-800/80 border-slate-600/60 text-slate-100',
+        iconBoxClass: 'bg-slate-700/60 border-slate-600/60 text-slate-300',
+        Icon: Info,
+    };
+}
 
 export const CertResultsSheet = ({
     certResult,
@@ -104,36 +154,58 @@ export const CertResultsSheet = ({
                         </div>
                     )}
 
-                    {!isLoading && certResult && (
+                    {!isLoading && certResult && (() => {
+                        const statusMeta = getCertStatusMeta(certResult.status, certResult.authenticationNote);
+                        const StatusIcon = statusMeta.Icon;
+                        const isValidCert = statusMeta.key === 'Valid';
+                        const isOfflineNotice = certResult.authenticationNote?.toLowerCase().includes('offline');
+
+                        return (
                         <div className="space-y-4">
                             <div
-                                className={`p-4 rounded-2xl border flex items-center justify-between ${
-                                    certResult.status === 'Valid'
-                                        ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-200'
-                                        : 'bg-amber-950/60 border-amber-500/50 text-amber-200'
-                                }`}
+                                className={`p-4 rounded-2xl border flex items-center justify-between gap-3 ${statusMeta.bannerClass}`}
                             >
-                                <div>
-                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                <div className="min-w-0 space-y-1">
+                                    <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                         Document Status
                                     </span>
-                                    <p className="text-xl font-black">{certResult.status}</p>
+                                    <p className="text-xl font-black tracking-tight">{statusMeta.title}</p>
+                                    {statusMeta.subtitle && !isOfflineNotice && (
+                                        <p className="text-xs leading-relaxed opacity-90">
+                                            {statusMeta.subtitle}
+                                        </p>
+                                    )}
+                                </div>
+                                <div className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 ${statusMeta.iconBoxClass}`}>
+                                    <StatusIcon size={22} />
                                 </div>
                             </div>
 
-                            {certResult.status !== 'Valid' && (
-                                <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-500/35 text-amber-200/95 text-[11px] leading-relaxed space-y-1">
-                                    <p className="font-bold text-amber-300 text-xs">
-                                        Consumer Discretion &amp; Advisory Disclaimer
-                                    </p>
-                                    <p>
-                                        This certificate could not be automatically authenticated against active accredited Halal Certifying Body (HCB) registries under RA 10817 and Zamboanga City Ordinance No. 489. Patronage is at the consumer&apos;s own discretion; please verify the physical certificate directly with establishment management.
-                                    </p>
-                                </div>
-                            )}
+                            <div
+                                className={`p-3 rounded-xl border text-[11px] leading-relaxed space-y-1 ${
+                                    isValidCert
+                                        ? 'bg-slate-800/60 border-slate-700/70 text-slate-300'
+                                        : statusMeta.key === 'Unverified'
+                                        ? 'bg-slate-800/70 border-slate-600/50 text-slate-200'
+                                        : 'bg-rose-950/35 border-rose-500/35 text-rose-200/95'
+                                }`}
+                            >
+                                <p className={`font-bold text-xs ${
+                                    isValidCert
+                                        ? 'text-slate-200'
+                                        : statusMeta.key === 'Unverified'
+                                        ? 'text-slate-100'
+                                        : 'text-rose-300'
+                                }`}>
+                                    Consumer Discretion &amp; Advisory Notice
+                                </p>
+                                <p>
+                                    This check compares optical text against HalalVerify&apos;s local registry under RA 10817 and Zamboanga City Ordinance No. 489. For official confirmation, verify the physical certificate directly with establishment management or the issuing Halal Certifying Body.
+                                </p>
+                            </div>
 
                             {/* Server Sleeping / Offline Fallback Notice */}
-                            {certResult.authenticationNote?.toLowerCase().includes('offline') && (
+                            {isOfflineNotice && (
                                 <div className="p-3.5 rounded-2xl bg-amber-950/70 border border-amber-500/50 text-amber-100 text-xs space-y-2">
                                     <div className="flex items-center gap-2 font-bold text-amber-300">
                                         <Sparkles size={15} className="shrink-0 text-amber-400" />
@@ -163,7 +235,7 @@ export const CertResultsSheet = ({
                             </div>
 
                             {/* Map Bridge for Certified Establishment */}
-                            {certResult.status === 'Valid' && certResult.establishmentName && (
+                            {isValidCert && certResult.establishmentName && (
                                 <button
                                     type="button"
                                     onClick={() => onViewChange?.('map', { searchQuery: certResult.establishmentName })}
@@ -188,8 +260,8 @@ export const CertResultsSheet = ({
                                         onViewChange?.('report-issue', {
                                             relatedTo: 'establishment',
                                             subjectName: certResult.establishmentName || 'Scanned Certificate',
-                                            issueType: certResult.status === 'Suspicious' ? 'Establishment Status Incorrect' : 'Wrong Verdict (Scanner Error)',
-                                            description: `Certificate Verification: ${certResult.status || 'N/A'}\nEstablishment: ${certResult.establishmentName || 'N/A'}\nCertifier: ${certResult.certifyingBody || 'N/A'}\nCertificate Number: ${certResult.certificateNumber || 'N/A'}\nExpiry Date: ${certResult.expirationDate || 'N/A'}`
+                                            issueType: statusMeta.key === 'Unverified' || statusMeta.key === 'Invalid' ? 'Establishment Status Incorrect' : 'Wrong Verdict (Scanner Error)',
+                                            description: `Certificate Verification: ${statusMeta.key}\nEstablishment: ${certResult.establishmentName || 'N/A'}\nCertifier: ${certResult.certifyingBody || 'N/A'}\nCertificate Number: ${certResult.certificateNumber || 'N/A'}\nExpiry Date: ${certResult.expirationDate || 'N/A'}`
                                         });
                                     }}
                                     className="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 flex items-center justify-center gap-2 active:scale-95 transition"
@@ -198,7 +270,8 @@ export const CertResultsSheet = ({
                                 </button>
                             </div>
                         </div>
-                    )}
+                        );
+                    })()}
                 </div>
             </div>
         </div>

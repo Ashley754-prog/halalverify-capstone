@@ -13,6 +13,7 @@ const STYLES = {
     Haram: 'bg-rose-50 text-rose-700 border-rose-200',
     Valid: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     Expired: 'bg-rose-50 text-rose-700 border-rose-200',
+    Invalid: 'bg-rose-50 text-rose-700 border-rose-200',
     Suspicious: 'bg-amber-50 text-amber-700 border-amber-200',
 };
 
@@ -28,6 +29,7 @@ const ICONS = {
     Haram: <XCircle size={12} className="shrink-0" />,
     Valid: <CheckCircle2 size={12} className="shrink-0" />,
     Expired: <XCircle size={12} className="shrink-0" />,
+    Invalid: <XCircle size={12} className="shrink-0" />,
     Suspicious: <AlertTriangle size={12} className="shrink-0" />,
 };
 
