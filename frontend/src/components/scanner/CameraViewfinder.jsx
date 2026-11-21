@@ -67,6 +67,13 @@ export const CameraViewfinder = ({
         if (showResultsSheet || fusionState?.active) return null;
 
         if (scannerMode === 'cert' && certResult) {
+            if (certResult.isOfflineFallback || certResult.authenticationNote?.toLowerCase().includes('offline')) {
+                return {
+                    statusLabel: 'Server Waking · Retry',
+                    themeClasses: 'bg-amber-600/90 hover:bg-amber-600 text-white border-amber-400/50 shadow-amber-950/40',
+                    icon: <AlertTriangle size={14} className="text-amber-200 shrink-0" />,
+                };
+            }
             const certStatus = String(certResult.status || '').trim().toLowerCase();
             if (certStatus === 'valid') {
                 return {
@@ -97,6 +104,13 @@ export const CameraViewfinder = ({
         }
 
         if (scannerMode === 'label' && scanResult) {
+            if (scanResult.isOfflineFallback || scanResult.analysisSummary?.toLowerCase().includes('offline')) {
+                return {
+                    statusLabel: 'Server Waking · Retry',
+                    themeClasses: 'bg-amber-600/90 hover:bg-amber-600 text-white border-amber-400/50 shadow-amber-950/40',
+                    icon: <AlertTriangle size={14} className="text-amber-200 shrink-0" />,
+                };
+            }
             const verdict = (scanResult.verdict || '').toLowerCase();
             const risk = (scanResult.riskLevel || '').toLowerCase();
             const isNoFoodLabel =

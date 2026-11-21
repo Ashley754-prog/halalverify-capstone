@@ -155,13 +155,34 @@ export async function authFetch(url, options = {}) {
     }
 }
 
+const TRANSIENT_COLD_START_STATUSES = new Set([502, 503, 504, 520, 521, 522, 524]);
+
+async function waitForBackendWakeup(baseUrl, maxWaitMs = 45000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), maxWaitMs);
+    try {
+        const res = await fetch(`${baseUrl}/health`, {
+            method: 'GET',
+            headers: { 'ngrok-skip-browser-warning': 'true' },
+            signal: controller.signal,
+        });
+        clearTimeout(timer);
+        if (res.ok) return true;
+    } catch {
+        clearTimeout(timer);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+    return false;
+}
+
 /**
  * HalalVerify backend analysis: FastAPI + RapidOCR + Supabase.
- * Tries the primary API endpoint first; if unreachable, falls back to the secure permanent domain.
+ * Automatically wakes up sleeping Render containers and retries once before failing.
  */
-export async function analyzeImage(base64Image, mode) {
+export async function analyzeImage(base64Image, mode, options = {}) {
+    const { onStatusChange } = options;
     const primaryUrl = resolveApiBaseUrl();
-    const cloudUrl = 'https://halalverify-backend.onrender.com';
+    const cloudUrl = DEFAULT_PROD_API_URL;
     const endpointsToTry = [
         primaryUrl,
         primaryUrl !== cloudUrl ? cloudUrl : null
@@ -169,33 +190,55 @@ export async function analyzeImage(base64Image, mode) {
 
     let lastError = null;
 
+    const sendScanRequest = (endpoint) =>
+        authFetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true',
+            },
+            body: JSON.stringify({ imageBase64: base64Image }),
+            timeout: 75000,
+        });
+
     for (const baseUrl of endpointsToTry) {
         const endpoint = mode === 'label'
             ? `${baseUrl}/analyze/label`
             : `${baseUrl}/analyze/certificate`;
+        const isCloudHost = baseUrl.includes('onrender.com') || baseUrl === cloudUrl;
+        const maxAttempts = isCloudHost ? 2 : 1;
 
-        try {
-            // Dispatch scan request to active backend endpoint
-            const response = await authFetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'ngrok-skip-browser-warning': 'true',
-                },
-                body: JSON.stringify({ imageBase64: base64Image }),
-                timeout: 65000,
-            });
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                const response = await sendScanRequest(endpoint);
 
-            if (response.ok) {
-                return await response.json();
+                if (response.ok) {
+                    return await response.json();
+                }
+
+                const errorText = await response.text().catch(() => '');
+                lastError = new Error(`Backend (${baseUrl}) returned ${response.status}: ${errorText}`);
+                console.warn(`[HalalVerify API] HTTP ${response.status} from ${baseUrl} (attempt ${attempt}/${maxAttempts})`);
+
+                const isTransient = TRANSIENT_COLD_START_STATUSES.has(response.status);
+                if (isTransient && attempt < maxAttempts) {
+                    onStatusChange?.('waking');
+                    await waitForBackendWakeup(baseUrl);
+                    continue;
+                }
+                break;
+            } catch (err) {
+                lastError = err;
+                console.warn(`[HalalVerify API] Connection failure on ${baseUrl} (attempt ${attempt}/${maxAttempts}):`, err.message || err);
+
+                const browserOnline = typeof navigator === 'undefined' || navigator.onLine !== false;
+                if (browserOnline && attempt < maxAttempts) {
+                    onStatusChange?.('waking');
+                    await waitForBackendWakeup(baseUrl);
+                    continue;
+                }
+                break;
             }
-
-            const errorText = await response.text().catch(() => '');
-            lastError = new Error(`Backend (${baseUrl}) returned ${response.status}: ${errorText}`);
-            console.warn(`[HalalVerify API] HTTP error from ${baseUrl}:`, lastError);
-        } catch (err) {
-            lastError = err;
-            console.warn(`[HalalVerify API] Connection failure on ${baseUrl}:`, err.message || err);
         }
     }
 
@@ -209,6 +252,7 @@ export async function analyzeImage(base64Image, mode) {
 export function simulateFallback(mode) {
     if (mode === 'label') {
         return {
+            isOfflineFallback: true,
             logoDetected: false,
             logoConfidence: 0,
             logoBody: 'Not checked (offline)',
@@ -234,6 +278,7 @@ export function simulateFallback(mode) {
         };
     }
     return {
+        isOfflineFallback: true,
         certifyingBody: 'Not detected (offline)',
         establishmentName: 'Not detected',
         certificateNumber: 'Not detected',

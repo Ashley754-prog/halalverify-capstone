@@ -60,6 +60,7 @@ function getCertStatusMeta(status, authenticationNote) {
 export const CertResultsSheet = ({
     certResult,
     isLoading,
+    loadingStage = 'scanning',
     onReset,
     onRetry,
     onClose,
@@ -147,18 +148,71 @@ export const CertResultsSheet = ({
                 {/* Scrollable Content */}
                 <div className="overflow-y-auto p-4 sm:p-6 space-y-4 max-h-[75vh] lg:max-h-none lg:flex-1">
                     {isLoading && (
-                        <div className="flex flex-col items-center justify-center py-12 gap-3">
+                        <div className="flex flex-col items-center justify-center py-12 gap-3 text-center px-4">
                             <RefreshCw className="h-9 w-9 text-emerald-400 animate-spin" />
-                            <p className="text-sm text-slate-300 font-semibold">Running Optical AI Analysis...</p>
-                            <span className="text-xs text-slate-500">Evaluating Certificate Security & Metadata</span>
+                            <p className="text-sm text-slate-300 font-semibold">
+                                {loadingStage === 'waking'
+                                    ? 'Waking Up Cloud AI Server...'
+                                    : 'Running Optical AI Analysis...'}
+                            </p>
+                            <span className="text-xs text-slate-500 max-w-xs leading-relaxed">
+                                {loadingStage === 'waking'
+                                    ? 'Free cloud servers sleep after 15 minutes of inactivity. Retrying your certificate scan automatically...'
+                                    : 'Evaluating Certificate Security & Metadata'}
+                            </span>
                         </div>
                     )}
 
                     {!isLoading && certResult && (() => {
+                        const isOfflineNotice = Boolean(
+                            certResult.isOfflineFallback ||
+                            certResult.authenticationNote?.toLowerCase().includes('offline')
+                        );
+
+                        if (isOfflineNotice) {
+                            return (
+                                <div className="space-y-4 py-2">
+                                    <div className="rounded-2xl border border-amber-500/45 bg-amber-950/35 p-5 text-center flex flex-col items-center justify-center gap-3">
+                                        <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/35 flex items-center justify-center text-amber-400">
+                                            <Sparkles size={26} />
+                                        </div>
+                                        <div className="space-y-1.5 max-w-sm">
+                                            <h4 className="text-base font-bold text-amber-200">
+                                                Cloud AI Server Was Asleep
+                                            </h4>
+                                            <p className="text-xs text-amber-100/85 leading-relaxed">
+                                                No certificate scan ran yet. Free cloud servers go to sleep after 15 minutes of inactivity and take ~20–40 seconds to wake up. Tap below to scan this same certificate now.
+                                            </p>
+                                        </div>
+
+                                        <div className="w-full space-y-2 pt-1">
+                                            {onRetry && (
+                                                <button
+                                                    type="button"
+                                                    onClick={onRetry}
+                                                    className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition cursor-pointer"
+                                                >
+                                                    <RefreshCw size={15} />
+                                                    <span>Retry Scan Now</span>
+                                                </button>
+                                            )}
+                                            <button
+                                                type="button"
+                                                onClick={onReset}
+                                                className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 font-semibold text-xs flex items-center justify-center gap-2 transition cursor-pointer"
+                                            >
+                                                <RefreshCw size={14} />
+                                                <span>Scan Another Certificate</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        }
+
                         const statusMeta = getCertStatusMeta(certResult.status, certResult.authenticationNote);
                         const StatusIcon = statusMeta.Icon;
                         const isValidCert = statusMeta.key === 'Valid';
-                        const isOfflineNotice = certResult.authenticationNote?.toLowerCase().includes('offline');
 
                         return (
                         <div className="space-y-4">
@@ -170,7 +224,7 @@ export const CertResultsSheet = ({
                                         Document Status
                                     </span>
                                     <p className="text-xl font-black tracking-tight">{statusMeta.title}</p>
-                                    {statusMeta.subtitle && !isOfflineNotice && (
+                                    {statusMeta.subtitle && (
                                         <p className="text-xs leading-relaxed opacity-90">
                                             {statusMeta.subtitle}
                                         </p>
@@ -203,29 +257,6 @@ export const CertResultsSheet = ({
                                     This check compares optical text against HalalVerify&apos;s local registry under RA 10817 and Zamboanga City Ordinance No. 489. For official confirmation, verify the physical certificate directly with establishment management or the issuing Halal Certifying Body.
                                 </p>
                             </div>
-
-                            {/* Server Sleeping / Offline Fallback Notice */}
-                            {isOfflineNotice && (
-                                <div className="p-3.5 rounded-2xl bg-amber-950/70 border border-amber-500/50 text-amber-100 text-xs space-y-2">
-                                    <div className="flex items-center gap-2 font-bold text-amber-300">
-                                        <Sparkles size={15} className="shrink-0 text-amber-400" />
-                                        <span>Cloud AI Server Was Asleep</span>
-                                    </div>
-                                    <p className="text-[11px] text-amber-200/90 leading-relaxed">
-                                        Render free containers take ~30s to wake up on the first scan. The server is now awake and ready!
-                                    </p>
-                                    {onRetry && (
-                                        <button
-                                            type="button"
-                                            onClick={onRetry}
-                                            className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:scale-95 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-sm"
-                                        >
-                                            <RefreshCw size={13} className="shrink-0" />
-                                            <span>Retry Scan Now (Server Awake)</span>
-                                        </button>
-                                    )}
-                                </div>
-                            )}
 
                             <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 space-y-2 text-xs">
                                 <p className="text-slate-300">Certifying Body: <span className="font-bold text-white">{certResult.certifyingBody}</span></p>

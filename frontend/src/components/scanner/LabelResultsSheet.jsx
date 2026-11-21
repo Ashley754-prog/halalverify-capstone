@@ -73,6 +73,7 @@ const formatCertifierHeading = (bodyText = '') => {
 export const LabelResultsSheet = ({
     scanResult,
     isLoading,
+    loadingStage = 'scanning',
     onReset,
     onRetry = null,
     onClose,
@@ -80,6 +81,11 @@ export const LabelResultsSheet = ({
 }) => {
     const [touchStartY, setTouchStartY] = useState(null);
     const [selectedHcbProfile, setSelectedHcbProfile] = useState(null);
+
+    const isOfflineFallback = Boolean(
+        scanResult?.isOfflineFallback ||
+        scanResult?.analysisSummary?.toLowerCase().includes('offline')
+    );
 
 
     const displayedLogoSrc = resolveReferenceLogoSrc(scanResult);
@@ -171,14 +177,59 @@ export const LabelResultsSheet = ({
                 {/* Scrollable Content */}
                 <div className="overflow-y-auto p-4 sm:p-5 space-y-3 max-h-[75vh] lg:max-h-none lg:flex-1">
                     {isLoading && (
-                        <div className="flex flex-col items-center justify-center py-12 gap-3">
+                        <div className="flex flex-col items-center justify-center py-12 gap-3 text-center px-4">
                             <RefreshCw className="h-8 w-8 text-emerald-400 animate-spin" />
-                            <p className="text-sm text-slate-200 font-semibold">Screening Ingredients & Logos...</p>
-                            <span className="text-xs text-slate-400">Matching against Philippine Halal Standards</span>
+                            <p className="text-sm text-slate-200 font-semibold">
+                                {loadingStage === 'waking'
+                                    ? 'Waking Up Cloud AI Server...'
+                                    : 'Screening Ingredients & Logos...'}
+                            </p>
+                            <span className="text-xs text-slate-400 max-w-xs leading-relaxed">
+                                {loadingStage === 'waking'
+                                    ? 'Free cloud servers sleep after 15 minutes of inactivity. Retrying your scan automatically...'
+                                    : 'Matching against Philippine Halal Standards'}
+                            </span>
                         </div>
                     )}
 
-                    {!isLoading && scanResult && (scanResult.riskLevel === 'No Food Label Found' || scanResult.riskLevel === 'No Product Detected') ? (
+                    {!isLoading && scanResult && isOfflineFallback ? (
+                        <div className="space-y-4 py-2">
+                            <div className="rounded-2xl border border-amber-500/45 bg-amber-950/35 p-5 text-center flex flex-col items-center justify-center gap-3">
+                                <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/35 flex items-center justify-center text-amber-400">
+                                    <AlertTriangle size={28} />
+                                </div>
+                                <div className="space-y-1.5 max-w-sm">
+                                    <h4 className="text-base font-bold text-amber-200">
+                                        Cloud AI Server Was Asleep
+                                    </h4>
+                                    <p className="text-xs text-amber-100/85 leading-relaxed">
+                                        No scan ran yet. Free cloud servers go to sleep after 15 minutes of inactivity and take ~20–40 seconds to wake up. Tap below to scan this same photo now.
+                                    </p>
+                                </div>
+
+                                <div className="w-full space-y-2 pt-1">
+                                    {onRetry && (
+                                        <button
+                                            type="button"
+                                            onClick={onRetry}
+                                            className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition cursor-pointer"
+                                        >
+                                            <RefreshCw size={15} />
+                                            <span>Retry Scan Now</span>
+                                        </button>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={onReset}
+                                        className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 font-semibold text-xs flex items-center justify-center gap-2 transition cursor-pointer"
+                                    >
+                                        <Camera size={14} />
+                                        <span>Take Another Photo</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ) : !isLoading && scanResult && (scanResult.riskLevel === 'No Food Label Found' || scanResult.riskLevel === 'No Product Detected') ? (
                         <div className="space-y-4 py-2">
                             <div className="rounded-2xl border border-slate-700 bg-slate-800/80 p-5 text-center flex flex-col items-center justify-center gap-3">
                                 <div className="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-700 flex items-center justify-center text-slate-400 shadow-inner">
@@ -402,27 +453,6 @@ export const LabelResultsSheet = ({
                                     <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-950/80 border border-emerald-500/35 px-2 py-0.5 rounded-full shrink-0">
                                         Verified in Catalog
                                     </span>
-                                </div>
-                            )}
-
-                            {/* Server Sleeping / Offline Fallback Notice */}
-                            {scanResult.analysisSummary?.toLowerCase().includes('offline') && onRetry && (
-                                <div className="p-3 rounded-xl bg-amber-950/70 border border-amber-500/50 text-amber-100 text-xs space-y-2">
-                                    <div className="flex items-center gap-2 font-bold text-amber-300">
-                                        <AlertTriangle size={14} className="shrink-0 text-amber-400" />
-                                        <span>Cloud AI Server Was Asleep</span>
-                                    </div>
-                                    <p className="text-[11px] text-amber-200/90 leading-relaxed">
-                                        Render free containers take ~30s to wake up on the first scan. The server is now awake!
-                                    </p>
-                                    <button
-                                        type="button"
-                                        onClick={onRetry}
-                                        className="w-full py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
-                                    >
-                                        <RefreshCw size={13} className="shrink-0" />
-                                        <span>Retry Scan Now (Server Awake)</span>
-                                    </button>
                                 </div>
                             )}
 

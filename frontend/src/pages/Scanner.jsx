@@ -14,6 +14,7 @@ export const Scanner = ({ isOnline, onViewChange }) => {
     const [scannerMode, setScannerMode] = useState('label');
     const [selectedImage, setSelectedImage] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [loadingStage, setLoadingStage] = useState('scanning');
     const [, setErrorMsg] = useState(null);
     const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
 
@@ -71,9 +72,12 @@ export const Scanner = ({ isOnline, onViewChange }) => {
      */
     const triggerAIScan = async (base64Img) => {
         setIsLoading(true);
+        setLoadingStage('scanning');
         setErrorMsg(null);
         try {
-            const result = await analyzeImage(base64Img, scannerMode);
+            const result = await analyzeImage(base64Img, scannerMode, {
+                onStatusChange: (stage) => setLoadingStage(stage),
+            });
             if (scannerMode === 'label') {
                 if (fusionState?.active && fusionState.firstScan) {
                     const merged = mergeLabelScans(
@@ -115,28 +119,27 @@ export const Scanner = ({ isOnline, onViewChange }) => {
             }
         } catch (err) {
             console.error('Backend scan failed:', err);
-            setErrorMsg('Backend server unreachable. Displaying fallback inspection details.');
-            setTimeout(() => {
+            setErrorMsg('Backend server unreachable. Please retry in a moment.');
+            if (scannerMode === 'label' && fusionState?.active && fusionState.firstScan) {
+                // Keep the previous valid scan intact instead of merging offline placeholder data
+                setScanResult(fusionState.firstScan);
+                setSelectedImage(fusionState.firstImage);
+                setFusionState(null);
+                setToast({
+                    visible: true,
+                    message: 'Cloud AI server was unreachable. Previous scan kept — tap to try adding the next part again.',
+                    type: 'error',
+                });
+            } else {
                 const result = simulateFallback(scannerMode);
                 if (scannerMode === 'label') {
-                    if (fusionState?.active && fusionState.firstScan) {
-                        const merged = mergeLabelScans(
-                            fusionState.firstScan,
-                            result,
-                            fusionState.firstImage,
-                            base64Img
-                        );
-                        setScanResult(merged);
-                        setFusionState(null);
-                    } else {
-                        setScanResult(result);
-                    }
+                    setScanResult(result);
                 } else {
                     setCertResult(result);
                 }
-                setIsLoading(false);
-            }, 800);
+            }
         } finally {
+            setLoadingStage('scanning');
             setIsLoading(false);
         }
     };
@@ -361,6 +364,7 @@ export const Scanner = ({ isOnline, onViewChange }) => {
                                 scanResult={scanResult}
                                 selectedImage={selectedImage}
                                 isLoading={isLoading}
+                                loadingStage={loadingStage}
                                 onReset={resetState}
                                 onRetry={() => selectedImage && triggerAIScan(selectedImage)}
                                 onClose={() => setShowResultsSheet(false)}
@@ -373,6 +377,7 @@ export const Scanner = ({ isOnline, onViewChange }) => {
                             <CertResultsSheet
                                 certResult={certResult}
                                 isLoading={isLoading}
+                                loadingStage={loadingStage}
                                 onReset={resetState}
                                 onRetry={() => selectedImage && triggerAIScan(selectedImage)}
                                 onClose={() => setShowResultsSheet(false)}
