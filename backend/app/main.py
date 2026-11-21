@@ -119,17 +119,21 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimiterMiddleware)
 
-DEFAULT_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
+DEFAULT_ORIGINS = (
+    "http://localhost:5173,"
+    "http://127.0.0.1:5173,"
+    "https://halalverify-capstone.vercel.app"
+)
 allowed_origins = [
     origin.strip()
     for origin in os.getenv("ALLOWED_ORIGINS", DEFAULT_ORIGINS).split(",")
     if origin.strip() and origin.strip() not in ("*", "https://*", "http://*")
 ]
 
-# Default regex restricts to local development origins unless ALLOWED_ORIGIN_REGEX is explicitly configured
+# Restrict default regex to local development and official HalalVerify Vercel deployments
 CORS_ORIGIN_REGEX = os.getenv(
     "ALLOWED_ORIGIN_REGEX",
-    r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+    r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$|^https://halalverify-capstone(?:-[a-z0-9-]+)?\.vercel\.app$",
 ).strip() or None
 
 app.add_middleware(
