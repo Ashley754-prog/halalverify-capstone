@@ -213,8 +213,8 @@ export const CameraViewfinder = ({
                         className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10 bg-slate-950"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div className="relative w-14 h-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-emerald-400 mb-3 shadow-lg">
-                            <span className="absolute inset-0 rounded-2xl border-2 border-emerald-500/20 border-t-emerald-400 animate-spin" />
+                        <div className="relative w-14 h-14 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-emerald-400 mb-3 shadow-lg">
+                            <span className="absolute inset-0 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin" />
                             <Camera size={24} />
                         </div>
                         <p className="text-xs font-medium text-slate-400">Opening camera...</p>
