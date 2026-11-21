@@ -9,7 +9,6 @@ import {
     Layers,
     PlusCircle,
     ChevronRight,
-    Package,
     ScanSearch,
     Camera,
     Info,
@@ -77,7 +76,6 @@ export const LabelResultsSheet = ({
     onReset,
     onRetry = null,
     onClose,
-    onViewChange,
     onScanSecondary,
 }) => {
     const [touchStartY, setTouchStartY] = useState(null);
@@ -137,7 +135,7 @@ export const LabelResultsSheet = ({
                         <div className="flex items-center gap-2 min-w-0">
                             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                             <h3 className="text-xs sm:text-sm font-bold tracking-wide uppercase text-slate-200 truncate">
-                                Verification Result
+                                Product Scan
                             </h3>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -330,15 +328,6 @@ export const LabelResultsSheet = ({
                                             <p className="text-xs sm:text-sm font-bold text-slate-200">
                                                 No Halal Logo Found
                                             </p>
-                                            <p className="text-[11px] text-slate-400 truncate">
-                                                {scanResult.isInvalidLogo
-                                                    ? 'No recognized accredited Halal logo found'
-                                                    : scanResult.isAmbiguousHcb
-                                                    ? 'Logo was too blurry to confirm the certifier'
-                                                    : scanResult.textHalalClaim
-                                                    ? 'Halal text found, but no visual logo'
-                                                    : 'Screened using printed ingredient list'}
-                                            </p>
                                         </div>
                                     </div>
                                     {onScanSecondary && (
@@ -347,7 +336,7 @@ export const LabelResultsSheet = ({
                                             onClick={() => onScanSecondary('logo')}
                                             className="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 text-xs font-semibold shrink-0 transition cursor-pointer"
                                         >
-                                            + Scan Seal
+                                            + Scan Logo
                                         </button>
                                     )}
                                 </div>
@@ -500,13 +489,13 @@ export const LabelResultsSheet = ({
                                         ) : hasReadableIngredients ? (
                                             <div className="p-2.5 bg-emerald-950/40 border border-emerald-500/30 rounded-lg text-xs text-emerald-300 flex items-center gap-2">
                                                 <CheckCircle2 size={15} className="text-emerald-400 shrink-0" />
-                                                <span>No prohibited or doubtful ingredients found.</span>
+                                                <span>All scanned ingredients are clear.</span>
                                             </div>
                                         ) : (
                                             <div className="p-2.5 bg-slate-900/70 border border-slate-700 rounded-lg text-xs text-slate-300 flex items-center justify-between gap-2">
                                                 <div className="flex items-center gap-2 min-w-0">
                                                     <ScanSearch size={15} className="text-slate-400 shrink-0" />
-                                                    <span>Ingredients list not scanned yet.</span>
+                                                    <span>Ingredients not scanned yet.</span>
                                                 </div>
                                                 {onScanSecondary && (
                                                     <button
@@ -581,20 +570,6 @@ export const LabelResultsSheet = ({
                                     </button>
                                 )
                             )}
-
-                            {/* Optional Catalog Lookup Shortcut */}
-                            {!hasVerifiedSeal &&
-                                scanResult.riskLevel !== 'No Food Label Found' &&
-                                scanResult.riskLevel !== 'No Product Detected' && (
-                                    <button
-                                        type="button"
-                                        onClick={() => onViewChange?.('products')}
-                                        className="w-full py-2.5 px-3.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 font-semibold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-xs cursor-pointer"
-                                    >
-                                        <Package size={14} className="text-emerald-400 shrink-0" />
-                                        <span>Search Brand in Verified Catalog</span>
-                                    </button>
-                                )}
 
                             {/* 5. Advisory Disclaimer Card */}
                             <div className="p-3 rounded-xl bg-slate-800/50 border border-slate-700/70 flex items-start gap-2.5 text-[11px] text-slate-300 leading-relaxed">
