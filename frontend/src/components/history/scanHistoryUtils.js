@@ -109,7 +109,7 @@ export const calculateScanStats = (scans) => {
             halal++;
         } else if (status === 'doubtful' || status === 'suspicious' || status === 'yellow') {
             doubtful++;
-        } else if (status === 'prohibited' || status === 'haram' || status === 'expired' || status === 'red') {
+        } else if (status === 'prohibited' || status === 'haram' || status === 'expired' || status === 'invalid' || status === 'red') {
             prohibited++;
         } else if (status === 'unverified' || status === 'neutral') {
             unverified++;

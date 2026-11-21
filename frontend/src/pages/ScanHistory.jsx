@@ -149,7 +149,7 @@ export const ScanHistory = ({ userRole, onViewChange }) => {
                 (verdictFilter === 'halal' && (simplifiedVerdict === 'halal' || simplifiedVerdict === 'valid')) ||
                 (verdictFilter === 'doubtful' && (simplifiedVerdict === 'doubtful' || simplifiedVerdict === 'suspicious')) ||
                 (verdictFilter === 'unverified' && (simplifiedVerdict === 'unverified' || simplifiedVerdict === 'neutral')) ||
-                (verdictFilter === 'prohibited' && (simplifiedVerdict === 'prohibited' || simplifiedVerdict === 'haram' || simplifiedVerdict === 'expired'));
+                (verdictFilter === 'prohibited' && (simplifiedVerdict === 'prohibited' || simplifiedVerdict === 'haram' || simplifiedVerdict === 'expired' || simplifiedVerdict === 'invalid'));
 
             const name = item.image_name || '';
             const text = item.extracted_text || '';
