@@ -179,16 +179,16 @@ export const LabelResultsSheet = ({
                         </div>
                     )}
 
-                    {!isLoading && scanResult && scanResult.riskLevel === 'No Product Detected' ? (
+                    {!isLoading && scanResult && (scanResult.riskLevel === 'No Food Label Found' || scanResult.riskLevel === 'No Product Detected') ? (
                         <div className="space-y-4 py-2">
                             <div className="rounded-2xl border border-slate-700 bg-slate-800/80 p-5 text-center flex flex-col items-center justify-center gap-3">
                                 <div className="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-700 flex items-center justify-center text-slate-400 shadow-inner">
                                     <ScanSearch size={32} />
                                 </div>
                                 <div className="space-y-1 max-w-sm">
-                                    <h4 className="text-base font-bold text-white">No Food Label Detected</h4>
+                                    <h4 className="text-base font-bold text-white">No Food Label Found</h4>
                                     <p className="text-xs text-slate-300 leading-relaxed">
-                                        The camera could not find an ingredient declaration or Halal logo in this photo.
+                                        {scanResult.analysisSummary || 'No food ingredients or Halal logo were found in this photo. Point your camera at a packaged food label.'}
                                     </p>
                                 </div>
 
@@ -303,11 +303,13 @@ export const LabelResultsSheet = ({
                                                     }`}
                                                 >
                                                     {scanResult.isInvalidLogo ? (
-                                                        <span>Unaccredited Mark · {scanResult.logoConfidence}% Match</span>
+                                                        <span>Unrecognized Logo · {scanResult.logoConfidence}% Match</span>
+                                                    ) : scanResult.isAmbiguousHcb ? (
+                                                        <span>Halal Logo · Certifier Unclear</span>
                                                     ) : formatCertifierHeading(scanResult.logoBody).isForeign ? (
                                                         <span>Recognized Foreign Seal · {scanResult.logoConfidence}% Match</span>
                                                     ) : (
-                                                        <span>Accredited Seal · {scanResult.logoConfidence}% Match</span>
+                                                        <span>Recognized Seal · {scanResult.logoConfidence}% Match</span>
                                                     )}
                                                 </span>
                                             </div>
@@ -325,10 +327,12 @@ export const LabelResultsSheet = ({
                                                 Certifying Body
                                             </span>
                                             <p className="text-xs sm:text-sm font-bold text-slate-200">
-                                                No Halal Seal Detected
+                                                No Halal Logo Found
                                             </p>
                                             <p className="text-[11px] text-slate-400 truncate">
-                                                Screened using printed ingredient list
+                                                {scanResult.textHalalClaim
+                                                    ? 'Halal text found, but no visual logo'
+                                                    : 'Screened using printed ingredient list'}
                                             </p>
                                         </div>
                                     </div>
@@ -344,28 +348,32 @@ export const LabelResultsSheet = ({
                                 </div>
                             )}
 
-                            {/* 2. Primary Verdict Card (Halal Status) */}
+                            {/* 2. Primary Verdict Card (Scan Result) */}
                             <div
                                 className={`p-4 rounded-2xl border flex items-center justify-between gap-3 ${
                                     scanResult.verdict === 'Green'
                                         ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-100'
+                                        : scanResult.verdict === 'Red'
+                                        ? 'bg-red-950/60 border-red-500/40 text-red-100'
                                         : scanResult.verdict === 'Yellow'
                                         ? 'bg-amber-950/60 border-amber-500/40 text-amber-100'
-                                        : 'bg-red-950/60 border-red-500/40 text-red-100'
+                                        : 'bg-slate-800/80 border-slate-600/60 text-slate-100'
                                 }`}
                             >
                                 <div className="space-y-1 min-w-0">
                                     <span className="text-[10px] font-bold uppercase tracking-wider opacity-75">
-                                        Halal Status
+                                        Scan Result
                                     </span>
                                     <p className="text-lg sm:text-xl font-bold tracking-tight">
                                         {simplifyHalalText(
                                             scanResult.riskLevel || (
                                                 scanResult.verdict === 'Green'
-                                                    ? 'Verified Halal'
+                                                    ? 'Halal Logo Found · Clean Ingredients'
+                                                    : scanResult.verdict === 'Red'
+                                                    ? 'Not Halal — Prohibited Ingredient'
                                                     : scanResult.verdict === 'Yellow'
-                                                    ? 'Doubtful'
-                                                    : 'Prohibited (Not Halal)'
+                                                    ? 'Doubtful Ingredient Found'
+                                                    : 'Unverified — Incomplete Scan'
                                             )
                                         )}
                                     </p>
@@ -376,10 +384,12 @@ export const LabelResultsSheet = ({
                                 <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-black/30 border border-white/10 shrink-0">
                                     {scanResult.verdict === 'Green' ? (
                                         <ShieldCheck size={26} className="text-emerald-400" />
+                                    ) : scanResult.verdict === 'Red' ? (
+                                        <ShieldAlert size={26} className="text-red-400" />
                                     ) : scanResult.verdict === 'Yellow' ? (
                                         <AlertTriangle size={26} className="text-amber-400" />
                                     ) : (
-                                        <ShieldAlert size={26} className="text-red-400" />
+                                        <Info size={26} className="text-slate-300" />
                                     )}
                                 </div>
                             </div>
@@ -428,6 +438,9 @@ export const LabelResultsSheet = ({
                                     const st = (f.status || '').toLowerCase().trim();
                                     return !['halal', 'safe', 'compliant', 'verified', 'approved'].includes(st);
                                 });
+                                const hasReadableIngredients =
+                                    scanResult.ingredientStatus === 'READABLE_PANEL' ||
+                                    (scanResult.ingredientStatus === undefined && Boolean(scanResult.ocrText?.trim()));
                                 return (
                                     <div className="bg-slate-800/80 border border-slate-700 rounded-xl p-3.5 space-y-2">
                                         <div className="flex items-center justify-between">
@@ -435,7 +448,11 @@ export const LabelResultsSheet = ({
                                                 Ingredients & Additives
                                             </span>
                                             <span className="text-[10px] font-mono text-slate-400">
-                                                {visibleFlagged.length} Flagged
+                                                {visibleFlagged.length > 0
+                                                    ? `${visibleFlagged.length} Flagged`
+                                                    : hasReadableIngredients
+                                                    ? '0 Flagged'
+                                                    : 'Not Scanned'}
                                             </span>
                                         </div>
 
@@ -469,10 +486,26 @@ export const LabelResultsSheet = ({
                                                     );
                                                 })}
                                             </div>
-                                        ) : (
+                                        ) : hasReadableIngredients ? (
                                             <div className="p-2.5 bg-emerald-950/40 border border-emerald-500/30 rounded-lg text-xs text-emerald-300 flex items-center gap-2">
                                                 <CheckCircle2 size={15} className="text-emerald-400 shrink-0" />
-                                                <span>No prohibited or doubtful food additives found.</span>
+                                                <span>No prohibited or doubtful ingredients found.</span>
+                                            </div>
+                                        ) : (
+                                            <div className="p-2.5 bg-slate-900/70 border border-slate-700 rounded-lg text-xs text-slate-300 flex items-center justify-between gap-2">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <ScanSearch size={15} className="text-slate-400 shrink-0" />
+                                                    <span>Ingredients list not scanned yet.</span>
+                                                </div>
+                                                {onScanSecondary && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onScanSecondary('ingredients')}
+                                                        className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 text-[11px] font-semibold shrink-0 transition cursor-pointer"
+                                                    >
+                                                        + Scan Ingredients
+                                                    </button>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -539,10 +572,10 @@ export const LabelResultsSheet = ({
                             )}
 
                             {/* Optional Catalog Lookup Shortcut */}
-                            {scanResult.riskLevel !== 'No Product Detected' &&
+                            {scanResult.riskLevel !== 'No Food Label Found' &&
+                                scanResult.riskLevel !== 'No Product Detected' &&
                                 !scanResult.isInvalidLogo &&
-                                (scanResult.riskLevel === 'No Halal Logo Found' ||
-                                    scanResult.riskLevel === 'Halal-Compliant Ingredients') && (
+                                !scanResult.logoDetected && (
                                     <button
                                         type="button"
                                         onClick={() => onViewChange?.('products')}
@@ -580,7 +613,7 @@ export const LabelResultsSheet = ({
                                         });
                                         const issueType = scanResult.isInvalidLogo
                                             ? 'Suspicious / Counterfeit Logo'
-                                            : scanResult.riskLevel === 'No Product Detected'
+                                            : scanResult.riskLevel === 'No Food Label Found' || scanResult.riskLevel === 'No Product Detected'
                                             ? 'Wrong Verdict (Scanner Error)'
                                             : nonHalalFlags.length > 0
                                             ? 'Ingredient Incorrectly Flagged'

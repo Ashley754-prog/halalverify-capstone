@@ -212,10 +212,11 @@ export function simulateFallback(mode) {
             logoDetected: false,
             logoConfidence: 0,
             logoBody: 'Not checked (offline)',
+            ingredientStatus: 'MISSING_OR_UNREADABLE',
             ingredientsFound: [],
             flaggedIngredients: [],
-            verdict: 'Yellow',
-            riskLevel: 'Unverified',
+            verdict: 'Neutral',
+            riskLevel: 'Unverified — Incomplete Scan',
             analysisSummary:
                 'The backend server is offline, so no OCR analysis was performed. This is placeholder data.',
             recommendations: [
@@ -227,7 +228,7 @@ export function simulateFallback(mode) {
                 { step: 2, name: "Halal Logo Localization", module: "Ultralytics YOLOv8-Nano (CNN)", status: "None", latencyMs: 45.1, details: "Offline fallback state: no server inference available." },
                 { step: 3, name: "Ingredient Label Text Extraction", module: "RapidOCR (ONNX Runtime)", status: "Offline", latencyMs: 0, details: "Optical recognition offline." },
                 { step: 4, name: "Chemical Additive Lexicon Screening", module: "Supabase PostgreSQL Lexicon", status: "Pending", latencyMs: 0, details: "135-additive database not queried." },
-                { step: 5, name: "Decision-Tree Compliance Classification", module: "Hierarchical Rule Engine", status: "Yellow", latencyMs: 1.2, details: "Defaulted to Yellow (Unverified) due to offline state." }
+                { step: 5, name: "Decision-Tree Compliance Classification", module: "Hierarchical Rule Engine", status: "Neutral", latencyMs: 1.2, details: "Defaulted to Neutral (Unverified) due to offline state." }
             ],
             totalLatencyMs: 71.7,
         };

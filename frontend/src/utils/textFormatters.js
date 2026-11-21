@@ -45,6 +45,9 @@ export function simplifyStatus(status) {
     if (lower === 'halal') {
         return 'Halal';
     }
+    if (lower === 'unverified' || lower === 'neutral') {
+        return 'Unverified';
+    }
     return clean;
 }
 

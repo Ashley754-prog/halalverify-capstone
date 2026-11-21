@@ -70,18 +70,16 @@ export const CameraViewfinder = ({
         if (scannerMode === 'label' && scanResult) {
             const verdict = (scanResult.verdict || '').toLowerCase();
             const risk = (scanResult.riskLevel || '').toLowerCase();
-            const isNoProduct =
-                risk.includes('no product') ||
-                risk.includes('not detected') ||
-                risk.includes('unrecognized') ||
-                risk.includes('unverified');
-            const isHaram = verdict === 'red' || risk.includes('haram') || risk.includes('prohibit');
+            const isNoFoodLabel =
+                risk.includes('no food label') ||
+                risk.includes('no product');
+            const isHaram = verdict === 'red' || risk.includes('not halal') || risk.includes('prohibit') || risk.includes('haram');
             const isHalal = verdict === 'green';
-            const isCleanUncertified = verdict === 'yellow' && (risk.includes('halal-compliant') || risk.includes('no halal logo'));
+            const isUnverified = verdict === 'neutral' || risk.includes('unverified') || risk.includes('incomplete');
 
-            if (isNoProduct) {
+            if (isNoFoodLabel) {
                 return {
-                    statusLabel: 'No Label Detected',
+                    statusLabel: 'No Food Label',
                     themeClasses: 'bg-slate-800/95 hover:bg-slate-750 text-slate-200 border-slate-700 shadow-slate-950/60',
                     icon: <ScanSearch size={14} className="text-slate-400 shrink-0" />,
                 };
@@ -89,27 +87,27 @@ export const CameraViewfinder = ({
 
             if (isHaram) {
                 return {
-                    statusLabel: 'Prohibited',
+                    statusLabel: 'Not Halal',
                     themeClasses: 'bg-red-600/90 hover:bg-red-600 text-white border-red-400/50 shadow-red-950/40',
                     icon: <ShieldAlert size={14} className="text-red-200 shrink-0" />,
                 };
             }
             if (isHalal) {
                 return {
-                    statusLabel: 'Verified Halal',
+                    statusLabel: 'Logo + Clean',
                     themeClasses: 'bg-emerald-600/90 hover:bg-emerald-600 text-white border-emerald-400/50 shadow-emerald-950/40',
                     icon: <ShieldCheck size={14} className="text-emerald-200 shrink-0" />,
                 };
             }
-            if (isCleanUncertified) {
+            if (isUnverified) {
                 return {
-                    statusLabel: 'Ingredients Clean',
-                    themeClasses: 'bg-emerald-700/90 hover:bg-emerald-700 text-white border-emerald-400/50 shadow-emerald-950/40',
-                    icon: <ShieldCheck size={14} className="text-emerald-200 shrink-0" />,
+                    statusLabel: 'Unverified',
+                    themeClasses: 'bg-slate-700/95 hover:bg-slate-700 text-slate-100 border-slate-500/60 shadow-slate-950/50',
+                    icon: <ScanSearch size={14} className="text-slate-300 shrink-0" />,
                 };
             }
             return {
-                statusLabel: 'Doubtful',
+                statusLabel: risk.includes('unrecognized') || risk.includes('unaccredited') ? 'Unrecognized Logo' : 'Doubtful',
                 themeClasses: 'bg-amber-600/90 hover:bg-amber-600 text-white border-amber-400/50 shadow-amber-950/40',
                 icon: <AlertTriangle size={14} className="text-amber-200 shrink-0" />,
             };

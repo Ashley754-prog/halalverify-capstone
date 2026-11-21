@@ -1,12 +1,14 @@
-import { CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, XCircle, Info } from 'lucide-react';
 import { simplifyStatus } from '../../utils/textFormatters';
 
 const STYLES = {
     Green: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     Yellow: 'bg-amber-50 text-amber-700 border-amber-200',
     Red: 'bg-rose-50 text-rose-700 border-rose-200',
+    Neutral: 'bg-slate-100 text-slate-700 border-slate-300',
     Halal: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     Doubtful: 'bg-amber-50 text-amber-700 border-amber-200',
+    Unverified: 'bg-slate-100 text-slate-700 border-slate-300',
     Prohibited: 'bg-rose-50 text-rose-700 border-rose-200',
     Haram: 'bg-rose-50 text-rose-700 border-rose-200',
     Valid: 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -18,8 +20,10 @@ const ICONS = {
     Green: <CheckCircle2 size={12} className="shrink-0" />,
     Yellow: <AlertTriangle size={12} className="shrink-0" />,
     Red: <XCircle size={12} className="shrink-0" />,
+    Neutral: <Info size={12} className="shrink-0" />,
     Halal: <CheckCircle2 size={12} className="shrink-0" />,
     Doubtful: <AlertTriangle size={12} className="shrink-0" />,
+    Unverified: <Info size={12} className="shrink-0" />,
     Prohibited: <XCircle size={12} className="shrink-0" />,
     Haram: <XCircle size={12} className="shrink-0" />,
     Valid: <CheckCircle2 size={12} className="shrink-0" />,

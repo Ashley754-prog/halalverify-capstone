@@ -9,18 +9,20 @@ const CROSS_PANEL_HCB_PATTERNS = [
     { regex: /\bIDCP\b|ISLAMIC\s+DA'?WAH\s+COUNCIL/i, label: "IDCP (Islamic Da'wah Council of the Philippines)" },
     { regex: /\bHDIP\b|HALAL\s+DEVELOPMENT\s+INSTITUTE/i, label: "HDIP (Halal Development Institute of the Philippines)" },
     { regex: /\bHICCIP\b|HALAL\s+INTERNATIONAL\s+CHAMBER/i, label: "HICCIP (Halal International Chamber of Commerce and Industries Phils)" },
-    { regex: /\bMMHCB\b|MINDANAO\s+MUSLIM\s+HALAL/i, label: "MMHCB (Mindanao Muslim Halal Certification Board)" },
+    { regex: /\bMMHCB\b|MINDANAO\s+MUSLIM\s+HALAL|MUSLIM\s+MINDANAO\s+HALAL/i, label: "MMHCB (Mindanao Muslim Halal Certification Board)" },
     { regex: /\bMASLAHA\b|ADVOCACY\s+FOR\s+MUSLIM\s+AFFAIRS/i, label: "MASLAHA Halal Certification" },
     { regex: /\bMINHA\b|MINDANAO\s+HALAL\s+AUTHORITY/i, label: "MinHA (Mindanao Halal Authority)" },
     { regex: /\bPUCOI\b|PHILIPPINE\s+ULAMA\s+CONGRESS/i, label: "PUCOI (Philippine Ulama Congress Organization)" },
     { regex: /\bAHIP\b|ALLIANCE\s+FOR\s+HALAL\s+INTEGRITY/i, label: "AHIP (Alliance for Halal Integrity in the Phils)" },
     { regex: /\bPRIME\s+CERTIFICATION/i, label: "PRIME Certification Asia" },
-    { regex: /\bFIQHI\b/i, label: "FIQHI Islamic Certification" },
+    { regex: /\bFIQHI\b|\bFHCPI\b|FIQHI\s+ISLAMIC|FIQH\s+AND\s+HALAL|HALAL\s+COUNCIL\s+OF\s+THE\s+PHILIPPINES/i, label: "FIQHI Islamic Certification" },
     { regex: /\bPHILCOSED\b/i, label: "PHILCOSED Halal Certification" },
+    { regex: /HALAL\s+PHILIPPINES|PHILIPPINE\s+NATIONAL\s+HALAL|NATIONAL\s+HALAL\s+SEAL|\bPHILHALAL\b/i, label: "Philippine National Halal Seal (DTI / NCMF)" },
     { regex: /\bNCMF\b|NATIONAL\s+COMMISSION\s+ON\s+MUSLIM\s+FILIPINOS/i, label: "NCMF Official Halal Seal (Philippines)" },
-    { regex: /\bBUSC\b|BANGSAMORO\s+UNITY|BASILAN\s+ULAMA/i, label: "BUSC (Bangsamoro Unity Summit Consultative)" },
-    { regex: /\bBPCC\b|BANGSAMORO\s+PROFESSIONAL/i, label: "BPCC (Bangsamoro Professional Certification)" },
-    { regex: /\bJAKIM\b|KEMAJUAN\s+ISLAM\s+MALAYSIA|\bMS\s*1500\b/i, label: "Malaysia Halal - JAKIM (Recognized Foreign Certifier)" },
+    { regex: /\bBUSC\b|BANGSAMORO\s+UNITY|BASILAN\s+ULAMA|ULAMA\s+SUPREME\s+COUNCIL/i, label: "BUSC (Bangsamoro Unity Summit Consultative)" },
+    { regex: /\bUCZP\b|ULAMA\s+COUNCIL\s+OF\s+ZAMBOANGA/i, label: "UCZP (Ulama Council of Zamboanga Peninsula)" },
+    { regex: /\bBPCC\b|BANGSAMORO\s+PROFESSIONAL|BANGSAMORO\s+PROVINCIAL|BANGSAMORO\s+CONSULTATIVE|PROVINCIAL\s+CONSULTATIVE\s+COUNCIL/i, label: "BPCC (Bangsamoro Professional Certification)" },
+    { regex: /\bJAKIM\b|KEMAJUAN\s+ISLAM\s+MALAYSIA|HALAL\s+MALAYSIA|MALAYSIA\s+HALAL|\bMS\s*1500\b/i, label: "Malaysia Halal - JAKIM (Recognized Foreign Certifier)" },
     { regex: /\bMUIS\b|MAJLIS\s+UGAMA\s+ISLAM/i, label: "Singapore Halal - MUIS (Recognized Foreign Certifier)" },
     { regex: /\bBPJPH\b|\bLPPOM\b|\bMUI\b|MAJELIS\s+ULAMA\s+INDONESIA/i, label: "Indonesia Halal - BPJPH / MUI (Recognized Foreign Certifier)" },
     { regex: /\bCICOT\b|CENTRAL\s+ISLAMIC\s+COUNCIL\s+OF\s+THAILAND/i, label: "Thailand Halal - CICOT (Recognized Foreign Certifier)" },
@@ -108,13 +110,17 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
     });
     const mergedFlaggedIngredients = Array.from(flagsMap.values());
 
+    const textHalalClaim = Boolean(firstScan.textHalalClaim || secondScan.textHalalClaim);
+    const textClaimedBody = firstScan.textClaimedBody || secondScan.textClaimedBody || null;
+
     // 5. Calculate counts
-    const haramCount = mergedFlaggedIngredients.filter(
-        (i) => (i.status || "").toLowerCase() === "haram"
-    ).length;
+    const haramCount = mergedFlaggedIngredients.filter((i) => {
+        const s = (i.status || "").toLowerCase();
+        return s === "haram" || s === "prohibited";
+    }).length;
     const doubtfulCount = mergedFlaggedIngredients.filter((i) => {
         const s = (i.status || "").toLowerCase();
-        return s === "doubtful" || s.includes("review") || s === "syubhah";
+        return s === "doubtful" || s.includes("review") || s === "syubhah" || s === "mushbooh";
     }).length;
 
     // 6. Hierarchical Evidence-Fused Rule Engine Verdict Evaluation
@@ -123,75 +129,84 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
     let analysisSummary;
     let recommendations;
 
-    if (isInvalidLogo) {
-        verdict = "Yellow";
-        riskLevel = "Unaccredited Certification Mark";
-        analysisSummary = "Notice: An unaccredited or unrecognized certification mark was detected across scanned panels. Under Philippine Halal standards, only accredited certifying bodies (e.g. IDCP, HDIP, NCMF) are officially verified.";
-        recommendations = [
-            "Verify certification credentials with an accredited certifying body.",
-            "Cross-reference the manufacturer in the HalalVerify Product Catalog."
-        ];
-    } else if (haramCount > 0) {
+    if (haramCount > 0) {
         verdict = "Red";
-        riskLevel = "Prohibited (Not Halal)";
+        riskLevel = "Not Halal — Prohibited Ingredient";
         const itemLabel = haramCount === 1 ? "1 prohibited ingredient" : `${haramCount} prohibited ingredients`;
-        analysisSummary = `Detected ${itemLabel} across the scanned packaging.`;
-        if (logoDetected) {
-            analysisSummary += ` Note: Prohibited ingredients were flagged despite the presence of a ${logoBody} mark.`;
+        analysisSummary = `Found ${itemLabel} on this label. Do not consume.`;
+        if (isInvalidLogo) {
+            analysisSummary += " An unrecognized logo was also detected on this packaging.";
+        } else if (logoDetected) {
+            analysisSummary += ` Note: Prohibited ingredients were listed even though a ${logoBody} logo appeared on the pack.`;
         }
         recommendations = [
             "Avoid consuming this product.",
-            "Verify with the manufacturer whether an animal derivative is halal-certified.",
-            "Report conflicting certification via the Report Issue page."
+            "Report conflicting packaging details via the Report Issue page."
         ];
     } else if (doubtfulCount > 0) {
         verdict = "Yellow";
-        riskLevel = "Doubtful Ingredient";
-        const itemLabel = doubtfulCount === 1 ? "1 ingredient requires" : `${doubtfulCount} ingredients require`;
-        analysisSummary = `Screened ${totalPanels} packaging panels. ${itemLabel} source verification (plant vs. animal origin).`;
+        riskLevel = "Doubtful Ingredient Found";
+        const itemLabel = doubtfulCount === 1 ? "1 ingredient" : `${doubtfulCount} ingredients`;
+        analysisSummary = `Found ${itemLabel} whose source (plant or animal) needs to be checked.`;
+        if (isInvalidLogo) {
+            analysisSummary += " An unrecognized logo was also detected on this packaging.";
+        }
         recommendations = [
-            "Verify the biological source of the flagged additive with the manufacturer.",
-            "Check whether the product is covered by the certifying body."
+            "Check with the manufacturer whether the flagged ingredient is plant-based or Halal-certified.",
+            "Look up the product in the HalalVerify Product Catalog."
         ];
-    } else if (logoDetected && !hasReadableIngredients) {
+    } else if (isInvalidLogo) {
         verdict = "Yellow";
-        riskLevel = "Seal Found - Scan Ingredients";
-        analysisSummary = `Detected ${logoBody} (${logoConfidence}% match), but a complete ingredient list was not readable yet. Capture a clearer photo of the back ingredient panel.`;
+        riskLevel = "Unrecognized Logo";
+        analysisSummary = "Found a logo that is not on our recognized Halal certifiers list. Check the brand before buying.";
         recommendations = [
-            "Point the camera directly at the back ingredient list.",
-            "Ensure the ingredient text is flat, in focus, and free of glare."
+            "Check whether the brand holds a valid certificate from an accredited Halal certifying body.",
+            "Look up this product in the HalalVerify Product Catalog."
         ];
-    } else if (logoDetected && isAmbiguousHcb) {
-        verdict = "Yellow";
-        riskLevel = "Seal Found - Certifier Unclear";
-        analysisSummary = `A Halal seal was localized (${logoConfidence}% match) and ingredients are clean, but the certifying body name on the seal rim could not be confirmed.`;
+    } else if (!logoDetected && !hasReadableIngredients && !textHalalClaim) {
+        verdict = "Neutral";
+        riskLevel = "No Food Label Found";
+        analysisSummary = "No food ingredients or Halal logo were found in this photo. Point your camera at a packaged food label.";
         recommendations = [
-            "Capture a closer, well-lit shot of the Halal seal so the certifying body text on the rim can be read."
+            "Point your camera directly at the printed ingredient list or Halal logo.",
+            "Make sure the packaging is well-lit, flat, and in focus."
         ];
-    } else if (logoDetected && hasReadableIngredients) {
+    } else if (logoDetected && hasReadableIngredients && !isAmbiguousHcb) {
         verdict = "Green";
-        riskLevel = "Verified Halal";
-        analysisSummary = `Accredited ${logoBody} seal confirmed (${logoConfidence}% match) with no prohibited or doubtful additives found across ${totalPanels} scanned panels.`;
+        riskLevel = "Halal Logo Found · Clean Ingredients";
+        analysisSummary = `Found ${logoBody} (${logoConfidence}% match) and no prohibited or doubtful ingredients were found across ${totalPanels} scanned panels.`;
         recommendations = [
-            "Product exhibits accredited certification and clean ingredient declarations.",
-            "Always check product packaging expiration dates before purchase."
-        ];
-    } else if (combinedOcrText.length > 0) {
-        verdict = "Yellow";
-        riskLevel = "Halal-Compliant Ingredients";
-        analysisSummary = `Screened ingredients across ${totalPanels} panels and found no prohibited or doubtful additives.`;
-        recommendations = [
-            "Ingredient list appears free of known prohibited additives.",
-            "Capture the side of the packaging showing the official Halal certification seal."
+            "Screened packaging shows a recognized Halal logo and clean declared ingredients.",
+            "Always check the packaging expiry date before buying."
         ];
     } else {
-        verdict = "Yellow";
-        riskLevel = "No Product Detected";
-        analysisSummary = `Neither food ingredient text nor an accredited halal certification logo could be identified in the captured photos.`;
-        recommendations = [
-            "Take a clearer, well-lit photo focusing on the ingredient label or certification seal.",
-            "Ensure the packaging is flat and glare-free."
-        ];
+        verdict = "Neutral";
+        riskLevel = "Unverified — Incomplete Scan";
+        if (logoDetected && !hasReadableIngredients) {
+            analysisSummary = `Found ${logoBody} (${logoConfidence}% match), but no readable ingredient list was found across ${totalPanels} panels. Scan the ingredients on the back to finish.`;
+            recommendations = [
+                "Scan the ingredient list on the back of the package.",
+                "Make sure the small ingredient text is sharp and well-lit."
+            ];
+        } else if (logoDetected && isAmbiguousHcb) {
+            analysisSummary = `Found a Halal logo (${logoConfidence}% match) and clean ingredients, but the certifier name on the logo was too blurry to read. Move closer and retake the logo photo.`;
+            recommendations = [
+                "Move the camera closer to the Halal logo so the certifier name around the rim is clear."
+            ];
+        } else if (textHalalClaim) {
+            const claimedNote = textClaimedBody ? ` (${textClaimedBody})` : "";
+            analysisSummary = `The label mentions Halal${claimedNote}, but no official Halal logo was found across ${totalPanels} panels. Scan the side showing the Halal logo.`;
+            recommendations = [
+                "Turn the package and scan the side showing the official Halal logo.",
+                "Do not rely on printed 'Halal' words alone without an official logo."
+            ];
+        } else {
+            analysisSummary = `No prohibited or doubtful ingredients were found across ${totalPanels} panels, but no Halal logo was found. Scan the Halal logo on the package or check the Product Catalog.`;
+            recommendations = [
+                "Tap '+ Scan Seal' to capture the Halal logo on another side of the package.",
+                "Search the brand in the HalalVerify Product Catalog."
+            ];
+        }
     }
 
     // 7. Aggregate IPO Pipeline Stages
@@ -254,6 +269,8 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
         isAmbiguousHcb,
         logoBody,
         logoConfidence,
+        textHalalClaim,
+        textClaimedBody,
         ingredientStatus,
         ingredientTokenCount: combinedTokenCount,
         ocrText: combinedOcrText,

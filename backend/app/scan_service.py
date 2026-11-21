@@ -20,6 +20,7 @@ VERDICT_TO_STATUS = {
     "Green": "Halal",
     "Yellow": "Doubtful",
     "Red": "Haram",
+    "Neutral": "Unverified",
 }
 
 ADDITIVE_ALIASES = {
@@ -1285,49 +1286,68 @@ def explain_label_verdict(
     text_claimed_body = logo_result.get("textClaimedBody")
     ingredient_status = section_info.get("ingredient_status", "MISSING_OR_UNREADABLE")
 
-    # 1. Unaccredited / Unverified Certification Mark -> Yellow
-    if is_invalid_logo or seal_status == "COUNTERFEIT_OR_UNACCREDITED_SEAL":
-        return {
-            "verdict": "Yellow",
-            "riskLevel": "Unaccredited Certification Mark",
-            "analysisSummary": (
-                "Notice: An unaccredited or unrecognized certification mark was detected on this packaging. "
-                "Under Philippine Halal standards, only accredited certifying bodies (e.g. IDCP, HDIP, NCMF) are officially verified."
-            ),
-            "recommendations": [
-                "Verify certification credentials with an accredited certifying body.",
-                "Cross-check this product in the HalalVerify Product Catalog.",
-            ],
-        }
-
     statuses = [str(item.get("status", "")).strip().lower() for item in flagged_items]
-    haram_count = statuses.count("haram")
+    haram_count = statuses.count("haram") + statuses.count("prohibited")
     doubtful_count = (
         statuses.count("doubtful")
         + statuses.count("needs review")
         + statuses.count("needs_review")
+        + statuses.count("syubhah")
+        + statuses.count("mushbooh")
     )
+    has_invalid_mark = bool(is_invalid_logo or seal_status == "COUNTERFEIT_OR_UNACCREDITED_SEAL")
 
-    # 2. Prohibited Additives / Ingredients Detected -> Red
-    if haram_count:
+    # 1. Prohibited Ingredients Detected -> Red (Always Priority #1, even above invalid marks)
+    if haram_count > 0:
         item_label = "1 prohibited ingredient" if haram_count == 1 else f"{haram_count} prohibited ingredients"
-        summary_msg = f"Detected {item_label} on the label. Avoid consuming this product."
-        if logo_detected:
-            summary_msg += f" Note: Prohibited ingredients were declared despite an apparent {logo_body} mark."
+        summary_msg = f"Found {item_label} on this label. Do not consume."
+        if has_invalid_mark:
+            summary_msg += " An unrecognized logo was also detected on this packaging."
+        elif logo_detected:
+            summary_msg += f" Note: Prohibited ingredients were listed even though a {logo_body} logo appeared on the pack."
 
         return {
             "verdict": "Red",
-            "riskLevel": "Prohibited (Not Halal)",
+            "riskLevel": "Not Halal — Prohibited Ingredient",
             "analysisSummary": summary_msg,
             "recommendations": [
                 "Avoid consuming this product.",
-                "Verify with the manufacturer whether an animal derivative is halal-certified.",
-                "Report conflicting certification via the Report Issue page.",
+                "Report conflicting packaging details via the Report Issue page.",
             ],
         }
 
-    # 3. Non-Product Guard: If no logo is detected and text lacks food label indicators
-    # or lacks a non-empty ingredient panel / explicit halal text claim (e.g. Nutrition Facts alone)
+    # 2. Doubtful Ingredients Detected -> Yellow (Never auto-classified as Haram)
+    if doubtful_count > 0:
+        item_label = "1 ingredient" if doubtful_count == 1 else f"{doubtful_count} ingredients"
+        summary_msg = f"Found {item_label} whose source (plant or animal) needs to be checked."
+        if has_invalid_mark:
+            summary_msg += " An unrecognized logo was also detected on this packaging."
+
+        return {
+            "verdict": "Yellow",
+            "riskLevel": "Doubtful Ingredient Found",
+            "analysisSummary": summary_msg,
+            "recommendations": [
+                "Check with the manufacturer whether the flagged ingredient is plant-based or Halal-certified.",
+                "Look up the product in the HalalVerify Product Catalog.",
+            ],
+        }
+
+    # 3. Counterfeit / Unrecognized Logo -> Yellow
+    if has_invalid_mark:
+        return {
+            "verdict": "Yellow",
+            "riskLevel": "Unrecognized Logo",
+            "analysisSummary": (
+                "Found a logo that is not on our recognized Halal certifiers list. Check the brand before buying."
+            ),
+            "recommendations": [
+                "Check whether the brand holds a valid certificate from an accredited Halal certifying body.",
+                "Look up this product in the HalalVerify Product Catalog.",
+            ],
+        }
+
+    # 4. Non-Food / No Readable Label Guard -> Neutral (Gray)
     if (
         not is_food_label_content(extracted_text, flagged_items, logo_detected)
         or (
@@ -1338,107 +1358,85 @@ def explain_label_verdict(
         )
     ):
         return {
-            "verdict": "Yellow",
-            "riskLevel": "No Product Detected",
+            "verdict": "Neutral",
+            "riskLevel": "No Food Label Found",
             "analysisSummary": (
-                "No food ingredients or Halal certification logo were detected in this image. "
-                "Please aim the camera at a packaged food product or ingredient list."
+                "No food ingredients or Halal logo were found in this photo. "
+                "Point your camera at a packaged food label."
             ),
             "recommendations": [
-                "Point the camera directly at the product's ingredient panel.",
-                "Ensure the packaging is well-lit, flat, and in focus.",
-                "Or scan the accredited Halal certification seal on the front of the package.",
+                "Point your camera directly at the printed ingredient list or Halal logo.",
+                "Make sure the packaging is well-lit, flat, and in focus.",
             ],
         }
 
-    # 4. Doubtful Additives Detected -> Yellow
-    if doubtful_count:
-        item_label = "1 ingredient requires" if doubtful_count == 1 else f"{doubtful_count} ingredients require"
-        summary_msg = (
-            f"Screened ingredient list. {item_label} source verification (plant vs. animal origin)."
-        )
-
-        return {
-            "verdict": "Yellow",
-            "riskLevel": "Doubtful Ingredient",
-            "analysisSummary": summary_msg,
-            "recommendations": [
-                "Verify the biological source of the flagged additive with the manufacturer.",
-                "Check whether the product is covered by an accredited certifying body.",
-            ],
-        }
-
-    # 5. Visual Seal Detected, but Ingredient List Was Not Scanned Yet -> Yellow (Incomplete Scan)
-    if logo_detected and ingredient_status != "READABLE_PANEL":
-        return {
-            "verdict": "Yellow",
-            "riskLevel": "Seal Found - Scan Ingredients",
-            "analysisSummary": (
-                f"Detected {logo_body} ({logo_confidence}% match) on this side, "
-                "but no complete ingredient list was readable in this photo."
-            ),
-            "recommendations": [
-                "Open Details below to scan the ingredient list on the back of the package.",
-                "Ensure the ingredient declaration text is sharp and well-lit.",
-            ],
-        }
-
-    # 6. Visual Seal + Readable Clean Ingredients, but Certifying Body Is Ambiguous -> Yellow
-    if logo_detected and is_ambiguous_hcb:
-        return {
-            "verdict": "Yellow",
-            "riskLevel": "Seal Found - Certifier Unclear",
-            "analysisSummary": (
-                f"A Halal certification seal was localized ({logo_confidence}% match) and declared ingredients "
-                "appear clean, but the certifying body text on the seal rim was too small or blurry to confirm."
-            ),
-            "recommendations": [
-                "Move the camera closer to the Halal logo so the certifying body name on the seal rim can be read clearly.",
-            ],
-        }
-
-    # 7. Accredited Visual Seal Confirmed + Readable Clean Ingredient Panel -> Green
-    if logo_detected:
+    # 5. Recognized Visual Halal Logo + Readable Clean Ingredient Panel -> Green
+    if logo_detected and ingredient_status == "READABLE_PANEL" and not is_ambiguous_hcb:
         return {
             "verdict": "Green",
-            "riskLevel": "Verified Halal",
+            "riskLevel": "Halal Logo Found · Clean Ingredients",
             "analysisSummary": (
-                f"Accredited {logo_body} seal verified ({logo_confidence}% confidence) and "
-                "the scanned ingredient panel contains no prohibited or doubtful substances."
+                f"Found {logo_body} ({logo_confidence}% match) and no prohibited or doubtful ingredients were found on the label."
             ),
             "recommendations": [
-                "Product exhibits an accredited certification seal and clean ingredient declarations.",
-                "Always check product packaging expiration dates before purchase.",
+                "Screened packaging shows a recognized Halal logo and clean declared ingredients.",
+                "Always check the packaging expiry date before buying.",
             ],
         }
 
-    # 8. Text-Only Halal Claim Without a Visual Certification Seal -> Yellow
+    # 6. Incomplete / Unverified Scan -> Neutral (Gray)
+    if logo_detected and ingredient_status != "READABLE_PANEL":
+        return {
+            "verdict": "Neutral",
+            "riskLevel": "Unverified — Incomplete Scan",
+            "analysisSummary": (
+                f"Found {logo_body} ({logo_confidence}% match), but no readable ingredient list was found in this photo. "
+                "Scan the ingredients on the back to finish."
+            ),
+            "recommendations": [
+                "Scan the ingredient list on the back of the package.",
+                "Make sure the small ingredient text is sharp and well-lit.",
+            ],
+        }
+
+    if logo_detected and is_ambiguous_hcb:
+        return {
+            "verdict": "Neutral",
+            "riskLevel": "Unverified — Incomplete Scan",
+            "analysisSummary": (
+                f"Found a Halal logo ({logo_confidence}% match) and clean ingredients, but the certifier name on the logo was too blurry to read. "
+                "Move closer and retake the logo photo."
+            ),
+            "recommendations": [
+                "Move the camera closer to the Halal logo so the certifier name around the rim is clear.",
+            ],
+        }
+
     if text_halal_claim:
         claimed_note = f" ({text_claimed_body})" if text_claimed_body else ""
         return {
-            "verdict": "Yellow",
-            "riskLevel": "Text Claim Only (No Seal)",
+            "verdict": "Neutral",
+            "riskLevel": "Unverified — Incomplete Scan",
             "analysisSummary": (
-                f"The label text mentions Halal certification{claimed_note} and declared ingredients appear clean, "
-                "but no visual Halal certification seal was detected in this photo."
+                f"The label mentions Halal{claimed_note}, but no official Halal logo was found in this photo. "
+                "Scan the side showing the Halal logo."
             ),
             "recommendations": [
-                "Scan the side of the package displaying the official Halal certification seal.",
-                "Do not rely on plain text 'Halal' claims without an accredited certifying body seal.",
+                "Turn the package and scan the side showing the official Halal logo.",
+                "Do not rely on printed 'Halal' words alone without an official logo.",
             ],
         }
 
-    # 9. Clean Ingredients, but NO Logo Detected on this photo -> Yellow
     return {
-        "verdict": "Yellow",
-        "riskLevel": "Halal-Compliant Ingredients",
+        "verdict": "Neutral",
+        "riskLevel": "Unverified — Incomplete Scan",
         "analysisSummary": (
-            "Screened ingredient declaration contains no prohibited or doubtful additives."
+            "No prohibited or doubtful ingredients were found in the ingredient list, but no Halal logo was found in this photo. "
+            "Scan the Halal logo on the package or check the Product Catalog."
         ),
         "recommendations": [
-            "Ingredient list appears free of known prohibited E-codes and haram substances.",
-            "Tap '+ Scan Seal' to capture the Halal certification seal on the front of the package.",
-            "Cross-reference brand name in the HalalVerify Product Catalog.",
+            "Tap '+ Scan Seal' to capture the Halal logo on another side of the package.",
+            "Search the brand in the HalalVerify Product Catalog.",
         ],
     }
 
@@ -1611,7 +1609,7 @@ def analyze_label_image(image_base64: str) -> dict:
 def save_scan_history(mode: str, result: dict, user_id: str = None):
     try:
         # Do not save non-product scans (faces, walls, room) to avoid polluting scan history and analytics
-        if mode == "label" and result.get("riskLevel") == "No Product Detected":
+        if mode == "label" and result.get("riskLevel") in ("No Product Detected", "No Food Label Found"):
             return
 
         if mode == "label":

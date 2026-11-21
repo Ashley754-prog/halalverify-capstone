@@ -101,6 +101,7 @@ export const calculateScanStats = (scans) => {
     let halal = 0;
     let doubtful = 0;
     let prohibited = 0;
+    let unverified = 0;
 
     scans.forEach(s => {
         const status = simplifyStatus(s.verdict).toLowerCase();
@@ -110,6 +111,8 @@ export const calculateScanStats = (scans) => {
             doubtful++;
         } else if (status === 'prohibited' || status === 'haram' || status === 'expired' || status === 'red') {
             prohibited++;
+        } else if (status === 'unverified' || status === 'neutral') {
+            unverified++;
         }
     });
 
@@ -118,6 +121,7 @@ export const calculateScanStats = (scans) => {
         halal,
         doubtful,
         prohibited,
+        unverified,
     };
 };
 
@@ -164,5 +168,6 @@ export const VERDICT_FILTERS = [
     { id: 'all', label: 'All Verdicts' },
     { id: 'halal', label: 'Halal Verified' },
     { id: 'doubtful', label: 'Doubtful' },
+    { id: 'unverified', label: 'Unverified' },
     { id: 'prohibited', label: 'Prohibited' },
 ];

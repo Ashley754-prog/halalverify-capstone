@@ -86,14 +86,17 @@ const formatFriendlyPipelineStage = (stage) => {
     if (name.includes('classification') || name.includes('verdict') || step === 5) {
         const isGreen = rawStatus === 'green' || rawStatus.includes('halal');
         const isRed = rawStatus === 'red' || rawStatus.includes('haram') || rawStatus.includes('prohibit');
+        const isNeutral = rawStatus === 'neutral' || rawStatus === 'unverified';
         return {
             title: '5. Final Halal Assessment',
             summary: 'Combined the logo check and ingredient screening to reach the final verdict.',
-            status: isGreen ? 'Halal' : isRed ? 'Prohibited' : 'Doubtful',
+            status: isGreen ? 'Halal' : isRed ? 'Prohibited' : isNeutral ? 'Unverified' : 'Doubtful',
             statusColor: isGreen
                 ? 'bg-emerald-100 text-emerald-800'
                 : isRed
                 ? 'bg-red-100 text-red-800'
+                : isNeutral
+                ? 'bg-slate-200 text-slate-700'
                 : 'bg-amber-100 text-amber-800',
         };
     }
@@ -132,6 +135,7 @@ export const ScanDetailModal = ({ scan, onClose }) => {
     const isHalal = simplified === 'Halal' || simplified === 'Valid';
     const isDoubtful = simplified === 'Doubtful' || simplified === 'Suspicious';
     const isProhibited = simplified === 'Prohibited' || simplified === 'Haram' || simplified === 'Expired';
+    const isUnverified = simplified === 'Unverified' || simplified === 'Neutral';
 
     let bannerBg = 'bg-slate-50 border-slate-200 text-slate-800';
     let bannerIcon = <AlertTriangle size={24} className="text-slate-500 shrink-0" />;
@@ -149,6 +153,10 @@ export const ScanDetailModal = ({ scan, onClose }) => {
         bannerBg = 'bg-rose-50/80 border-rose-200 text-rose-950';
         bannerIcon = <XCircle size={24} className="text-rose-600 shrink-0" />;
         defaultBannerDesc = 'Contains confirmed non-halal or prohibited ingredients.';
+    } else if (isUnverified) {
+        bannerBg = 'bg-slate-50 border-slate-200 text-slate-800';
+        bannerIcon = <Info size={24} className="text-slate-500 shrink-0" />;
+        defaultBannerDesc = 'Scan was incomplete or unverified. Capture both the Halal logo and the full ingredient list.';
     }
 
     const flagged = getFlaggedItems(scan);
