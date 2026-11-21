@@ -87,7 +87,9 @@ export const LabelResultsSheet = ({
     const displayedLogoSrc = resolveReferenceLogoSrc(scanResult);
     const hasVerifiedSeal = Boolean(
         scanResult?.logoDetected &&
-        (Number(scanResult?.logoConfidence || 0) >= 35 || scanResult?.isInvalidLogo)
+        !scanResult?.isInvalidLogo &&
+        !scanResult?.isAmbiguousHcb &&
+        Number(scanResult?.logoConfidence || 0) >= 35
     );
 
     const handleTouchStart = (e) => {
@@ -329,7 +331,11 @@ export const LabelResultsSheet = ({
                                                 No Halal Logo Found
                                             </p>
                                             <p className="text-[11px] text-slate-400 truncate">
-                                                {scanResult.textHalalClaim
+                                                {scanResult.isInvalidLogo
+                                                    ? 'No recognized accredited Halal logo found'
+                                                    : scanResult.isAmbiguousHcb
+                                                    ? 'Logo was too blurry to confirm the certifier'
+                                                    : scanResult.textHalalClaim
                                                     ? 'Halal text found, but no visual logo'
                                                     : 'Screened using printed ingredient list'}
                                             </p>
@@ -369,10 +375,10 @@ export const LabelResultsSheet = ({
                                                 scanResult.verdict === 'Green'
                                                     ? 'Halal Logo Found · Clean Ingredients'
                                                     : scanResult.verdict === 'Red'
-                                                    ? 'Not Halal — Prohibited Ingredient'
+                                                    ? 'Not Halal · Prohibited Ingredient'
                                                     : scanResult.verdict === 'Yellow'
                                                     ? 'Doubtful Ingredient Found'
-                                                    : 'Unverified — Incomplete Scan'
+                                                    : 'Unverified · Incomplete Scan'
                                             )
                                         )}
                                     </p>
@@ -571,10 +577,9 @@ export const LabelResultsSheet = ({
                             )}
 
                             {/* Optional Catalog Lookup Shortcut */}
-                            {scanResult.riskLevel !== 'No Food Label Found' &&
-                                scanResult.riskLevel !== 'No Product Detected' &&
-                                !scanResult.isInvalidLogo &&
-                                !scanResult.logoDetected && (
+                            {!hasVerifiedSeal &&
+                                scanResult.riskLevel !== 'No Food Label Found' &&
+                                scanResult.riskLevel !== 'No Product Detected' && (
                                     <button
                                         type="button"
                                         onClick={() => onViewChange?.('products')}

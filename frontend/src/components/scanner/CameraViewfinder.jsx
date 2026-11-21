@@ -117,7 +117,7 @@ export const CameraViewfinder = ({
                 };
             }
             return {
-                statusLabel: risk.includes('unrecognized') || risk.includes('unaccredited') ? 'Unrecognized Logo' : 'Doubtful',
+                statusLabel: 'Doubtful',
                 themeClasses: 'bg-amber-600/90 hover:bg-amber-600 text-white border-amber-400/50 shadow-amber-950/40',
                 icon: <AlertTriangle size={14} className="text-amber-200 shrink-0" />,
             };

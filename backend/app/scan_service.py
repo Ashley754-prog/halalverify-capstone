@@ -1297,18 +1297,16 @@ def explain_label_verdict(
     )
     has_invalid_mark = bool(is_invalid_logo or seal_status == "COUNTERFEIT_OR_UNACCREDITED_SEAL")
 
-    # 1. Prohibited Ingredients Detected -> Red (Always Priority #1, even above invalid marks)
+    # 1. Prohibited Ingredients Detected -> Red (Always Priority #1)
     if haram_count > 0:
         item_label = "1 prohibited ingredient" if haram_count == 1 else f"{haram_count} prohibited ingredients"
         summary_msg = f"Found {item_label} on this label. Do not consume."
-        if has_invalid_mark:
-            summary_msg += " An unrecognized logo was also detected on this packaging."
-        elif logo_detected:
+        if logo_detected and not has_invalid_mark:
             summary_msg += f" Note: Prohibited ingredients were listed even though a {logo_body} logo appeared on the pack."
 
         return {
             "verdict": "Red",
-            "riskLevel": "Not Halal — Prohibited Ingredient",
+            "riskLevel": "Not Halal · Prohibited Ingredient",
             "analysisSummary": summary_msg,
             "recommendations": [
                 "Avoid consuming this product.",
@@ -1320,8 +1318,6 @@ def explain_label_verdict(
     if doubtful_count > 0:
         item_label = "1 ingredient" if doubtful_count == 1 else f"{doubtful_count} ingredients"
         summary_msg = f"Found {item_label} whose source (plant or animal) needs to be checked."
-        if has_invalid_mark:
-            summary_msg += " An unrecognized logo was also detected on this packaging."
 
         return {
             "verdict": "Yellow",
@@ -1333,28 +1329,17 @@ def explain_label_verdict(
             ],
         }
 
-    # 3. Counterfeit / Unrecognized Logo -> Yellow
-    if has_invalid_mark:
-        return {
-            "verdict": "Yellow",
-            "riskLevel": "Unrecognized Logo",
-            "analysisSummary": (
-                "Found a logo that is not on our recognized Halal certifiers list. Check the brand before buying."
-            ),
-            "recommendations": [
-                "Check whether the brand holds a valid certificate from an accredited Halal certifying body.",
-                "Look up this product in the HalalVerify Product Catalog.",
-            ],
-        }
-
-    # 4. Non-Food / No Readable Label Guard -> Neutral (Gray)
+    # 3. Non-Food / No Readable Label Guard -> Neutral (Gray)
     if (
-        not is_food_label_content(extracted_text, flagged_items, logo_detected)
-        or (
-            not logo_detected
-            and not flagged_items
-            and ingredient_status != "READABLE_PANEL"
-            and not text_halal_claim
+        not has_invalid_mark
+        and (
+            not is_food_label_content(extracted_text, flagged_items, logo_detected)
+            or (
+                not logo_detected
+                and not flagged_items
+                and ingredient_status != "READABLE_PANEL"
+                and not text_halal_claim
+            )
         )
     ):
         return {
@@ -1370,8 +1355,8 @@ def explain_label_verdict(
             ],
         }
 
-    # 5. Recognized Visual Halal Logo + Readable Clean Ingredient Panel -> Green
-    if logo_detected and ingredient_status == "READABLE_PANEL" and not is_ambiguous_hcb:
+    # 4. Recognized Visual Halal Logo + Readable Clean Ingredient Panel -> Green
+    if logo_detected and not has_invalid_mark and ingredient_status == "READABLE_PANEL" and not is_ambiguous_hcb:
         return {
             "verdict": "Green",
             "riskLevel": "Halal Logo Found · Clean Ingredients",
@@ -1384,11 +1369,32 @@ def explain_label_verdict(
             ],
         }
 
-    # 6. Incomplete / Unverified Scan -> Neutral (Gray)
+    # 5. Incomplete / Unverified Scan (including unrecognized/blurry marks) -> Neutral (Gray)
+    if has_invalid_mark:
+        if ingredient_status == "READABLE_PANEL":
+            summary_msg = (
+                "No prohibited or doubtful ingredients were found, but no recognized Halal logo was found in this photo. "
+                "Scan the official Halal logo or check the Product Catalog."
+            )
+        else:
+            summary_msg = (
+                "No recognized Halal logo or readable ingredient list was found in this photo. "
+                "Scan the ingredient list on the back or check the Product Catalog."
+            )
+        return {
+            "verdict": "Neutral",
+            "riskLevel": "Unverified · Incomplete Scan",
+            "analysisSummary": summary_msg,
+            "recommendations": [
+                "Tap '+ Scan Seal' to capture the official Halal logo on the packaging.",
+                "Search the brand in the HalalVerify Product Catalog.",
+            ],
+        }
+
     if logo_detected and ingredient_status != "READABLE_PANEL":
         return {
             "verdict": "Neutral",
-            "riskLevel": "Unverified — Incomplete Scan",
+            "riskLevel": "Unverified · Incomplete Scan",
             "analysisSummary": (
                 f"Found {logo_body} ({logo_confidence}% match), but no readable ingredient list was found in this photo. "
                 "Scan the ingredients on the back to finish."
@@ -1402,9 +1408,9 @@ def explain_label_verdict(
     if logo_detected and is_ambiguous_hcb:
         return {
             "verdict": "Neutral",
-            "riskLevel": "Unverified — Incomplete Scan",
+            "riskLevel": "Unverified · Incomplete Scan",
             "analysisSummary": (
-                f"Found a Halal logo ({logo_confidence}% match) and clean ingredients, but the certifier name on the logo was too blurry to read. "
+                "No clear Halal logo could be confirmed because the certifier name was too blurry. "
                 "Move closer and retake the logo photo."
             ),
             "recommendations": [
@@ -1416,7 +1422,7 @@ def explain_label_verdict(
         claimed_note = f" ({text_claimed_body})" if text_claimed_body else ""
         return {
             "verdict": "Neutral",
-            "riskLevel": "Unverified — Incomplete Scan",
+            "riskLevel": "Unverified · Incomplete Scan",
             "analysisSummary": (
                 f"The label mentions Halal{claimed_note}, but no official Halal logo was found in this photo. "
                 "Scan the side showing the Halal logo."
@@ -1429,7 +1435,7 @@ def explain_label_verdict(
 
     return {
         "verdict": "Neutral",
-        "riskLevel": "Unverified — Incomplete Scan",
+        "riskLevel": "Unverified · Incomplete Scan",
         "analysisSummary": (
             "No prohibited or doubtful ingredients were found in the ingredient list, but no Halal logo was found in this photo. "
             "Scan the Halal logo on the package or check the Product Catalog."

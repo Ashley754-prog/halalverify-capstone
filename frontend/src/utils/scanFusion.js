@@ -131,12 +131,10 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
 
     if (haramCount > 0) {
         verdict = "Red";
-        riskLevel = "Not Halal — Prohibited Ingredient";
+        riskLevel = "Not Halal · Prohibited Ingredient";
         const itemLabel = haramCount === 1 ? "1 prohibited ingredient" : `${haramCount} prohibited ingredients`;
         analysisSummary = `Found ${itemLabel} on this label. Do not consume.`;
-        if (isInvalidLogo) {
-            analysisSummary += " An unrecognized logo was also detected on this packaging.";
-        } else if (logoDetected) {
+        if (logoDetected && !isInvalidLogo) {
             analysisSummary += ` Note: Prohibited ingredients were listed even though a ${logoBody} logo appeared on the pack.`;
         }
         recommendations = [
@@ -148,22 +146,11 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
         riskLevel = "Doubtful Ingredient Found";
         const itemLabel = doubtfulCount === 1 ? "1 ingredient" : `${doubtfulCount} ingredients`;
         analysisSummary = `Found ${itemLabel} whose source (plant or animal) needs to be checked.`;
-        if (isInvalidLogo) {
-            analysisSummary += " An unrecognized logo was also detected on this packaging.";
-        }
         recommendations = [
             "Check with the manufacturer whether the flagged ingredient is plant-based or Halal-certified.",
             "Look up the product in the HalalVerify Product Catalog."
         ];
-    } else if (isInvalidLogo) {
-        verdict = "Yellow";
-        riskLevel = "Unrecognized Logo";
-        analysisSummary = "Found a logo that is not on our recognized Halal certifiers list. Check the brand before buying.";
-        recommendations = [
-            "Check whether the brand holds a valid certificate from an accredited Halal certifying body.",
-            "Look up this product in the HalalVerify Product Catalog."
-        ];
-    } else if (!logoDetected && !hasReadableIngredients && !textHalalClaim) {
+    } else if (!isInvalidLogo && !logoDetected && !hasReadableIngredients && !textHalalClaim) {
         verdict = "Neutral";
         riskLevel = "No Food Label Found";
         analysisSummary = "No food ingredients or Halal logo were found in this photo. Point your camera at a packaged food label.";
@@ -171,7 +158,7 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
             "Point your camera directly at the printed ingredient list or Halal logo.",
             "Make sure the packaging is well-lit, flat, and in focus."
         ];
-    } else if (logoDetected && hasReadableIngredients && !isAmbiguousHcb) {
+    } else if (logoDetected && !isInvalidLogo && hasReadableIngredients && !isAmbiguousHcb) {
         verdict = "Green";
         riskLevel = "Halal Logo Found · Clean Ingredients";
         analysisSummary = `Found ${logoBody} (${logoConfidence}% match) and no prohibited or doubtful ingredients were found across ${totalPanels} scanned panels.`;
@@ -181,15 +168,23 @@ export function mergeLabelScans(firstScan, secondScan, firstImage, secondImage) 
         ];
     } else {
         verdict = "Neutral";
-        riskLevel = "Unverified — Incomplete Scan";
-        if (logoDetected && !hasReadableIngredients) {
+        riskLevel = "Unverified · Incomplete Scan";
+        if (isInvalidLogo) {
+            analysisSummary = hasReadableIngredients
+                ? `No prohibited or doubtful ingredients were found across ${totalPanels} panels, but no recognized Halal logo was found. Scan the official Halal logo or check the Product Catalog.`
+                : `No recognized Halal logo or readable ingredient list was found across ${totalPanels} panels. Scan the ingredient list on the back or check the Product Catalog.`;
+            recommendations = [
+                "Tap '+ Scan Seal' to capture the official Halal logo on the packaging.",
+                "Search the brand in the HalalVerify Product Catalog."
+            ];
+        } else if (logoDetected && !hasReadableIngredients) {
             analysisSummary = `Found ${logoBody} (${logoConfidence}% match), but no readable ingredient list was found across ${totalPanels} panels. Scan the ingredients on the back to finish.`;
             recommendations = [
                 "Scan the ingredient list on the back of the package.",
                 "Make sure the small ingredient text is sharp and well-lit."
             ];
         } else if (logoDetected && isAmbiguousHcb) {
-            analysisSummary = `Found a Halal logo (${logoConfidence}% match) and clean ingredients, but the certifier name on the logo was too blurry to read. Move closer and retake the logo photo.`;
+            analysisSummary = "No clear Halal logo could be confirmed because the certifier name was too blurry. Move closer and retake the logo photo.";
             recommendations = [
                 "Move the camera closer to the Halal logo so the certifier name around the rim is clear."
             ];

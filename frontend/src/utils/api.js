@@ -216,7 +216,7 @@ export function simulateFallback(mode) {
             ingredientsFound: [],
             flaggedIngredients: [],
             verdict: 'Neutral',
-            riskLevel: 'Unverified — Incomplete Scan',
+            riskLevel: 'Unverified · Incomplete Scan',
             analysisSummary:
                 'The backend server is offline, so no OCR analysis was performed. This is placeholder data.',
             recommendations: [
