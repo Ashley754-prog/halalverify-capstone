@@ -85,7 +85,9 @@ export const getFlaggedItems = (item) => {
             return raw.flaggedIngredients
                 .filter(isNonHalalFlag)
                 .map(f => ({
+                    ingredient: f.ingredient || f.name || f.matched_text,
                     matched_text: f.matched_text || f.ingredient || f.name,
+                    match_type: f.match_type || '',
                     status: f.status,
                     reason: f.reason,
                     additive_id: f.additive_id || f.code,

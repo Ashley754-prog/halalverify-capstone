@@ -595,25 +595,38 @@ _FUNCTIONAL_ADDITIVE_CLASSES = (
 def _clean_ocr_ecode_token(raw_code: str) -> str:
     """
     Repairs OCR character-digit confusions inside E/INS numbers (e.g., '47I' -> '471', '12O' -> '120')
-    while preserving valid trailing sub-letters (a-f, i, ii) such as E472e or E150d.
+    while preserving valid trailing sub-letters (a-f) such as E472e or E150d.
+    Rejects non-digit words (e.g. 'oil', 'loss', 'size') and out-of-range numbers (e.g. years like 2026).
     """
     token = raw_code.strip().upper()
-    if not token:
+    if not token or len(token) < 3 or len(token) > 5:
         return ""
-    # If the first 3 characters contain OCR confusions, repair them; check if trailing char is a valid suffix or a misread digit
-    if len(token) >= 3:
-        prefix = token[:3].translate(_OCR_DIGIT_CONFUSIONS)
-        suffix = token[3:]
-        # In 3-digit E-numbers (e.g. E471 misread as E47I where token is '47I'), all 3 chars should be digits
-        if len(token) == 3 and prefix.isdigit():
-            return f"E{prefix}"
-        if prefix.isdigit():
-            # Valid trailing sub-letter on 3-digit E-code (e.g. 472E, 150A, 150D, 160A)
-            if len(suffix) == 1 and suffix in "ABCDEF":
-                return f"E{prefix}{suffix}"
-            suffix_fixed = suffix.translate(_OCR_DIGIT_CONFUSIONS)
-            if suffix_fixed.isdigit():
-                return f"E{prefix}{suffix_fixed}"
+
+    # Must contain at least 2 real ASCII digits so English words like 'oil' (O,I,L) or 'loss' (L,O,S,S) never match
+    if sum(ch.isdigit() for ch in token) < 2:
+        return ""
+
+    prefix = token[:3].translate(_OCR_DIGIT_CONFUSIONS)
+    suffix = token[3:]
+    if not prefix.isdigit():
+        return ""
+
+    if len(token) == 3:
+        num = int(prefix)
+        return f"E{prefix}" if 100 <= num <= 999 else ""
+
+    # Valid trailing sub-letter on 3-digit E-code (e.g. 472E, 150A, 150D, 160A)
+    if len(suffix) == 1 and suffix in "ABCDEF":
+        num = int(prefix)
+        return f"E{prefix}{suffix}" if 100 <= num <= 999 else ""
+
+    # 4-digit E-number (Codex/EU range E1000–E1599, e.g. E1105, E1422, E1442, E1520)
+    suffix_fixed = suffix.translate(_OCR_DIGIT_CONFUSIONS)
+    if len(suffix_fixed) == 1 and suffix_fixed.isdigit():
+        full_digits = f"{prefix}{suffix_fixed}"
+        num = int(full_digits)
+        return f"E{full_digits}" if 1000 <= num <= 1599 else ""
+
     return ""
 
 
@@ -624,7 +637,7 @@ def find_e_numbers(text: str):
     cleaned = set()
 
     # 1. Explicit E-numbers and INS codes (including OCR-corrupted digits like E47I, E12O, INS-471)
-    explicit_pattern = r"\b(?:E|INS)\s*[-]?\s*([0-9IL|OSZ]{3,4}[a-fA-F]?)\b"
+    explicit_pattern = r"\b(?:E|INS)(?:\s*[-]\s*|\s+(?=\d)|(?=[0-9IL|OSZ]))([0-9IL|OSZ]{3,4}[a-fA-F]?)\b"
     for match in re.findall(explicit_pattern, text, flags=re.IGNORECASE):
         fixed = _clean_ocr_ecode_token(match)
         if fixed:

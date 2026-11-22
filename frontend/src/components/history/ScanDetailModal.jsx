@@ -376,17 +376,33 @@ export const ScanDetailModal = ({ scan, onClose }) => {
                                     >
                                         <div className="flex items-center justify-between gap-2">
                                             <span className="font-bold text-slate-900">
-                                                {f.matched_text}
+                                                {simplifyHalalText(f.ingredient || f.matched_text)}
                                             </span>
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
                                                 isHaram ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
                                             }`}>
-                                                {f.status || 'Doubtful'}
+                                                {simplifyStatus(f.status || 'Doubtful')}
                                             </span>
                                         </div>
+                                        {f.matched_text && (
+                                            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                                                <span className="inline-flex items-center text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-white/80 border border-slate-200 text-slate-700">
+                                                    Matched on label: &ldquo;{f.matched_text}&rdquo;
+                                                </span>
+                                                {f.match_type && (
+                                                    <span className="text-[9px] uppercase tracking-wider font-semibold text-slate-500">
+                                                        {f.match_type === 'e_number'
+                                                            ? 'E-Number / INS'
+                                                            : f.match_type === 'fuzzy_ocr'
+                                                            ? 'OCR Match'
+                                                            : 'Exact Text'}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
                                         {f.reason && (
-                                            <p className="mt-1 text-[11px] text-slate-600 leading-relaxed">
-                                                {f.reason}
+                                            <p className="mt-1.5 text-[11px] text-slate-600 leading-relaxed">
+                                                {simplifyHalalText(f.reason)}
                                             </p>
                                         )}
                                     </div>

@@ -41,7 +41,7 @@ ADDITIVE_ALIASES = {
     "E407": ["carrageenan", "carrageen", "irish moss"],
     "E412": ["guar gum"],
     "E415": ["xanthan gum"],
-    "E422": ["glycerol", "glycerin", "glycerine", "vegetable glycerin"],
+    "E422": ["glycerol", "glycerin", "glycerine"],
     "E441": ["gelatin", "gelatine", "geltin", "edible gelatin", "animal gelatin"],
     "E471": [
         "mono- and diglycerides",
@@ -440,12 +440,11 @@ def parse_label_sections(raw_text: str) -> dict:
     }
 
 
-def _fuzzy_match_term_in_tokens(candidate_norm: str, text_tokens: list, min_len: int = 6, threshold: float = 0.84) -> str:
+def _fuzzy_match_term_in_tokens(candidate_norm: str, text_tokens: list, min_len: int = 7, threshold: float = 0.90) -> str:
     """
-    Bounded fuzzy matching for single-word ingredient/additive terms >= 6 chars to recover from OCR typos
-    (e.g. 'gelatln' -> 'gelatin', 'porclne' -> 'porcine', 'carmlne' -> 'carmine', 'tbhqjl' -> 'tbhq').
-    Short words (< 6 chars like 'pork', 'lard', 'ham', 'wine') are restricted to exact word boundaries
-    to prevent false positives (e.g. 'corn' vs 'pork').
+    Strict bounded fuzzy matching (similarity >= 0.90) for single-word ingredient/additive terms >= 7 chars
+    to recover from minor OCR character typos (e.g. 'ribonucleotide' -> 'ribonucleotides')
+    while preventing false-positive matches on distinct short words (e.g. 'pectin' vs 'pepsin').
     """
     if not candidate_norm or " " in candidate_norm:
         return ""
@@ -525,6 +524,13 @@ def match_additives_from_text(extracted_text: str):
         additive_status = str(additive.get("status") or "").strip()
         if additive_status.lower() in ("halal", "safe", "compliant", "verified", "approved"):
             continue
+
+        # Exempt explicitly plant-derived vegetable glycerin/glycerol from E422 animal-origin doubt
+        if norm_code == "E422" and not code_match:
+            if re.search(r"\bvegetable\s+(?:glycerin|glycerine|glycerol)\b", normalized_text):
+                stripped_veg = re.sub(r"\bvegetable\s+(?:glycerin|glycerine|glycerol)\b", " ", normalized_text)
+                if not re.search(r"\b(?:glycerin|glycerine|glycerol)\b", stripped_veg):
+                    continue
 
         flagged_items.append({
             "additive_id": additive_id,

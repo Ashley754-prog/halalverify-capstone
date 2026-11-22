@@ -499,9 +499,9 @@ export const LabelResultsSheet = ({
                                                                     : 'bg-amber-950/60 border-amber-500/40 text-amber-200'
                                                             }`}
                                                         >
-                                                            <div className="flex items-center justify-between font-bold">
+                                                            <div className="flex items-center justify-between gap-2 font-bold">
                                                                 <span>{simplifyHalalText(flag.ingredient)}</span>
-                                                                <span className={`text-[10px] uppercase px-1.5 py-0.2 rounded border ${
+                                                                <span className={`text-[10px] uppercase px-1.5 py-0.5 rounded border shrink-0 ${
                                                                     isHaram
                                                                         ? 'bg-red-900/80 border-red-400/50 text-red-100'
                                                                         : 'bg-amber-900/80 border-amber-400/50 text-amber-100'
@@ -509,6 +509,22 @@ export const LabelResultsSheet = ({
                                                                     {simplifyStatus(flag.status)}
                                                                 </span>
                                                             </div>
+                                                            {flag.matched_text && (
+                                                                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                                                    <span className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-black/30 border border-white/15 text-slate-100">
+                                                                        Matched on label: &ldquo;{flag.matched_text}&rdquo;
+                                                                    </span>
+                                                                    {flag.match_type && (
+                                                                        <span className="text-[9px] uppercase tracking-wider font-semibold opacity-75">
+                                                                            {flag.match_type === 'e_number'
+                                                                                ? 'E-Number / INS'
+                                                                                : flag.match_type === 'fuzzy_ocr'
+                                                                                ? 'OCR Match'
+                                                                                : 'Exact Text'}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            )}
                                                             <p className="text-[11px] opacity-90 leading-relaxed">
                                                                 {simplifyHalalText(flag.reason)}
                                                             </p>
