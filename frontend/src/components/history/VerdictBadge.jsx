@@ -33,8 +33,12 @@ const ICONS = {
     Suspicious: <AlertTriangle size={12} className="shrink-0" />,
 };
 
-export const VerdictBadge = ({ verdict, className = '' }) => {
+export const VerdictBadge = ({ verdict, mode = '', className = '' }) => {
     const display = simplifyStatus(verdict);
+    const isCert = mode === 'certificate' || mode === 'cert';
+    const label = !isCert && (display === 'Halal' || display === 'Green')
+        ? 'No Prohibited Additives'
+        : (display || 'Unknown');
     const style = STYLES[display] || STYLES[verdict] || 'bg-slate-100 text-slate-700 border-slate-200';
     const icon = ICONS[display] || ICONS[verdict] || <AlertTriangle size={12} className="shrink-0" />;
 
@@ -43,7 +47,7 @@ export const VerdictBadge = ({ verdict, className = '' }) => {
             className={`inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0 border ${style} ${className}`}
         >
             {icon}
-            <span>{display || 'Unknown'}</span>
+            <span>{label}</span>
         </span>
     );
 };

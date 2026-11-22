@@ -88,9 +88,9 @@ const formatFriendlyPipelineStage = (stage) => {
         const isRed = rawStatus === 'red' || rawStatus.includes('haram') || rawStatus.includes('prohibit');
         const isNeutral = rawStatus === 'neutral' || rawStatus === 'unverified';
         return {
-            title: '5. Final Halal Assessment',
-            summary: 'Combined the logo check and ingredient screening to reach the final verdict.',
-            status: isGreen ? 'Halal' : isRed ? 'Prohibited' : isNeutral ? 'Unverified' : 'Doubtful',
+            title: '5. Final Screening Result',
+            summary: 'Combined the logo check and ingredient screening to reach the final screening result.',
+            status: isGreen ? 'No Prohibited' : isRed ? 'Prohibited' : isNeutral ? 'Unverified' : 'Doubtful',
             statusColor: isGreen
                 ? 'bg-emerald-100 text-emerald-800'
                 : isRed
@@ -147,11 +147,11 @@ export const ScanDetailModal = ({ scan, onClose }) => {
         bannerIcon = <CheckCircle2 size={24} className="text-emerald-600 shrink-0" />;
         defaultBannerDesc = isCertScan
             ? 'Certificate matches the HalalVerify registry and is currently active.'
-            : 'Zero prohibited or non-halal items detected. Verified compliant.';
+            : 'No prohibited or doubtful additives detected based on visible packaging text and seal.';
     } else if (isDoubtful) {
         bannerBg = 'bg-amber-50/80 border-amber-200 text-amber-950';
         bannerIcon = <AlertTriangle size={24} className="text-amber-600 shrink-0" />;
-        defaultBannerDesc = 'Contains additives of unverified origin (Syubhah). Verification recommended.';
+        defaultBannerDesc = 'Contains additives of doubtful origin. Further verification recommended.';
     } else if (isProhibited) {
         bannerBg = 'bg-rose-50/80 border-rose-200 text-rose-950';
         bannerIcon = <XCircle size={24} className="text-rose-600 shrink-0" />;
@@ -205,7 +205,9 @@ export const ScanDetailModal = ({ scan, onClose }) => {
                             {bannerIcon}
                             <div className="min-w-0">
                                 <h4 className="text-base sm:text-lg font-black uppercase tracking-tight">
-                                    Verdict: {simplified}
+                                    {isHalal && !isCertScan
+                                        ? 'No Prohibited Additives Found'
+                                        : `Result: ${simplified}`}
                                 </h4>
                                 <p className="text-xs text-slate-700 mt-1 leading-relaxed break-words">
                                     {activeSummary}

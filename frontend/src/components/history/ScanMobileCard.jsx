@@ -29,7 +29,7 @@ export const ScanMobileCard = ({ item, onClick }) => {
                         #{String(item.id).slice(0, 8)}
                     </span>
                 </div>
-                <VerdictBadge verdict={item.verdict} />
+                <VerdictBadge verdict={item.verdict} mode={item.mode} />
             </div>
 
             {/* Product / Scan Title */}

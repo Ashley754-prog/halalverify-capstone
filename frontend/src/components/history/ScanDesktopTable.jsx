@@ -85,7 +85,7 @@ export const ScanDesktopTable = ({ items, onSelectItem }) => {
                                     </td>
 
                                     <td className="px-5 py-3.5 whitespace-nowrap">
-                                        <VerdictBadge verdict={item.verdict} />
+                                        <VerdictBadge verdict={item.verdict} mode={item.mode} />
                                     </td>
 
                                     <td className="px-5 py-3.5 whitespace-nowrap">

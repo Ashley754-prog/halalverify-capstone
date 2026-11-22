@@ -1,9 +1,9 @@
-import { Layers, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
+import { Layers, CheckCircle2, AlertTriangle, Info, XCircle } from 'lucide-react';
 import KpiCard from '../ui/KpiCard';
 
 export const ScanMetricsCards = ({ stats }) => {
     return (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3.5">
             <KpiCard
                 title="Total Scans"
                 value={stats.total}
@@ -12,11 +12,11 @@ export const ScanMetricsCards = ({ stats }) => {
                 subtitle="Recorded scan events"
             />
             <KpiCard
-                title="Halal Verified"
+                title="Clean / Valid"
                 value={stats.halal}
                 icon={<CheckCircle2 />}
                 color="emerald"
-                subtitle="Passed verification"
+                subtitle="No prohibited / valid cert"
             />
             <KpiCard
                 title="Doubtful Scans"
@@ -26,11 +26,18 @@ export const ScanMetricsCards = ({ stats }) => {
                 subtitle="Require origin review"
             />
             <KpiCard
+                title="Unverified"
+                value={stats.unverified || 0}
+                icon={<Info />}
+                color="gray"
+                subtitle="Incomplete or unmatched"
+            />
+            <KpiCard
                 title="Prohibited"
                 value={stats.prohibited}
                 icon={<XCircle />}
                 color="rose"
-                subtitle="Non-compliant items"
+                subtitle="Haram / expired / invalid"
             />
         </div>
     );

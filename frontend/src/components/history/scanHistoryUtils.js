@@ -166,7 +166,7 @@ export const MODE_FILTERS = [
 
 export const VERDICT_FILTERS = [
     { id: 'all', label: 'All Verdicts' },
-    { id: 'halal', label: 'Halal Verified' },
+    { id: 'halal', label: 'Clean / Valid' },
     { id: 'doubtful', label: 'Doubtful' },
     { id: 'unverified', label: 'Unverified' },
     { id: 'prohibited', label: 'Prohibited' },
