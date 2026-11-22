@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 import datetime
 import logging
 import re
@@ -587,14 +588,27 @@ def get_analytics_trends(
     and verification statistics across Zamboanga City / Philippines.
     """
     try:
-        scans_res = supabase.table("scan_history").select("*").order("created_at", desc=True).limit(500).execute()
-        scans = scans_res.data or []
-
-        est_res = supabase.table("establishments").select("id, name, city, halal_status, expiry_date, created_at").execute()
-        establishments = est_res.data or []
-
-        additives_res = supabase.table("additives").select("code, name, status, source_description").execute()
-        additives_map = {a["code"].upper(): a for a in (additives_res.data or [])}
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            fut_scans = pool.submit(
+                lambda: supabase.table("scan_history")
+                .select("verdict, created_at, raw_result")
+                .order("created_at", desc=True)
+                .limit(500)
+                .execute()
+            )
+            fut_est = pool.submit(
+                lambda: supabase.table("establishments")
+                .select("halal_status, expiry_date")
+                .execute()
+            )
+            fut_add = pool.submit(
+                lambda: supabase.table("additives")
+                .select("code, name, status, source_description")
+                .execute()
+            )
+            scans = fut_scans.result().data or []
+            establishments = fut_est.result().data or []
+            additives_map = {a["code"].upper(): a for a in (fut_add.result().data or [])}
 
         total_scans = len(scans)
         verdicts = {"Halal": 0, "Doubtful": 0, "Haram": 0, "Other": 0}
@@ -711,7 +725,7 @@ def get_reports_summary(user: dict = Depends(require_admin)):
     Returns summaries of pending vs. resolved flags and user reports nationwide/Zamboanga.
     """
     try:
-        rep_res = supabase.table("issue_reports").select("*").execute()
+        rep_res = supabase.table("issue_reports").select("status, resolution_notes, issue_type").execute()
         reports = rep_res.data or []
 
         total = len(reports)

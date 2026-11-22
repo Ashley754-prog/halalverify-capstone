@@ -26,37 +26,43 @@ export default function Analytics({ onViewChange }) {
             setError('');
             const errors = [];
 
-            try {
-                const resTrends = await authFetch(`${API_BASE_URL}/api/v1/admin/analytics/trends?interval=${interval}`);
-                if (resTrends.ok) {
-                    const jsonTrends = await resTrends.json();
-                    setTrendsData(jsonTrends.data || null);
-                } else {
-                    const errBody = await resTrends.json().catch(() => ({}));
-                    errors.push(errBody.detail || `Trends request failed (${resTrends.status})`);
+            const fetchTrends = async () => {
+                try {
+                    const resTrends = await authFetch(`${API_BASE_URL}/api/v1/admin/analytics/trends?interval=${interval}`);
+                    if (resTrends.ok) {
+                        const jsonTrends = await resTrends.json();
+                        setTrendsData(jsonTrends.data || null);
+                    } else {
+                        const errBody = await resTrends.json().catch(() => ({}));
+                        errors.push(errBody.detail || `Trends request failed (${resTrends.status})`);
+                        setTrendsData(null);
+                    }
+                } catch (err) {
+                    console.warn('Backend trends API failed:', err);
+                    errors.push('Could not load scan analytics trends from the backend.');
                     setTrendsData(null);
                 }
-            } catch (err) {
-                console.warn('Backend trends API failed:', err);
-                errors.push('Could not load scan analytics trends from the backend.');
-                setTrendsData(null);
-            }
+            };
 
-            try {
-                const resReports = await authFetch(`${API_BASE_URL}/api/v1/admin/analytics/reports-summary`);
-                if (resReports.ok) {
-                    const jsonReports = await resReports.json();
-                    setReportsSummary(jsonReports.data || null);
-                } else {
-                    const errBody = await resReports.json().catch(() => ({}));
-                    errors.push(errBody.detail || `Reports summary failed (${resReports.status})`);
+            const fetchReports = async () => {
+                try {
+                    const resReports = await authFetch(`${API_BASE_URL}/api/v1/admin/analytics/reports-summary`);
+                    if (resReports.ok) {
+                        const jsonReports = await resReports.json();
+                        setReportsSummary(jsonReports.data || null);
+                    } else {
+                        const errBody = await resReports.json().catch(() => ({}));
+                        errors.push(errBody.detail || `Reports summary failed (${resReports.status})`);
+                        setReportsSummary(null);
+                    }
+                } catch (err) {
+                    console.warn('Backend reports summary API failed:', err);
+                    errors.push('Could not load compliance reports telemetry from the backend.');
                     setReportsSummary(null);
                 }
-            } catch (err) {
-                console.warn('Backend reports summary API failed:', err);
-                errors.push('Could not load compliance reports telemetry from the backend.');
-                setReportsSummary(null);
-            }
+            };
+
+            await Promise.all([fetchTrends(), fetchReports()]);
 
             if (errors.length > 0) {
                 setError(errors.join(' '));
