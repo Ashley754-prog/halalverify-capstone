@@ -6,7 +6,6 @@ import {
     AlertTriangle,
     RefreshCw,
     ChevronRight,
-    Download,
     Printer,
 } from 'lucide-react';
 import AnalyticsSurveillanceSections from '../components/analytics/AnalyticsSurveillanceSections';
@@ -100,73 +99,6 @@ export default function Analytics({ onViewChange }) {
     const totalMonitoredEsts = (estBreakdown.verified || 0) + (estBreakdown.pending_review || 0) + (estBreakdown.flagged || 0);
     const windowLabel = interval === 'daily' ? 'Last 7 Days' : interval === 'weekly' ? 'Last 30 Days' : 'All Time';
 
-    const handleExportCsv = () => {
-        const rows = [
-            ['HalalVerify Zamboanga City Surveillance & Compliance Report'],
-            ['Generated At', new Date().toLocaleString()],
-            ['Reporting Window', windowLabel],
-            [],
-            ['KPI METRIC', 'VALUE'],
-            ['Total Scans Audited', totals.total_scans || 0],
-            ['Halal Compliance Rate (%)', `${totals.compliance_rate ?? halalPct}%`],
-            ['Halal / Valid Verdicts', halalCount],
-            ['Doubtful / Mushbooh Verdicts', doubtfulCount],
-            ['Prohibited / Non-Halal Verdicts', haramCount],
-            ['Unverified / Other Verdicts', unverifiedCount],
-            ['Total Establishments Monitored', totalMonitoredEsts],
-            ['Verified Establishments', estBreakdown.verified || 0],
-            ['For Renewal Establishments', estBreakdown.for_renewal || 0],
-            ['Expired Establishments', estBreakdown.expired || 0],
-            ['Pending Review Establishments', estBreakdown.pending_review || 0],
-            ['Flagged Establishments', estBreakdown.flagged || 0],
-            ['Total Community Reports', reports.total_reports || 0],
-            ['Open Community Reports', reports.open_count || 0],
-            ['Resolved Community Reports', reports.resolved_count || 0],
-            ['Dismissed Community Reports', reports.dismissed_count || 0],
-            ['Report Resolution Rate (%)', `${reports.resolution_rate ?? 0}%`],
-            [],
-            ['TOP FLAGGED ADDITIVES', 'NAME', 'STATUS', 'DETECTION COUNT', 'ORIGIN / SOURCE'],
-            ...topAdditives.map((a) => [
-                a.code || '',
-                a.name || '',
-                a.status || '',
-                a.detection_count || 0,
-                a.source_description || '',
-            ]),
-            [],
-            ['COMMUNITY REPORT CATEGORY', 'INCIDENT COUNT'],
-            ...Object.entries(reports.categories || {}).map(([cat, count]) => [cat, count]),
-            [],
-            ['SCAN ACTIVITY DATE', 'SCANS'],
-            ...timeline.map((pt) => [pt.date || '', pt.scans || 0]),
-        ];
-
-        const csvContent = '\uFEFF' + rows
-            .map((r) =>
-                r
-                    .map((cell) => {
-                        let str = String(cell ?? '');
-                        if (/^[=+\-@\t\r]/.test(str)) {
-                            str = `'${str}`;
-                        }
-                        str = str.replace(/"/g, '""');
-                        return `"${str}"`;
-                    })
-                    .join(',')
-            )
-            .join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', `halalverify-analytics-${interval}-${new Date().toISOString().slice(0, 10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-    };
-
     const handlePrintReport = () => {
         window.print();
     };
@@ -200,14 +132,6 @@ export default function Analytics({ onViewChange }) {
                     </div>
 
                     <div className="flex md:hidden items-center gap-1.5 shrink-0">
-                        <button
-                            type="button"
-                            onClick={handleExportCsv}
-                            className="p-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium inline-flex items-center transition shadow-2xs cursor-pointer"
-                            title="Export CSV Report"
-                        >
-                            <Download size={13} className="text-slate-600" />
-                        </button>
                         <button
                             type="button"
                             onClick={handlePrintReport}
@@ -283,16 +207,6 @@ export default function Analytics({ onViewChange }) {
                             Synced: {lastSync}
                         </span>
                     )}
-
-                    <button
-                        type="button"
-                        onClick={handleExportCsv}
-                        className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium inline-flex items-center gap-1.5 transition shadow-2xs cursor-pointer"
-                        title="Download surveillance metrics as CSV"
-                    >
-                        <Download size={13} className="text-emerald-600" />
-                        <span>Export CSV</span>
-                    </button>
 
                     <button
                         type="button"
