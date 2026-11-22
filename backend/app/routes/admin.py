@@ -588,14 +588,26 @@ def get_analytics_trends(
     and verification statistics across Zamboanga City / Philippines.
     """
     try:
-        with ThreadPoolExecutor(max_workers=3) as pool:
-            fut_scans = pool.submit(
-                lambda: supabase.table("scan_history")
+        interval_key = (interval or "weekly").strip().lower()
+        cutoff_iso = None
+        if interval_key == "daily":
+            cutoff_iso = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=7)).isoformat()
+        elif interval_key == "weekly":
+            cutoff_iso = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=30)).isoformat()
+
+        def _fetch_scans():
+            q = (
+                supabase.table("scan_history")
                 .select("verdict, created_at, raw_result")
                 .order("created_at", desc=True)
                 .limit(500)
-                .execute()
             )
+            if cutoff_iso:
+                q = q.gte("created_at", cutoff_iso)
+            return q.execute()
+
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            fut_scans = pool.submit(_fetch_scans)
             fut_est = pool.submit(
                 lambda: supabase.table("establishments")
                 .select("halal_status, expiry_date")
@@ -617,14 +629,15 @@ def get_analytics_trends(
 
         for scan in scans:
             v = (scan.get("verdict") or "").strip().capitalize()
+            v_lower = v.lower()
             if v in verdicts:
                 verdicts[v] += 1
-            elif "valid" in v.lower() or "halal" in v.lower():
-                verdicts["Halal"] += 1
-            elif "doubt" in v.lower() or "yellow" in v.lower():
-                verdicts["Doubtful"] += 1
-            elif "haram" in v.lower() or "flag" in v.lower():
+            elif "invalid" in v_lower or "expired" in v_lower or "haram" in v_lower or "flag" in v_lower or "prohibit" in v_lower:
                 verdicts["Haram"] += 1
+            elif "valid" in v_lower or "halal" in v_lower:
+                verdicts["Halal"] += 1
+            elif "doubt" in v_lower or "yellow" in v_lower or "suspicious" in v_lower:
+                verdicts["Doubtful"] += 1
             else:
                 verdicts["Other"] += 1
 

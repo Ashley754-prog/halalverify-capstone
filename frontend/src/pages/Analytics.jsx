@@ -87,18 +87,20 @@ export default function Analytics({ onViewChange }) {
     const halalCount = totals.verdicts?.Halal || 0;
     const doubtfulCount = totals.verdicts?.Doubtful || 0;
     const haramCount = totals.verdicts?.Haram || 0;
+    const unverifiedCount = totals.verdicts?.Other || 0;
 
     const halalPct = totalScans > 0 ? Math.round((halalCount / totalScans) * 100) : 0;
     const doubtfulPct = totalScans > 0 ? Math.round((doubtfulCount / totalScans) * 100) : 0;
-    const haramPct = totalScans > 0 ? Math.max(0, 100 - halalPct - doubtfulPct) : 0;
+    const haramPct = totalScans > 0 ? Math.round((haramCount / totalScans) * 100) : 0;
+    const unverifiedPct = totalScans > 0 ? Math.round((unverifiedCount / totalScans) * 100) : 0;
 
     const maxAdditiveCount = topAdditives.length > 0 ? Math.max(...topAdditives.map(a => a.detection_count || 0), 1) : 1;
     const maxTimelineScans = timeline.length > 0 ? Math.max(...timeline.map(t => t.scans || 0), 1) : 1;
 
     const totalMonitoredEsts = (estBreakdown.verified || 0) + (estBreakdown.pending_review || 0) + (estBreakdown.flagged || 0);
+    const windowLabel = interval === 'daily' ? 'Last 7 Days' : interval === 'weekly' ? 'Last 30 Days' : 'All Time';
 
     const handleExportCsv = () => {
-        const windowLabel = interval === 'daily' ? 'Last 7 Days' : interval === 'weekly' ? 'Last 30 Days' : 'All Time';
         const rows = [
             ['HalalVerify Zamboanga City Surveillance & Compliance Report'],
             ['Generated At', new Date().toLocaleString()],
@@ -107,16 +109,21 @@ export default function Analytics({ onViewChange }) {
             ['KPI METRIC', 'VALUE'],
             ['Total Scans Audited', totals.total_scans || 0],
             ['Halal Compliance Rate (%)', `${totals.compliance_rate ?? halalPct}%`],
-            ['Halal Verdicts', halalCount],
+            ['Halal / Valid Verdicts', halalCount],
             ['Doubtful / Mushbooh Verdicts', doubtfulCount],
-            ['Haram / Non-Halal Verdicts', haramCount],
+            ['Prohibited / Non-Halal Verdicts', haramCount],
+            ['Unverified / Other Verdicts', unverifiedCount],
             ['Total Establishments Monitored', totalMonitoredEsts],
             ['Verified Establishments', estBreakdown.verified || 0],
+            ['For Renewal Establishments', estBreakdown.for_renewal || 0],
+            ['Expired Establishments', estBreakdown.expired || 0],
             ['Pending Review Establishments', estBreakdown.pending_review || 0],
             ['Flagged Establishments', estBreakdown.flagged || 0],
             ['Total Community Reports', reports.total_reports || 0],
             ['Open Community Reports', reports.open_count || 0],
             ['Resolved Community Reports', reports.resolved_count || 0],
+            ['Dismissed Community Reports', reports.dismissed_count || 0],
+            ['Report Resolution Rate (%)', `${reports.resolution_rate ?? 0}%`],
             [],
             ['TOP FLAGGED ADDITIVES', 'NAME', 'STATUS', 'DETECTION COUNT', 'ORIGIN / SOURCE'],
             ...topAdditives.map((a) => [
@@ -129,13 +136,20 @@ export default function Analytics({ onViewChange }) {
             [],
             ['COMMUNITY REPORT CATEGORY', 'INCIDENT COUNT'],
             ...Object.entries(reports.categories || {}).map(([cat, count]) => [cat, count]),
+            [],
+            ['SCAN ACTIVITY DATE', 'SCANS'],
+            ...timeline.map((pt) => [pt.date || '', pt.scans || 0]),
         ];
 
-        const csvContent = rows
+        const csvContent = '\uFEFF' + rows
             .map((r) =>
                 r
                     .map((cell) => {
-                        const str = String(cell ?? '').replace(/"/g, '""');
+                        let str = String(cell ?? '');
+                        if (/^[=+\-@\t\r]/.test(str)) {
+                            str = `'${str}`;
+                        }
+                        str = str.replace(/"/g, '""');
                         return `"${str}"`;
                     })
                     .join(',')
@@ -158,16 +172,31 @@ export default function Analytics({ onViewChange }) {
     };
 
     return (
-        <div className="p-3 sm:p-5 md:p-6 space-y-4 sm:space-y-5 flex-1 flex flex-col h-full bg-slate-50/70 overflow-y-auto text-slate-800">
-            {/* Enterprise Control Toolbar */}
+        <div className="p-3 sm:p-5 md:p-6 space-y-4 sm:space-y-5 flex-1 flex flex-col h-full bg-slate-50/70 overflow-y-auto text-slate-800 print:overflow-visible print:h-auto print:bg-white print:p-0">
+            {/* Print-Only Formal Report Header */}
+            <div className="hidden print:flex items-end justify-between border-b-2 border-slate-800 pb-3 mb-2">
+                <div>
+                    <h1 className="text-lg font-extrabold text-slate-900 tracking-tight">
+                        HalalVerify Surveillance &amp; Compliance Report
+                    </h1>
+                    <p className="text-xs text-slate-600 mt-0.5">
+                        Zamboanga City Halal Verification Analytics &bull; Reporting Window: <strong>{windowLabel}</strong>
+                    </p>
+                </div>
+                <div className="text-right text-[11px] text-slate-600 font-mono">
+                    <div>Generated: {new Date().toLocaleDateString()}</div>
+                    <div>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+            </div>
+
+            {/* Control Toolbar */}
             <div className="bg-white rounded-2xl border border-slate-200/90 p-2 sm:p-2.5 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2 shrink-0 print:hidden">
                 <div className="flex items-center justify-between gap-2 w-full md:w-auto">
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 text-[11px] font-semibold tracking-wide border border-slate-200/60 shrink-0">
-                        <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 text-[11px] font-semibold border border-slate-200/60 shrink-0">
+                        <span className={`inline-flex rounded-full h-2 w-2 ${error ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+                        <span className="font-mono text-[10px]">
+                            {error ? 'Sync Issue' : lastSync ? `Synced ${lastSync}` : 'Live Data'}
                         </span>
-                        <span className="font-mono text-[10px] uppercase">Telemetry: Active</span>
                     </div>
 
                     <div className="flex md:hidden items-center gap-1.5 shrink-0">
@@ -334,7 +363,7 @@ export default function Analytics({ onViewChange }) {
                         </div>
                     </div>
                     <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                        <span>YOLOv8 &amp; RapidOCR</span>
+                        <span>YOLOv8 &amp; Dual-Tier OCR</span>
                         <span className="text-emerald-700 font-medium font-mono text-[10px] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">
                             PNS 101:2018
                         </span>
@@ -449,9 +478,11 @@ export default function Analytics({ onViewChange }) {
                 halalCount={halalCount}
                 doubtfulCount={doubtfulCount}
                 haramCount={haramCount}
+                unverifiedCount={unverifiedCount}
                 halalPct={halalPct}
                 doubtfulPct={doubtfulPct}
                 haramPct={haramPct}
+                unverifiedPct={unverifiedPct}
                 reports={reports}
                 estBreakdown={estBreakdown}
                 totalMonitoredEsts={totalMonitoredEsts}

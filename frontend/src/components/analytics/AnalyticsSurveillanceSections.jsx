@@ -18,9 +18,11 @@ export default function AnalyticsSurveillanceSections({
     halalCount,
     doubtfulCount,
     haramCount,
+    unverifiedCount = 0,
     halalPct,
     doubtfulPct,
     haramPct,
+    unverifiedPct = 0,
     reports,
     estBreakdown,
     totalMonitoredEsts,
@@ -30,7 +32,7 @@ export default function AnalyticsSurveillanceSections({
         <>
             {/* Scan Activity Velocity & Frequency Strip */}
             {timeline.length > 0 && (
-                <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-2xs">
+                <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-2xs print-break-avoid">
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                             <Activity size={15} className="text-slate-500" />
@@ -181,14 +183,11 @@ export default function AnalyticsSurveillanceSections({
                         <span className="truncate">
                             Standard reference: <strong className="font-semibold text-slate-700">PNS/BAFS 101:2018</strong> &amp; Codex Alimentarius.
                         </span>
-                        <span className="font-mono text-[10px] text-slate-400 shrink-0">
-                            Registry: 400+ Codes
-                        </span>
                     </div>
                 </div>
 
                 {/* Right 1 Col: Scan Verdict Ratio & Compliance Breakdown */}
-                <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-5 shadow-2xs space-y-4 flex flex-col justify-between">
+                <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-5 shadow-2xs space-y-4 flex flex-col justify-between print-break-avoid">
                     <div>
                         <div className="pb-3 border-b border-slate-100">
                             <h3 className="text-xs sm:text-sm font-semibold text-slate-900 flex items-center gap-1.5">
@@ -221,6 +220,13 @@ export default function AnalyticsSurveillanceSections({
                                     style={{ width: `${haramPct}%` }}
                                     title={`Haram: ${haramCount} (${haramPct}%)`}
                                 />
+                                {unverifiedCount > 0 && (
+                                    <div
+                                        className="bg-slate-400 rounded-xs transition-all duration-500"
+                                        style={{ width: `${unverifiedPct}%` }}
+                                        title={`Unverified: ${unverifiedCount} (${unverifiedPct}%)`}
+                                    />
+                                )}
                             </div>
                         </div>
 
@@ -272,16 +278,34 @@ export default function AnalyticsSurveillanceSections({
                                     <div className="h-full bg-red-500 rounded-full" style={{ width: `${haramPct}%` }} />
                                 </div>
                             </div>
+
+                            {unverifiedCount > 0 && (
+                                <div className="p-2.5 rounded border border-slate-200/70 bg-slate-50/50">
+                                    <div className="flex justify-between items-center text-xs">
+                                        <span className="font-semibold text-slate-800 flex items-center gap-1.5">
+                                            <span className="w-2 h-2 rounded-full bg-slate-400" />
+                                            Unverified / Neutral
+                                        </span>
+                                        <div className="flex items-baseline gap-1.5">
+                                            <span className="font-mono font-bold text-slate-900">{unverifiedCount}</span>
+                                            <span className="font-mono text-[10px] text-slate-400">({unverifiedPct}%)</span>
+                                        </div>
+                                    </div>
+                                    <div className="w-full h-1 bg-slate-200 rounded-full mt-2 overflow-hidden">
+                                        <div className="h-full bg-slate-400 rounded-full" style={{ width: `${unverifiedPct}%` }} />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    <div className="p-3 rounded border border-amber-200 bg-amber-50/60 text-[11px] text-amber-900 space-y-1">
-                        <span className="font-bold flex items-center gap-1">
-                            <AlertTriangle size={13} className="text-amber-700" />
-                            City Ordinance No. 489 Alert
+                    <div className="p-3 rounded border border-slate-200 bg-slate-50 text-[11px] text-slate-700 space-y-1">
+                        <span className="font-bold flex items-center gap-1 text-slate-800">
+                            <AlertTriangle size={13} className="text-amber-600" />
+                            City Ordinance No. 489 Reference
                         </span>
-                        <p className="text-amber-800/90 leading-relaxed">
-                            Doubtful and prohibited ingredient detections trigger automated flag alerts in the administrative review queue.
+                        <p className="text-slate-600 leading-relaxed">
+                            Consumer scans and submitted reports support Halal compliance monitoring across Zamboanga City.
                         </p>
                     </div>
                 </div>
@@ -289,7 +313,7 @@ export default function AnalyticsSurveillanceSections({
 
             {/* Bottom Row: Reports Summary & Establishment Standings */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-5 shadow-2xs space-y-3.5 flex flex-col justify-between">
+                <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-5 shadow-2xs space-y-3.5 flex flex-col justify-between print-break-avoid">
                     <div>
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                             <div>
@@ -344,7 +368,7 @@ export default function AnalyticsSurveillanceSections({
                     </div>
                 </div>
 
-                <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-5 shadow-2xs space-y-3.5 flex flex-col justify-between">
+                <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-5 shadow-2xs space-y-3.5 flex flex-col justify-between print-break-avoid">
                     <div>
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                             <div>
@@ -359,7 +383,7 @@ export default function AnalyticsSurveillanceSections({
                             <button
                                 type="button"
                                 onClick={() => onViewChange?.('map')}
-                                className="text-xs font-semibold text-emerald-800 hover:text-emerald-900 inline-flex items-center gap-1 hover:underline"
+                                className="text-xs font-semibold text-emerald-800 hover:text-emerald-900 inline-flex items-center gap-1 hover:underline print:hidden"
                             >
                                 <span>Open Map</span>
                                 <ExternalLink size={12} />
@@ -434,7 +458,7 @@ export default function AnalyticsSurveillanceSections({
                         </div>
                     </div>
 
-                    <div className="p-3 rounded border border-slate-200 bg-slate-50 text-xs text-slate-600 flex items-center justify-between">
+                    <div className="p-3 rounded border border-slate-200 bg-slate-50 text-xs text-slate-600 flex items-center justify-between print:hidden">
                         <span className="text-[11px]">Audit pending submissions?</span>
                         <button
                             type="button"

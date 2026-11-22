@@ -196,3 +196,37 @@ select option {
     border-style: solid;
     border-color: #064e3b transparent transparent transparent;
 }
+
+@media print {
+    @page {
+        margin: 12mm;
+    }
+
+    html,
+    body,
+    #root {
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+        background: #ffffff !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    aside,
+    header,
+    nav {
+        display: none !important;
+    }
+
+    main {
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    .print-break-avoid {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+}
