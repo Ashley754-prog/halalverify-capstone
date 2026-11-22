@@ -34,6 +34,7 @@ export const CameraViewfinder = ({
     applyZoom,
     toggleCamera,
     torchOn = false,
+    torchSupported = false,
     toggleTorch = null,
     focusRing,
     handleTapToFocus,
@@ -116,9 +117,9 @@ export const CameraViewfinder = ({
             const isNoFoodLabel =
                 risk.includes('no food label') ||
                 risk.includes('no product');
-            const isHaram = verdict === 'red' || risk.includes('not halal') || risk.includes('prohibit') || risk.includes('haram');
-            const isHalal = verdict === 'green';
-            const isUnverified = verdict === 'neutral' || risk.includes('unverified') || risk.includes('incomplete');
+            const isHalal = verdict === 'green' || risk.includes('no prohibited');
+            const isHaram = !isHalal && (verdict === 'red' || risk.includes('not halal') || risk.includes('prohibit') || risk.includes('haram'));
+            const isUnverified = !isHalal && !isHaram && (verdict === 'neutral' || risk.includes('unverified') || risk.includes('incomplete'));
 
             if (isNoFoodLabel) {
                 return {
@@ -137,7 +138,7 @@ export const CameraViewfinder = ({
             }
             if (isHalal) {
                 return {
-                    statusLabel: 'Logo + Clean',
+                    statusLabel: 'No Prohibited Additives',
                     themeClasses: 'bg-emerald-600/90 hover:bg-emerald-600 text-white border-emerald-400/50 shadow-emerald-950/40',
                     icon: <ShieldCheck size={14} className="text-emerald-200 shrink-0" />,
                 };
@@ -337,7 +338,7 @@ export const CameraViewfinder = ({
                                 </div>
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
-                                {isCapturing && toggleTorch && (
+                                {isCapturing && toggleTorch && torchSupported && (
                                     <button
                                         type="button"
                                         onClick={(e) => {
@@ -397,7 +398,7 @@ export const CameraViewfinder = ({
                             </div>
 
                             <div className="flex items-center gap-1.5 shrink-0">
-                                {isCapturing && toggleTorch && (
+                                {isCapturing && toggleTorch && torchSupported && (
                                     <button
                                         type="button"
                                         onClick={(e) => {
