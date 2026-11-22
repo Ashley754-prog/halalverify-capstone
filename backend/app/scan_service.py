@@ -741,7 +741,7 @@ def is_food_label_content(text: str, flagged_items: list, logo_detected: bool) -
     if not text or not text.strip():
         return False
     lower = text.lower()
-    if any(h in lower for h in ("ingredient", "sangkap", "komposisi", "ramuan", "nutrition")):
+    if any(h in lower for h in ("ingredient", "sangkap", "komposisi", "ramuan", "nutrition", "halal", "حلال")):
         return True
     keyword_matches = sum(1 for kw in FOOD_LABEL_KEYWORDS if kw in lower)
     return keyword_matches >= 2
@@ -1398,6 +1398,17 @@ def explain_label_verdict(
             "analysisSummary": "Move closer and retake a clearer photo of the Halal logo.",
             "recommendations": [
                 "Hold steady and move closer so the certifier name on the logo is sharp.",
+            ],
+        }
+
+    if text_halal_claim and not logo_detected and ingredient_status != "READABLE_PANEL":
+        return {
+            "verdict": "Neutral",
+            "riskLevel": "Unverified",
+            "analysisSummary": "Generic Halal mark detected without an accredited certifying body name. Scan the ingredient list to screen additives.",
+            "recommendations": [
+                "Tap '+ Scan Ingredients' to check the printed ingredient list.",
+                "Check if an accredited certifying body (e.g., IDCP, HDIP, NCMF, MMHCB) is printed elsewhere on the package.",
             ],
         }
 
