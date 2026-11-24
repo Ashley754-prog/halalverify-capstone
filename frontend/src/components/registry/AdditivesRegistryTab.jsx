@@ -64,9 +64,9 @@ export default function AdditivesRegistryTab({
     };
 
     return (
-        <div className="bg-white p-3 sm:p-6 rounded-2xl shadow-sm border border-slate-200 w-full">
-            <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-2.5 sm:gap-3 mb-3 sm:mb-6 shrink-0">
-                <div>
+        <div className="bg-white p-3 sm:p-6 rounded-2xl shadow-sm border border-slate-200 w-full overflow-hidden">
+            <div className="flex flex-col xl:flex-row justify-between items-stretch xl:items-center gap-3 mb-4 sm:mb-6 shrink-0">
+                <div className="min-w-0">
                     <h3 className="font-bold text-slate-800 text-sm sm:text-lg flex items-center gap-1.5 sm:gap-2">
                         <Database className="text-emerald-600 shrink-0" size={18} /> Chemical Reference Database
                     </h3>
@@ -75,20 +75,20 @@ export default function AdditivesRegistryTab({
                     </p>
                 </div>
 
-                <div className="flex flex-col gap-2 w-full md:flex-row md:items-center md:gap-2 md:w-auto">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full xl:w-auto shrink-0">
                     <SearchBar
                         value={dictSearch}
                         onChange={setDictSearch}
                         placeholder="Search code or additive..."
-                        className="w-full md:w-64"
+                        className="w-full sm:flex-1 xl:w-60"
                         size="sm"
                     />
-                    <div className="grid grid-cols-2 items-center gap-2 md:flex">
+                    <div className="grid grid-cols-2 sm:flex items-center gap-2 shrink-0">
                         {/* Status Filter */}
                         <select
                             value={additiveStatusFilter}
                             onChange={(e) => setAdditiveStatusFilter(e.target.value)}
-                            className="h-8.5 sm:h-9 min-w-0 bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full md:w-auto"
+                            className="h-9 min-w-0 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full sm:w-auto whitespace-nowrap"
                             aria-label="Filter by chemical compliance status"
                         >
                             <option value="all">All Statuses</option>
@@ -101,7 +101,7 @@ export default function AdditivesRegistryTab({
                         <select
                             value={additiveOriginFilter}
                             onChange={(e) => setAdditiveOriginFilter(e.target.value)}
-                            className="h-8.5 sm:h-9 min-w-0 bg-slate-50 border border-slate-200 rounded-xl px-2 sm:px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full md:w-auto"
+                            className="h-9 min-w-0 bg-slate-50 border border-slate-200 rounded-xl px-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer w-full sm:w-auto whitespace-nowrap"
                             aria-label="Filter by chemical origin"
                         >
                             <option value="all">All Origins</option>

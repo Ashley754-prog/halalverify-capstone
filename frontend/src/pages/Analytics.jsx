@@ -308,8 +308,8 @@ export default function Analytics({ onViewChange }) {
                         </div>
                     </div>
                     <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                        <span>{halalCount} items verified Halal</span>
-                        <span className="font-mono text-[10px] text-slate-400">{doubtfulCount + haramCount} non-Halal</span>
+                        <span>{halalCount} clean / valid scans</span>
+                        <span className="font-mono text-[10px] text-slate-400">{doubtfulCount + haramCount} flagged</span>
                     </div>
                 </div>
 

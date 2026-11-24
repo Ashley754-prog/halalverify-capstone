@@ -698,7 +698,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                             loadData(1, searchQuery, selectedCategory, val, selectedCertifier);
                         }}
                         aria-label="Filter by halal status"
-                        className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500"
+                        className="h-8.5 sm:h-9 min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500 whitespace-nowrap shrink-0"
                     >
                         {STATUS_FILTER_OPTIONS.filter((opt) => isAdmin || opt.value !== 'Expired').map((opt) => (
                             <option key={opt.value} value={opt.value}>
@@ -719,7 +719,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                             loadData(1, searchQuery, selectedCategory, selectedStatus, val);
                         }}
                         aria-label="Filter by certifier"
-                        className="min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500 max-w-[210px] truncate"
+                        className="h-8.5 sm:h-9 min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500 max-w-[210px] truncate whitespace-nowrap"
                         title="Filter by certifying body or registry origin"
                     >
                         {CERTIFIER_ORIGINS.map((c) => (

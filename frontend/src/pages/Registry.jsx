@@ -1026,7 +1026,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives', in
                 <button
                     type="button"
                     onClick={() => setRegistryMode('establishments')}
-                    className={`py-1.5 sm:py-2 px-1 sm:px-3 rounded-lg sm:rounded-xl font-bold text-[11px] sm:text-xs md:text-sm transition-all flex items-center justify-center gap-1 sm:gap-2 truncate ${
+                    className={`py-1.5 sm:py-2 px-1 sm:px-3 rounded-lg sm:rounded-xl font-bold text-[11px] sm:text-xs md:text-sm transition-all flex items-center justify-center gap-1 sm:gap-2 min-w-0 ${
                         registryMode === 'establishments'
                             ? 'bg-white text-emerald-800 shadow-sm border border-slate-200/80'
                             : 'text-slate-600 hover:text-slate-900'
@@ -1035,7 +1035,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives', in
                     <MapPin size={14} className={`shrink-0 ${registryMode === 'establishments' ? 'text-emerald-600' : 'text-slate-400'}`} />
                     <span className="truncate">
                         <span className="sm:hidden">Venues</span>
-                        <span className="hidden sm:inline">Regulatory Audits (Venues)</span>
+                        <span className="hidden sm:inline">Audited Venues</span>
                     </span>
                     <span className={`text-[9px] sm:text-[10px] font-mono px-1 sm:px-1.5 py-0.2 rounded-full shrink-0 ${
                         registryMode === 'establishments' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200/80 text-slate-600'
@@ -1048,8 +1048,9 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives', in
 
 
             {loading && (
-                <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
-                    Loading directory records from Supabase...
+                <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-600 flex items-center justify-center gap-2">
+                    <span className="h-4 w-4 rounded-full border-2 border-emerald-600 border-t-transparent animate-spin" />
+                    <span>Loading directory records...</span>
                 </div>
             )}
 
@@ -1060,7 +1061,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives', in
             )}
 
             {/* TAB 1: ADDITIVES LEDGER */}
-            {registryMode === 'additives' && (
+            {!loading && registryMode === 'additives' && (
                 <AdditivesRegistryTab
                     additives={additives}
                     dictSearch={dictSearch}
@@ -1076,7 +1077,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives', in
             )}
 
             {/* TAB 2: ACCREDITED HCB & REGULATORY BODIES */}
-            {registryMode === 'hcb' && (
+            {!loading && registryMode === 'hcb' && (
                 <HcbsRegistryTab
                     hcbs={hcbs}
                     hcbSearch={hcbSearch}
@@ -1090,7 +1091,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives', in
             )}
 
             {/* TAB 3: ESTABLISHMENTS LEDGER */}
-            {registryMode === 'establishments' && (
+            {!loading && registryMode === 'establishments' && (
                 <div className="space-y-3 sm:space-y-4 w-full">
                     <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-sky-50 border border-emerald-200/80 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs shrink-0">
                         <div className="flex items-center gap-3">

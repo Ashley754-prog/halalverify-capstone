@@ -41,7 +41,7 @@ export const KpiCard = ({
             {/* Metric Value & Label */}
             <div className="min-w-0 flex-1">
                 <p
-                    className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider leading-tight truncate"
+                    className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wide leading-tight line-clamp-2 sm:truncate"
                     title={title}
                 >
                     {title}

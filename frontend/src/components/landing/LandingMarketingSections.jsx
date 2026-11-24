@@ -160,9 +160,9 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
               <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-700 text-base font-bold text-white shadow-lg shadow-emerald-900/15 sm:h-12 sm:w-12 sm:text-lg">
                 2
               </div>
-              <h3 className="mb-2 text-sm font-bold text-[#17251F] sm:text-lg">OCR Parsing &amp; Match</h3>
+              <h3 className="mb-2 text-sm font-bold text-[#17251F] sm:text-lg">AI Vision &amp; Rule Match</h3>
               <p className="text-xs leading-relaxed text-[#52645B] sm:text-sm">
-                RapidOCR extracts textual content and tests each word against verified halal listings and prohibited additives.
+                Gemini Vision (with RapidOCR failover) reads the label and cross-checks every ingredient against our food additive and certifier registries.
               </p>
             </div>
 
@@ -337,12 +337,11 @@ export default function LandingMarketingSections({ onViewChange, onScrollToTop, 
                   },
                 ].map((body) => (
                   <div key={body.name} className="group relative flex min-h-[260px] flex-col items-center justify-between text-center rounded-2xl border border-[#DCE7E0] bg-white pt-14 pb-3.5 px-3 sm:pt-16 sm:pb-4 sm:px-3.5 shadow-xs transition hover:border-teal-600/40 hover:shadow-md">
-                    <div className="absolute -top-10 sm:-top-11 left-1/2 -translate-x-1/2 h-20 w-20 sm:h-22 sm:w-22 rounded-2xl border border-teal-600/25 bg-white p-2.5 shadow-md flex items-center justify-center shrink-0 transition group-hover:scale-105 group-hover:border-teal-600/40">
+                    <div className="absolute -top-10 sm:-top-11 left-1/2 -translate-x-1/2 h-20 w-20 sm:h-22 sm:w-22 rounded-2xl border border-teal-600/25 bg-white p-3 shadow-md flex items-center justify-center shrink-0 transition group-hover:scale-105 group-hover:border-teal-600/40 overflow-hidden">
                       <img
                         src={body.logo}
                         alt={`${body.name} logo`}
                         className="h-full w-full object-contain"
-                        loading="lazy"
                       />
                     </div>
                     <div className="w-full flex flex-col items-center">

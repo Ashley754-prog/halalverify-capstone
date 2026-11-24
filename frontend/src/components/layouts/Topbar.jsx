@@ -107,7 +107,9 @@ export const AppTopbar = ({
                     <button
                         type="button"
                         onClick={onLogoClick}
-                        className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group min-w-0 text-left rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+                        className={`flex items-center gap-2 sm:gap-2.5 cursor-pointer group min-w-0 text-left rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 ${
+                            isSidebarOpen ? 'md:hidden' : ''
+                        }`}
                         title="Return to Home Landing Page"
                     >
                         <img

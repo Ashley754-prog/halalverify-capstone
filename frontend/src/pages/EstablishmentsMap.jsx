@@ -709,12 +709,12 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                     value={searchQuery}
                     onChange={setSearchQuery}
                     placeholder="Search name, cuisine, street..."
-                    className="order-1 md:order-2 w-full md:w-64 lg:w-72 shrink-0"
+                    className="order-1 md:order-2 w-full md:w-56 lg:w-64 shrink-0"
                     size="sm"
                 />
 
                 {/* Filter Controls - Row 2 on mobile (single horizontal row), left side on desktop */}
-                <div className="order-2 md:order-1 flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5 min-w-0">
+                <div className="order-2 md:order-1 flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5 min-w-0 flex-1">
                     <div className="hidden sm:flex items-center gap-1.5 pr-2.5 mr-0.5 border-r border-slate-200 shrink-0">
                         <MapPin size={16} className="text-emerald-600" />
                         <span className="font-black text-slate-800 text-sm tracking-tight">Halal Map</span>
@@ -893,12 +893,10 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                         </label>
                     </div>
 
-                    {/* Compact Bottom-Left Map Pin Legend (hidden on mobile when preview card is docked) */}
-                    {showMarkers && (
+                    {/* Compact Bottom-Left Map Pin Legend (hidden when preview card is docked to prevent overlap) */}
+                    {showMarkers && !activePreviewEst && (
                         <div
-                            className={`${
-                                activePreviewEst ? 'hidden sm:flex' : 'flex'
-                            } absolute bottom-2.5 left-2.5 sm:bottom-3 sm:left-3 z-[999] bg-white/95 backdrop-blur-sm rounded-xl border border-slate-200 px-2.5 py-1.5 shadow-md flex-wrap items-center gap-x-3 gap-y-1 text-[10px] sm:text-[11px] font-semibold text-slate-700 pointer-events-none`}
+                            className="flex absolute bottom-7 left-2.5 sm:bottom-3 sm:left-3 z-[999] bg-white/95 backdrop-blur-sm rounded-xl border border-slate-200 px-2.5 py-1.5 shadow-md flex-wrap items-center gap-x-3 gap-y-1 text-[10px] sm:text-[11px] font-semibold text-slate-700 pointer-events-none max-w-[calc(100%-1.25rem)]"
                         >
                             <span className="inline-flex items-center gap-1">
                                 <span className="w-2.5 h-2.5 rounded-full bg-[#10b981] shrink-0" />

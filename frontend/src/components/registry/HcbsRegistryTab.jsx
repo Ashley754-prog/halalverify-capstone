@@ -181,7 +181,19 @@ export default function HcbsRegistryTab({
                         const isLocal = body.category === 'Local & Regional HCB';
 
                         return (
-                            <div key={body.id || body.code} className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between gap-3.5 hover:border-slate-300 transition shadow-xs">
+                            <div
+                                key={body.id || body.code}
+                                onClick={() => setPreviewHcb(body)}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        setPreviewHcb(body);
+                                    }
+                                }}
+                                className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between gap-3.5 hover:border-emerald-300 hover:shadow-sm transition shadow-xs cursor-pointer"
+                            >
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="flex items-start gap-3 sm:gap-3.5 min-w-0 flex-1">
                                         <HcbCategoryIcon body={body} isGov={isGov} isIntl={isIntl} isLocal={isLocal} onPreview={setPreviewHcb} />
@@ -231,7 +243,10 @@ export default function HcbsRegistryTab({
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between pt-1 gap-2 border-t border-slate-200/60">
+                                <div
+                                    className="flex items-center justify-between pt-1 gap-2 border-t border-slate-200/60"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
                                     {getSafeUrl(body.website) ? (
                                         <a
                                             href={getSafeUrl(body.website)}

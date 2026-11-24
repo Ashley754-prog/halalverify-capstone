@@ -219,7 +219,7 @@ export const Settings = () => {
                             <strong>Sector Priority Focus:</strong> Smart Food Safety, Applied Computer Vision Systems, Regulatory Inspection Automation.
                         </p>
                         <p>
-                            <strong>Jurisdictional Directive:</strong> Tailored targeting frameworks aligned specifically with <strong>{JURISDICTION}</strong> (Zamboanga City Halal Ordinance No. 489).
+                            <strong>Jurisdictional Directive:</strong> Tailored targeting frameworks aligned specifically with <strong>{JURISDICTION}</strong>.
                         </p>
                     </div>
                 </div>

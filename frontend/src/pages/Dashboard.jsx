@@ -277,7 +277,7 @@ export const Dashboard = ({ userRole, onViewChange }) => {
                 <div className={`grid gap-3 sm:gap-4 ${isAdmin ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5' : 'grid-cols-2 sm:grid-cols-4'}`}>
                     <KpiCard title="Verified Products" value={totals ? (totals.products ?? 0) : '...'} icon={<Package />} color="emerald" />
                     <KpiCard title="Dining Venues" value={totals ? totals.establishments : '...'} icon={<Store />} color="blue" />
-                    <KpiCard title="Screened Additives" value={totals ? totals.flagged_additives : '...'} icon={<ShieldAlert />} color="red" />
+                    <KpiCard title="Flagged Additives" value={totals ? totals.flagged_additives : '...'} icon={<ShieldAlert />} color="red" />
                     <KpiCard title="Accredited HCBs" value={totals ? (totals.certifiers ?? 0) : '...'} icon={<Award />} color="teal" />
                     {isAdmin && (
                         <KpiCard title="Open Reports" value={totals ? totals.open_reports : '...'} icon={<Flag />} color="yellow" />
@@ -428,14 +428,14 @@ export const Dashboard = ({ userRole, onViewChange }) => {
                                 <div className="flex items-center justify-between">
                                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Label Scanner &amp; Parser</h4>
                                     <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                                        YOLOv8 + RapidOCR
+                                        YOLOv8 + Gemini Vision
                                     </span>
                                 </div>
                                 <ul className="list-disc pl-4 text-xs sm:text-sm text-slate-600 space-y-1.5 pt-1">
-                                    <li><span className="font-semibold text-slate-700">RapidOCR (ONNX Runtime):</span> Extracts ingredient text declarations and E-numbers from label imagery.</li>
+                                    <li><span className="font-semibold text-slate-700">Gemini Vision (RapidOCR Failover):</span> Extracts ingredient text declarations and E-numbers from label imagery.</li>
                                     <li><span className="font-semibold text-slate-700">Ultralytics YOLOv8-Nano:</span> Localizes and identifies accredited Halal certification marks (IDCP, HDIP, etc.).</li>
                                     <li><span className="font-semibold text-slate-700">Lexicon Matcher:</span> Screens detected ingredients against SMIIC 1:2019 and Codex Alimentarius guidelines.</li>
-                                    <li><span className="font-semibold text-slate-700">Decision Engine:</span> Outputs Halal, Doubtful, or Prohibited advisory verdict.</li>
+                                    <li><span className="font-semibold text-slate-700">Decision Engine:</span> Outputs Clean, Doubtful, Haram, or Unverified advisory verdict.</li>
                                 </ul>
                             </div>
 
@@ -457,7 +457,7 @@ export const Dashboard = ({ userRole, onViewChange }) => {
                         <div className="pt-2 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
                             <span className="flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                <span>YOLOv8-Nano logo verification (mAP@50 0.995) &bull; 135+ INS additive database</span>
+                                <span>YOLOv8-Nano logo verification (mAP@50 0.995) &bull; 158+ INS additive database</span>
                             </span>
                             {isAdmin && (
                                 <button

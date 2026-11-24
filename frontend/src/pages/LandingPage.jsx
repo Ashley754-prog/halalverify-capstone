@@ -172,6 +172,7 @@ export default function LandingPage({ onViewChange, userRole }) {
   const [searchResults, setSearchResults] = useState(null);
   const [allProducts, setAllProducts] = useState([]);
   const [recentProducts, setRecentProducts] = useState([]);
+  const [isLoadingRecentProducts, setIsLoadingRecentProducts] = useState(true);
   const [activeRecentProductIndex, setActiveRecentProductIndex] = useState(0);
   const [selectedRecentProduct, setSelectedRecentProduct] = useState(null);
   const [allEstablishments, setAllEstablishments] = useState([]);
@@ -634,6 +635,8 @@ export default function LandingPage({ onViewChange, userRole }) {
         }
       } catch (err) {
         console.warn('Failed to pre-fetch registry data for search:', err);
+      } finally {
+        if (isMounted) setIsLoadingRecentProducts(false);
       }
     };
 
@@ -1064,7 +1067,7 @@ export default function LandingPage({ onViewChange, userRole }) {
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
                   aria-label="Search products, brands, or verified establishments"
-                  placeholder="Search product names, brands, or verified establishments in Zamboanga..."
+                  placeholder="Search products, brands, or Halal venues..."
                   className="w-full rounded-xl sm:rounded-2xl border border-[#DCE7E0] bg-white py-3 pl-4 pr-20 sm:py-3.5 sm:pl-4 sm:pr-24 text-sm sm:text-base text-[#17251F] placeholder:text-[#52645B]/70 outline-none transition duration-200 hover:border-emerald-300 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/15 shadow-xl backdrop-blur-xl"
                 />
                 <button
@@ -1220,6 +1223,28 @@ export default function LandingPage({ onViewChange, userRole }) {
               <h2 className="mt-1 text-xl sm:text-2xl font-extrabold text-[#17251F]">Verified Halal Products</h2>
             </div>
             <div className="flex items-center justify-end gap-2">
+              {recentProducts.length > 1 && (
+                <div className="flex items-center gap-1.5" role="group" aria-label="Product carousel controls">
+                  <button
+                    type="button"
+                    onClick={() => scrollRecentProducts(-1)}
+                    aria-label="Previous products"
+                    title="Previous products"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#DCE7E0] bg-white text-emerald-800 shadow-2xs transition hover:border-emerald-300 hover:bg-[#F4F8F5] active:scale-95 cursor-pointer"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => scrollRecentProducts(1)}
+                    aria-label="Next products"
+                    title="Next products"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#DCE7E0] bg-white text-emerald-800 shadow-2xs transition hover:border-emerald-300 hover:bg-[#F4F8F5] active:scale-95 cursor-pointer"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => onViewChange('products')}
@@ -1230,17 +1255,21 @@ export default function LandingPage({ onViewChange, userRole }) {
             </div>
           </div>
 
-          {recentProducts.length > 0 ? (
-            <div className="relative" role="group" aria-label="Product carousel controls">
-              <button
-                type="button"
-                onClick={() => scrollRecentProducts(-1)}
-                aria-label="Previous products"
-                title="Previous products"
-                className="absolute left-1 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-transparent text-emerald-700 transition hover:scale-110 hover:bg-transparent focus-visible:outline-2 focus-visible:outline-emerald-700 sm:h-12 sm:w-12"
-              >
-                <ChevronLeft size={34} strokeWidth={3} className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" />
-              </button>
+          {isLoadingRecentProducts && recentProducts.length === 0 ? (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4" aria-label="Loading recently added products">
+              {[0, 1, 2].map((idx) => (
+                <div key={idx} className="overflow-hidden rounded-lg border border-[#DCE7E0] bg-white animate-pulse">
+                  <div className="aspect-[4/3] bg-slate-100" />
+                  <div className="space-y-2 p-4">
+                    <div className="h-3 w-24 rounded bg-slate-100" />
+                    <div className="h-4 w-3/4 rounded bg-slate-200" />
+                    <div className="h-3 w-1/2 rounded bg-emerald-100" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : recentProducts.length > 0 ? (
+            <div className="relative">
               <div
                 ref={recentProductsScrollRef}
                 onPointerDown={() => { recentProductsPauseUntilRef.current = Date.now() + 6000; }}
@@ -1279,15 +1308,6 @@ export default function LandingPage({ onViewChange, userRole }) {
                 })}
 
               </div>
-              <button
-                type="button"
-                onClick={() => scrollRecentProducts(1)}
-                aria-label="Next products"
-                title="Next products"
-                className="absolute right-1 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-transparent text-emerald-700 transition hover:scale-110 hover:bg-transparent focus-visible:outline-2 focus-visible:outline-emerald-700 sm:h-12 sm:w-12"
-              >
-                <ChevronRight size={34} strokeWidth={3} className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" />
-              </button>
               <div className="mt-3 flex justify-center gap-2" role="group" aria-label="Choose a product">
                 {recentProducts.map((product, index) => {
                   const isHiddenOnTablet = index > Math.max(0, recentProducts.length - 2);
@@ -1334,6 +1354,28 @@ export default function LandingPage({ onViewChange, userRole }) {
               </p>
             </div>
             <div className="flex items-center justify-end gap-2">
+              {recentEstablishments.length > 1 && (
+                <div className="flex items-center gap-1.5" role="group" aria-label="Verified establishment carousel controls">
+                  <button
+                    type="button"
+                    onClick={() => scrollRecentEstablishments(-1)}
+                    aria-label="Previous establishments"
+                    title="Previous establishments"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#DCE7E0] bg-white text-emerald-800 shadow-2xs transition hover:border-emerald-300 hover:bg-[#F4F8F5] active:scale-95 cursor-pointer"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => scrollRecentEstablishments(1)}
+                    aria-label="Next establishments"
+                    title="Next establishments"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#DCE7E0] bg-white text-emerald-800 shadow-2xs transition hover:border-emerald-300 hover:bg-[#F4F8F5] active:scale-95 cursor-pointer"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => onViewChange('map')}
@@ -1345,16 +1387,7 @@ export default function LandingPage({ onViewChange, userRole }) {
           </div>
 
           {recentEstablishments.length > 0 ? (
-            <div className="relative" role="group" aria-label="Verified establishment carousel controls">
-              <button
-                type="button"
-                onClick={() => scrollRecentEstablishments(-1)}
-                aria-label="Previous establishments"
-                title="Previous establishments"
-                className="absolute left-1 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-transparent text-emerald-700 transition hover:scale-110 hover:bg-transparent focus-visible:outline-2 focus-visible:outline-emerald-700 sm:h-12 sm:w-12"
-              >
-                <ChevronLeft size={34} strokeWidth={3} className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" />
-              </button>
+            <div className="relative">
               <div
                 ref={recentEstablishmentsScrollRef}
                 onPointerDown={() => { recentEstablishmentsPauseUntilRef.current = Date.now() + 6000; }}
@@ -1439,15 +1472,6 @@ export default function LandingPage({ onViewChange, userRole }) {
                 })}
 
               </div>
-              <button
-                type="button"
-                onClick={() => scrollRecentEstablishments(1)}
-                aria-label="Next establishments"
-                title="Next establishments"
-                className="absolute right-1 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-transparent text-emerald-700 transition hover:scale-110 hover:bg-transparent focus-visible:outline-2 focus-visible:outline-emerald-700 sm:h-12 sm:w-12"
-              >
-                <ChevronRight size={34} strokeWidth={3} className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]" />
-              </button>
               <div className="mt-3 flex justify-center gap-2" role="group" aria-label="Choose an establishment">
                 {recentEstablishments.map((establishment, index) => {
                   const isHiddenOnTablet = index > Math.max(0, recentEstablishments.length - 2);
@@ -1540,7 +1564,7 @@ export default function LandingPage({ onViewChange, userRole }) {
                   </div>
                   <div className="mt-3 rounded-lg bg-emerald-900/40 p-2 text-center border border-emerald-700/60 sm:rounded-xl sm:p-2.5">
                     <span className="text-xs font-black uppercase tracking-wider text-emerald-300 sm:text-sm">
-                      ✓ Halal Verified
+                      ✓ Clean — Accredited Certifier
                     </span>
                   </div>
                 </div>
