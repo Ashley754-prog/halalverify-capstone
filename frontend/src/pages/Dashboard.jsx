@@ -202,70 +202,65 @@ export const Dashboard = ({ userRole, onViewChange }) => {
                     <button
                         type="button"
                         onClick={() => onViewChange?.('scanner')}
-                        className="group relative overflow-hidden bg-gradient-to-br from-emerald-600 to-teal-700 p-5 rounded-2xl text-white text-left shadow-md shadow-emerald-900/10 hover:shadow-lg hover:shadow-emerald-900/20 transition-all cursor-pointer active:scale-[0.98]"
+                        className="group flex flex-col justify-between bg-emerald-800 hover:bg-emerald-900 border border-emerald-900 p-5 rounded-2xl text-white text-left shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
                     >
-                        <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                            <Camera size={22} className="text-white" />
+                        <div>
+                            <div className="w-10 h-10 rounded-xl bg-emerald-700 border border-emerald-600/60 flex items-center justify-center mb-3.5 transition-colors group-hover:bg-emerald-700/90">
+                                <Camera size={20} className="text-white" aria-hidden="true" />
+                            </div>
+                            <h3 className="font-bold text-base text-white">Instant AI Scanner</h3>
+                            <p className="text-xs text-emerald-50/90 mt-1.5 leading-relaxed">
+                                Scan packaged food labels, ingredient lists, and Halal certification marks.
+                            </p>
                         </div>
-                        <h3 className="font-bold text-base text-white">Instant AI Scanner</h3>
-                        <p className="text-xs text-emerald-100/90 mt-1 leading-snug">
-                            Scan packaged food labels, ingredient lists, and Halal certification marks.
-                        </p>
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-white mt-4 group-hover:translate-x-1 transition-transform">
-                            Open Scanner <ArrowRight size={13} />
+                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-white mt-4 pt-3 border-t border-emerald-700/80 group-hover:gap-2 transition-all">
+                            Open Scanner <ArrowRight size={14} aria-hidden="true" />
                         </span>
                     </button>
 
-                    <button
-                        type="button"
-                        onClick={() => onViewChange?.('map')}
-                        className="group bg-gradient-to-br from-blue-600 to-indigo-700 border border-blue-700/20 hover:from-blue-700 hover:to-indigo-800 p-5 rounded-2xl text-left shadow-md shadow-blue-900/10 hover:shadow-lg hover:shadow-blue-900/20 transition-all cursor-pointer active:scale-[0.98]"
-                    >
-                        <div className="w-10 h-10 rounded-xl bg-white/15 text-white flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                            <MapPin size={22} />
-                        </div>
-                        <h3 className="font-bold text-base text-white">Dining & Venues Map</h3>
-                        <p className="text-xs text-blue-100/90 mt-1 leading-snug">
-                            Locate Halal-certified and Muslim-owned restaurants in Zamboanga City.
-                        </p>
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-white mt-4 group-hover:translate-x-1 transition-transform">
-                            Explore Map <ArrowRight size={13} />
-                        </span>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => onViewChange?.('products')}
-                        className="group bg-gradient-to-br from-emerald-600 to-teal-700 border border-emerald-700/20 hover:from-emerald-700 hover:to-teal-800 p-5 rounded-2xl text-left shadow-md shadow-emerald-900/10 hover:shadow-lg hover:shadow-emerald-900/20 transition-all cursor-pointer active:scale-[0.98]"
-                    >
-                        <div className="w-10 h-10 rounded-xl bg-white/15 text-white flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                            <Package size={22} />
-                        </div>
-                        <h3 className="font-bold text-base text-white">Verified Products</h3>
-                        <p className="text-xs text-emerald-100/90 mt-1 leading-snug">
-                            Browse screened consumer goods, packaged snacks, and grocery items.
-                        </p>
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-white mt-4 group-hover:translate-x-1 transition-transform">
-                            Browse Catalog <ArrowRight size={13} />
-                        </span>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => onViewChange?.('registry')}
-                        className="group bg-gradient-to-br from-violet-600 to-purple-700 border border-violet-700/20 hover:from-violet-700 hover:to-purple-800 p-5 rounded-2xl text-left shadow-md shadow-purple-900/10 hover:shadow-lg hover:shadow-purple-900/20 transition-all cursor-pointer active:scale-[0.98]"
-                    >
-                        <div className="w-10 h-10 rounded-xl bg-white/15 text-white flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                            <BookOpen size={22} />
-                        </div>
-                        <h3 className="font-bold text-base text-white">Additives & E-Codes</h3>
-                        <p className="text-xs text-violet-100/90 mt-1 leading-snug">
-                            Look up food additives, emulsifiers, and Halal certifying bodies.
-                        </p>
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-white mt-4 group-hover:translate-x-1 transition-transform">
-                            Search Standards <ArrowRight size={13} />
-                        </span>
-                    </button>
+                    {[
+                        {
+                            view: 'map',
+                            title: 'Dining & Venues Map',
+                            description: 'Locate Halal-certified and Muslim-owned restaurants in Zamboanga City.',
+                            cta: 'Explore Map',
+                            icon: MapPin,
+                        },
+                        {
+                            view: 'products',
+                            title: 'Verified Products',
+                            description: 'Browse screened consumer goods, packaged snacks, and grocery items.',
+                            cta: 'Browse Catalog',
+                            icon: Package,
+                        },
+                        {
+                            view: 'registry',
+                            title: 'Additives & E-Codes',
+                            description: 'Look up food additives, emulsifiers, and Halal certifying bodies.',
+                            cta: 'Search Standards',
+                            icon: BookOpen,
+                        },
+                    ].map(({ view, title, description, cta, icon: Icon }) => (
+                        <button
+                            key={view}
+                            type="button"
+                            onClick={() => onViewChange?.(view)}
+                            className="group flex flex-col justify-between bg-white hover:bg-slate-50/80 border border-slate-300/90 hover:border-emerald-600/60 p-5 rounded-2xl text-left shadow-2xs hover:shadow-sm transition-all cursor-pointer active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+                        >
+                            <div>
+                                <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 text-emerald-800 flex items-center justify-center mb-3.5 transition-colors group-hover:bg-emerald-50 group-hover:border-emerald-200">
+                                    <Icon size={20} aria-hidden="true" />
+                                </div>
+                                <h3 className="font-bold text-base text-slate-900">{title}</h3>
+                                <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                                    {description}
+                                </p>
+                            </div>
+                            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 mt-4 pt-3 border-t border-slate-100 group-hover:gap-2 transition-all">
+                                {cta} <ArrowRight size={14} aria-hidden="true" />
+                            </span>
+                        </button>
+                    ))}
                 </div>
             )}
 
