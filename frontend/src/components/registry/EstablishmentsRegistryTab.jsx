@@ -137,8 +137,6 @@ export default function EstablishmentsRegistryTab({
                 if (tier !== 'muslim_owned' && cfg.key !== 'muslim_owned' && cfg.key !== 'community') return false;
             } else if (standardFilter === 'muslim_friendly') {
                 if (tier !== 'muslim_friendly' && cfg.key !== 'muslim_friendly') return false;
-            } else if (standardFilter === 'vegetarian_vegan') {
-                if (tier !== 'vegetarian_vegan' && cfg.key !== 'vegetarian_vegan') return false;
             }
         }
 
@@ -226,7 +224,6 @@ export default function EstablishmentsRegistryTab({
                         <option value="halal_certified">Halal Certified</option>
                         <option value="muslim_owned">Muslim-Owned</option>
                         <option value="muslim_friendly">Muslim-Friendly</option>
-                        <option value="vegetarian_vegan">Vegetarian / Vegan</option>
                     </select>
 
                     <select

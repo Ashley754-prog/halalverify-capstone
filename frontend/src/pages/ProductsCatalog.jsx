@@ -137,6 +137,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
     const [showAuthPrompt, setShowAuthPrompt] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
     const [reportingTarget, setReportingTarget] = useState(null);
+    const [optionalStatusesPresent, setOptionalStatusesPresent] = useState(() => new Set());
     const isAdmin = userRole === 'admin';
 
     const handleOpenContribution = () => {
@@ -181,14 +182,18 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             establishmentsMapRef.current = seedMap;
 
             try {
-                const [mfgRes, cbRes, estRes] = await Promise.all([
+                const [mfgRes, cbRes, estRes, optStatusRes] = await Promise.all([
                     supabase.from('manufacturers').select('*').order('name').limit(200),
                     supabase.from('certifying_bodies').select('*').order('name'),
                     supabase.from('establishments').select('id, name, address, city, latitude, longitude'),
+                    supabase.from('products').select('status').in('status', ['Pork-Free Declared', 'Vegetarian / Vegan', 'Doubtful']).limit(50),
                 ]);
                 if (isMounted) {
                     if (mfgRes.data) setManufacturers(mfgRes.data);
                     if (cbRes.data) setCertifyingBodies(cbRes.data);
+                    if (optStatusRes.data) {
+                        setOptionalStatusesPresent(new Set(optStatusRes.data.map((r) => r.status).filter(Boolean)));
+                    }
                     if (estRes.data && estRes.data.length > 0) {
                         const merged = { ...seedMap };
                         estRes.data.forEach((e) => {
@@ -534,6 +539,9 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
             }
 
             showToast(isEdit ? 'Product updated successfully' : 'Product added successfully', 'success');
+            if (['Pork-Free Declared', 'Vegetarian / Vegan', 'Doubtful'].includes(payload.status)) {
+                setOptionalStatusesPresent((prev) => new Set([...prev, payload.status]));
+            }
             closeModal();
             loadData(currentPage, searchQuery, selectedCategory, selectedStatus, selectedCertifier);
         } catch (err) {
@@ -700,7 +708,13 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                         aria-label="Filter by halal status"
                         className="h-8.5 sm:h-9 min-w-0 flex-1 sm:flex-initial rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] sm:text-xs text-slate-700 font-medium focus:outline-none focus:border-emerald-500 whitespace-nowrap shrink-0"
                     >
-                        {STATUS_FILTER_OPTIONS.filter((opt) => isAdmin || opt.value !== 'Expired').map((opt) => (
+                        {STATUS_FILTER_OPTIONS.filter((opt) => {
+                            if (!isAdmin && opt.value === 'Expired') return false;
+                            if (['Pork-Free Declared', 'Vegetarian / Vegan', 'Doubtful'].includes(opt.value)) {
+                                return opt.value === selectedStatus || optionalStatusesPresent.has(opt.value);
+                            }
+                            return true;
+                        }).map((opt) => (
                             <option key={opt.value} value={opt.value}>
                                 {opt.label}
                             </option>
