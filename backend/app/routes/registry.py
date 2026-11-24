@@ -664,6 +664,20 @@ def create_establishment(establishment: EstablishmentCreate, user: dict = Depend
 def update_establishment(establishment_id: str, establishment: EstablishmentUpdate, user: dict = Depends(require_admin)):
     payload = model_dump_without_none(establishment)
 
+    # Preserve explicit null clears (e.g. clearing the last dish/amenity sets description=None)
+    nullable_clear_fields = (
+        "description",
+        "certificate_number",
+        "expiry_date",
+        "certifying_body_id",
+        "certificate_url",
+        "facebook_url",
+        "photo_url",
+    )
+    for field_name in nullable_clear_fields:
+        if field_name in establishment.model_fields_set and getattr(establishment, field_name, None) is None:
+            payload[field_name] = None
+
     if not payload:
         raise HTTPException(status_code=400, detail="No establishment fields to update")
 

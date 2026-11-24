@@ -352,6 +352,31 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives', in
 
     const safeTrim = (v) => (typeof v === 'string' ? v.trim() : null) || null;
 
+    const buildEstablishmentDescription = (rawDesc, amList, dishList, prevAmenities = []) => {
+        const prevAmLower = new Set(
+            (Array.isArray(prevAmenities) ? prevAmenities : [])
+                .map((a) => String(a || '').trim().toLowerCase())
+                .filter(Boolean)
+        );
+        const cleanBio = typeof rawDesc === 'string'
+            ? rawDesc
+                .split('|')
+                .map((part) => part.trim())
+                .filter((part) => {
+                    if (!part) return false;
+                    if (/^(?:amenities|dishes|menu|specialties)\s*:/i.test(part)) return false;
+                    if (prevAmLower.has(part.toLowerCase())) return false;
+                    return true;
+                })
+                .join(' | ')
+            : '';
+        const parts = [];
+        if (cleanBio) parts.push(cleanBio);
+        if (amList.length > 0) parts.push(`Amenities: ${amList.join(', ')}`);
+        if (dishList.length > 0) parts.push(`Dishes: ${dishList.join(', ')}`);
+        return parts.length > 0 ? parts.join(' | ') : null;
+    };
+
     const getTierNote = (tier) => {
         if (tier === 'muslim_owned') {
             return '[Tier: muslim_owned] Community Listed - Muslim-Owned (Pork-Free Kitchen)';
@@ -600,10 +625,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives', in
                     amList.push('Dedicated Prayer Space (Musalah)');
                 }
                 const dishList = Array.isArray(modalForm.menu_highlights) ? modalForm.menu_highlights.filter(Boolean) : [];
-                const descParts = [];
-                if (amList.length > 0) descParts.push(`Amenities: ${amList.join(' | ')}`);
-                if (dishList.length > 0) descParts.push(`Dishes: ${dishList.join(', ')}`);
-                const description = descParts.join(' | ') || (modalForm.description || null);
+                const description = buildEstablishmentDescription(modalForm.description, amList, dishList, selectedItem?.amenities);
 
                 const role = modalForm.submitter_role || 'community';
                 const createStreet = modalForm.street !== undefined
@@ -710,10 +732,7 @@ export const Registry = ({ userRole, onViewChange, initialMode = 'additives', in
                     amList.push('Dedicated Prayer Space (Musalah)');
                 }
                 const dishList = Array.isArray(modalForm.menu_highlights) ? modalForm.menu_highlights.filter(Boolean) : [];
-                const descParts = [];
-                if (amList.length > 0) descParts.push(`Amenities: ${amList.join(' | ')}`);
-                if (dishList.length > 0) descParts.push(`Dishes: ${dishList.join(', ')}`);
-                const description = descParts.join(' | ') || (modalForm.description || null);
+                const description = buildEstablishmentDescription(modalForm.description, amList, dishList, selectedItem?.amenities);
 
                 const role = modalForm.submitter_role || 'community';
                 const editStreet = modalForm.street !== undefined
