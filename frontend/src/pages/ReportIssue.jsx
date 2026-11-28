@@ -516,13 +516,13 @@ export const ReportIssue = ({ userRole, onViewChange, initialParams = {} }) => {
             >
                 <div className="space-y-4 pt-2">
                     <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
-                        <div className="flex justify-between">
-                            <span className="text-slate-500">Target:</span>
-                            <span className="font-bold text-slate-800">{form.name}</span>
+                        <div className="flex justify-between gap-4">
+                            <span className="text-slate-500 shrink-0">Target:</span>
+                            <span className="font-bold text-slate-800 text-right">{form.name}</span>
                         </div>
-                        <div className="flex justify-between">
-                            <span className="text-slate-500">Category:</span>
-                            <span className="font-bold text-amber-700">
+                        <div className="flex justify-between gap-4">
+                            <span className="text-slate-500 shrink-0">Category:</span>
+                            <span className="font-bold text-amber-700 text-right">
                                 {form.issueType === 'Other' && form.customCategory.trim()
                                     ? `Other: ${form.customCategory.trim()}`
                                     : form.issueType}

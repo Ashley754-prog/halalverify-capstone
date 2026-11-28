@@ -45,31 +45,33 @@ export default function AnalyticsSurveillanceSections({
                         </span>
                     </div>
 
-                    <div className="grid grid-cols-7 sm:grid-cols-7 lg:grid-cols-14 gap-1.5 sm:gap-2 items-end h-24 pt-4 border-t border-slate-100">
+                    <div className="grid grid-cols-7 lg:grid-cols-14 gap-1.5 sm:gap-2 items-end pt-5 pb-1 border-t border-slate-100">
                         {timeline.slice(-14).map((pt, idx) => {
                             const hasScans = (pt.scans || 0) > 0;
                             const heightPct = hasScans
                                 ? Math.max(20, Math.round((pt.scans / maxTimelineScans) * 100))
                                 : 10;
                             return (
-                                <div key={idx} className="flex-1 flex flex-col items-center justify-end h-full group relative">
-                                    {hasScans && (
-                                        <span className="text-[10px] font-mono font-bold text-emerald-700 mb-1 group-hover:scale-110 transition-transform">
-                                            {pt.scans}
-                                        </span>
-                                    )}
+                                <div key={idx} className="flex flex-col items-center group relative min-w-0">
                                     <div className="absolute -top-6 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-[10px] font-mono px-2 py-0.5 rounded shadow-md pointer-events-none whitespace-nowrap z-20">
                                         {pt.date}: {pt.scans} {pt.scans === 1 ? 'scan' : 'scans'}
                                     </div>
-                                    <div
-                                        className={`w-full transition-all rounded-xs ${
-                                            hasScans
-                                                ? 'bg-gradient-to-t from-emerald-600 to-teal-500 group-hover:from-emerald-500 group-hover:to-teal-400 shadow-2xs'
-                                                : 'bg-slate-100 group-hover:bg-slate-200'
-                                        }`}
-                                        style={{ height: `${heightPct}%` }}
-                                    />
-                                    <span className="text-[9px] font-mono text-slate-500 mt-1 truncate max-w-full font-medium">
+                                    <div className="h-20 w-full flex flex-col justify-end items-center">
+                                        {hasScans && (
+                                            <span className="text-[10px] font-mono font-bold text-emerald-700 mb-1 leading-none group-hover:scale-110 transition-transform">
+                                                {pt.scans}
+                                            </span>
+                                        )}
+                                        <div
+                                            className={`w-full transition-all rounded-xs ${
+                                                hasScans
+                                                    ? 'bg-gradient-to-t from-emerald-600 to-teal-500 group-hover:from-emerald-500 group-hover:to-teal-400 shadow-2xs'
+                                                    : 'bg-slate-100 group-hover:bg-slate-200'
+                                            }`}
+                                            style={{ height: `${heightPct}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-[10px] font-mono text-slate-500 mt-1.5 leading-tight truncate max-w-full font-medium">
                                         {pt.date.length > 5 ? pt.date.slice(-5) : pt.date}
                                     </span>
                                 </div>

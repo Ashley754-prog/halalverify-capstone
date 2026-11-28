@@ -74,6 +74,7 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
     const mapInstanceRef = useRef(null);
     const markersLayerRef = useRef(null);
     const userMarkerRef = useRef(null);
+    const fetchSeqRef = useRef(0);
 
     const [establishments, setEstablishments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -178,6 +179,7 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
 
     // Fetch establishments from API or fallback
     const fetchEstablishments = useCallback(async () => {
+        const reqId = ++fetchSeqRef.current;
         try {
             setLoading(true);
             const params = new URLSearchParams();
@@ -210,6 +212,7 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                     .select('*, certifying_bodies(*), products(id, name, category, status, brand, certificate_no, expiry_date)')
                     .order('name');
                 const { data: sbData, error: sbErr } = await query;
+                if (reqId !== fetchSeqRef.current) return;
                 if (!sbErr && sbData && sbData.length > 0) {
                     let withCoords = sbData
                         .map((e) => {
@@ -303,12 +306,11 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                         }));
                         withCoords.sort((a, b) => (a.distance_km ?? 999) - (b.distance_km ?? 999));
                     }
-                    if (withCoords.length > 0) {
-                        setEstablishments(withCoords);
-                        return;
-                    }
+                    setEstablishments(withCoords);
+                    return;
                 }
             } catch (sbErr) {
+                if (reqId !== fetchSeqRef.current) return;
                 console.warn('Direct Supabase fetch for map warning, trying backend:', sbErr);
             }
 
@@ -317,9 +319,11 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
             try {
                 const url = `${API_BASE_URL}/api/v1/establishments/map?${params.toString()}`;
                 const response = await authFetch(url, { timeout: 3000 });
+                if (reqId !== fetchSeqRef.current) return;
 
                 if (response.ok) {
                     const json = await response.json();
+                    if (reqId !== fetchSeqRef.current) return;
                     const data = json.data || [];
                     let withCoords = data
                         .map((e) => {
@@ -343,15 +347,20 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
                     }
                 }
             } catch (apiErr) {
+                if (reqId !== fetchSeqRef.current) return;
                 console.warn('Map API fallback notice, using curated seeds:', apiErr);
             }
 
+            if (reqId !== fetchSeqRef.current) return;
             applySeedFallback();
         } catch (err) {
+            if (reqId !== fetchSeqRef.current) return;
             console.warn('Map endpoint notice, using curated seeds:', err);
             applySeedFallback();
         } finally {
-            setLoading(false);
+            if (reqId === fetchSeqRef.current) {
+                setLoading(false);
+            }
         }
     }, [userRole, userLocation, selectedStatus, applySeedFallback]);
 
@@ -703,13 +712,13 @@ export default function EstablishmentsMap({ userRole, onViewChange, initialSearc
     return (
         <div className="p-2 sm:p-4 md:p-5 flex-1 flex flex-col min-h-0 bg-slate-50 gap-1.5 sm:gap-2.5 overflow-hidden">
             {/* Compact Filter & Search Toolbar with Integrated Module Title */}
-            <div className="bg-white rounded-2xl border border-slate-200/90 p-2 sm:p-2.5 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-1.5 sm:gap-2 shrink-0">
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-2 sm:p-2.5 shadow-xs flex flex-col md:flex-row md:flex-wrap lg:flex-nowrap items-stretch md:items-center justify-between gap-1.5 sm:gap-2 shrink-0">
                 {/* Search Bar - Row 1 on mobile, right side on desktop */}
                 <SearchBar
                     value={searchQuery}
                     onChange={setSearchQuery}
                     placeholder="Search name, cuisine, street..."
-                    className="order-1 md:order-2 w-full md:w-56 lg:w-64 shrink-0"
+                    className="order-1 md:order-2 w-full md:w-52 lg:w-56 shrink-0"
                     size="sm"
                 />
 

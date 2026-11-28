@@ -15,9 +15,9 @@ export const ScanFilterBar = ({
 }) => {
     return (
         <div className="bg-white rounded-2xl border border-slate-200/90 p-3 sm:p-4 shadow-xs space-y-3">
-            <div className="flex flex-col sm:flex-row gap-2.5 sm:items-center justify-between">
+            <div className="flex flex-col lg:flex-row lg:flex-wrap gap-2.5 lg:items-center justify-between">
                 {/* Mode Filter Pills */}
-                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
+                <div className="flex flex-wrap items-center gap-1.5">
                     {MODE_FILTERS.map(f => (
                         <button
                             key={f.id}

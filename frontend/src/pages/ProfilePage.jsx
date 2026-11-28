@@ -550,7 +550,7 @@ const ProfilePage = ({ onViewChange, initialFilter = 'all' }) => {
                             </div>
 
                             {/* Filter Pills */}
-                            <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto no-scrollbar">
+                            <div className="flex flex-wrap items-center gap-1.5 shrink-0">
                                 {[
                                     { id: 'all', label: `All (${combinedSubmissions.length})` },
                                     { id: 'establishment', label: `Places (${myEstablishments.length})` },

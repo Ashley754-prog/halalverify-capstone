@@ -122,9 +122,9 @@ export default function Analytics({ onViewChange }) {
             </div>
 
             {/* Control Toolbar */}
-            <div className="bg-white rounded-2xl border border-slate-200/90 p-2 sm:p-2.5 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2 shrink-0 print:hidden">
-                <div className="flex items-center justify-between gap-2 w-full md:w-auto">
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 text-[11px] font-semibold border border-slate-200/60 shrink-0">
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-2 sm:p-2.5 shadow-2xs flex flex-col lg:flex-row lg:flex-wrap xl:flex-nowrap items-stretch lg:items-center justify-between gap-2.5 shrink-0 print:hidden">
+                <div className="flex items-center justify-between gap-2 shrink-0">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 text-[11px] font-semibold border border-slate-200/60 shrink-0 whitespace-nowrap">
                         <span className={`inline-flex rounded-full h-2 w-2 ${error ? 'bg-rose-500' : 'bg-emerald-500'}`} />
                         <span className="font-mono text-[10px]">
                             {error ? 'Sync Issue' : lastSync ? `Synced ${lastSync}` : 'Live Data'}
@@ -152,7 +152,7 @@ export default function Analytics({ onViewChange }) {
                         <button
                             type="button"
                             onClick={() => onViewChange?.('verification-queue')}
-                            className="px-2.5 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-semibold inline-flex items-center gap-1 transition shadow-2xs"
+                            className="px-2.5 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-semibold inline-flex items-center gap-1 transition shadow-2xs whitespace-nowrap"
                         >
                             <span>Audit Queue</span>
                             <ChevronRight size={13} />
@@ -160,15 +160,15 @@ export default function Analytics({ onViewChange }) {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2 w-full md:w-auto">
-                    <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider hidden lg:inline">
+                <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider hidden xl:inline shrink-0">
                         Window:
                     </span>
-                    <div className="inline-flex w-full md:w-auto p-0.5 rounded-xl bg-slate-100 border border-slate-200/80 text-xs">
+                    <div className="inline-flex w-full md:w-auto p-0.5 rounded-xl bg-slate-100 border border-slate-200/80 text-xs shrink-0">
                         <button
                             type="button"
                             onClick={() => setInterval('daily')}
-                            className={`flex-1 md:flex-none text-center px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                            className={`flex-1 md:flex-none text-center px-2.5 py-1 rounded-lg text-xs font-medium transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                                 interval === 'daily'
                                     ? 'bg-white text-slate-900 font-semibold shadow-2xs border border-slate-200/60'
                                     : 'text-slate-600 hover:text-slate-900'
@@ -179,7 +179,7 @@ export default function Analytics({ onViewChange }) {
                         <button
                             type="button"
                             onClick={() => setInterval('weekly')}
-                            className={`flex-1 md:flex-none text-center px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                            className={`flex-1 md:flex-none text-center px-2.5 py-1 rounded-lg text-xs font-medium transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                                 interval === 'weekly'
                                     ? 'bg-white text-slate-900 font-semibold shadow-2xs border border-slate-200/60'
                                     : 'text-slate-600 hover:text-slate-900'
@@ -190,7 +190,7 @@ export default function Analytics({ onViewChange }) {
                         <button
                             type="button"
                             onClick={() => setInterval('monthly')}
-                            className={`flex-1 md:flex-none text-center px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                            className={`flex-1 md:flex-none text-center px-2.5 py-1 rounded-lg text-xs font-medium transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                                 interval === 'monthly'
                                     ? 'bg-white text-slate-900 font-semibold shadow-2xs border border-slate-200/60'
                                     : 'text-slate-600 hover:text-slate-900'
@@ -201,17 +201,11 @@ export default function Analytics({ onViewChange }) {
                     </div>
                 </div>
 
-                <div className="hidden md:flex items-center gap-2 shrink-0">
-                    {lastSync && (
-                        <span className="text-[11px] text-slate-400 font-mono hidden lg:inline-block">
-                            Synced: {lastSync}
-                        </span>
-                    )}
-
+                <div className="hidden md:flex items-center gap-2 shrink-0 flex-wrap">
                     <button
                         type="button"
                         onClick={handlePrintReport}
-                        className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium inline-flex items-center gap-1.5 transition shadow-2xs cursor-pointer"
+                        className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium inline-flex items-center gap-1.5 transition shadow-2xs cursor-pointer whitespace-nowrap shrink-0"
                         title="Print or Save Report as PDF"
                     >
                         <Printer size={13} className="text-slate-600" />
@@ -222,7 +216,7 @@ export default function Analytics({ onViewChange }) {
                         type="button"
                         onClick={loadAnalyticsData}
                         disabled={loading}
-                        className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium inline-flex items-center gap-1.5 transition shadow-2xs disabled:opacity-50 cursor-pointer"
+                        className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium inline-flex items-center gap-1.5 transition shadow-2xs disabled:opacity-50 cursor-pointer whitespace-nowrap shrink-0"
                         title="Reload latest telemetry metrics"
                     >
                         <RefreshCw size={13} className={loading ? 'animate-spin text-emerald-600' : 'text-slate-500'} />
@@ -232,7 +226,7 @@ export default function Analytics({ onViewChange }) {
                     <button
                         type="button"
                         onClick={() => onViewChange?.('verification-queue')}
-                        className="px-3 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-medium inline-flex items-center gap-1.5 transition shadow-2xs cursor-pointer"
+                        className="px-3 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-medium inline-flex items-center gap-1.5 transition shadow-2xs cursor-pointer whitespace-nowrap shrink-0"
                     >
                         <span>Audit Queue</span>
                         <ChevronRight size={13} />

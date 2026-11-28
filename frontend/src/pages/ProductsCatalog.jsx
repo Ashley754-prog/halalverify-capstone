@@ -638,7 +638,7 @@ export default function ProductsCatalog({ userRole, onViewChange, initialSearchQ
                                 loadData(1, searchQuery, selectedCategory, selectedStatus, selectedCertifier);
                             }
                         }}
-                        placeholder="Search product name, brand, barcode, or certificate #..."
+                        placeholder="Search product name, brand, or certificate #..."
                         className="flex-1 min-w-0"
                     />
 

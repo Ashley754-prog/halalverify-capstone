@@ -664,7 +664,8 @@ export const LOCAL_ESTABLISHMENT_PHOTOS = {
 
 export const getEstablishmentPhoto = (establishment) => {
     if (!establishment) return null;
-    const name = establishment.name || '';
+    const name = String(establishment.name || '').trim();
+    if (name.length < 3) return null;
     if (LOCAL_ESTABLISHMENT_PHOTOS[name]) {
         return LOCAL_ESTABLISHMENT_PHOTOS[name];
     }

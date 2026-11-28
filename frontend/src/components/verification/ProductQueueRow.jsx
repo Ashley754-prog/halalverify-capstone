@@ -26,7 +26,7 @@ export default function ProductQueueRow({
     const isEstPending = estStatus && (estStatus.includes('pending') || estStatus.includes('review'));
 
     return (
-        <div className="py-4 border-b border-slate-100 last:border-b-0 flex flex-col md:flex-row md:items-center justify-between gap-3.5 transition hover:bg-slate-50/50 -mx-2 px-2 rounded-xl">
+        <div className="py-4 border-b border-slate-100 last:border-b-0 flex flex-col xl:flex-row xl:items-center justify-between gap-3.5 transition hover:bg-slate-50/50 -mx-2 px-2 rounded-xl">
             {/* Left: Product Thumbnail & Metadata */}
             <div className="flex items-start gap-3 min-w-0 flex-1">
                 {/* Visual Thumbnail */}
@@ -45,8 +45,8 @@ export default function ProductQueueRow({
 
                 {/* Details */}
                 <div className="space-y-1.5 min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-bold text-slate-900 truncate" title={prod.name}>
+                    <div className="flex flex-wrap items-center gap-2 min-w-0">
+                        <span className="text-sm font-bold text-slate-900 break-words min-w-0" title={prod.name}>
                             {prod.name}
                         </span>
                         <QueueStatusBadge status={prod.status} />
